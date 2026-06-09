@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>VitaNusa AI | Katalog Produk Kesehatan</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #1f2933;
+      background: #f7faf8;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f5132, #1f7a4d);
+      color: white;
+      padding: 24px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      font-size: 16px;
+      max-width: 760px;
+      margin: auto;
+    }
+
+    nav {
+      background: #ffffff;
+      padding: 12px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    nav a {
+      color: #0f5132;
+      text-decoration: none;
+      margin: 0 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    section {
+      padding: 40px 18px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .hero-box {
+      background: white;
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .hero h2 {
+      color: #0f5132;
+      font-size: 30px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #16a34a;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 16px;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      background: #ffffff;
+      color: #0f5132;
+      border: 2px solid #0f5132;
+      padding: 10px 16px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    .note {
+      background: #fff7ed;
+      border-left: 5px solid #f59e0b;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 18px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      color: #0f5132;
+      margin-bottom: 10px;
+      font-size: 23px;
+    }
+
+    .product-image {
+      background: linear-gradient(135deg, #e8f5e9, #ffffff);
+      border: 2px dashed #9ac7a7;
+      border-radius: 16px;
+      height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f5132;
+      text-align: center;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-weight: bold;
+    }
+
+    ul {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .warning {
+      background: #fef2f2;
+      border-left: 5px solid #dc2626;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 14px;
+      font-size: 14px;
+    }
+
+    footer {
+      background: #0f5132;
+      color: white;
+      text-align: center;
+      padding: 24px 18px;
+      margin-top: 30px;
+    }
+
+    footer p {
+      max-width: 760px;
+      margin: 6px auto;
+      font-size: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .hero {
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      nav a {
+        margin: 0 14px;
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>VitaNusa AI</h1>
+    <p>Katalog produk kesehatan dan edukasi hidup sehat dengan pendekatan amanah, hati-hati, dan mudah dipahami.</p>
+  </header>
+
+  <nav>
+    <a href="#beranda">Beranda</a>
+    <a href="#tentang">Tentang</a>
+    <a href="#produk">Produk</a>
+    <a href="#video">Video AI</a>
+    <a href="#blog">Blog</a>
+    <a href="#kontak">Kontak</a>
+  </nav>
+
+  <section id="beranda" class="hero">
+    <div class="hero-box">
+      <span class="badge">Katalog Reseller</span>
+      <h2>Temukan pilihan produk kesehatan dengan informasi yang lebih jujur dan jelas.</h2>
+      <p>
+        VitaNusa AI adalah website katalog dan edukasi yang membantu calon pembeli mengenal produk kesehatan secara lebih mudah.
+        Untuk sementara, produk yang ditampilkan adalah produk dari ekosistem Evermos melalui jalur reseller.
+      </p>
+
+      <div class="note">
+        <strong>Catatan:</strong> VitaNusa AI bukan produsen utama produk. Website ini berperan sebagai katalog informasi reseller.
+        Detail produk, legalitas, dan ketentuan pembelian tetap mengikuti informasi resmi dari brand atau platform terkait.
+      </div>
+
+      <a class="btn" href="https://wa.me/628xxxxxxxxxx" target="_blank">
+        Tanya Produk via WhatsApp
+      </a>
+    </div>
+
+    <div class="hero-box">
+      <h3>Produk Sementara</h3>
+      <ul>
+        <li>KEY Propolis</li>
+        <li>Langfit Deto Pro</li>
+      </ul>
+      <p style="margin-top: 12px;">
+        Tahap awal website ini dibuat sebagai katalog sederhana. Sistem checkout, keranjang, dan pembayaran otomatis belum digunakan.
+      </p>
+    </div>
+  </section>
+
+  <section id="tentang">
+    <div class="card">
+      <h2>Tentang VitaNusa AI</h2>
+      <p>
+        VitaNusa AI dibuat sebagai ruang digital yang menggabungkan katalog produk kesehatan, edukasi hidup sehat,
+        dan konten berbasis AI. Fokus kami adalah menyampaikan informasi dengan cara yang sederhana, tidak berlebihan,
+        dan tetap menjaga prinsip amanah.
+      </p>
+
+      <ul>
+        <li>Mengutamakan informasi yang jelas dan tidak menyesatkan.</li>
+        <li>Tidak menjanjikan kesembuhan instan.</li>
+        <li>Mendorong pola hidup sehat, ikhtiar, dan kehati-hatian.</li>
+        <li>Menyediakan akses tanya produk melalui WhatsApp.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="produk">
+    <h2 style="margin-bottom: 20px; color: #0f5132;">Produk Pilihan</h2>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="product-image">
+          Gambar KEY Propolis<br>
+          Upload nanti sebagai gambar produk
+        </div>
+
+        <span class="badge">Produk 1</span>
+        <h3>KEY Propolis</h3>
+        <p>
+          KEY Propolis adalah produk propolis yang dipasarkan melalui jalur reseller. Produk ini ditampilkan sebagai bagian dari katalog VitaNusa AI.
+        </p>
+
+        <ul>
+          <li>Kategori: Produk kesehatan</li>
+          <li>Status: Katalog reseller</li>
+          <li>Pemesanan: Melalui WhatsApp</li>
+          <li>Legalitas: Perlu dicek berdasarkan data resmi produk</li>
+        </ul>
+
+        <div class="warning">
+          Informasi manfaat dan aturan pakai harus mengikuti label resmi produk. Jangan digunakan sebagai pengganti konsultasi medis.
+        </div>
+
+        <a class="btn-secondary" href="https://wa.me/628xxxxxxxxxx?text=Assalamualaikum,%20saya%20ingin%20bertanya%20tentang%20KEY%20Propolis" target="_blank">
+          Tanya KEY Propolis
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="product-image">
+          Gambar Langfit Deto Pro<br>
+          Upload nanti sebagai gambar produk
+        </div>
+
+        <span class="badge">Produk 2</span>
+        <h3>Langfit Deto Pro</h3>
+        <p>
+          Langfit Deto Pro adalah produk kesehatan yang ditampilkan dalam katalog VitaNusa AI melalui jalur reseller.
+        </p>
+
+        <ul>
+          <li>Kategori: Produk kesehatan</li>
+          <li>Status: Katalog reseller</li>
+          <li>Pemesanan: Melalui WhatsApp</li>
+          <li>Legalitas: Perlu dicek berdasarkan data resmi produk</li>
+        </ul>
+
+        <div class="warning">
+          Informasi manfaat dan aturan pakai harus mengikuti label resmi produk. Hasil penggunaan dapat berbeda pada setiap orang.
+        </div>
+
+        <a class="btn-secondary" href="https://wa.me/628xxxxxxxxxx?text=Assalamualaikum,%20saya%20ingin%20bertanya%20tentang%20Langfit%20Deto%20Pro" target="_blank">
+          Tanya Langfit Deto Pro
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="video">
+    <div class="card">
+      <h2>Video AI</h2>
+      <p>
+        Bagian ini disiapkan untuk menampilkan video edukasi, video sejarah, refleksi hidup, dan konten promosi yang dibuat dengan bantuan AI.
+      </p>
+
+      <ul>
+        <li>Video edukasi kesehatan</li>
+        <li>Video sejarah dan tokoh inspiratif</li>
+        <li>Video promosi produk yang sopan dan tidak berlebihan</li>
+      </ul>
+
+      <div class="note">
+        Untuk tahap awal, video sebaiknya diupload ke YouTube, TikTok, atau Instagram. Website cukup menampilkan link atau embed.
+      </div>
+    </div>
+  </section>
+
+  <section id="blog">
+    <h2 style="margin-bottom: 20px; color: #0f5132;">Blog Edukasi</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Kesehatan</h3>
+        <p>Artikel tentang pola hidup sehat, kehati-hatian memilih produk, dan kebiasaan baik sehari-hari.</p>
+      </div>
+
+      <div class="card">
+        <h3>AI</h3>
+        <p>Artikel tentang pemanfaatan AI untuk edukasi, konten, dan pembelajaran yang bermanfaat.</p>
+      </div>
+
+      <div class="card">
+        <h3>Halal Lifestyle</h3>
+        <p>Bahasan tentang gaya hidup halal, amanah dalam jual beli, dan etika promosi produk.</p>
+      </div>
+
+      <div class="card">
+        <h3>Refleksi Hidup</h3>
+        <p>Catatan ringan tentang hidup, ikhtiar, kesehatan, dan tanggung jawab sebagai manusia.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="kontak">
+    <div class="card">
+      <h2>Kontak</h2>
+      <p>
+        Untuk bertanya tentang produk, stok, harga, atau cara pemesanan, silakan hubungi melalui WhatsApp.
+      </p>
+
+      <ul>
+        <li>WhatsApp: 6288708862581</li>
+        <li>Email: kopiscent99@gmail.com</li>
+        <li>Instagram: @comingsoon</li>
+        <li>TikTok: @usernamekamu</li>
+      </ul>
+
+      <a class="btn" href="https://wa.me/6288708862581" target="_blank">
+        Hubungi WhatsApp
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>VitaNusa AI</strong></p>
+    <p>Katalog reseller produk kesehatan dan edukasi hidup sehat.</p>
+    <p>
+      Disclaimer: Informasi di website ini bersifat edukatif dan katalog. Produk bukan pengganti diagnosis, pengobatan,
+      atau konsultasi dengan tenaga kesehatan profesional.
+    </p>
+  </footer>
+
+</body>
+</html>
