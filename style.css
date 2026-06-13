@@ -1,1 +1,58 @@
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;line-height:1.6;color:#15251e;background:#f6fbf7}a{color:#18734f}.wrap{width:min(92%,1100px);margin:auto}header{position:sticky;top:0;background:#fff;border-bottom:1px solid #dbe8df;z-index:5}.head,.brand,nav,.actions,.trust{display:flex;gap:.7rem;align-items:center}.head{justify-content:space-between;padding:.8rem 0}.brand{text-decoration:none;color:#15251e}.brand b{background:#0f3d2e;color:#fff;border-radius:14px;padding:.75rem}nav{flex-wrap:wrap}nav a{padding:.45rem .65rem;text-decoration:none;border-radius:999px}.cta,.btn.primary{background:#18734f;color:#fff!important}.sec{padding:64px 0}.hero{background:linear-gradient(135deg,#0f3d2e,#249366);color:#fff}.hero a,.hero .eyebrow{color:#ffe0a4}.grid,.cards{display:grid;gap:1rem}.hero-grid,.check-grid,.contact-grid{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}.two{grid-template-columns:repeat(2,1fr)}.card,.cards article,details{background:#fff;color:#15251e;border:1px solid #dbe8df;border-radius:20px;padding:1.1rem;box-shadow:0 12px 30px #0001}.btn{display:inline-flex;padding:.65rem 1rem;border-radius:999px;text-decoration:none;border:0;font-weight:700}.wa{background:#ffe0a4;color:#09251e!important}.ghost{border:1px solid #ffffff66;color:#fff!important}.muted{background:#eef8f1}.clean{list-style:none;padding:0}.clean a{display:block;padding:.6rem;border-radius:12px;background:#eef8f1;text-decoration:none}.full{width:100%}label{display:grid;gap:.35rem;margin:.5rem 0;font-weight:700}select{padding:.65rem;border-radius:12px;border:1px solid #cfe0d5}.score span{font-size:3rem;color:#0f3d2e;font-weight:900}.note{background:#fff4d6;border-radius:12px;padding:.75rem}.prod,.play{display:grid;place-items:center;min-height:140px;border-radius:18px;background:#0f3d2e;color:#fff;font-size:2.5rem;font-weight:900}.video{display:grid;grid-template-columns:1fr 1fr}footer{background:#09251e;color:#fff;padding:30px 0}.float{position:fixed;right:1rem;bottom:1rem;background:#ffe0a4;color:#09251e;border-radius:50%;width:54px;height:54px;display:grid;place-items:center;text-decoration:none;font-weight:900}@media(max-width:800px){.head{align-items:flex-start;flex-direction:column}nav{overflow:auto;flex-wrap:nowrap}.hero-grid,.check-grid,.contact-grid,.video,.three,.two{grid-template-columns:1fr}.actions,.trust{flex-direction:column;align-items:stretch}.btn{justify-content:center}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;line-height:1.6;color:#15251e;background:#f6fbf7}
+img{max-width:100%;display:block}
+a{color:#18734f}
+.skip{position:absolute;left:-999px;top:.75rem;background:#ffe0a4;color:#09251e;padding:.65rem 1rem;border-radius:999px;font-weight:800;z-index:99;text-decoration:none}
+.skip:focus{left:.75rem}
+.wrap{width:min(92%,1100px);margin:auto}
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid #dbe8df;z-index:5}
+.head,.brand,nav,.actions,.trust{display:flex;gap:.7rem;align-items:center}
+.head{justify-content:space-between;padding:.8rem 0}
+.brand{text-decoration:none;color:#15251e;min-width:220px}
+.brand img,.brand-logo{width:54px;height:54px;object-fit:contain;border-radius:14px;background:#fff;padding:.25rem;box-shadow:0 8px 18px #0002;flex:0 0 54px}
+.brand span{display:grid;gap:.05rem}
+.brand strong{line-height:1.15}
+.brand small{display:block;color:#52645b;font-size:.82rem}
+nav{flex-wrap:wrap;justify-content:flex-end}
+nav a{padding:.45rem .65rem;text-decoration:none;border-radius:999px;font-weight:650}
+nav a:hover,nav a:focus-visible{background:#eef8f1;outline:0}
+.cta,.btn.primary{background:#18734f;color:#fff!important}
+.sec{padding:64px 0}
+.hero{background:linear-gradient(135deg,#0f3d2e,#249366);color:#fff}
+.hero a,.hero .eyebrow{color:#ffe0a4}
+h1,h2,h3{line-height:1.15}
+.grid,.cards{display:grid;gap:1rem}
+.hero-grid,.check-grid,.contact-grid{grid-template-columns:1fr 1fr}
+.three{grid-template-columns:repeat(3,1fr)}
+.two{grid-template-columns:repeat(2,1fr)}
+.card,.cards article,details{background:#fff;color:#15251e;border:1px solid #dbe8df;border-radius:20px;padding:1.1rem;box-shadow:0 12px 30px #0001}
+.btn{display:inline-flex;padding:.65rem 1rem;border-radius:999px;text-decoration:none;border:0;font-weight:700;align-items:center;justify-content:center}
+.wa{background:#ffe0a4;color:#09251e!important}
+.ghost{border:1px solid #ffffff66;color:#fff!important}
+.muted{background:#eef8f1}
+.clean{list-style:none;padding:0}
+.clean a{display:block;padding:.6rem;border-radius:12px;background:#eef8f1;text-decoration:none}
+.full{width:100%}
+label{display:grid;gap:.35rem;margin:.5rem 0;font-weight:700}
+select{padding:.65rem;border-radius:12px;border:1px solid #cfe0d5}
+.score span{font-size:3rem;color:#0f3d2e;font-weight:900}
+.note{background:#fff4d6;border-radius:12px;padding:.75rem}
+.prod,.play{display:grid;place-items:center;min-height:140px;border-radius:18px;background:#0f3d2e;color:#fff;font-size:2.5rem;font-weight:900}
+.prod{background:#f8fbf8;border:1px solid #dbe8df;overflow:hidden;padding:.75rem;color:#15251e;font-size:1rem}
+.product-photo,.prod img{width:100%;height:100%;min-height:220px;object-fit:contain;background:#fff;border-radius:16px;padding:.5rem;box-sizing:border-box}
+.video{display:grid;grid-template-columns:1fr 1fr}
+footer{background:#09251e;color:#fff;padding:30px 0}
+.float{position:fixed;right:1rem;bottom:1rem;background:#ffe0a4;color:#09251e;border-radius:50%;width:54px;height:54px;display:grid;place-items:center;text-decoration:none;font-weight:900;box-shadow:0 10px 25px #0002}
+@media(max-width:800px){
+  .head{align-items:flex-start;flex-direction:column}
+  .brand{min-width:0}
+  .brand img,.brand-logo{width:48px;height:48px;flex-basis:48px}
+  nav{overflow:auto;flex-wrap:nowrap;width:100%;padding-bottom:.35rem}
+  nav a{white-space:nowrap}
+  .hero-grid,.check-grid,.contact-grid,.video,.three,.two{grid-template-columns:1fr}
+  .actions,.trust{flex-direction:column;align-items:stretch}
+  .btn{justify-content:center}
+  .sec{padding:48px 0}
+  .product-photo,.prod img{min-height:200px}
+}
