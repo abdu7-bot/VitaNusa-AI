@@ -6,15 +6,14 @@
   <title>VitaNusa AI | Edukasi Kesehatan Digital</title>
   <meta name="description" content="VitaNusa AI: edukasi kesehatan, VitaCheck, artikel, VitaStory, VitaGame, katalog produk, FAQ amanah, dan kontak WhatsApp.">
   <link rel="stylesheet" href="style.css?v=20260614-fix-assets-2">
-  <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260614-png-home-1">
+  <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260614-png-clean-1">
   <style>
-    .visual-panel.has-image{position:relative;overflow:hidden;padding:0;isolation:isolate;background:#0f3d2e}
-    .visual-panel.has-image::before,.visual-panel.has-image::after{display:none}
-    .visual-panel.has-image .visual-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0}
-    .visual-panel.has-image .visual-content{position:relative;z-index:1;align-self:end;margin:1rem;padding:1rem;border:1px solid #ffffff33;border-radius:22px;background:linear-gradient(135deg,#09251ee8,#0f3d2ed8);box-shadow:0 16px 34px #00000026;backdrop-filter:blur(8px)}
-    .visual-panel.light.has-image .visual-content{background:linear-gradient(135deg,#fffffff2,#eef8f1e8);color:#0f3d2e;border-color:#dbe8df}
-    .home-hero-banner.has-image{min-height:clamp(320px,38vw,460px)}
-    .featured-banner .visual-panel.has-image,.vstory-card .visual-panel.has-image{min-height:260px}
+    .visual-image-frame{width:100%;margin:0;padding:0;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.14)}
+    .visual-image-frame .visual-image{display:block;width:100%;height:auto;max-height:none;object-fit:contain;object-position:center;border-radius:24px;background:#fff}
+    .hero-banner-image{align-self:center;background:#f8fbf8}
+    .article-banner,.comic-banner{align-self:center;background:#f8fbf8}
+    .featured-banner,.vstory-card{gap:clamp(1rem,2.2vw,1.35rem)}
+    @media(max-width:920px){.hero-banner-image{order:-1}.visual-image-frame{border-radius:20px}.visual-image-frame .visual-image{border-radius:20px}}
   </style>
 </head>
 <body>
@@ -67,30 +66,18 @@
             <span>Konten amanah</span>
           </div>
         </div>
-        <div class="home-hero-banner visual-panel dark has-image" role="img" aria-label="Banner utama VitaNusa AI">
+        <figure class="visual-image-frame hero-banner-image">
           <img class="visual-image" src="images/banner-home.png" alt="Banner home VitaNusa AI">
-          <div class="visual-content">
-            <span class="visual-badge">VitaNusa AI</span>
-            <div class="visual-title">Belajar sehat dengan tenang</div>
-            <p class="visual-sub">Edukasi digital, cek kebiasaan, artikel, komik, game, dan katalog produk yang tidak berlebihan.</p>
-            <div class="visual-icons" aria-hidden="true"><span>AI</span><span>✓</span><span>☘</span></div>
-          </div>
-        </div>
+        </figure>
       </div>
     </section>
 
     <section class="sec">
       <div class="wrap">
         <a class="featured-banner card" href="articles/ai-untuk-edukasi-kesehatan.html">
-          <div class="visual-panel light has-image" role="img" aria-label="Ilustrasi artikel AI untuk Edukasi Kesehatan">
+          <figure class="visual-image-frame article-banner">
             <img class="visual-image" src="images/artikel-vitanusa Ai.png" alt="Ilustrasi artikel VitaNusa AI">
-            <div class="visual-content">
-              <span class="visual-badge">Artikel</span>
-              <div class="visual-title">AI untuk Edukasi Kesehatan</div>
-              <p class="visual-sub">Teknologi membantu menjelaskan, bukan menggantikan tenaga kesehatan.</p>
-              <div class="visual-icons" aria-hidden="true"><span>AI</span><span>?</span><span>✓</span></div>
-            </div>
-          </div>
+          </figure>
           <div>
             <span class="article-category">Artikel Pilihan</span>
             <h2>AI untuk Edukasi Kesehatan</h2>
@@ -172,15 +159,9 @@
             <p>Komik pendek tentang memilih informasi produk kesehatan dengan lebih bijak.</p>
             <a class="btn primary" href="komik/jangan-tergoda-klaim-berlebihan.html/">Baca Komik</a>
           </div>
-          <div class="visual-panel dark has-image" role="img" aria-label="Banner komik VitaStory">
+          <figure class="visual-image-frame comic-banner">
             <img class="visual-image" src="images/banner-komik.png" alt="Banner komik VitaStory">
-            <div class="visual-content">
-              <span class="visual-badge">VitaStory</span>
-              <div class="visual-title">Jangan Tergoda Klaim Berlebihan!</div>
-              <p class="visual-sub">Komik edukatif untuk membaca promosi kesehatan dengan tenang.</p>
-              <div class="visual-icons" aria-hidden="true"><span>📖</span><span>!</span><span>✓</span></div>
-            </div>
-          </div>
+          </figure>
         </article>
       </div>
     </section>
