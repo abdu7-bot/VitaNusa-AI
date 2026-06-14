@@ -1,8 +1,7 @@
 /* VitaNusa AI visual fix and image layout matching
    Fokus: logo, hero visual, featured card, VitaStory, dan kartu produk. */
 
-img,
-svg {
+img {
   max-width: 100%;
   display: block;
 }
