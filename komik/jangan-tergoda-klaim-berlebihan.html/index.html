@@ -2,28 +2,35 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>VitaStory | VitaNusa AI</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>VitaStory | Jangan Tergoda Klaim Berlebihan</title>
+  <meta name="description" content="Komik edukatif VitaNusa AI tentang membaca klaim produk kesehatan dengan lebih bijak.">
   <style>
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#07130f;color:#eef8f1;line-height:1.6}
     a{color:inherit;text-decoration:none}
     img{display:block;max-width:100%}
-    .top{position:sticky;top:0;z-index:5;background:#07130fe8;border-bottom:1px solid #ffffff20;backdrop-filter:blur(12px)}
-    .nav{width:min(94%,1100px);margin:auto;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
-    .brand{display:flex;align-items:center;gap:.65rem;font-weight:900}
-    .brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;padding:3px}
-    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#18734f;color:#fff;padding:.65rem .95rem;font-weight:800}
-    main{width:min(94%,980px);margin:auto;padding:28px 0 42px}
-    .hero{margin-bottom:1rem;padding:1rem;border:1px solid #ffffff20;border-radius:22px;background:#0f241c}
-    h1{margin:.2rem 0;font-size:clamp(1.6rem,5vw,3rem);line-height:1.05}
-    .note{color:#c7ddcf;margin:.4rem 0 0}
+    .top{position:sticky;top:0;z-index:10;background:#07130ff2;border-bottom:1px solid #ffffff18;backdrop-filter:blur(14px)}
+    .nav{width:min(94%,980px);margin:auto;min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:.85rem}
+    .brand{display:flex;align-items:center;gap:.65rem;font-weight:900;line-height:1.15}
+    .brand img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:14px;padding:3px;box-shadow:0 8px 22px #0004}
+    .brand small{display:block;color:#c7ddcf;font-weight:700}
+    .btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:#18734f;color:#fff;padding:.64rem .95rem;font-weight:850;box-shadow:0 10px 24px #0003}
+    main{width:min(94%,980px);margin:auto;padding:24px 0 44px}
+    .hero{margin:0 0 1rem;padding:1rem;border:1px solid #ffffff18;border-radius:24px;background:linear-gradient(135deg,#0f241c,#0f3d2e);box-shadow:0 18px 50px #0005}
+    .eyebrow{display:inline-flex;border-radius:999px;background:#ffe0a4;color:#09251e;padding:.35rem .65rem;font-weight:900;font-size:.86rem}
+    h1{margin:.75rem 0 .35rem;font-size:clamp(1.65rem,6vw,3.25rem);line-height:1.04}
+    .note{color:#c7ddcf;margin:.35rem 0 0;max-width:68ch}
+    .panel-nav{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+    .panel-nav a{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:42px;border-radius:999px;background:#0f241c;border:1px solid #ffffff20;color:#ffe0a4;font-weight:900}
     .panels{display:grid;gap:1rem}
-    figure{margin:0;padding:.6rem;border:1px solid #ffffff20;border-radius:22px;background:#0f241c;box-shadow:0 18px 50px #0006}
-    figure img{width:100%;height:auto;border-radius:16px;background:#fff;object-fit:contain}
-    figcaption{padding:.55rem .25rem 0;color:#c7ddcf;font-weight:800}
-    footer{padding:24px 0;text-align:center;color:#c7ddcf}
-    @media(max-width:680px){.nav{width:92%}.brand small{display:none}main{width:100%;padding-top:0}.hero,figure{border-radius:0;border-left:0;border-right:0}.btn{padding:.55rem .75rem}}
+    figure{margin:0;padding:.65rem;border:1px solid #ffffff18;border-radius:24px;background:#0f241c;box-shadow:0 18px 50px #0006;overflow:hidden}
+    figure img{width:100%;height:auto;border-radius:18px;background:#fff;object-fit:contain;object-position:center}
+    figcaption{padding:.7rem .25rem 0;color:#c7ddcf;font-weight:850}
+    .caption-title{color:#ffe0a4}
+    footer{padding:26px 0;text-align:center;color:#c7ddcf}
+    @media(max-width:680px){.nav{width:92%;min-height:58px}.brand small{display:none}.btn{padding:.55rem .75rem}main{width:100%;padding:0 0 34px}.hero{border-radius:0;border-left:0;border-right:0;margin-bottom:.6rem}.panel-nav{padding:0 .75rem}.panels{gap:.65rem}figure{border-radius:0;border-left:0;border-right:0;padding:.35rem}figure img{border-radius:12px}figcaption{padding:.55rem .4rem .1rem;font-size:.92rem}}
   </style>
 </head>
 <body>
@@ -31,7 +38,7 @@
     <div class="nav">
       <a class="brand" href="../../index.html#vitastory">
         <img src="../../images/logo-vitanusa-Ai.png" alt="Logo VitaNusa AI">
-        <span>VitaNusa AI<br><small>VitaStory</small></span>
+        <span>VitaNusa AI<small>VitaStory</small></span>
       </a>
       <a class="btn" href="../../index.html#vitastory">Kembali</a>
     </div>
@@ -39,31 +46,39 @@
 
   <main>
     <section class="hero">
-      <p>VitaStory</p>
+      <span class="eyebrow">Komik Edukatif</span>
       <h1>Jangan Tergoda Klaim Berlebihan!</h1>
-      <p class="note">Halaman ini sekarang memanggil file panel dalam format PNG.</p>
+      <p class="note">Baca panel dari atas ke bawah. Komik ini bersifat edukatif, bukan diagnosis dan bukan janji kesembuhan.</p>
     </section>
 
+    <nav class="panel-nav" aria-label="Navigasi panel komik">
+      <a href="#panel-1">1</a>
+      <a href="#panel-2">2</a>
+      <a href="#panel-3">3</a>
+      <a href="#panel-4">4</a>
+      <a href="#panel-5">5</a>
+    </nav>
+
     <section class="panels" aria-label="Panel komik VitaStory">
-      <figure>
-        <img src="../jangan-tergoda-klaim-berlebihan/panel-1.png" alt="Panel 1 komik VitaStory">
-        <figcaption>Panel 1</figcaption>
+      <figure id="panel-1">
+        <img src="../jangan-tergoda-klaim-berlebihan/panel-1.svg" alt="Panel 1 komik VitaStory: Alya melihat klaim produk">
+        <figcaption><span class="caption-title">Panel 1:</span> Promosi yang terlalu manis perlu dibaca dengan hati-hati.</figcaption>
       </figure>
-      <figure>
-        <img src="../jangan-tergoda-klaim-berlebihan/panel-2.png" alt="Panel 2 komik VitaStory">
-        <figcaption>Panel 2</figcaption>
+      <figure id="panel-2">
+        <img src="../jangan-tergoda-klaim-berlebihan/panel-2.svg" alt="Panel 2 komik VitaStory: testimoni belum tentu bukti">
+        <figcaption><span class="caption-title">Panel 2:</span> Viral dan ramai komentar belum tentu menjadi bukti yang cukup.</figcaption>
       </figure>
-      <figure>
-        <img src="../jangan-tergoda-klaim-berlebihan/panel-3.png" alt="Panel 3 komik VitaStory">
-        <figcaption>Panel 3</figcaption>
+      <figure id="panel-3">
+        <img src="../jangan-tergoda-klaim-berlebihan/panel-3.svg" alt="Panel 3 komik VitaStory: Kak Nusa mengingatkan untuk cek dulu">
+        <figcaption><span class="caption-title">Panel 3:</span> Tenang sejenak, cek informasi, jangan menelan klaim mentah-mentah.</figcaption>
       </figure>
-      <figure>
-        <img src="../jangan-tergoda-klaim-berlebihan/panel-4.png" alt="Panel 4 komik VitaStory">
-        <figcaption>Panel 4</figcaption>
+      <figure id="panel-4">
+        <img src="../jangan-tergoda-klaim-berlebihan/panel-4.svg" alt="Panel 4 komik VitaStory: bandingkan klaim dengan label dan sumber resmi">
+        <figcaption><span class="caption-title">Panel 4:</span> Bandingkan klaim dengan label, izin, dan sumber yang dapat dipercaya.</figcaption>
       </figure>
-      <figure>
-        <img src="../jangan-tergoda-klaim-berlebihan/panel-5.png" alt="Panel 5 komik VitaStory">
-        <figcaption>Panel 5</figcaption>
+      <figure id="panel-5">
+        <img src="../jangan-tergoda-klaim-berlebihan/panel-5.svg" alt="Panel 5 komik VitaStory: pilih produk dengan ilmu">
+        <figcaption><span class="caption-title">Panel 5:</span> Pilih produk dengan ilmu, bukan panik atau janji instan.</figcaption>
       </figure>
     </section>
   </main>
