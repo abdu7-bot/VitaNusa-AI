@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" role="img" aria-labelledby="title desc">
+  <title id="title">Panel 4 - Bandingkan dengan sumber resmi</title>
+  <desc id="desc">Alya belajar membandingkan klaim promosi dengan label, informasi resmi, dan sumber yang dapat dipercaya.</desc>
+  <rect width="1080" height="1440" fill="#f6fbf7"/>
+  <rect x="54" y="54" width="972" height="1332" rx="56" fill="#ffffff" stroke="#dbe8df" stroke-width="6"/>
+  <rect x="110" y="105" width="860" height="150" rx="36" fill="#18734f"/>
+  <text x="150" y="190" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="56" font-weight="900" fill="#ffe0a4">Panel 4</text>
+  <text x="150" y="245" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="34" fill="#eef8f1">Cek label dan sumber resmi</text>
+  <g transform="translate(150 355)">
+    <rect width="330" height="430" rx="38" fill="#eef8f1" stroke="#dbe8df" stroke-width="4"/>
+    <text x="52" y="85" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="34" font-weight="900" fill="#0f3d2e">LABEL</text>
+    <rect x="52" y="130" width="220" height="18" rx="9" fill="#18734f" opacity="0.30"/>
+    <rect x="52" y="174" width="180" height="18" rx="9" fill="#18734f" opacity="0.25"/>
+    <rect x="52" y="218" width="230" height="18" rx="9" fill="#18734f" opacity="0.22"/>
+    <rect x="52" y="295" width="180" height="58" rx="29" fill="#ffe0a4"/>
+    <text x="82" y="333" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="24" font-weight="850" fill="#09251e">Cek KLIK</text>
+  </g>
+  <g transform="translate(585 355)">
+    <rect width="330" height="430" rx="38" fill="#0f3d2e"/>
+    <text x="52" y="85" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="34" font-weight="900" fill="#ffe0a4">SUMBER</text>
+    <circle cx="165" cy="205" r="88" fill="#ffffff" opacity="0.12"/>
+    <path d="M118 205h94M165 158v94" stroke="#ffffff" stroke-width="24" stroke-linecap="round"/>
+    <rect x="52" y="330" width="225" height="22" rx="11" fill="#eef8f1" opacity="0.75"/>
+  </g>
+  <text x="165" y="950" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="42" font-weight="850" fill="#0f3d2e">Alya mulai membandingkan</text>
+  <text x="165" y="1012" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="36" fill="#293a31">klaim promosi dengan label, izin,</text>
+  <text x="165" y="1066" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="36" fill="#293a31">dan sumber yang dapat dipercaya.</text>
+  <rect x="165" y="1180" width="750" height="92" rx="46" fill="#fff4d6"/>
+  <text x="205" y="1238" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800" fill="#5d4210">Beli dengan ilmu, bukan panik.</text>
+</svg>
