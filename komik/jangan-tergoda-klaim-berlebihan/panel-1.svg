@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" role="img" aria-labelledby="title desc">
+  <title id="title">Panel 1 - Alya melihat klaim produk</title>
+  <desc id="desc">Alya melihat promosi produk kesehatan di ponsel dan tertarik pada klaim yang terdengar menjanjikan.</desc>
+  <rect width="1080" height="1440" fill="#eef8f1"/>
+  <rect x="54" y="54" width="972" height="1332" rx="56" fill="#ffffff" stroke="#dbe8df" stroke-width="6"/>
+  <rect x="110" y="105" width="860" height="150" rx="36" fill="#0f3d2e"/>
+  <text x="150" y="190" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="56" font-weight="900" fill="#ffe0a4">Panel 1</text>
+  <text x="150" y="245" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="34" fill="#eef8f1">Promosi yang terlalu manis</text>
+  <circle cx="300" cy="510" r="92" fill="#ffe0a4"/>
+  <path d="M210 735c28-110 152-110 180 0" fill="#18734f"/>
+  <rect x="570" y="360" width="250" height="430" rx="38" fill="#07130f"/>
+  <rect x="595" y="395" width="200" height="355" rx="24" fill="#ffffff"/>
+  <rect x="620" y="430" width="150" height="36" rx="18" fill="#18734f"/>
+  <text x="620" y="530" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="32" font-weight="900" fill="#0f3d2e">100%</text>
+  <text x="620" y="580" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="27" fill="#52645b">cepat?</text>
+  <path d="M165 935h750" stroke="#18734f" stroke-width="24" stroke-linecap="round" opacity="0.18"/>
+  <text x="165" y="1010" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="42" font-weight="850" fill="#0f3d2e">Alya melihat iklan produk</text>
+  <text x="165" y="1072" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="36" fill="#293a31">yang klaimnya terdengar sangat</text>
+  <text x="165" y="1126" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="36" fill="#293a31">menjanjikan dan instan.</text>
+  <rect x="165" y="1215" width="750" height="84" rx="42" fill="#fff4d6"/>
+  <text x="205" y="1269" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="30" font-weight="750" fill="#5d4210">Bijak dulu sebelum percaya.</text>
+</svg>
