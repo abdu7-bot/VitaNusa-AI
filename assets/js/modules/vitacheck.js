@@ -1,4 +1,5 @@
 const QUESTION_IDS = ['tidur', 'air', 'makan', 'gerak'];
+const STORAGE_KEY = 'vitanusa-vitacheck-result';
 
 const RESULT_COPY = {
   strong: {
@@ -50,6 +51,74 @@ function renderFocusList(listElement, items) {
   );
 }
 
+function animateScore(element, nextScore) {
+  const startScore = Number(element.textContent) || 0;
+  const duration = 520;
+  const startTime = performance.now();
+
+  element.classList.add('vn-score-pop');
+
+  function tick(now) {
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(startScore + (nextScore - startScore) * eased);
+
+    element.textContent = String(value);
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      element.textContent = String(nextScore);
+      window.setTimeout(() => element.classList.remove('vn-score-pop'), 160);
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function saveResult(payload) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // localStorage mungkin tidak tersedia di beberapa mode browser.
+  }
+}
+
+function readSavedResult() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.score !== 'number') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function renderResult(output, score, result, { animate = true } = {}) {
+  if (animate) {
+    animateScore(output.score, score);
+  } else {
+    output.score.textContent = String(score);
+  }
+
+  output.status.textContent = result.status;
+  output.summary.textContent = result.summary;
+  renderFocusList(output.focus, result.focus);
+}
+
+function buildSavedNote(form, saved) {
+  if (!saved) return null;
+
+  const note = document.createElement('p');
+  note.className = 'note';
+  note.textContent = `Hasil terakhir tersimpan: skor ${saved.score}/100. Isi ulang VitaCheck kapan saja untuk memperbarui fokus mingguan.`;
+
+  form.insertAdjacentElement('afterend', note);
+  return note;
+}
+
 export function initVitaCheck({ formSelector = '#form' } = {}) {
   const form = document.querySelector(formSelector);
   if (!form) return null;
@@ -63,18 +132,42 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
 
   if (!output.score || !output.status || !output.summary || !output.focus) return null;
 
-  form.addEventListener('submit', (event) => {
+  const saved = readSavedResult();
+  const savedNote = buildSavedNote(form, saved);
+
+  if (saved) {
+    renderResult(output, saved.score, getResultCopy(saved.score), { animate: false });
+  }
+
+  const handleSubmit = (event) => {
     event.preventDefault();
 
     const values = getQuestionValues(QUESTION_IDS);
     const score = calculateScore(values);
     const result = getResultCopy(score);
 
-    output.score.textContent = String(score);
-    output.status.textContent = result.status;
-    output.summary.textContent = result.summary;
-    renderFocusList(output.focus, result.focus);
-  });
+    renderResult(output, score, result, { animate: true });
 
-  return { calculateScore, getResultCopy };
+    const payload = {
+      score,
+      values,
+      createdAt: new Date().toISOString(),
+    };
+
+    saveResult(payload);
+
+    if (savedNote) {
+      savedNote.textContent = `Hasil terbaru tersimpan: skor ${score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`;
+    }
+  };
+
+  form.addEventListener('submit', handleSubmit);
+
+  return {
+    calculateScore,
+    getResultCopy,
+    destroy() {
+      form.removeEventListener('submit', handleSubmit);
+    },
+  };
 }
