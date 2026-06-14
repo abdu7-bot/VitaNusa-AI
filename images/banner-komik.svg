@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Banner komik VitaStory</title>
+  <desc id="desc">Banner komik edukatif VitaNusa AI tentang klaim kesehatan berlebihan.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#07130f"/>
+      <stop offset="50%" stop-color="#0f3d2e"/>
+      <stop offset="100%" stop-color="#18734f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="54" fill="url(#bg)"/>
+  <circle cx="1020" cy="130" r="145" fill="#ffe0a4" opacity="0.16"/>
+  <circle cx="150" cy="610" r="210" fill="#ffffff" opacity="0.09"/>
+  <g transform="translate(95 110)">
+    <rect width="330" height="500" rx="34" fill="#fff4d6"/>
+    <rect x="30" y="34" width="270" height="138" rx="24" fill="#18734f"/>
+    <rect x="30" y="200" width="270" height="120" rx="24" fill="#ffffff"/>
+    <rect x="30" y="348" width="270" height="118" rx="24" fill="#ffffff"/>
+    <circle cx="91" cy="103" r="34" fill="#ffe0a4"/>
+    <rect x="145" y="75" width="120" height="20" rx="10" fill="#eef8f1"/>
+    <rect x="145" y="113" width="88" height="20" rx="10" fill="#eef8f1"/>
+    <path d="M81 247h154M81 285h190M81 395h150M81 433h185" stroke="#18734f" stroke-width="18" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(500 175)">
+    <text x="0" y="0" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="46" font-weight="900" fill="#ffe0a4">VitaStory</text>
+    <text x="0" y="72" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Jangan Tergoda</text>
+    <text x="0" y="138" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="58" font-weight="900" fill="#ffffff">Klaim Berlebihan!</text>
+    <text x="0" y="205" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="25" fill="#eef8f1">Komik edukatif untuk membaca promosi kesehatan dengan tenang dan kritis.</text>
+    <rect x="0" y="265" width="290" height="62" rx="31" fill="#ffe0a4"/>
+    <text x="34" y="305" font-family="system-ui, -apple-system, Segoe UI, Arial, sans-serif" font-size="24" font-weight="850" fill="#09251e">Baca dengan bijak</text>
+  </g>
+</svg>
