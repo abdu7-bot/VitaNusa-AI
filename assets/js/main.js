@@ -1,6 +1,6 @@
-import { initMobileNavigation } from './modules/nav.js';
-import { initPremiumUI } from './modules/premium-ui.js';
-import { initVitaCheck } from './modules/vitacheck.js';
+import { initMobileNavigation } from './modules/nav.js?v=20260614-audit-1';
+import { initPremiumUI } from './modules/premium-ui.js?v=20260614-audit-1';
+import { initVitaCheck } from './modules/vitacheck.js?v=20260614-audit-1';
 
 const modules = [
   ['Premium UI', initPremiumUI],
@@ -15,7 +15,7 @@ function bootVitaNusa() {
     try {
       init();
     } catch (error) {
-      console.warn(`[VitaNusa AI] Modul ${name} gagal dimuat:`, error);
+      console.warn(`[VitaNusa AI] Module ${name} gagal dimuat:`, error);
     }
   }
 }
