@@ -1,7 +1,500 @@
-/* VitaNusa AI visual fix and compact UI upgrade */
-img,svg{max-width:100%;display:block}
-.navbar{padding:.72rem 0;gap:.75rem}.brand-logo{width:50px;height:50px;flex-basis:50px}.menu-toggle{padding:.56rem .78rem;font-size:.9rem}.main-nav a{padding:.42rem .6rem;font-size:.94rem}.sec{padding:58px 0}.btn{padding:.58rem .82rem;min-height:38px;font-size:.92rem;line-height:1.2}.actions,.article-actions{gap:.52rem}.trust{gap:.5rem}.trust span{padding:.38rem .62rem;font-size:.9rem}.card,.cards article,details,.article-card{padding:1.05rem}.score span{font-size:2.75rem}.float{width:50px;height:50px}.hero h1{font-size:clamp(2rem,5vw,3.75rem)}
-.visual-panel{position:relative;min-height:260px;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#0f3d2e,#18734f 60%,#2bbb7f);box-shadow:0 18px 45px #0002;display:grid;place-items:center;padding:1rem;color:#fff}.visual-panel.light{background:linear-gradient(135deg,#eef8f1,#fff,#fff4d6);color:#0f3d2e;border:1px solid #dbe8df}.visual-panel.dark{background:linear-gradient(135deg,#07130f,#0f3d2e,#18734f)}.visual-panel:before{content:"";position:absolute;inset:auto -80px -100px auto;width:260px;height:260px;border-radius:50%;background:#ffe0a4;opacity:.18}.visual-panel:after{content:"";position:absolute;inset:-70px auto auto -80px;width:220px;height:220px;border-radius:50%;background:#fff;opacity:.1}.visual-content{position:relative;z-index:1;display:grid;gap:.7rem;justify-items:start;width:100%}.visual-badge{display:inline-flex;border-radius:999px;padding:.35rem .65rem;background:#ffe0a4;color:#09251e;font-weight:900;font-size:.84rem}.visual-title{font-size:clamp(1.6rem,4vw,3rem);font-weight:950;line-height:1.02}.visual-sub{max-width:48ch;color:inherit;opacity:.9}.visual-icons{display:flex;gap:.55rem;flex-wrap:wrap}.visual-icons span{display:grid;place-items:center;width:46px;height:46px;border-radius:16px;background:#ffffff1d;border:1px solid #ffffff33;font-weight:900}.visual-panel.light .visual-icons span{background:#eef8f1;border-color:#dbe8df}.home-hero-banner,.featured-banner,.vstory-card{overflow:hidden}.featured-banner{display:grid;grid-template-columns:1.05fr .95fr;gap:1rem;align-items:center}.featured-banner .visual-panel{min-height:250px}.vstory-card{display:grid;grid-template-columns:1fr .9fr;gap:1rem;align-items:center}.vstory-card .visual-panel{min-height:240px}
-@media(max-width:920px){.featured-banner,.vstory-card{grid-template-columns:1fr}.main-nav a{padding:.62rem .55rem;font-size:.9rem}.home-hero-banner{order:-1}}
-@media(max-width:680px){.navbar{padding:.62rem 0}.brand-logo{width:46px;height:46px;flex-basis:46px}.sec{padding:44px 0}.btn{padding:.55rem .76rem;min-height:36px;font-size:.9rem}.visual-panel{min-height:210px;border-radius:20px}.visual-title{font-size:clamp(1.45rem,8vw,2.2rem)}.visual-icons span{width:40px;height:40px;border-radius:14px}}
-@media(max-width:430px){.actions .btn,.article-actions .btn{width:100%}}
+/* VitaNusa AI visual fix and image layout matching
+   Fokus: logo, hero visual, featured card, VitaStory, dan kartu produk. */
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+:root {
+  --vn-green-deep: #09251e;
+  --vn-green-dark: #0f3d2e;
+  --vn-green: #18734f;
+  --vn-green-soft: #eef8f1;
+  --vn-gold: #ffe0a4;
+  --vn-border: #dbe8df;
+  --vn-text: #15251e;
+  --vn-muted: #52645b;
+}
+
+/* Header lebih rapi dengan logo gambar yang memang sudah ada di repo. */
+.navbar {
+  padding: .72rem 0;
+  gap: .85rem;
+}
+
+.brand {
+  min-width: min(330px, 52vw);
+  gap: .65rem;
+}
+
+.brand-logo {
+  width: clamp(128px, 18vw, 190px);
+  height: 54px;
+  flex: 0 0 clamp(128px, 18vw, 190px);
+  object-fit: cover;
+  object-position: center;
+  border-radius: 16px;
+  background: #fff;
+  padding: 0;
+  box-shadow: 0 8px 22px #0000001a;
+}
+
+.brand span {
+  min-width: 0;
+}
+
+.brand strong {
+  color: var(--vn-green-deep);
+}
+
+.brand small {
+  color: var(--vn-muted);
+}
+
+.menu-toggle {
+  padding: .56rem .78rem;
+  font-size: .9rem;
+}
+
+.main-nav a {
+  padding: .42rem .6rem;
+  font-size: .94rem;
+}
+
+.sec {
+  padding: 58px 0;
+}
+
+.btn {
+  padding: .58rem .82rem;
+  min-height: 38px;
+  font-size: .92rem;
+  line-height: 1.2;
+}
+
+.actions,
+.article-actions {
+  gap: .52rem;
+}
+
+.trust {
+  gap: .5rem;
+}
+
+.trust span {
+  padding: .38rem .62rem;
+  font-size: .9rem;
+}
+
+.card,
+.cards article,
+details,
+.article-card {
+  padding: 1.05rem;
+}
+
+.score span {
+  font-size: 2.75rem;
+}
+
+.float {
+  width: 50px;
+  height: 50px;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.75rem);
+}
+
+.hero-grid {
+  gap: clamp(1rem, 3vw, 2rem);
+}
+
+/* Panel visual umum */
+.visual-panel {
+  position: relative;
+  min-height: 260px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f3d2e, #18734f 60%, #2bbb7f);
+  box-shadow: 0 18px 45px #0002;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  color: #fff;
+  isolation: isolate;
+}
+
+.visual-panel.light {
+  background: linear-gradient(135deg, #eef8f1, #fff, #fff4d6);
+  color: var(--vn-green-dark);
+  border: 1px solid var(--vn-border);
+}
+
+.visual-panel.dark {
+  background: linear-gradient(135deg, #07130f, #0f3d2e, #18734f);
+}
+
+.visual-panel::before {
+  content: "";
+  position: absolute;
+  inset: auto -80px -100px auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: var(--vn-gold);
+  opacity: .18;
+  z-index: -1;
+}
+
+.visual-panel::after {
+  content: "";
+  position: absolute;
+  inset: -70px auto auto -80px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: .10;
+  z-index: -1;
+}
+
+.visual-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: .7rem;
+  justify-items: start;
+  width: 100%;
+}
+
+.visual-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: .35rem .65rem;
+  background: var(--vn-gold);
+  color: var(--vn-green-deep);
+  font-weight: 900;
+  font-size: .84rem;
+}
+
+.visual-title {
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  font-weight: 950;
+  line-height: 1.02;
+}
+
+.visual-sub {
+  max-width: 48ch;
+  color: inherit;
+  opacity: .9;
+}
+
+.visual-icons {
+  display: flex;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+
+.visual-icons span {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 .55rem;
+  border-radius: 16px;
+  background: #ffffff1d;
+  border: 1px solid #ffffff33;
+  font-weight: 900;
+}
+
+.visual-panel.light .visual-icons span {
+  background: var(--vn-green-soft);
+  border-color: var(--vn-border);
+}
+
+/* Hero: pakai logo gambar asli sebagai visual utama, bukan kotak kosong. */
+.home-hero-banner,
+.featured-banner,
+.vstory-card {
+  overflow: hidden;
+}
+
+.home-hero-banner {
+  min-height: clamp(310px, 38vw, 430px);
+  align-content: end;
+  justify-items: stretch;
+  padding: clamp(.9rem, 2vw, 1.25rem);
+  background:
+    radial-gradient(circle at 18% 18%, #ffffff20 0 16%, transparent 17%),
+    linear-gradient(135deg, #07130f, #0f3d2e 48%, #18734f);
+}
+
+.home-hero-banner::before {
+  inset: clamp(1rem, 2vw, 1.5rem);
+  width: auto;
+  height: auto;
+  border-radius: 26px;
+  background: #fff url("../../images/logo-vitanusa-Ai.png") center / cover no-repeat;
+  opacity: .96;
+  box-shadow: inset 0 0 0 1px #ffffff, 0 18px 45px #00000026;
+  z-index: -2;
+}
+
+.home-hero-banner::after {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  background: linear-gradient(180deg, transparent 35%, #07130fe6 100%);
+  opacity: 1;
+  z-index: -1;
+}
+
+.home-hero-banner .visual-content {
+  align-self: end;
+  max-width: 560px;
+  padding: clamp(.85rem, 2vw, 1.15rem);
+  border: 1px solid #ffffff2e;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #09251ee6, #0f3d2ecf);
+  box-shadow: 0 16px 34px #0000001f;
+  backdrop-filter: blur(8px);
+}
+
+.home-hero-banner .visual-title {
+  font-size: clamp(1.45rem, 3.6vw, 2.55rem);
+}
+
+.home-hero-banner .visual-sub {
+  margin: 0;
+}
+
+/* Featured article dan VitaStory dibuat seimbang: gambar/visual tidak terlalu berat sebelah. */
+.featured-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  gap: clamp(1rem, 2.2vw, 1.35rem);
+  align-items: center;
+  text-decoration: none;
+}
+
+.featured-banner .visual-panel {
+  min-height: 250px;
+}
+
+.featured-banner .visual-panel.light::after {
+  inset: 12px;
+  width: auto;
+  height: auto;
+  border-radius: 22px;
+  background: url("../../images/logo-vitanusa-Ai.png") center / cover no-repeat;
+  opacity: .08;
+}
+
+.vstory-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .9fr);
+  gap: clamp(1rem, 2.2vw, 1.35rem);
+  align-items: center;
+}
+
+.vstory-card .visual-panel {
+  min-height: 240px;
+}
+
+/* Produk: gambar square promosi tetap terbaca, tidak gepeng, tidak lompat tinggi. */
+.product-card {
+  display: grid;
+  gap: .85rem;
+  align-content: start;
+}
+
+.prod,
+.play {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  border-radius: 18px;
+  background: var(--vn-green-dark);
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 900;
+}
+
+.prod {
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  background: linear-gradient(180deg, #fff, #f8fbf8);
+  border: 1px solid var(--vn-border);
+  overflow: hidden;
+  padding: .55rem;
+  color: var(--vn-text);
+  font-size: 1rem;
+}
+
+.product-photo {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  object-position: center;
+  background: #fff;
+  border-radius: 16px;
+  padding: .25rem;
+  box-shadow: 0 10px 24px #00000010;
+}
+
+.product-card h3 {
+  margin: .15rem 0 0;
+}
+
+.product-card p {
+  margin: 0;
+}
+
+.product-card .note {
+  align-self: stretch;
+}
+
+/* Blog/action button tidak saling tindih pada layar kecil. */
+.article-card {
+  gap: .7rem;
+}
+
+.article-actions .btn {
+  white-space: normal;
+}
+
+@media (max-width: 1050px) {
+  .brand {
+    min-width: 250px;
+  }
+
+  .brand-logo {
+    width: 148px;
+    flex-basis: 148px;
+  }
+
+  .main-nav a {
+    font-size: .9rem;
+    padding-inline: .52rem;
+  }
+}
+
+@media (max-width: 920px) {
+  .featured-banner,
+  .vstory-card {
+    grid-template-columns: 1fr;
+  }
+
+  .main-nav a {
+    padding: .62rem .55rem;
+    font-size: .9rem;
+  }
+
+  .home-hero-banner {
+    order: -1;
+  }
+
+  .brand {
+    min-width: 0;
+    max-width: calc(100% - 116px);
+  }
+}
+
+@media (max-width: 680px) {
+  .navbar {
+    padding: .62rem 0;
+  }
+
+  .brand {
+    gap: .5rem;
+  }
+
+  .brand-logo {
+    width: 108px;
+    height: 46px;
+    flex-basis: 108px;
+    border-radius: 14px;
+  }
+
+  .brand strong {
+    font-size: .95rem;
+  }
+
+  .brand small {
+    font-size: .72rem;
+  }
+
+  .sec {
+    padding: 44px 0;
+  }
+
+  .btn {
+    padding: .55rem .76rem;
+    min-height: 36px;
+    font-size: .9rem;
+  }
+
+  .visual-panel {
+    min-height: 210px;
+    border-radius: 20px;
+  }
+
+  .home-hero-banner {
+    min-height: 360px;
+  }
+
+  .home-hero-banner::before {
+    inset: .7rem;
+    border-radius: 20px;
+  }
+
+  .home-hero-banner .visual-content {
+    padding: .82rem;
+    border-radius: 18px;
+  }
+
+  .visual-title {
+    font-size: clamp(1.45rem, 8vw, 2.2rem);
+  }
+
+  .visual-icons span {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+
+  .prod {
+    padding: .45rem;
+  }
+
+  .product-photo {
+    border-radius: 14px;
+    padding: .2rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .actions .btn,
+  .article-actions .btn {
+    width: 100%;
+  }
+
+  .brand-logo {
+    width: 92px;
+    flex-basis: 92px;
+  }
+
+  .brand strong {
+    font-size: .88rem;
+  }
+
+  .brand small {
+    display: none;
+  }
+}
