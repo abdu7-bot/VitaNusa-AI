@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">VitaStory Komik Edukatif</title>
+  <desc id="desc">Banner komik edukatif VitaNusa AI</desc>
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#07130f"/><stop offset="0.55" stop-color="#0f3d2e"/><stop offset="1" stop-color="#18734f"/></linearGradient></defs>
+  <rect width="1200" height="675" rx="42" fill="url(#g)"/>
+  <rect x="84" y="80" width="1032" height="515" rx="34" fill="#ffffff" opacity="0.08" stroke="#ffffff" stroke-opacity="0.22"/>
+  <text x="120" y="165" fill="#ffe0a4" font-family="Arial, sans-serif" font-size="34" font-weight="900">VitaStory</text>
+  <text x="120" y="260" fill="#ffffff" font-family="Arial, sans-serif" font-size="60" font-weight="900">Jangan Tergoda</text>
+  <text x="120" y="330" fill="#ffffff" font-family="Arial, sans-serif" font-size="60" font-weight="900">Klaim Berlebihan</text>
+  <text x="124" y="405" fill="#eaf8ef" font-family="Arial, sans-serif" font-size="27">Beli dengan ilmu, bukan karena panik.</text>
+  <g transform="translate(800 180)">
+    <rect x="0" y="0" width="260" height="330" rx="32" fill="#fff"/>
+    <rect x="30" y="34" width="200" height="90" rx="20" fill="#fff4d6"/>
+    <rect x="30" y="150" width="200" height="130" rx="20" fill="#eef8f1"/>
+    <path d="M66 83h128M70 202h116M70 238h82" stroke="#18734f" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="198" cy="238" r="22" fill="#2bbb7f"/>
+  </g>
+</svg>
