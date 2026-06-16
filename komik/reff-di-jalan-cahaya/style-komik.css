@@ -178,7 +178,7 @@ body::after {
 /* === Garis Pemisah Antar Panel Premium === */
 .panel-line {
   width: 100%;
-  height: 26px;
+  height: 2px;
   border: none;
   margin: 0;
   background:
