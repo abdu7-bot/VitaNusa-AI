@@ -13,6 +13,7 @@
 
   <meta name="author" content="VitaNusa AI" />
   <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#14523d" />
 
   <!-- Open Graph -->
   <meta property="og:title" content="Testimoni Bukan Bukti: Cara Bijak Menilai Klaim Produk" />
@@ -58,6 +59,24 @@
         linear-gradient(180deg, #fbfffd 0%, #ffffff 38%, #fffaf0 100%);
     }
 
+    img,
+    video,
+    iframe {
+      max-width: 100%;
+      height: auto;
+    }
+
+    figure {
+      margin: 24px 0;
+    }
+
+    figcaption {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
     a {
       color: var(--green-dark);
       text-decoration: none;
@@ -67,11 +86,35 @@
       text-decoration: underline;
     }
 
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid rgba(184, 145, 47, 0.65);
+      outline-offset: 4px;
+      border-radius: 8px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: -70px;
+      z-index: 999;
+      background: var(--green-dark);
+      color: var(--white);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      transition: top 0.2s ease;
+    }
+
+    .skip-link:focus {
+      top: 14px;
+    }
+
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.92);
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--line);
     }
@@ -84,12 +127,19 @@
       justify-content: space-between;
       gap: 16px;
       align-items: center;
+      position: relative;
     }
 
     .brand {
       font-weight: 800;
       color: var(--green-dark);
       letter-spacing: 0.2px;
+      flex: 0 0 auto;
+      text-decoration: none;
+    }
+
+    .brand:hover {
+      text-decoration: none;
     }
 
     .nav {
@@ -101,7 +151,47 @@
 
     .nav a {
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
+    }
+
+    .nav a:hover {
+      color: var(--green-dark);
+    }
+
+    .nav-toggle {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--white);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      padding: 0;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--green-dark);
+      border-radius: 999px;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .nav-toggle.is-active span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    .nav-toggle.is-active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .nav-toggle.is-active span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
     }
 
     .hero {
@@ -118,6 +208,7 @@
       box-shadow: var(--shadow);
       position: relative;
       overflow: hidden;
+      isolation: isolate;
     }
 
     .hero-card::after {
@@ -129,6 +220,13 @@
       top: -90px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-card > * {
+      position: relative;
+      z-index: 1;
     }
 
     .label {
@@ -212,6 +310,7 @@
       border-radius: 28px;
       padding: 34px;
       box-shadow: var(--shadow);
+      min-width: 0;
     }
 
     section {
@@ -297,12 +396,18 @@
       color: var(--red);
     }
 
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 22px 0;
+      border-radius: 14px;
+    }
+
     table {
       width: 100%;
+      min-width: 620px;
       border-collapse: collapse;
-      margin: 22px 0;
-      overflow: hidden;
-      border-radius: 14px;
       font-size: 15px;
     }
 
@@ -367,14 +472,6 @@
       font-weight: 700;
     }
 
-    .image-instruction {
-      background: #fbfffd;
-      border: 1px dashed var(--green);
-      border-radius: 16px;
-      padding: 18px;
-      margin: 22px 0;
-    }
-
     .footer {
       max-width: 1120px;
       margin: 0 auto;
@@ -408,33 +505,193 @@
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .topbar-inner {
-        align-items: flex-start;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+      }
+
+      .nav-toggle {
+        display: inline-flex;
       }
 
       .nav {
-        gap: 10px;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 16px;
+        right: 16px;
+        display: none;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 4px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        overflow-y: auto;
+        max-height: calc(100vh - 90px);
       }
 
+      .nav.is-open {
+        display: flex;
+      }
+
+      .nav a {
+        display: block;
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 12px;
+        color: var(--green-dark);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .nav a:hover {
+        background: var(--green-soft);
+        text-decoration: none;
+      }
+
+      .hero {
+        padding: 36px 16px 20px;
+      }
+
+      .layout {
+        padding: 14px 16px 54px;
+      }
+
+      .hero-card {
+        border-radius: 22px;
+        padding: 28px;
+      }
+
+      .article {
+        border-radius: 22px;
+        padding: 22px;
+      }
+
+      h1 {
+        font-size: clamp(29px, 8vw, 42px);
+        line-height: 1.12;
+      }
+
+      h2 {
+        font-size: clamp(23px, 6vw, 30px);
+      }
+
+      h3 {
+        font-size: 20px;
+      }
+
+      .subtitle {
+        font-size: 16px;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      section {
+        scroll-margin-top: 92px;
+      }
+
+      .arabic {
+        font-size: clamp(22px, 6vw, 26px);
+        line-height: 1.9;
+      }
+    }
+
+    @media (max-width: 640px) {
       .checklist {
         grid-template-columns: 1fr;
       }
 
+      .hero {
+        padding-top: 34px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .hero-card {
+        padding: 24px 20px;
+      }
+
+      .article {
+        padding: 20px 16px;
+      }
+
+      .toc {
+        padding: 18px 16px;
+      }
+
+      .meta {
+        gap: 8px;
+      }
+
+      .meta span {
+        font-size: 13px;
+      }
+
       table {
-        display: block;
-        overflow-x: auto;
-        white-space: normal;
+        min-width: 560px;
       }
 
       th,
       td {
-        min-width: 210px;
+        padding: 11px;
       }
 
+      ul,
+      ol {
+        padding-left: 20px;
+      }
+
+      .note,
+      .key,
+      .warning,
+      .principle,
+      .quote-box {
+        padding: 16px;
+      }
+
+      section {
+        margin-bottom: 38px;
+      }
+    }
+
+    @media (max-width: 360px) {
       .hero {
-        padding-top: 34px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .layout {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .hero-card {
+        padding: 22px 16px;
+      }
+
+      .article {
+        padding: 18px 14px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .subtitle,
+      .lead {
+        font-size: 16px;
+      }
+
+      table {
+        min-width: 520px;
+        font-size: 14px;
       }
     }
   </style>
@@ -457,10 +714,27 @@
 </head>
 
 <body id="top">
+  <a class="skip-link" href="#konten">Lewati ke isi artikel</a>
+
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">VitaNusa AI</div>
-      <nav class="nav" aria-label="Navigasi artikel">
+      <a class="brand" href="#top" aria-label="VitaNusa AI kembali ke atas">
+        VitaNusa AI
+      </a>
+
+      <button
+        class="nav-toggle"
+        type="button"
+        aria-label="Buka menu navigasi"
+        aria-expanded="false"
+        aria-controls="site-nav"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav id="site-nav" class="nav" aria-label="Navigasi artikel">
         <a href="#inti">Inti</a>
         <a href="#testimoni">Testimoni</a>
         <a href="#cek-klaim">Cek Klaim</a>
@@ -471,7 +745,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="konten">
     <div class="hero">
       <div class="hero-card">
         <span class="label">Artikel Edukasi Jangka Panjang</span>
@@ -607,44 +881,44 @@
             dalam promosi produk.
           </p>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Istilah</th>
-                <th>Makna sederhana</th>
-                <th>Kekuatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Testimoni</td>
-                <td>Pengalaman seseorang setelah memakai produk.</td>
-                <td>Berguna sebagai cerita awal, tetapi lemah sebagai bukti umum.</td>
-              </tr>
-              <tr>
-                <td>Klaim</td>
-                <td>Janji atau pernyataan manfaat yang disampaikan penjual.</td>
-                <td>Harus sesuai kategori produk dan didukung bukti.</td>
-              </tr>
-              <tr>
-                <td>Bukti</td>
-                <td>Data, uji, dokumentasi, standar, atau kajian yang dapat diperiksa.</td>
-                <td>Lebih kuat karena bisa diuji dan dibandingkan.</td>
-              </tr>
-              <tr>
-                <td>Izin edar</td>
-                <td>Tanda produk tertentu terdaftar atau diizinkan beredar sesuai aturan yang berlaku.</td>
-                <td>Penting untuk legalitas, tetapi tidak otomatis membenarkan semua klaim promosi.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Istilah</th>
+                  <th>Makna sederhana</th>
+                  <th>Kekuatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Testimoni</td>
+                  <td>Pengalaman seseorang setelah memakai produk.</td>
+                  <td>Berguna sebagai cerita awal, tetapi lemah sebagai bukti umum.</td>
+                </tr>
+                <tr>
+                  <td>Klaim</td>
+                  <td>Janji atau pernyataan manfaat yang disampaikan penjual.</td>
+                  <td>Harus sesuai kategori produk dan didukung bukti.</td>
+                </tr>
+                <tr>
+                  <td>Bukti</td>
+                  <td>Data, uji, dokumentasi, standar, atau kajian yang dapat diperiksa.</td>
+                  <td>Lebih kuat karena bisa diuji dan dibandingkan.</td>
+                </tr>
+                <tr>
+                  <td>Izin edar</td>
+                  <td>Tanda produk tertentu terdaftar atau diizinkan beredar sesuai aturan yang berlaku.</td>
+                  <td>Penting untuk legalitas, tetapi tidak otomatis membenarkan semua klaim promosi.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <p>
             BPOM memiliki prinsip Cek KLIK untuk konsumen: cek kemasan, cek label,
             cek izin edar, dan cek kedaluwarsa. Untuk produk obat dan makanan, BPOM
-            juga menyediakan kanal cek produk teregistrasi. Prinsip ini membantu
-            pembeli tidak hanya terpukau pada promosi, tetapi memeriksa informasi
-            dasar produk.
+            juga menyediakan kanal cek produk teregistrasi.
           </p>
 
           <p>
@@ -652,9 +926,7 @@
             harus dipromosikan sesuai batas klaimnya. Misalnya, suplemen kesehatan
             bukan berarti boleh diklaim menyembuhkan penyakit berat. Kosmetik bukan
             berarti boleh diklaim mengubah kondisi medis. Pangan olahan bukan berarti
-            boleh dijanjikan sebagai obat. Nah, di titik ini banyak promosi mulai
-            terpeleset — bukan karena produknya selalu buruk, tetapi karena klaimnya
-            terlalu berani.
+            boleh dijanjikan sebagai obat.
           </p>
 
           <div class="note">
@@ -666,52 +938,53 @@
           </div>
 
           <h3>Tingkatan bukti: dari lemah ke lebih kuat</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Tingkat</th>
-                <th>Contoh</th>
-                <th>Catatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1. Cerita pribadi</td>
-                <td>“Saya cocok.”</td>
-                <td>Bisa jujur, tetapi tidak cukup untuk semua orang.</td>
-              </tr>
-              <tr>
-                <td>2. Banyak testimoni</td>
-                <td>Ratusan review positif.</td>
-                <td>Bisa membantu, tetapi rawan bias, seleksi, atau manipulasi.</td>
-              </tr>
-              <tr>
-                <td>3. Data penggunaan</td>
-                <td>Keluhan turun pada kelompok pelanggan tertentu.</td>
-                <td>Lebih baik jika metode jelas dan tidak dilebihkan.</td>
-              </tr>
-              <tr>
-                <td>4. Uji atau penelitian</td>
-                <td>Uji laboratorium, uji klinis, standar mutu, data keamanan.</td>
-                <td>Lebih kuat, tetapi tetap harus dilihat kualitas dan relevansinya.</td>
-              </tr>
-              <tr>
-                <td>5. Konsensus ahli atau regulator</td>
-                <td>Panduan resmi dan standar lembaga berwenang.</td>
-                <td>Paling aman untuk klaim sensitif seperti kesehatan.</td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tingkat</th>
+                  <th>Contoh</th>
+                  <th>Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1. Cerita pribadi</td>
+                  <td>“Saya cocok.”</td>
+                  <td>Bisa jujur, tetapi tidak cukup untuk semua orang.</td>
+                </tr>
+                <tr>
+                  <td>2. Banyak testimoni</td>
+                  <td>Ratusan review positif.</td>
+                  <td>Bisa membantu, tetapi rawan bias, seleksi, atau manipulasi.</td>
+                </tr>
+                <tr>
+                  <td>3. Data penggunaan</td>
+                  <td>Keluhan turun pada kelompok pelanggan tertentu.</td>
+                  <td>Lebih baik jika metode jelas dan tidak dilebihkan.</td>
+                </tr>
+                <tr>
+                  <td>4. Uji atau penelitian</td>
+                  <td>Uji laboratorium, uji klinis, standar mutu, data keamanan.</td>
+                  <td>Lebih kuat, tetapi tetap harus dilihat kualitas dan relevansinya.</td>
+                </tr>
+                <tr>
+                  <td>5. Konsensus ahli atau regulator</td>
+                  <td>Panduan resmi dan standar lembaga berwenang.</td>
+                  <td>Paling aman untuk klaim sensitif seperti kesehatan.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section id="masa-depan">
           <h2>3. Mengapa Ini Makin Penting 10 Tahun ke Depan</h2>
           <p>
             Sepuluh tahun ke depan, masalah testimoni tidak akan berkurang. Justru
-            kemungkinan makin rumit. Dulu orang harus merekam video sungguhan untuk
-            membuat testimoni. Sekarang dan ke depan, wajah, suara, teks, foto
-            sebelum-sesudah, hingga komentar pengguna bisa diproduksi dan diperbanyak
-            dengan AI.
+            kemungkinan makin rumit. Wajah, suara, teks, foto sebelum-sesudah,
+            hingga komentar pengguna bisa diproduksi dan diperbanyak dengan AI.
           </p>
 
           <p>
@@ -723,24 +996,10 @@
 
           <h3>Empat perubahan besar yang perlu diantisipasi</h3>
           <ul>
-            <li>
-              <strong>Testimoni sintetis:</strong> video dan suara bisa dibuat menyerupai
-              manusia nyata. Pembeli tidak cukup hanya melihat “wajah”.
-            </li>
-            <li>
-              <strong>Ulasan massal:</strong> review marketplace bisa terdorong insentif,
-              afiliasi, diskon, atau jaringan promosi.
-            </li>
-            <li>
-              <strong>Iklan yang sangat personal:</strong> algoritma makin pandai membaca
-              keresahan pembeli, misalnya takut sakit, takut tua, takut gagal diet,
-              atau takut tertinggal tren.
-            </li>
-            <li>
-              <strong>Klaim yang dibungkus edukasi:</strong> promosi tidak selalu tampak
-              seperti iklan. Kadang berbentuk cerita, podcast, komik, artikel, atau
-              video “pengalaman pribadi”.
-            </li>
+            <li><strong>Testimoni sintetis:</strong> video dan suara bisa dibuat menyerupai manusia nyata.</li>
+            <li><strong>Ulasan massal:</strong> review marketplace bisa terdorong insentif, afiliasi, diskon, atau jaringan promosi.</li>
+            <li><strong>Iklan yang sangat personal:</strong> algoritma makin pandai membaca keresahan pembeli.</li>
+            <li><strong>Klaim yang dibungkus edukasi:</strong> promosi kadang berbentuk cerita, podcast, komik, artikel, atau video “pengalaman pribadi”.</li>
           </ul>
 
           <p>
@@ -753,131 +1012,77 @@
 
         <section id="cek-klaim">
           <h2>4. Delapan Pertanyaan Sebelum Percaya Klaim Produk</h2>
-          <p>
-            Gunakan delapan pertanyaan ini sebelum membeli atau mempromosikan produk.
-            Tidak semua produk butuh pemeriksaan berat. Membeli keripik singkong tentu
-            berbeda dengan membeli suplemen untuk keluhan kesehatan. Tetapi semakin
-            besar risiko dan semakin besar klaimnya, semakin serius pemeriksaannya.
-          </p>
 
           <h3>1. Apa tepatnya klaim yang dibuat?</h3>
-          <p>
-            Bedakan antara klaim ringan dan klaim berat. “Membantu menjaga daya tahan
-            tubuh” berbeda dari “menyembuhkan penyakit”. “Kulit terasa lembap”
-            berbeda dari “menghilangkan penyakit kulit”. Klaim berat membutuhkan
-            bukti yang lebih kuat.
-          </p>
+          <p>Bedakan antara klaim ringan dan klaim berat. Klaim berat membutuhkan bukti yang lebih kuat.</p>
 
           <h3>2. Produk ini masuk kategori apa?</h3>
-          <p>
-            Makanan, minuman, kosmetik, suplemen, obat tradisional, obat, alat
-            kesehatan, jasa terapi, atau pelatihan? Kategori menentukan batas klaim.
-            Produk yang bukan obat tidak layak dipromosikan seperti obat.
-          </p>
+          <p>Makanan, minuman, kosmetik, suplemen, obat tradisional, obat, alat kesehatan, jasa terapi, atau pelatihan?</p>
 
           <h3>3. Apakah ada izin edar atau legalitas yang relevan?</h3>
           <p>
             Untuk produk yang wajib terdaftar, cek kanal resmi seperti
             <a href="https://cekbpom.pom.go.id/" target="_blank" rel="noopener">cekbpom.pom.go.id</a>
-            atau aplikasi BPOM Mobile. Untuk halal, cek sertifikasi halal bila produk
-            mengklaim halal. Untuk jasa profesional, cek izin praktik atau kompetensi
-            yang relevan.
+            atau aplikasi BPOM Mobile.
           </p>
 
           <h3>4. Apakah klaimnya sesuai dengan bukti?</h3>
-          <p>
-            Jangan puas dengan “sudah banyak yang cocok”. Tanyakan: apakah ada data?
-            Apakah ada uji? Apakah hanya foto sebelum-sesudah? Apakah ada penjelasan
-            mekanisme yang masuk akal?
-          </p>
+          <p>Jangan puas dengan “sudah banyak yang cocok”. Tanyakan: apakah ada data, uji, dan penjelasan yang masuk akal?</p>
 
           <h3>5. Apakah ada risiko, batasan, dan peringatan?</h3>
-          <p>
-            Produk yang jujur biasanya tidak hanya bicara manfaat. Ia juga menyebut
-            aturan pakai, batasan, siapa yang perlu berhati-hati, dan kapan harus
-            berkonsultasi dengan ahli.
-          </p>
+          <p>Produk yang jujur biasanya tidak hanya bicara manfaat, tetapi juga menyebut batasan dan aturan pakai.</p>
 
           <h3>6. Siapa yang mendapat keuntungan dari testimoni itu?</h3>
-          <p>
-            Endorsement, afiliasi, komisi reseller, hadiah review, atau hubungan kerja
-            harus jelas. Bukan haram mencari untung, tetapi haram menutup-nutupi
-            informasi penting yang memengaruhi keputusan pembeli.
-          </p>
+          <p>Endorsement, afiliasi, komisi reseller, hadiah review, atau hubungan kerja harus jelas.</p>
 
           <h3>7. Apakah promosi memakai rasa takut?</h3>
-          <p>
-            Waspadai kalimat yang membuat panik: “kalau tidak beli sekarang, penyakit
-            makin parah”, “stok tinggal sedikit”, “dokter tidak mau kamu tahu”, atau
-            “rahasia yang disembunyikan”.
-          </p>
+          <p>Waspadai kalimat yang membuat panik seperti “stok tinggal sedikit”, “rahasia dokter”, atau “kalau tidak beli sekarang rugi”.</p>
 
           <h3>8. Apakah keputusan membeli bisa ditunda 24 jam?</h3>
-          <p>
-            Produk yang benar-benar bermanfaat biasanya tidak takut diperiksa. Jika
-            promosi memaksa beli sekarang juga, pembeli justru perlu menarik napas.
-            Dompet juga perlu diajak musyawarah.
-          </p>
+          <p>Produk yang benar-benar bermanfaat biasanya tidak takut diperiksa. Dompet juga perlu diajak musyawarah.</p>
         </section>
 
         <section id="bendera-merah">
           <h2>5. Bendera Merah: Tanda Klaim Perlu Diwaspadai</h2>
-          <p>
-            Tidak semua promosi yang menarik itu salah. Namun ada pola-pola yang harus
-            membuat kita berhenti dan memeriksa ulang.
-          </p>
 
-          <table class="red-table">
-            <thead>
-              <tr>
-                <th>Bendera merah</th>
-                <th>Mengapa berbahaya</th>
-                <th>Sikap bijak</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>“Pasti sembuh”</td>
-                <td>Kesehatan manusia kompleks; klaim pasti biasanya terlalu menyederhanakan.</td>
-                <td>Minta bukti kuat dan konsultasikan ke ahli.</td>
-              </tr>
-              <tr>
-                <td>“Tanpa efek samping sama sekali”</td>
-                <td>Hampir semua zat aktif punya batasan dan potensi risiko.</td>
-                <td>Cari peringatan, aturan pakai, dan komposisi.</td>
-              </tr>
-              <tr>
-                <td>“Rahasia dokter/WHO/BPOM”</td>
-                <td>Membajak nama lembaga sering dipakai untuk menciptakan kesan otoritas.</td>
-                <td>Cek langsung ke kanal resmi.</td>
-              </tr>
-              <tr>
-                <td>“Testimoni ribuan orang” tanpa data</td>
-                <td>Banyak testimoni tidak otomatis berarti bukti ilmiah.</td>
-                <td>Lihat metode, sumber, dan transparansi.</td>
-              </tr>
-              <tr>
-                <td>Foto sebelum-sesudah ekstrem</td>
-                <td>Foto bisa dipilih, diedit, atau dipengaruhi faktor lain.</td>
-                <td>Jangan jadikan satu foto sebagai dasar keputusan.</td>
-              </tr>
-              <tr>
-                <td>Diskon panik dan hitung mundur terus-menerus</td>
-                <td>Tekanan waktu melemahkan nalar pembeli.</td>
-                <td>Tunda 24 jam untuk klaim besar.</td>
-              </tr>
-              <tr>
-                <td>Tidak ada komposisi atau label jelas</td>
-                <td>Pembeli tidak bisa menilai keamanan dan kecocokan.</td>
-                <td>Jangan beli produk yang informasinya gelap.</td>
-              </tr>
-              <tr>
-                <td>Semua kritik dianggap fitnah</td>
-                <td>Produk yang baik tidak perlu anti-pertanyaan.</td>
-                <td>Cari sumber pembanding yang kredibel.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table class="red-table">
+              <thead>
+                <tr>
+                  <th>Bendera merah</th>
+                  <th>Mengapa berbahaya</th>
+                  <th>Sikap bijak</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>“Pasti sembuh”</td>
+                  <td>Kesehatan manusia kompleks; klaim pasti biasanya terlalu menyederhanakan.</td>
+                  <td>Minta bukti kuat dan konsultasikan ke ahli.</td>
+                </tr>
+                <tr>
+                  <td>“Tanpa efek samping sama sekali”</td>
+                  <td>Hampir semua zat aktif punya batasan dan potensi risiko.</td>
+                  <td>Cari peringatan, aturan pakai, dan komposisi.</td>
+                </tr>
+                <tr>
+                  <td>“Rahasia dokter/WHO/BPOM”</td>
+                  <td>Membajak nama lembaga sering dipakai untuk menciptakan kesan otoritas.</td>
+                  <td>Cek langsung ke kanal resmi.</td>
+                </tr>
+                <tr>
+                  <td>“Testimoni ribuan orang” tanpa data</td>
+                  <td>Banyak testimoni tidak otomatis berarti bukti ilmiah.</td>
+                  <td>Lihat metode, sumber, dan transparansi.</td>
+                </tr>
+                <tr>
+                  <td>Tidak ada komposisi atau label jelas</td>
+                  <td>Pembeli tidak bisa menilai keamanan dan kecocokan.</td>
+                  <td>Jangan beli produk yang informasinya gelap.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <div class="warning">
             <strong class="box-title">Prinsip tegas</strong>
@@ -890,43 +1095,27 @@
 
         <section id="konsumen">
           <h2>6. Panduan Praktis untuk Konsumen</h2>
-          <p>
-            Berikut checklist yang bisa dipakai sesuai waktu yang tersedia. Tidak
-            perlu menjadi ilmuwan laboratorium untuk menjadi pembeli cerdas. Cukup
-            jangan menyerahkan akal sehat ke tombol checkout.
-          </p>
 
-          <h3>Cek 30 detik: sebelum tertarik</h3>
+          <h3>Cek 30 detik</h3>
           <ul>
-            <li>Baca klaim paling besar di iklan. Tandai kata: pasti, sembuh, permanen, tanpa efek samping, rahasia, paling ampuh.</li>
-            <li>Lihat apakah ada label, komposisi, izin edar, tanggal kedaluwarsa, nama produsen, dan kontak yang jelas.</li>
+            <li>Baca klaim paling besar di iklan.</li>
+            <li>Lihat apakah ada label, komposisi, izin edar, tanggal kedaluwarsa, dan nama produsen.</li>
             <li>Tanya diri: saya tertarik karena butuh, atau karena takut ketinggalan?</li>
           </ul>
 
-          <h3>Cek 5 menit: sebelum membeli produk berisiko sedang</h3>
+          <h3>Cek 5 menit</h3>
           <ul>
-            <li>Cek nomor izin edar di kanal resmi bila produk termasuk kategori yang wajib terdaftar.</li>
-            <li>Bandingkan klaim iklan dengan informasi pada label. Jika iklan jauh lebih berani daripada label, berhati-hatilah.</li>
-            <li>Cari ulasan negatif yang masuk akal. Produk nyata biasanya tidak selalu sempurna.</li>
-            <li>Cek apakah testimoni disertai hubungan komersial: endorse, afiliasi, komisi, atau hadiah review.</li>
+            <li>Cek nomor izin edar di kanal resmi bila produk wajib terdaftar.</li>
+            <li>Bandingkan klaim iklan dengan informasi pada label.</li>
+            <li>Cari ulasan negatif yang masuk akal.</li>
           </ul>
 
-          <h3>Cek serius: untuk klaim kesehatan, anak, lansia, penyakit kronis, dan harga mahal</h3>
+          <h3>Cek serius</h3>
           <ul>
             <li>Konsultasikan ke dokter, apoteker, ahli gizi, atau tenaga kesehatan sesuai masalahnya.</li>
             <li>Jangan menghentikan obat dokter karena testimoni online.</li>
-            <li>Cari informasi dari lembaga resmi, jurnal yang kredibel, atau tenaga ahli yang bisa dimintai pertanggungjawaban.</li>
-            <li>Minta penjual menjelaskan batasan klaim. Penjual yang amanah tidak marah ketika ditanya.</li>
+            <li>Cari informasi dari lembaga resmi atau tenaga ahli.</li>
           </ul>
-
-          <div class="key">
-            <strong class="box-title">Kalimat tanya yang bisa dipakai pembeli</strong>
-            <p>
-              “Apakah produk ini terdaftar? Klaim resminya apa? Apakah ada bukti
-              selain testimoni? Siapa yang sebaiknya tidak memakai produk ini?
-              Kalau saya punya kondisi kesehatan tertentu, apakah perlu konsultasi dulu?”
-            </p>
-          </div>
         </section>
 
         <section id="reseller">
@@ -934,67 +1123,48 @@
           <p>
             Artikel ini bukan hanya untuk pembeli. Ia juga untuk penjual, reseller,
             affiliator, dan pembuat konten. Dalam bisnis, kepercayaan adalah modal
-            yang lebih mahal daripada iklan. Sekali kepercayaan rusak, memperbaikinya
-            tidak cukup dengan diskon 50 persen dan caption sedih.
+            yang lebih mahal daripada iklan.
           </p>
 
           <h3>Boleh memakai testimoni, dengan syarat adil</h3>
           <ul>
-            <li>Pastikan testimoni benar berasal dari pelanggan nyata, bukan karangan tim marketing.</li>
+            <li>Pastikan testimoni benar berasal dari pelanggan nyata.</li>
             <li>Jangan mengedit testimoni sampai maknanya berubah.</li>
-            <li>Jangan memilih testimoni ekstrem lalu memberi kesan semua orang akan mendapat hasil yang sama.</li>
+            <li>Jangan memberi kesan semua orang akan mendapat hasil yang sama.</li>
             <li>Jelaskan jika ada hubungan komersial: endorse, afiliasi, komisi, barter, atau hadiah.</li>
-            <li>Sertakan batasan: hasil dapat berbeda, penggunaan harus sesuai aturan, dan untuk kondisi tertentu perlu konsultasi ahli.</li>
-            <li>Jangan memakai nama lembaga, dokter, ustaz, atau ahli tanpa izin dan konteks yang benar.</li>
+            <li>Sertakan batasan: hasil dapat berbeda dan penggunaan harus sesuai aturan.</li>
           </ul>
 
           <h3>Contoh bahasa promosi yang lebih amanah</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Kurang bijak</th>
-                <th>Lebih amanah</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>“Produk ini pasti menyembuhkan maag.”</td>
-                <td>“Produk ini adalah pangan/suplemen sesuai kategori produknya. Untuk keluhan lambung, konsultasikan ke tenaga kesehatan.”</td>
-              </tr>
-              <tr>
-                <td>“Ribuan orang sembuh.”</td>
-                <td>“Sebagian pelanggan merasa cocok. Namun pengalaman tiap orang dapat berbeda dan testimoni bukan bukti medis.”</td>
-              </tr>
-              <tr>
-                <td>“Tidak ada efek samping.”</td>
-                <td>“Gunakan sesuai aturan pakai. Perhatikan komposisi dan hentikan penggunaan bila muncul keluhan.”</td>
-              </tr>
-              <tr>
-                <td>“Dokter tidak mau kamu tahu.”</td>
-                <td>“Untuk informasi kesehatan, tetap rujuk tenaga kesehatan dan sumber resmi.”</td>
-              </tr>
-              <tr>
-                <td>“Beli sekarang atau rugi selamanya.”</td>
-                <td>“Silakan pelajari informasi produk terlebih dahulu. Kami siap menjawab pertanyaan.”</td>
-              </tr>
-            </tbody>
-          </table>
 
-          <p>
-            Promosi yang amanah mungkin terlihat tidak segarang iklan bombastis.
-            Tetapi dalam jangka panjang, ia membangun pelanggan yang percaya. Bisnis
-            yang tumbuh dari kepercayaan lebih kuat daripada bisnis yang tumbuh dari
-            panik.
-          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kurang bijak</th>
+                  <th>Lebih amanah</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>“Produk ini pasti menyembuhkan maag.”</td>
+                  <td>“Untuk keluhan lambung, konsultasikan ke tenaga kesehatan.”</td>
+                </tr>
+                <tr>
+                  <td>“Ribuan orang sembuh.”</td>
+                  <td>“Sebagian pelanggan merasa cocok. Namun pengalaman tiap orang dapat berbeda.”</td>
+                </tr>
+                <tr>
+                  <td>“Tidak ada efek samping.”</td>
+                  <td>“Gunakan sesuai aturan pakai. Perhatikan komposisi dan hentikan penggunaan bila muncul keluhan.”</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section id="islam">
           <h2>8. Prinsip Islam: Tabayyun, Amanah, dan Larangan Menipu</h2>
-          <p>
-            Dalam Islam, informasi bukan mainan. Berita, klaim, janji, dan promosi
-            harus dijaga. Apalagi jika informasi itu memengaruhi uang, kesehatan, dan
-            keselamatan manusia.
-          </p>
 
           <div class="quote-box">
             <p class="arabic">يَا أَيُّهَا الَّذِينَ آمَنُوا إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا</p>
@@ -1003,7 +1173,6 @@
               membawa suatu berita, maka telitilah kebenarannya...”
             </p>
             <p class="source">QS. Al-Hujurat: 6</p>
-            <p>Dalil tegas tentang pentingnya tabayyun sebelum menerima dan menyebarkan informasi.</p>
           </div>
 
           <div class="quote-box">
@@ -1012,7 +1181,6 @@
               “Dan janganlah kamu mengikuti sesuatu yang tidak kamu ketahui ilmunya...”
             </p>
             <p class="source">QS. Al-Isra: 36</p>
-            <p>Ayat ini mengajarkan agar ucapan dan keputusan tidak dibangun di atas dugaan kosong.</p>
           </div>
 
           <div class="quote-box">
@@ -1021,7 +1189,6 @@
               “Barang siapa menipu kami, maka ia bukan dari golongan kami.”
             </p>
             <p class="source">HR. Muslim</p>
-            <p>Hadits shahih yang sangat keras dalam urusan penipuan dan kecurangan.</p>
           </div>
 
           <div class="quote-box">
@@ -1031,64 +1198,51 @@
               keduanya jujur dan menjelaskan keadaan barang, diberkahi jual beli mereka...”
             </p>
             <p class="source">HR. Bukhari dan Muslim</p>
-            <p>Keberkahan bisnis terkait erat dengan kejujuran dan penjelasan yang terang.</p>
           </div>
 
           <p>
             Maka bagi muslim, persoalan testimoni bukan sekadar teknik marketing. Ia
-            menyentuh amanah. Jika testimoni dipakai untuk membantu pembeli memahami
-            pengalaman pengguna, insya Allah bisa menjadi sarana informasi. Tetapi
-            jika testimoni dipakai untuk menutupi risiko, membesar-besarkan hasil,
-            atau membuat orang membeli karena takut, itu bukan kecerdasan bisnis.
-            Itu kecurangan yang diberi desain grafis.
+            menyentuh amanah. Jika testimoni dipakai untuk menutupi risiko,
+            membesar-besarkan hasil, atau membuat orang membeli karena takut, itu
+            bukan kecerdasan bisnis. Itu kecurangan yang diberi desain grafis.
           </p>
         </section>
 
         <section id="gambar">
           <h2>9. Instruksi Gambar Opsional</h2>
           <p>
-            Artikel ini sengaja tidak memakai gambar bawaan agar tetap ringan, bersih,
-            dan mudah dipakai ulang. Jika ingin menambahkan gambar untuk versi
-            website, e-book, atau carousel edukasi, gunakan gambar yang netral dan
-            tidak menyesatkan.
+            Jika ingin menambahkan gambar untuk website, e-book, atau carousel edukasi,
+            gunakan gambar yang netral dan tidak menyesatkan.
           </p>
 
-          <table class="gold-table">
-            <thead>
-              <tr>
-                <th>Posisi gambar</th>
-                <th>Konsep visual</th>
-                <th>Instruksi pembuatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Cover artikel</td>
-                <td>Seorang pembeli memegang produk sambil melihat label dan layar ponsel berisi testimoni.</td>
-                <td>Gaya ilustrasi modern, bersih, warna hijau tua dan krem, tanpa logo merek, tanpa klaim medis, ekspresi berpikir tenang.</td>
-              </tr>
-              <tr>
-                <td>Bagian 2</td>
-                <td>Infografis “Testimoni vs Bukti”.</td>
-                <td>Buat dua kolom: kiri cerita pengalaman, kanan data yang dapat diperiksa. Gunakan ikon sederhana: orang bicara, dokumen, kaca pembesar, label produk.</td>
-              </tr>
-              <tr>
-                <td>Bagian 4</td>
-                <td>Checklist delapan pertanyaan sebelum percaya klaim produk.</td>
-                <td>Buat poster vertikal 9:16 untuk media sosial. Gunakan bahasa singkat, mudah dibaca di layar ponsel.</td>
-              </tr>
-              <tr>
-                <td>Bagian 5</td>
-                <td>Bendera merah klaim produk.</td>
-                <td>Ilustrasi tanda peringatan dengan contoh kata: pasti sembuh, tanpa efek samping, rahasia, stok terbatas. Jangan tampilkan merek nyata.</td>
-              </tr>
-              <tr>
-                <td>Bagian 8</td>
-                <td>Amanah dalam bisnis.</td>
-                <td>Visual penjual dan pembeli berjabat tangan, label produk terlihat jelas, suasana toko sederhana, tidak berlebihan.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table class="gold-table">
+              <thead>
+                <tr>
+                  <th>Posisi gambar</th>
+                  <th>Konsep visual</th>
+                  <th>Instruksi pembuatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Cover artikel</td>
+                  <td>Pembeli memegang produk sambil melihat label dan layar ponsel berisi testimoni.</td>
+                  <td>Ilustrasi modern, warna hijau tua dan krem, tanpa logo merek, tanpa klaim medis.</td>
+                </tr>
+                <tr>
+                  <td>Bagian 2</td>
+                  <td>Infografis “Testimoni vs Bukti”.</td>
+                  <td>Dua kolom: kiri cerita pengalaman, kanan data yang dapat diperiksa.</td>
+                </tr>
+                <tr>
+                  <td>Bagian 5</td>
+                  <td>Bendera merah klaim produk.</td>
+                  <td>Ilustrasi tanda peringatan dengan contoh kata: pasti sembuh, rahasia, stok terbatas.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <div class="principle">
             <strong class="box-title">Catatan gambar</strong>
@@ -1098,57 +1252,25 @@
               produk pasti menyembuhkan.
             </p>
           </div>
-
-          <!--
-            OPSIONAL: Jika nanti ingin memasukkan gambar cover, letakkan file gambar
-            di folder yang sama dengan artikel ini, misalnya:
-
-            /articles/artikel-1.html
-            /articles/img/testimoni-bukan-bukti-cover.jpg
-
-            Lalu aktifkan kode berikut:
-
-            <figure>
-              <img
-                src="img/testimoni-bukan-bukti-cover.jpg"
-                alt="Ilustrasi pembeli membaca label produk dan memeriksa testimoni"
-                style="width:100%; border-radius:18px; margin:20px 0;"
-              />
-              <figcaption>Ilustrasi: cek label, cek klaim, jangan hanya percaya testimoni.</figcaption>
-            </figure>
-          -->
         </section>
 
         <section id="penutup">
           <h2>10. Penutup: Beli dengan Ilmu, Jual dengan Amanah</h2>
           <p>
             Testimoni bukan bukti. Tetapi testimoni juga bukan sampah informasi. Ia
-            adalah cerita yang perlu ditempatkan pada tempatnya. Ia boleh menjadi
-            pintu awal untuk tertarik, tetapi bukan fondasi untuk percaya sepenuhnya.
-          </p>
-
-          <p>
-            Sepuluh tahun ke depan, pembeli yang cerdas bukan hanya yang tahu harga
-            termurah. Pembeli yang cerdas adalah yang mampu membedakan cerita, klaim,
-            bukti, izin, dan risiko. Pelaku usaha yang kuat bukan hanya yang pandai
-            membuat iklan viral. Pelaku usaha yang kuat adalah yang mampu menjaga
-            kepercayaan ketika pasar penuh suara bising.
+            adalah cerita yang perlu ditempatkan pada tempatnya.
           </p>
 
           <p>
             Dalam bisnis yang beradab, tujuan promosi bukan membuat orang kehilangan
             nalar, tetapi membantu orang mengambil keputusan dengan lebih terang.
-            Keuntungan yang datang dari kejujuran lebih lambat terlihat, tetapi lebih
-            tahan lama. Keuntungan dari manipulasi bisa cepat masuk kas, tetapi sering
-            meninggalkan hutang moral yang bunganya tidak lucu.
           </p>
 
           <div class="key">
             <strong class="box-title">Kesimpulan akhir</strong>
             <p>
               Dengarkan testimoni, tetapi minta bukti. Periksa izin, tetapi jangan
-              berhenti di izin. Beli dengan ilmu. Jual dengan amanah. Jangan jadikan
-              keresahan orang sebagai ladang manipulasi.
+              berhenti di izin. Beli dengan ilmu. Jual dengan amanah.
             </p>
           </div>
 
@@ -1161,49 +1283,29 @@
             <div class="check-item">Apa bukti selain testimoni?</div>
             <div class="check-item">Apa risiko, batasan, dan peringatannya?</div>
             <div class="check-item">Apakah ada konflik kepentingan atau komisi?</div>
-            <div class="check-item">Apakah saya diberi waktu berpikir, atau dipaksa panik membeli?</div>
+            <div class="check-item">Apakah saya diberi waktu berpikir?</div>
           </div>
         </section>
 
         <section id="rujukan">
           <h2>Rujukan Ringkas</h2>
           <ul>
-            <li>
-              Badan Pengawas Obat dan Makanan RI atau BPOM: prinsip Cek KLIK,
-              yaitu cek kemasan, label, izin edar, dan kedaluwarsa.
-            </li>
+            <li>BPOM: prinsip Cek KLIK, yaitu cek kemasan, label, izin edar, dan kedaluwarsa.</li>
             <li>
               Kanal cek produk teregistrasi BPOM:
               <a href="https://cekbpom.pom.go.id/" target="_blank" rel="noopener">cekbpom.pom.go.id</a>.
             </li>
-            <li>
-              BPOM Mobile: aplikasi resmi untuk memindai QR/barcode produk dan
-              mengirimkan pengaduan terhadap produk.
-            </li>
-            <li>
-              World Health Organization atau WHO: isu disinformasi kesehatan dan
-              pentingnya berpikir kritis, memeriksa sumber klaim, serta merujuk
-              sumber resmi berbasis bukti.
-            </li>
-            <li>
-              Federal Trade Commission atau FTC: panduan endorsement, termasuk
-              prinsip bahwa testimoni hasil luar biasa tidak boleh memberi kesan
-              hasil umum tanpa bukti atau pengungkapan yang jelas.
-            </li>
-            <li>
-              Al-Qur’an dan hadits shahih: QS. Al-Hujurat: 6, QS. Al-Isra: 36,
-              HR. Muslim tentang larangan menipu, serta HR. Bukhari-Muslim tentang
-              keberkahan jual beli yang jujur dan terang.
-            </li>
+            <li>BPOM Mobile: aplikasi resmi untuk memindai QR/barcode produk dan mengirim pengaduan.</li>
+            <li>WHO: isu disinformasi kesehatan dan pentingnya berpikir kritis.</li>
+            <li>FTC: panduan endorsement dan testimoni dalam promosi.</li>
+            <li>Al-Qur’an dan hadits shahih: QS. Al-Hujurat: 6, QS. Al-Isra: 36, HR. Muslim, serta HR. Bukhari-Muslim.</li>
           </ul>
 
           <div class="note">
             <strong class="box-title">Catatan penggunaan ulang</strong>
             <p>
               Artikel ini cocok dikembangkan menjadi e-book mini, carousel Instagram,
-              naskah video pendek, materi edukasi reseller, atau halaman blog. Jika
-              dipakai untuk promosi produk tertentu, sesuaikan dengan kategori produk,
-              label resmi, izin edar, aturan klaim, dan bukti yang benar.
+              naskah video pendek, materi edukasi reseller, atau halaman blog.
             </p>
           </div>
 
@@ -1219,5 +1321,53 @@
       membeli dengan ilmu dan pelaku usaha menjual dengan amanah.
     </p>
   </footer>
+
+  <script>
+    const navToggle = document.querySelector(".nav-toggle");
+    const navMenu = document.querySelector("#site-nav");
+
+    if (navToggle && navMenu) {
+      navToggle.addEventListener("click", function () {
+        const isOpen = navMenu.classList.toggle("is-open");
+
+        navToggle.classList.toggle("is-active", isOpen);
+        navToggle.setAttribute("aria-expanded", String(isOpen));
+        navToggle.setAttribute(
+          "aria-label",
+          isOpen ? "Tutup menu navigasi" : "Buka menu navigasi"
+        );
+      });
+
+      navMenu.querySelectorAll("a").forEach(function (link) {
+        link.addEventListener("click", function () {
+          navMenu.classList.remove("is-open");
+          navToggle.classList.remove("is-active");
+          navToggle.setAttribute("aria-expanded", "false");
+          navToggle.setAttribute("aria-label", "Buka menu navigasi");
+        });
+      });
+
+      document.addEventListener("click", function (event) {
+        const clickedInsideMenu = navMenu.contains(event.target);
+        const clickedToggle = navToggle.contains(event.target);
+
+        if (!clickedInsideMenu && !clickedToggle) {
+          navMenu.classList.remove("is-open");
+          navToggle.classList.remove("is-active");
+          navToggle.setAttribute("aria-expanded", "false");
+          navToggle.setAttribute("aria-label", "Buka menu navigasi");
+        }
+      });
+
+      window.addEventListener("resize", function () {
+        if (window.innerWidth > 768) {
+          navMenu.classList.remove("is-open");
+          navToggle.classList.remove("is-active");
+          navToggle.setAttribute("aria-expanded", "false");
+          navToggle.setAttribute("aria-label", "Buka menu navigasi");
+        }
+      });
+    }
+  </script>
 </body>
 </html>
