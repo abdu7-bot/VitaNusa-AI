@@ -1,7 +1,7 @@
 const panelList = document.querySelector(".panel-list");
 
 if (panelList) {
-  const totalPanel = Number(panelList.dataset.totalPanel) || 21;
+  const totalPanel = Number(panelList.dataset.totalPanel) || 100;
 
   for (let i = 1; i <= totalPanel; i++) {
     const figure = document.createElement("figure");
