@@ -4,25 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Dokumen & PDF | VitaNusa AI</title>
-  <meta name="description" content="Kumpulan dokumen PDF VitaNusa AI berisi artikel edukasi kesehatan, teknologi, amanah informasi, dan cara bijak menilai klaim produk." />
+  <title>Rak Buku Digital VitaNusa AI</title>
+  <meta name="description" content="Rak Buku Digital VitaNusa AI berisi PDF edukatif, artikel pendamping, dan arsip edukasi tentang kesehatan, teknologi, amanah informasi, dan literasi konsumen." />
 
   <link rel="stylesheet" href="documents-style.css" />
 </head>
 <body>
 
-  <!-- HEADER -->
   <header class="site-header">
-    <nav class="navbar">
-      <a href="../index.html" class="brand">
-        <span class="brand-logo">V</span>
+    <nav class="navbar" aria-label="Navigasi dokumen">
+      <a href="../index.html" class="brand" aria-label="Kembali ke beranda VitaNusa AI">
+        <span class="brand-logo" aria-hidden="true">V</span>
         <span>
           <strong>VitaNusa AI</strong>
-          <small>Dokumen edukasi</small>
+          <small>Rak Buku Digital</small>
         </span>
       </a>
 
-      <button class="menu-toggle" id="menuToggle" aria-label="Buka menu">
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-controls="navLinks"
+        aria-expanded="false"
+        aria-label="Buka menu"
+      >
         ☰
       </button>
 
@@ -35,198 +41,267 @@
     </nav>
   </header>
 
-  <!-- HERO -->
   <section class="hero-section">
     <div class="hero-content">
-      <p class="eyebrow">PDF • Ebook • Arsip Edukasi</p>
-      <h1>Dokumen Edukasi VitaNusa AI</h1>
-      <p>
-        Kumpulan PDF edukatif yang bisa dibaca ulang, dibagikan, atau dijadikan
-        bahan belajar. Baca dengan ilmu, pahami dengan tenang, jangan tertipu
-        klaim yang terlalu manis.
-      </p>
+      <div class="hero-copy">
+        <p class="eyebrow">PDF • Ebook • Arsip Edukasi</p>
+        <h1>Rak Buku Digital VitaNusa AI</h1>
+        <p>
+          Kumpulan PDF edukatif, artikel pendamping, dan arsip pembelajaran VitaNusa AI.
+          Baca dengan tenang, pahami dengan ilmu, dan gunakan informasi secara amanah.
+        </p>
 
-      <div class="hero-actions">
-        <a href="#documentList" class="btn-primary">Lihat Dokumen</a>
-        <a href="../articles/index.html" class="btn-secondary">Baca Artikel</a>
+        <div class="hero-actions">
+          <a href="#documentList" class="btn-primary">Lihat Rak Buku</a>
+          <a href="../articles/index.html" class="btn-secondary">Baca Artikel</a>
+        </div>
+      </div>
+
+      <div class="hero-book" aria-hidden="true">
+        <div class="book-stack">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p>Perpustakaan kecil untuk edukasi yang jernih.</p>
       </div>
     </div>
   </section>
 
-  <!-- MAIN -->
   <main class="main-container">
 
     <section class="section-heading">
-      <p class="eyebrow">Perpustakaan PDF</p>
-      <h2>Daftar Dokumen</h2>
+      <p class="eyebrow">Perpustakaan Kecil</p>
+      <h2>Dokumen yang tersedia</h2>
       <p>
-        Gunakan pencarian atau filter kategori untuk menemukan dokumen yang kamu butuhkan.
+        Gunakan pencarian atau filter kategori untuk menemukan PDF edukatif,
+        ebook, dan artikel pendamping yang ingin dibaca.
       </p>
     </section>
 
-    <!-- TOOLS -->
-    <section class="tools-bar">
+    <section class="library-stats" aria-label="Statistik rak buku digital">
+      <div class="stat-card">
+        <strong>3</strong>
+        <span>Dokumen tersedia</span>
+      </div>
+      <div class="stat-card">
+        <strong>3</strong>
+        <span>PDF edukatif</span>
+      </div>
+      <div class="stat-card">
+        <strong>3</strong>
+        <span>Artikel pendamping</span>
+      </div>
+    </section>
+
+    <section class="tools-bar" aria-label="Pencarian dan filter dokumen">
       <div class="search-box">
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Cari dokumen..."
+        <label class="sr-only" for="searchInput">Cari dokumen</label>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Cari dokumen, kategori, atau kata kunci..."
           aria-label="Cari dokumen"
         />
       </div>
 
-      <div class="filter-buttons">
-        <button class="filter-btn active" data-category="all">Semua</button>
-        <button class="filter-btn" data-category="kesehatan">Kesehatan</button>
-        <button class="filter-btn" data-category="teknologi">Teknologi</button>
-        <button class="filter-btn" data-category="amanah">Amanah</button>
-        <button class="filter-btn" data-category="konsumen">Konsumen</button>
+      <div class="filter-buttons" aria-label="Filter kategori dokumen">
+        <button class="filter-btn active" type="button" data-category="all">Semua</button>
+        <button class="filter-btn" type="button" data-category="kesehatan">Kesehatan</button>
+        <button class="filter-btn" type="button" data-category="teknologi">Teknologi</button>
+        <button class="filter-btn" type="button" data-category="amanah">Amanah</button>
+        <button class="filter-btn" type="button" data-category="konsumen">Konsumen</button>
       </div>
     </section>
 
-    <!-- DOCUMENT LIST -->
-    <section class="document-grid" id="documentList">
-
-      <!-- PDF 1 -->
-      <article 
-        class="document-card"
-        data-category="teknologi kesehatan edukasi"
-        data-title="ai untuk edukasi kesehatan"
-      >
-        <div class="document-icon">PDF</div>
-
-        <div class="document-content">
-          <span class="document-badge blue">Teknologi</span>
-          <h3>AI untuk Edukasi Kesehatan</h3>
-          <p>
-            Dokumen tentang pemanfaatan AI untuk membantu edukasi kesehatan
-            secara etis, amanah, dan tidak menggantikan tenaga kesehatan profesional.
-          </p>
-
-          <ul class="document-info">
-            <li>Format: PDF</li>
-            <li>Kategori: Teknologi & Kesehatan</li>
-            <li>Status: Siap dibaca</li>
-          </ul>
+    <section class="bookshelf-section" aria-labelledby="bookshelfTitle">
+      <div class="bookshelf-heading">
+        <div>
+          <p class="eyebrow">Rak Buku Digital</p>
+          <h2 id="bookshelfTitle">Pilih dokumen untuk dibaca</h2>
         </div>
+        <p class="visible-count" id="visibleCount" aria-live="polite">3 dokumen tampil</p>
+      </div>
 
-        <div class="document-actions">
-          <a 
-            href="AI-untuk-Edukasi-Kesehatan-Revisi-VitaNusa-AI.pdf" 
-            target="_blank" 
-            rel="noopener"
-            class="btn-primary"
-          >
-            Buka PDF
-          </a>
+      <div class="shelf-rail" aria-hidden="true"></div>
 
-          <a 
-            href="AI-untuk-Edukasi-Kesehatan-Revisi-VitaNusa-AI.pdf" 
-            download
-            class="btn-secondary"
-          >
-            Download
-          </a>
-        </div>
-      </article>
+      <section class="document-grid" id="documentList">
 
-      <!-- PDF 2 -->
-      <article 
-        class="document-card"
-        data-category="kesehatan amanah halal thayyib"
-        data-title="sehat itu amanah"
-      >
-        <div class="document-icon">PDF</div>
+        <article
+          class="document-card"
+          data-category="teknologi kesehatan edukasi"
+          data-title="ai untuk edukasi kesehatan"
+        >
+          <div class="book-cover book-cover-blue">
+            <span class="book-label">PDF</span>
+            <h3>AI untuk Edukasi Kesehatan</h3>
+            <small>Teknologi • Kesehatan</small>
+          </div>
 
-        <div class="document-content">
-          <span class="document-badge green">Kesehatan</span>
-          <h3>Sehat Itu Amanah</h3>
-          <p>
-            Dokumen edukatif tentang menjaga kesehatan sebagai amanah melalui
-            ilmu, ikhtiar, kebiasaan baik, dan pilihan yang halal-thayyib.
-          </p>
+          <div class="document-content">
+            <div class="document-topline">
+              <span class="document-badge blue">Teknologi</span>
+              <span class="status-badge">Siap dibaca</span>
+            </div>
 
-          <ul class="document-info">
-            <li>Format: PDF</li>
-            <li>Kategori: Kesehatan & Amanah</li>
-            <li>Status: Siap dibaca</li>
-          </ul>
-        </div>
+            <h3>AI untuk Edukasi Kesehatan</h3>
+            <p>
+              Dokumen tentang pemanfaatan AI untuk membantu edukasi kesehatan
+              secara etis, amanah, dan tidak menggantikan tenaga kesehatan profesional.
+            </p>
 
-        <div class="document-actions">
-          <a 
-            href="Sehat-Itu-Amanah-Revisi-VitaNusa-AI.pdf" 
-            target="_blank" 
-            rel="noopener"
-            class="btn-primary"
-          >
-            Buka PDF
-          </a>
+            <ul class="document-info">
+              <li>Format: PDF</li>
+              <li>Kategori: Teknologi & Kesehatan</li>
+              <li>Artikel pendamping tersedia</li>
+            </ul>
+          </div>
 
-          <a 
-            href="Sehat-Itu-Amanah-Revisi-VitaNusa-AI.pdf" 
-            download
-            class="btn-secondary"
-          >
-            Download
-          </a>
-        </div>
-      </article>
+          <div class="document-actions">
+            <a
+              href="../articles/ai-untuk-edukasi-kesehatan.html"
+              class="btn-tertiary"
+            >
+              Baca Artikel
+            </a>
+            <a
+              href="AI-untuk-Edukasi-Kesehatan-Revisi-VitaNusa-AI.pdf"
+              target="_blank"
+              rel="noopener"
+              class="btn-primary"
+            >
+              Buka PDF
+            </a>
+            <a
+              href="AI-untuk-Edukasi-Kesehatan-Revisi-VitaNusa-AI.pdf"
+              download
+              class="btn-secondary"
+            >
+              Download
+            </a>
+          </div>
+        </article>
 
-      <!-- PDF 3 -->
-      <article 
-        class="document-card"
-        data-category="konsumen edukasi klaim produk amanah"
-        data-title="testimoni bukan bukti cara bijak menilai klaim produk"
-      >
-        <div class="document-icon">PDF</div>
+        <article
+          class="document-card"
+          data-category="kesehatan amanah halal thayyib"
+          data-title="sehat itu amanah"
+        >
+          <div class="book-cover book-cover-green">
+            <span class="book-label">PDF</span>
+            <h3>Sehat Itu Amanah</h3>
+            <small>Kesehatan • Amanah</small>
+          </div>
 
-        <div class="document-content">
-          <span class="document-badge orange">Konsumen</span>
-          <h3>Testimoni Bukan Bukti</h3>
-          <p>
-            Panduan bijak menilai klaim produk agar pembaca tidak mudah percaya
-            pada promosi berlebihan, testimoni bombastis, atau janji instan.
-          </p>
+          <div class="document-content">
+            <div class="document-topline">
+              <span class="document-badge green">Kesehatan</span>
+              <span class="status-badge">Siap dibaca</span>
+            </div>
 
-          <ul class="document-info">
-            <li>Format: PDF</li>
-            <li>Kategori: Edukasi Konsumen</li>
-            <li>Status: Siap dibaca</li>
-          </ul>
-        </div>
+            <h3>Sehat Itu Amanah</h3>
+            <p>
+              Dokumen edukatif tentang menjaga kesehatan sebagai amanah melalui
+              ilmu, ikhtiar, kebiasaan baik, dan pilihan yang halal-thayyib.
+            </p>
 
-        <div class="document-actions">
-          <a 
-            href="artikel-3.pdf" 
-            target="_blank" 
-            rel="noopener"
-            class="btn-primary"
-          >
-            Buka PDF
-          </a>
+            <ul class="document-info">
+              <li>Format: PDF</li>
+              <li>Kategori: Kesehatan & Amanah</li>
+              <li>Artikel pendamping tersedia</li>
+            </ul>
+          </div>
 
-          <a 
-            href="artikel-3.pdf" 
-            download
-            class="btn-secondary"
-          >
-            Download
-          </a>
-        </div>
-      </article>
+          <div class="document-actions">
+            <a
+              href="../articles/sehat-itu-amanah.html"
+              class="btn-tertiary"
+            >
+              Baca Artikel
+            </a>
+            <a
+              href="Sehat-Itu-Amanah-Revisi-VitaNusa-AI.pdf"
+              target="_blank"
+              rel="noopener"
+              class="btn-primary"
+            >
+              Buka PDF
+            </a>
+            <a
+              href="Sehat-Itu-Amanah-Revisi-VitaNusa-AI.pdf"
+              download
+              class="btn-secondary"
+            >
+              Download
+            </a>
+          </div>
+        </article>
 
+        <article
+          class="document-card"
+          data-category="konsumen edukasi klaim produk amanah kesehatan"
+          data-title="testimoni bukan bukti cara bijak menilai klaim produk"
+        >
+          <div class="book-cover book-cover-orange">
+            <span class="book-label">PDF</span>
+            <h3>Testimoni Bukan Bukti</h3>
+            <small>Konsumen • Literasi Klaim</small>
+          </div>
+
+          <div class="document-content">
+            <div class="document-topline">
+              <span class="document-badge orange">Konsumen</span>
+              <span class="status-badge">Siap dibaca</span>
+            </div>
+
+            <h3>Testimoni Bukan Bukti</h3>
+            <p>
+              Panduan bijak menilai klaim produk agar pembaca tidak mudah percaya
+              pada promosi berlebihan, testimoni bombastis, atau janji instan.
+            </p>
+
+            <ul class="document-info">
+              <li>Format: PDF</li>
+              <li>Kategori: Edukasi Konsumen</li>
+              <li>Artikel pendamping tersedia</li>
+            </ul>
+          </div>
+
+          <div class="document-actions">
+            <a
+              href="../articles/artikel-3.html"
+              class="btn-tertiary"
+            >
+              Baca Artikel
+            </a>
+            <a
+              href="artikel-3.pdf"
+              target="_blank"
+              rel="noopener"
+              class="btn-primary"
+            >
+              Buka PDF
+            </a>
+            <a
+              href="artikel-3.pdf"
+              download
+              class="btn-secondary"
+            >
+              Download
+            </a>
+          </div>
+        </article>
+
+      </section>
+
+      <div class="empty-state" id="emptyState">
+        <h3>Dokumen tidak ditemukan</h3>
+        <p>Coba gunakan kata kunci lain atau pilih kategori “Semua”.</p>
+      </div>
     </section>
-
-    <!-- EMPTY STATE -->
-    <div class="empty-state" id="emptyState">
-      <h3>Dokumen tidak ditemukan</h3>
-      <p>Coba gunakan kata kunci lain yang lebih sederhana.</p>
-    </div>
 
   </main>
 
-  <!-- CTA -->
   <section class="cta-section">
     <div class="cta-box">
       <p class="eyebrow">Catatan Amanah</p>
@@ -240,7 +315,6 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
   <footer class="site-footer">
     <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian.</p>
   </footer>
