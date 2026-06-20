@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>VitaNusa AI Admin Dashboard</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-page admin-dashboard-page">
+  <div class="admin-app">
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Navigasi admin">
+      <a class="admin-brand" href="index.html" aria-label="VitaNusa AI Admin Dashboard">
+        <span class="admin-brand-mark">VN</span>
+        <span>
+          <strong>VitaNusa AI Admin</strong>
+          <small>Skeleton dashboard</small>
+        </span>
+      </a>
+
+      <nav class="admin-nav" aria-label="Menu admin">
+        <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard">Dashboard</button>
+        <button class="admin-nav-link" type="button" data-admin-section="articles">Artikel</button>
+        <button class="admin-nav-link" type="button" data-admin-section="comics">Komik</button>
+        <button class="admin-nav-link" type="button" data-admin-section="media">Media</button>
+        <button class="admin-nav-link" type="button" data-admin-section="products">Produk</button>
+        <button class="admin-nav-link" type="button" data-admin-section="faq">FAQ</button>
+        <button class="admin-nav-link" type="button" data-admin-section="settings">Pengaturan</button>
+        <button class="admin-nav-link admin-placeholder" type="button" data-placeholder="Logout akan aktif setelah Firebase Auth di Phase 3.">Logout</button>
+      </nav>
+
+      <a class="admin-public-link" href="../index.html">Kembali ke Website Publik</a>
+    </aside>
+
+    <div class="admin-main-shell">
+      <header class="admin-topbar">
+        <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false">Menu</button>
+        <div>
+          <p class="admin-kicker">Phase 2</p>
+          <h1>VitaNusa AI Admin</h1>
+        </div>
+        <a class="admin-button admin-button-light" href="login.html">Login Placeholder</a>
+      </header>
+
+      <main class="admin-main" id="main">
+        <section class="admin-status-banner" aria-label="Status phase">
+          <strong>Phase 2: Admin skeleton only. Firebase Auth, Firestore CRUD, and Storage upload are not active yet.</strong>
+          <span>Halaman ini hanya pratinjau struktur admin dan tidak mengubah data apa pun.</span>
+        </section>
+
+        <section class="admin-panel is-active" data-admin-panel="dashboard" aria-labelledby="dashboardTitle">
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Ringkasan</p>
+            <h2 id="dashboardTitle">Dashboard</h2>
+            <p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat integrasi Firebase sudah siap.</p>
+          </div>
+
+          <div class="admin-card-grid">
+            <article class="admin-card">
+              <span class="admin-card-label">Artikel</span>
+              <strong>0</strong>
+              <p>CRUD artikel belum aktif.</p>
+            </article>
+            <article class="admin-card">
+              <span class="admin-card-label">Komik</span>
+              <strong>0</strong>
+              <p>Panel komik belum terhubung.</p>
+            </article>
+            <article class="admin-card">
+              <span class="admin-card-label">Media / File</span>
+              <strong>0</strong>
+              <p>Upload Storage belum aktif.</p>
+            </article>
+            <article class="admin-card">
+              <span class="admin-card-label">Produk</span>
+              <strong>0</strong>
+              <p>Katalog produk belum terhubung.</p>
+            </article>
+            <article class="admin-card">
+              <span class="admin-card-label">FAQ</span>
+              <strong>0</strong>
+              <p>FAQ dinamis belum aktif.</p>
+            </article>
+            <article class="admin-card">
+              <span class="admin-card-label">Pengaturan</span>
+              <strong>Draft</strong>
+              <p>Site settings belum terhubung.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="articles" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Artikel</h2>
+            <p>Placeholder untuk daftar, draft, publish, dan archive artikel pada fase berikutnya.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Article CRUD belum aktif pada Phase 2.">Tambah Artikel</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="comics" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Komik</h2>
+            <p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 2.">Kelola Komik</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="media" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Media / Files</h2>
+            <p>Placeholder untuk file gambar dan PDF. Upload Storage belum tersedia.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Storage upload belum aktif pada Phase 2.">Upload File</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="products" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Produk</h2>
+            <p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 2.">Tambah Produk</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="faq" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>FAQ</h2>
+            <p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 2.">Tambah FAQ</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="settings" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Site Settings</h2>
+            <p>Placeholder untuk pengaturan publik seperti tagline, disclaimer, dan status media sosial.</p>
+          </div>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 2.">Simpan Pengaturan</button>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
