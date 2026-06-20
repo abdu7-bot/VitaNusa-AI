@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isActiveAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active";
+    }
+
+    function isPublished() {
+      return resource.data.status == "published";
+    }
+
+    function isPublicMedia() {
+      return resource.data.status == "active"
+        && resource.data.visibility == "public";
+    }
+
+    match /admins/{uid} {
+      allow get, list: if isActiveAdmin();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow get, list: if isPublished();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /comics/{comicId} {
+      allow get, list: if isPublished();
+      allow create, update, delete: if isActiveAdmin();
+
+      match /panels/{panelId} {
+        allow get, list: if isPublished();
+        allow create, update, delete: if isActiveAdmin();
+      }
+    }
+
+    match /comicPanels/{panelId} {
+      allow get, list: if isPublished();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /products/{productId} {
+      allow get, list: if isPublished();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /faqs/{faqId} {
+      allow get, list: if isPublished();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /siteSettings/public {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /siteSettings/{settingId} {
+      allow get, list: if isActiveAdmin();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /mediaIndex/{mediaId} {
+      allow get, list: if isPublicMedia();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
