@@ -33,6 +33,22 @@ const uidTargets = document.querySelectorAll("[data-auth-uid]");
 const uidCards = document.querySelectorAll("[data-uid-card]");
 const copyUidButtons = document.querySelectorAll("[data-copy-uid]");
 
+function clearAdminReady() {
+  window.vitaNusaAdmin = null;
+}
+
+function announceAdminReady(user, adminData) {
+  const detail = {
+    user,
+    auth,
+    db,
+    admin: adminData || {}
+  };
+
+  window.vitaNusaAdmin = detail;
+  window.dispatchEvent(new CustomEvent("vitanusa:admin-ready", { detail }));
+}
+
 function setText(targets, value) {
   targets.forEach((target) => {
     target.textContent = value || "-";
@@ -89,6 +105,7 @@ async function checkActiveAdmin(user) {
 }
 
 function renderUnauthorized(user) {
+  clearAdminReady();
   showUserIdentity(user);
 
   if (protectedContent) protectedContent.hidden = true;
@@ -103,6 +120,7 @@ function renderUnauthorized(user) {
 
 async function handleLoginPage(user) {
   if (!user) {
+    clearAdminReady();
     setStatus("warning", "Belum login", "Silakan login dengan Google untuk meminta akses admin.");
     showUserIdentity(null);
     if (loginButton) loginButton.disabled = false;
@@ -126,6 +144,7 @@ async function handleLoginPage(user) {
 
 async function handleDashboardPage(user) {
   if (!user) {
+    clearAdminReady();
     window.location.replace("login.html");
     return;
   }
@@ -143,10 +162,12 @@ async function handleDashboardPage(user) {
   if (deniedContent) deniedContent.hidden = true;
   if (protectedContent) protectedContent.hidden = false;
 
+  announceAdminReady(user, adminCheck.data);
+
   setStatus(
     "success",
     "Admin aktif",
-    "Firebase Auth aktif. CRUD artikel, komik, dan upload Storage belum aktif."
+    "Firebase Auth aktif. Article CRUD sudah aktif; komik CRUD dan upload Storage belum aktif."
   );
 }
 
@@ -171,6 +192,7 @@ logoutButtons.forEach((button) => {
 
     try {
       await signOut(auth);
+      clearAdminReady();
       window.location.replace("login.html");
     } catch (error) {
       button.disabled = false;
