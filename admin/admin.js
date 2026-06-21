@@ -35,7 +35,7 @@
 
   placeholders.forEach((item) => {
     item.addEventListener('click', () => {
-      const message = item.dataset.placeholder || 'Fitur ini belum aktif pada Phase 2.';
+      const message = item.dataset.placeholder || 'Fitur ini belum aktif pada Phase 3.';
       window.alert(message);
     });
   });
