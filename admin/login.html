@@ -7,22 +7,40 @@
   <title>VitaNusa AI Admin Login</title>
   <link rel="stylesheet" href="admin.css">
 </head>
-<body class="admin-page admin-login-page">
+<body class="admin-page admin-login-page" data-admin-auth-page="login">
   <main class="admin-login-shell" id="main">
     <section class="admin-login-card" aria-labelledby="loginTitle">
-      <p class="admin-kicker">Phase 2</p>
+      <p class="admin-kicker">Phase 3</p>
       <h1 id="loginTitle">VitaNusa AI Admin</h1>
-      <p class="admin-lead">Panel admin statis untuk pratinjau alur pengelolaan konten VitaNusa AI.</p>
+      <p class="admin-lead">Login Google Firebase untuk masuk ke dashboard admin VitaNusa AI.</p>
 
       <div class="admin-alert admin-alert-warning" role="status">
-        Login Google Firebase akan diaktifkan pada Phase 3.
+        Firebase Auth aktif. Akses dashboard tetap membutuhkan dokumen admin aktif di Firestore.
       </div>
 
       <div class="admin-alert" role="status">
-        Skeleton ini belum menulis data, belum membaca Firestore, dan belum mengunggah file.
+        Jika login berhasil tetapi belum aktif sebagai admin, UID akan ditampilkan untuk didaftarkan manual di Firestore.
       </div>
 
-      <button class="admin-button admin-button-primary admin-placeholder" type="button" aria-disabled="true" data-placeholder="Login Firebase belum aktif pada Phase 2.">
+      <div class="admin-auth-status is-loading" data-auth-status role="status" aria-live="polite">
+        <strong>Memeriksa status login</strong>
+        <span>Menunggu Firebase Auth.</span>
+      </div>
+
+      <div class="admin-uid-card" data-uid-card hidden>
+        <p class="admin-uid-title">Data akun untuk pendaftaran manual</p>
+        <div class="admin-identity-row">
+          <span>Email</span>
+          <code data-auth-email>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>UID</span>
+          <code data-auth-uid>-</code>
+        </div>
+        <button class="admin-button admin-button-light" type="button" data-copy-uid>Salin UID</button>
+      </div>
+
+      <button class="admin-button admin-button-primary" type="button" data-login-button>
         Login dengan Google
       </button>
 
@@ -34,5 +52,6 @@
   </main>
 
   <script src="admin.js"></script>
+  <script type="module" src="firebase-auth.js"></script>
 </body>
 </html>
