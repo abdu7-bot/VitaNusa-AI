@@ -42,13 +42,16 @@ function setText(targets, value) {
 function setStatus(kind, title, message) {
   if (!statusBox) return;
 
+  const titleNode = document.createElement("strong");
+  const messageNode = document.createElement("span");
+
+  titleNode.textContent = title;
+  messageNode.textContent = message;
+
   statusBox.hidden = false;
   statusBox.classList.remove("is-loading", "is-success", "is-error", "is-warning");
   statusBox.classList.add(`is-${kind}`);
-  statusBox.innerHTML = `
-    <strong>${title}</strong>
-    <span>${message}</span>
-  `;
+  statusBox.replaceChildren(titleNode, messageNode);
 }
 
 function showUserIdentity(user) {
