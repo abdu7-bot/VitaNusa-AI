@@ -27,7 +27,7 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      allow get, list: if isPublished();
+      allow get, list: if isPublished() || isActiveAdmin();
       allow create, update, delete: if isActiveAdmin();
     }
 
