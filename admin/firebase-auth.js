@@ -218,13 +218,14 @@ copyUidButtons.forEach((button) => {
   });
 });
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (page === "login") {
-    handleLoginPage(user);
+    await handleLoginPage(user);
     return;
   }
 
   if (page === "dashboard") {
-    handleDashboardPage(user);
+    await handleDashboardPage(user);
+    return;
   }
 });
