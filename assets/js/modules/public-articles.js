@@ -97,6 +97,9 @@ function createArticleCard(article) {
   card.dataset.title = article.title || '';
   card.dataset.category = buildSearchCategory(article);
 
+  const banner = createBannerFigure(article, 'article-card-banner');
+  if (banner) card.append(banner);
+
   const badge = document.createElement('div');
   badge.className = 'article-badge green';
   badge.textContent = article.category || 'Edukasi';
@@ -164,6 +167,25 @@ function createTagList(tags) {
   return tagList;
 }
 
+function createBannerFigure(article, className) {
+  if (!article.bannerUrl) return null;
+
+  const figure = document.createElement('figure');
+  figure.className = className;
+
+  const image = document.createElement('img');
+  image.src = article.bannerUrl;
+  image.alt = article.title ? `Banner artikel ${article.title}` : 'Banner artikel VitaNusa AI';
+  image.loading = 'lazy';
+
+  image.addEventListener('error', () => {
+    figure.remove();
+  });
+
+  figure.append(image);
+  return figure;
+}
+
 function renderArticleDetail(article) {
   detailRoot.replaceChildren();
 
@@ -183,11 +205,18 @@ function renderArticleDetail(article) {
 
   header.append(category, title, meta, createTagList(article.tags));
 
+  const banner = createBannerFigure(article, 'article-detail-banner');
+
   const body = document.createElement('article');
   body.className = 'article-detail-body';
   body.innerHTML = sanitizeArticleHtml(article.contentHtml || '<p>Konten artikel belum tersedia.</p>');
 
-  detailRoot.append(header, body);
+  if (banner) {
+    detailRoot.append(header, banner, body);
+  } else {
+    detailRoot.append(header, body);
+  }
+
   document.title = `${article.title || 'Artikel'} | VitaNusa AI`;
 }
 
