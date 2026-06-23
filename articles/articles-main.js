@@ -2,35 +2,42 @@ const menuToggle = document.getElementById("menuToggle");
 const navLinks = document.getElementById("navLinks");
 const searchInput = document.getElementById("searchInput");
 const filterButtons = document.querySelectorAll(".filter-btn");
-const articleCards = document.querySelectorAll(".article-card");
 const emptyState = document.getElementById("emptyState");
 
 let currentCategory = "all";
 
-menuToggle.addEventListener("click", () => {
-  navLinks.classList.toggle("show");
-});
+if (menuToggle && navLinks) {
+  menuToggle.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+}
 
 filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
     filterButtons.forEach((btn) => btn.classList.remove("active"));
     button.classList.add("active");
 
-    currentCategory = button.dataset.category;
+    currentCategory = button.dataset.category || "all";
     filterArticles();
   });
 });
 
-searchInput.addEventListener("input", filterArticles);
+searchInput?.addEventListener("input", filterArticles);
+window.addEventListener("vitanusa:public-articles-rendered", filterArticles);
+
+function getArticleCards() {
+  return document.querySelectorAll(".article-card");
+}
 
 function filterArticles() {
-  const keyword = searchInput.value.toLowerCase().trim();
+  const keyword = (searchInput?.value || "").toLowerCase().trim();
+  const articleCards = getArticleCards();
   let visibleCount = 0;
 
   articleCards.forEach((card) => {
-    const title = card.dataset.title.toLowerCase();
-    const category = card.dataset.category.toLowerCase();
-    const text = card.innerText.toLowerCase();
+    const title = (card.dataset.title || "").toLowerCase();
+    const category = (card.dataset.category || "").toLowerCase();
+    const text = (card.innerText || "").toLowerCase();
 
     const matchKeyword =
       title.includes(keyword) ||
@@ -48,5 +55,9 @@ function filterArticles() {
     }
   });
 
-  emptyState.style.display = visibleCount === 0 ? "block" : "none";
+  if (emptyState) {
+    emptyState.style.display = visibleCount === 0 ? "block" : "none";
+  }
 }
+
+filterArticles();
