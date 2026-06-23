@@ -67,7 +67,7 @@
       <header class="admin-topbar">
         <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false">Menu</button>
         <div>
-          <p class="admin-kicker">Phase 4</p>
+          <p class="admin-kicker">Phase 6</p>
           <h1>VitaNusa AI Admin</h1>
           <p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p>
         </div>
@@ -76,7 +76,7 @@
 
       <main class="admin-main" id="main">
         <section class="admin-status-banner" aria-label="Status phase">
-          <strong>Phase 4: Article CRUD aktif untuk admin aktif. Komik CRUD dan upload Storage belum aktif.</strong>
+          <strong>Phase 6: Article CRUD dan upload banner artikel aktif untuk admin aktif. Komik CRUD belum aktif.</strong>
           <span>Artikel tetap harus amanah, edukatif, dan tidak mengandung klaim kesehatan berlebihan.</span>
         </section>
 
@@ -91,7 +91,7 @@
             <article class="admin-card">
               <span class="admin-card-label">Artikel</span>
               <strong>CRUD</strong>
-              <p>Tambah, edit, publish, dan archive artikel sudah aktif.</p>
+              <p>Tambah, edit, publish, archive, dan banner artikel sudah aktif.</p>
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Komik</span>
@@ -100,8 +100,8 @@
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Media / File</span>
-              <strong>0</strong>
-              <p>Upload Storage belum aktif.</p>
+              <strong>Banner</strong>
+              <p>Upload banner artikel ke Firebase Storage sudah aktif.</p>
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Produk</span>
@@ -194,6 +194,17 @@
                     Banner URL
                     <input name="bannerUrl" type="url" autocomplete="off" placeholder="https://... atau path statis">
                   </label>
+                  <p class="article-help">Boleh diisi manual atau otomatis dari upload banner di bawah.</p>
+
+                  <label class="article-upload-label">
+                    Upload Banner Artikel
+                    <input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file>
+                  </label>
+                  <p class="article-help">Format JPG, PNG, WEBP. Maksimal 2MB. Upload hanya untuk admin aktif.</p>
+                  <div class="article-banner-preview" data-banner-preview hidden>
+                    <img data-banner-preview-image alt="Preview banner artikel">
+                    <button class="admin-button admin-button-light" type="button" data-banner-clear>Hapus pilihan gambar</button>
+                  </div>
 
                   <label>
                     PDF URL
@@ -236,16 +247,16 @@
             <h2>Komik</h2>
             <p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 4.">Kelola Komik</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 6.">Kelola Komik</button>
         </section>
 
         <section class="admin-panel" data-admin-panel="media" hidden>
           <div class="admin-section-heading">
             <p class="admin-kicker">Modul</p>
             <h2>Media / Files</h2>
-            <p>Placeholder untuk file gambar dan PDF. Upload Storage belum tersedia.</p>
+            <p>Upload banner artikel sudah tersedia di form artikel. Media library penuh belum tersedia.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Storage upload belum aktif pada Phase 4.">Upload File</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Media library penuh belum aktif pada Phase 6. Upload banner tersedia di form Artikel.">Upload File</button>
         </section>
 
         <section class="admin-panel" data-admin-panel="products" hidden>
@@ -254,7 +265,7 @@
             <h2>Produk</h2>
             <p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 4.">Tambah Produk</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button>
         </section>
 
         <section class="admin-panel" data-admin-panel="faq" hidden>
@@ -263,7 +274,7 @@
             <h2>FAQ</h2>
             <p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 4.">Tambah FAQ</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button>
         </section>
 
         <section class="admin-panel" data-admin-panel="settings" hidden>
@@ -272,7 +283,7 @@
             <h2>Site Settings</h2>
             <p>Placeholder untuk pengaturan publik seperti tagline, disclaimer, dan status media sosial.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 4.">Simpan Pengaturan</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 6.">Simpan Pengaturan</button>
         </section>
       </main>
     </div>
