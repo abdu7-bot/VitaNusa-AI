@@ -1,4 +1,4 @@
-import { db } from './firebase-auth.js';
+import { db, storage } from './firebase-auth.js';
 import {
   collection,
   addDoc,
@@ -7,10 +7,17 @@ import {
   updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js';
 
 const articleApp = document.querySelector('[data-article-app]');
 const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
 const VALID_STATUSES = new Set(['draft', 'published', 'archived']);
+const MAX_BANNER_BYTES = 2 * 1024 * 1024;
+const ALLOWED_BANNER_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const RISK_TERMS = [
   'pasti sembuh',
   '100% aman',
@@ -27,7 +34,9 @@ const state = {
   initialized: false,
   articles: [],
   editingId: null,
-  slugTouched: false
+  slugTouched: false,
+  selectedBannerFile: null,
+  previewObjectUrl: null
 };
 
 if (articleApp) {
@@ -45,12 +54,16 @@ function initArticleCrud() {
   const form = getForm();
   const titleInput = form?.elements.title;
   const slugInput = form?.elements.slug;
+  const bannerInput = getBannerInput();
 
   document.querySelector('[data-article-new]')?.addEventListener('click', () => resetForm());
   document.querySelector('[data-article-refresh]')?.addEventListener('click', () => loadArticles());
   document.querySelector('[data-article-reset]')?.addEventListener('click', () => resetForm());
   document.querySelector('[data-article-list]')?.addEventListener('click', handleListAction);
+  document.querySelector('[data-banner-clear]')?.addEventListener('click', clearBannerSelection);
   form?.addEventListener('submit', handleSaveArticle);
+
+  bannerInput?.addEventListener('change', handleBannerSelection);
 
   titleInput?.addEventListener('input', () => {
     if (!state.slugTouched && slugInput) {
@@ -78,6 +91,18 @@ function getListBody() {
   return document.querySelector('[data-article-list]');
 }
 
+function getBannerInput() {
+  return document.querySelector('[data-banner-file]');
+}
+
+function getPreviewBox() {
+  return document.querySelector('[data-banner-preview]');
+}
+
+function getPreviewImage() {
+  return document.querySelector('[data-banner-preview-image]');
+}
+
 function setMessage(kind, message) {
   const box = document.querySelector('[data-article-message]');
   if (!box) return;
@@ -103,6 +128,10 @@ function normalizeSlug(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
+}
+
+function normalizeFileBaseName(value) {
+  return normalizeSlug(String(value || '').replace(/\.[^.]+$/, '')) || 'banner-artikel';
 }
 
 function parseTags(value) {
@@ -147,7 +176,7 @@ async function loadArticles() {
     renderArticles();
     clearMessage();
   } catch (error) {
-    console.error("Gagal memuat artikel dari Firestore:", error);
+    console.error('Gagal memuat artikel dari Firestore:', error);
     const message = 'Gagal memuat artikel. Periksa Firestore rules dan pastikan rules sudah dipublish/deploy ke Firebase.';
     if (body) body.replaceChildren(createEmptyRow(message));
     setMessage('error', message);
@@ -174,6 +203,12 @@ function renderArticles() {
     titleCell.className = 'article-title-cell';
     titleCell.append(createStrong(article.title || '(tanpa judul)'));
     titleCell.append(createSmall(article.slug || '-'));
+
+    if (article.bannerUrl) {
+      const bannerFlag = createSmall('Banner: tersedia');
+      bannerFlag.className = 'article-meta-muted article-banner-flag';
+      titleCell.append(bannerFlag);
+    }
 
     statusCell.append(createStatusBadge(article.status));
     categoryCell.textContent = article.category || '-';
@@ -309,6 +344,21 @@ function validateArticle(payload, currentId = null) {
   return { errors, warnings, riskTerms, missingDisclaimer };
 }
 
+function validateBannerFile(file) {
+  if (!file) return [];
+  const errors = [];
+
+  if (!ALLOWED_BANNER_TYPES.has(file.type)) {
+    errors.push('Banner harus berupa gambar JPG, PNG, atau WEBP.');
+  }
+
+  if (file.size > MAX_BANNER_BYTES) {
+    errors.push('Ukuran banner maksimal 2MB.');
+  }
+
+  return errors;
+}
+
 function findRiskTerms(text) {
   const lowerText = String(text || '').toLowerCase();
   return RISK_TERMS.filter((term) => lowerText.includes(term));
@@ -322,9 +372,10 @@ async function handleSaveArticle(event) {
   const currentId = state.editingId;
   const existing = state.articles.find((article) => article.id === currentId);
   const validation = validateArticle(payload, currentId);
+  const bannerErrors = validateBannerFile(state.selectedBannerFile);
 
-  if (validation.errors.length) {
-    setMessage('error', validation.errors.join(' '));
+  if (validation.errors.length || bannerErrors.length) {
+    setMessage('error', [...validation.errors, ...bannerErrors].join(' '));
     return;
   }
 
@@ -348,6 +399,16 @@ async function handleSaveArticle(event) {
   }
 
   try {
+    const submitButton = event.submitter;
+    if (submitButton) submitButton.disabled = true;
+
+    if (state.selectedBannerFile) {
+      setMessage('warning', 'Mengupload banner artikel ke Firebase Storage...');
+      writePayload.bannerUrl = await uploadBannerFile(state.selectedBannerFile, payload);
+      const form = getForm();
+      if (form?.elements.bannerUrl) form.elements.bannerUrl.value = writePayload.bannerUrl;
+    }
+
     if (currentId) {
       await updateDoc(doc(db, 'articles', currentId), writePayload);
     } else {
@@ -357,23 +418,115 @@ async function handleSaveArticle(event) {
       });
     }
 
+    if (submitButton) submitButton.disabled = false;
     await loadArticles();
     resetForm();
 
+    const bannerMessage = state.selectedBannerFile ? ' Banner berhasil diupload.' : '';
+
     if (forcedDraft) {
-      setMessage('warning', `${validation.warnings.join(' ')} Artikel disimpan sebagai draft, bukan published.`);
+      setMessage('warning', `${validation.warnings.join(' ')} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
       return;
     }
 
     if (validation.warnings.length) {
-      setMessage('warning', `${validation.warnings.join(' ')} Artikel tersimpan sebagai ${payload.status}.`);
+      setMessage('warning', `${validation.warnings.join(' ')} Artikel tersimpan sebagai ${payload.status}.${bannerMessage}`);
       return;
     }
 
-    setMessage('success', `Artikel berhasil disimpan sebagai ${payload.status}.`);
+    setMessage('success', `Artikel berhasil disimpan sebagai ${payload.status}.${bannerMessage}`);
   } catch (error) {
-    setMessage('error', error.message || 'Gagal menyimpan artikel.');
+    console.error('Gagal menyimpan artikel atau upload banner:', error);
+    const submitButton = event.submitter;
+    if (submitButton) submitButton.disabled = false;
+    setMessage('error', error.message || 'Gagal menyimpan artikel atau upload banner. Periksa Storage rules.');
   }
+}
+
+async function uploadBannerFile(file, payload) {
+  const slug = payload.slug || 'artikel';
+  const ext = getSafeExtension(file);
+  const fileName = `${Date.now()}-${normalizeFileBaseName(file.name)}.${ext}`;
+  const storagePath = `article-banners/${slug}/${fileName}`;
+  const fileRef = ref(storage, storagePath);
+
+  const snapshot = await uploadBytes(fileRef, file, {
+    contentType: file.type,
+    customMetadata: {
+      visibility: 'public',
+      category: 'article-banner',
+      articleSlug: slug
+    }
+  });
+
+  return getDownloadURL(snapshot.ref);
+}
+
+function getSafeExtension(file) {
+  if (file.type === 'image/png') return 'png';
+  if (file.type === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+function handleBannerSelection(event) {
+  const file = event.target.files?.[0] || null;
+  state.selectedBannerFile = file;
+
+  if (!file) {
+    hideBannerPreview();
+    return;
+  }
+
+  const errors = validateBannerFile(file);
+  if (errors.length) {
+    setMessage('error', errors.join(' '));
+    clearBannerSelection();
+    return;
+  }
+
+  showBannerPreview(URL.createObjectURL(file));
+}
+
+function showBannerPreview(url) {
+  hideBannerPreview();
+  state.previewObjectUrl = url;
+
+  const previewBox = getPreviewBox();
+  const previewImage = getPreviewImage();
+  if (!previewBox || !previewImage) return;
+
+  previewImage.src = url;
+  previewBox.hidden = false;
+}
+
+function showExistingBannerPreview(url) {
+  hideBannerPreview();
+
+  const previewBox = getPreviewBox();
+  const previewImage = getPreviewImage();
+  if (!previewBox || !previewImage || !url) return;
+
+  previewImage.src = url;
+  previewBox.hidden = false;
+}
+
+function hideBannerPreview() {
+  if (state.previewObjectUrl) {
+    URL.revokeObjectURL(state.previewObjectUrl);
+    state.previewObjectUrl = null;
+  }
+
+  const previewBox = getPreviewBox();
+  const previewImage = getPreviewImage();
+  if (previewImage) previewImage.removeAttribute('src');
+  if (previewBox) previewBox.hidden = true;
+}
+
+function clearBannerSelection() {
+  const input = getBannerInput();
+  if (input) input.value = '';
+  state.selectedBannerFile = null;
+  hideBannerPreview();
 }
 
 function fillForm(article) {
@@ -382,6 +535,7 @@ function fillForm(article) {
 
   state.editingId = article.id;
   state.slugTouched = true;
+  state.selectedBannerFile = null;
 
   form.elements.articleId.value = article.id;
   form.elements.title.value = article.title || '';
@@ -394,6 +548,13 @@ function fillForm(article) {
   form.elements.readTime.value = article.readTime || '';
   form.elements.tags.value = tagsToInput(article.tags);
   form.elements.status.value = VALID_STATUSES.has(article.status) ? article.status : 'draft';
+  if (form.elements.bannerFile) form.elements.bannerFile.value = '';
+
+  if (article.bannerUrl) {
+    showExistingBannerPreview(article.bannerUrl);
+  } else {
+    hideBannerPreview();
+  }
 
   document.querySelector('[data-article-form-title]').textContent = 'Edit Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -405,9 +566,12 @@ function resetForm() {
 
   state.editingId = null;
   state.slugTouched = false;
+  state.selectedBannerFile = null;
   form.reset();
   form.elements.status.value = 'draft';
   form.elements.contentHtml.value = `<p>${REQUIRED_DISCLAIMER}</p>`;
+  if (form.elements.bannerFile) form.elements.bannerFile.value = '';
+  hideBannerPreview();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
 }
 
