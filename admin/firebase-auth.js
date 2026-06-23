@@ -11,11 +11,13 @@ import {
   doc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({
@@ -42,6 +44,7 @@ function announceAdminReady(user, adminData) {
     user,
     auth,
     db,
+    storage,
     admin: adminData || {}
   };
 
@@ -167,7 +170,7 @@ async function handleDashboardPage(user) {
   setStatus(
     "success",
     "Admin aktif",
-    "Firebase Auth aktif. Article CRUD sudah aktif; komik CRUD dan upload Storage belum aktif."
+    "Firebase Auth aktif. Article CRUD dan upload banner artikel sudah aktif; komik CRUD belum aktif."
   );
 }
 
