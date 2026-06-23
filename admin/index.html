@@ -76,8 +76,8 @@
 
       <main class="admin-main" id="main">
         <section class="admin-status-banner" aria-label="Status phase">
-          <strong>Phase 6: Article CRUD dan upload banner artikel aktif untuk admin aktif. Komik CRUD belum aktif.</strong>
-          <span>Artikel tetap harus amanah, edukatif, dan tidak mengandung klaim kesehatan berlebihan.</span>
+          <strong>Phase 6: Article CRUD aktif untuk admin aktif. Komik CRUD belum aktif.</strong>
+          <span>Banner artikel statis utama disimpan di GitHub. Isi Banner URL dengan path gambar GitHub seperti ../assets/img/artikel/banner-artikel-admin-1.webp.</span>
         </section>
 
         <section class="admin-panel is-active" data-admin-panel="dashboard" aria-labelledby="dashboardTitle">
@@ -91,7 +91,7 @@
             <article class="admin-card">
               <span class="admin-card-label">Artikel</span>
               <strong>CRUD</strong>
-              <p>Tambah, edit, publish, archive, dan banner artikel sudah aktif.</p>
+              <p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p>
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Komik</span>
@@ -100,8 +100,8 @@
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Media / File</span>
-              <strong>Banner</strong>
-              <p>Upload banner artikel ke Firebase Storage sudah aktif.</p>
+              <strong>GitHub</strong>
+              <p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p>
             </article>
             <article class="admin-card">
               <span class="admin-card-label">Produk</span>
@@ -192,15 +192,15 @@
 
                   <label>
                     Banner URL
-                    <input name="bannerUrl" type="url" autocomplete="off" placeholder="https://... atau path statis">
+                    <input name="bannerUrl" type="url" autocomplete="off" placeholder="../assets/img/artikel/banner-artikel-admin-1.webp">
                   </label>
-                  <p class="article-help">Boleh diisi manual atau otomatis dari upload banner di bawah.</p>
+                  <p class="article-help">Isi manual dengan path gambar GitHub, contoh: ../assets/img/artikel/banner-artikel-admin-1.webp.</p>
 
-                  <label class="article-upload-label">
+                  <label class="article-upload-label" hidden>
                     Upload Banner Artikel
-                    <input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file>
+                    <input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file disabled>
                   </label>
-                  <p class="article-help">Format JPG, PNG, WEBP. Maksimal 2MB. Upload hanya untuk admin aktif.</p>
+                  <p class="article-help">Upload banner via Firebase Storage dinonaktifkan sementara. Upload gambar ke GitHub lalu isi Banner URL/path secara manual.</p>
                   <div class="article-banner-preview" data-banner-preview hidden>
                     <img data-banner-preview-image alt="Preview banner artikel">
                     <button class="admin-button admin-button-light" type="button" data-banner-clear>Hapus pilihan gambar</button>
@@ -254,9 +254,9 @@
           <div class="admin-section-heading">
             <p class="admin-kicker">Modul</p>
             <h2>Media / Files</h2>
-            <p>Upload banner artikel sudah tersedia di form artikel. Media library penuh belum tersedia.</p>
+            <p>Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p>
           </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Media library penuh belum aktif pada Phase 6. Upload banner tersedia di form Artikel.">Upload File</button>
+          <button class="admin-button admin-placeholder" type="button" data-placeholder="Upload Storage belum menjadi alur utama. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button>
         </section>
 
         <section class="admin-panel" data-admin-panel="products" hidden>

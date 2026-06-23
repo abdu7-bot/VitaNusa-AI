@@ -1,4 +1,4 @@
-import { db, storage } from './firebase-auth.js';
+import { db } from './firebase-auth.js';
 import {
   collection,
   addDoc,
@@ -7,12 +7,6 @@ import {
   updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js';
-
 const articleApp = document.querySelector('[data-article-app]');
 const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
 const VALID_STATUSES = new Set(['draft', 'published', 'archived']);
@@ -128,10 +122,6 @@ function normalizeSlug(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
-}
-
-function normalizeFileBaseName(value) {
-  return normalizeSlug(String(value || '').replace(/\.[^.]+$/, '')) || 'banner-artikel';
 }
 
 function parseTags(value) {
@@ -372,10 +362,10 @@ async function handleSaveArticle(event) {
   const currentId = state.editingId;
   const existing = state.articles.find((article) => article.id === currentId);
   const validation = validateArticle(payload, currentId);
-  const bannerErrors = validateBannerFile(state.selectedBannerFile);
+  const bannerUploadDisabled = Boolean(state.selectedBannerFile);
 
-  if (validation.errors.length || bannerErrors.length) {
-    setMessage('error', [...validation.errors, ...bannerErrors].join(' '));
+  if (validation.errors.length) {
+    setMessage('error', validation.errors.join(' '));
     return;
   }
 
@@ -402,13 +392,6 @@ async function handleSaveArticle(event) {
     const submitButton = event.submitter;
     if (submitButton) submitButton.disabled = true;
 
-    if (state.selectedBannerFile) {
-      setMessage('warning', 'Mengupload banner artikel ke Firebase Storage...');
-      writePayload.bannerUrl = await uploadBannerFile(state.selectedBannerFile, payload);
-      const form = getForm();
-      if (form?.elements.bannerUrl) form.elements.bannerUrl.value = writePayload.bannerUrl;
-    }
-
     if (currentId) {
       await updateDoc(doc(db, 'articles', currentId), writePayload);
     } else {
@@ -422,7 +405,9 @@ async function handleSaveArticle(event) {
     await loadArticles();
     resetForm();
 
-    const bannerMessage = state.selectedBannerFile ? ' Banner berhasil diupload.' : '';
+    const bannerMessage = bannerUploadDisabled
+      ? ' Upload banner via Firebase Storage sedang nonaktif; artikel memakai Banner URL manual.'
+      : '';
 
     if (forcedDraft) {
       setMessage('warning', `${validation.warnings.join(' ')} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
@@ -436,36 +421,11 @@ async function handleSaveArticle(event) {
 
     setMessage('success', `Artikel berhasil disimpan sebagai ${payload.status}.${bannerMessage}`);
   } catch (error) {
-    console.error('Gagal menyimpan artikel atau upload banner:', error);
+    console.error('Gagal menyimpan artikel:', error);
     const submitButton = event.submitter;
     if (submitButton) submitButton.disabled = false;
-    setMessage('error', error.message || 'Gagal menyimpan artikel atau upload banner. Periksa Storage rules.');
+    setMessage('error', error.message || 'Gagal menyimpan artikel.');
   }
-}
-
-async function uploadBannerFile(file, payload) {
-  const slug = payload.slug || 'artikel';
-  const ext = getSafeExtension(file);
-  const fileName = `${Date.now()}-${normalizeFileBaseName(file.name)}.${ext}`;
-  const storagePath = `article-banners/${slug}/${fileName}`;
-  const fileRef = ref(storage, storagePath);
-
-  const snapshot = await uploadBytes(fileRef, file, {
-    contentType: file.type,
-    customMetadata: {
-      visibility: 'public',
-      category: 'article-banner',
-      articleSlug: slug
-    }
-  });
-
-  return getDownloadURL(snapshot.ref);
-}
-
-function getSafeExtension(file) {
-  if (file.type === 'image/png') return 'png';
-  if (file.type === 'image/webp') return 'webp';
-  return 'jpg';
 }
 
 function handleBannerSelection(event) {
