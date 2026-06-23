@@ -40,7 +40,7 @@
     <section class="section-heading">
       <p class="eyebrow">Perpustakaan Kecil</p>
       <h2>Daftar Artikel</h2>
-      <p>Cari artikel berdasarkan judul, kategori, atau kata kunci tertentu.</p>
+      <p>Artikel berstatus published dari dashboard admin akan tampil di sini. Artikel statis lama tetap menjadi cadangan jika Firestore gagal dimuat.</p>
     </section>
 
     <section class="tools-bar">
@@ -56,8 +56,10 @@
       </div>
     </section>
 
-    <section class="article-grid" id="artikelList">
-      <article class="article-card" data-category="teknologi kesehatan" data-title="ai untuk edukasi kesehatan">
+    <div class="article-load-status" data-public-article-status hidden></div>
+
+    <section class="article-grid" id="artikelList" data-public-article-list>
+      <article class="article-card" data-static-article="true" data-category="teknologi kesehatan" data-title="ai untuk edukasi kesehatan">
         <div class="article-badge">Teknologi</div>
         <div class="article-content">
           <p class="article-meta">VitaNusa AI • 6 menit baca</p>
@@ -69,7 +71,7 @@
         </div>
       </article>
 
-      <article class="article-card" data-category="kesehatan amanah" data-title="sehat itu amanah">
+      <article class="article-card" data-static-article="true" data-category="kesehatan amanah" data-title="sehat itu amanah">
         <div class="article-badge green">Kesehatan</div>
         <div class="article-content">
           <p class="article-meta">VitaNusa AI • 5 menit baca</p>
@@ -81,7 +83,7 @@
         </div>
       </article>
 
-      <article class="article-card" data-category="konsumen edukasi klaim produk amanah kesehatan" data-title="testimoni bukan bukti cara bijak menilai klaim produk">
+      <article class="article-card" data-static-article="true" data-category="konsumen edukasi klaim produk amanah kesehatan" data-title="testimoni bukan bukti cara bijak menilai klaim produk">
         <div class="article-badge orange">Konsumen</div>
         <div class="article-content">
           <p class="article-meta">VitaNusa AI • 7 menit baca</p>
@@ -114,5 +116,6 @@
   </footer>
 
   <script src="articles-main.js"></script>
+  <script type="module" src="../assets/js/modules/public-articles.js"></script>
 </body>
 </html>
