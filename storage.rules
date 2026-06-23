@@ -17,6 +17,10 @@ service firebase.storage {
         || request.resource.contentType == "application/pdf";
     }
 
+    function isAllowedArticleBannerType() {
+      return request.resource.contentType.matches("image/(png|jpeg|webp)");
+    }
+
     function isPublicFile() {
       return resource.metadata.visibility == "public";
     }
@@ -25,6 +29,19 @@ service firebase.storage {
       return request.resource.size < 15 * 1024 * 1024
         && isAllowedContentType()
         && request.resource.metadata.visibility == "public";
+    }
+
+    function isValidArticleBannerUpload() {
+      return request.resource.size <= 2 * 1024 * 1024
+        && isAllowedArticleBannerType()
+        && request.resource.metadata.visibility == "public"
+        && request.resource.metadata.category == "article-banner";
+    }
+
+    match /article-banners/{articleSlug}/{fileName} {
+      allow read: if isPublicFile();
+      allow create, update: if isActiveAdmin() && isValidArticleBannerUpload();
+      allow delete: if isActiveAdmin();
     }
 
     match /public/{filePath=**} {
