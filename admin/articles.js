@@ -147,8 +147,10 @@ async function loadArticles() {
     renderArticles();
     clearMessage();
   } catch (error) {
-    if (body) body.replaceChildren(createEmptyRow('Gagal memuat artikel.'));
-    setMessage('error', error.message || 'Gagal memuat artikel dari Firestore.');
+    console.error("Gagal memuat artikel dari Firestore:", error);
+    const message = 'Gagal memuat artikel. Periksa Firestore rules dan pastikan rules sudah dipublish/deploy ke Firebase.';
+    if (body) body.replaceChildren(createEmptyRow(message));
+    setMessage('error', message);
   }
 }
 
