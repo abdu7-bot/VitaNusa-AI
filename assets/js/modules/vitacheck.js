@@ -1,24 +1,151 @@
-const QUESTION_IDS = ['tidur', 'air', 'makan', 'gerak'];
-const STORAGE_KEY = 'vitanusa-vitacheck-result';
+const QUESTIONS = [
+  {
+    id: 'tidur',
+    label: 'Tidur',
+    question: 'Dalam 7 hari terakhir, bagaimana kualitas tidurmu?',
+    options: [
+      { label: 'Baik dan cukup', value: 2 },
+      { label: 'Kadang cukup', value: 1 },
+      { label: 'Sering kurang tidur', value: 0 },
+    ],
+    focus: 'Tidur 15–30 menit lebih awal.',
+    attention: 'Tidur',
+    redFlag: true,
+    healthyHabit: true,
+  },
+  {
+    id: 'air',
+    label: 'Air Minum',
+    question: 'Apakah kamu cukup minum air setiap hari?',
+    options: [
+      { label: 'Cukup teratur', value: 2 },
+      { label: 'Kadang lupa', value: 1 },
+      { label: 'Sering kurang', value: 0 },
+    ],
+    focus: 'Siapkan air minum dekat tempat aktivitas.',
+    attention: 'Air minum',
+    healthyHabit: true,
+  },
+  {
+    id: 'makan',
+    label: 'Pola Makan',
+    question: 'Bagaimana pola makanmu akhir-akhir ini?',
+    options: [
+      { label: 'Teratur dan cukup seimbang', value: 2 },
+      { label: 'Kadang telat atau asal makan', value: 1 },
+      { label: 'Sering tidak teratur', value: 0 },
+    ],
+    focus: 'Rapikan satu waktu makan terlebih dahulu.',
+    attention: 'Pola makan',
+    healthyHabit: true,
+  },
+  {
+    id: 'gerak',
+    label: 'Gerak Tubuh',
+    question: 'Apakah kamu bergerak ringan setiap hari?',
+    options: [
+      { label: 'Ya, cukup rutin', value: 2 },
+      { label: 'Kadang-kadang', value: 1 },
+      { label: 'Hampir tidak pernah', value: 0 },
+    ],
+    focus: 'Jalan kaki atau bergerak ringan 10 menit.',
+    attention: 'Gerak tubuh',
+    healthyHabit: true,
+  },
+  {
+    id: 'pencernaan',
+    label: 'Pencernaan',
+    question: 'Bagaimana kondisi pencernaanmu akhir-akhir ini?',
+    options: [
+      { label: 'Umumnya nyaman', value: 2 },
+      { label: 'Kadang tidak nyaman', value: 1 },
+      { label: 'Sering bermasalah', value: 0 },
+    ],
+    focus: 'Perhatikan pola makan dan jangan abaikan keluhan yang menetap.',
+    attention: 'Pencernaan',
+    redFlag: true,
+    healthyHabit: true,
+  },
+  {
+    id: 'energi',
+    label: 'Energi / Rasa Lelah',
+    question: 'Apakah kamu sering merasa lelah meski aktivitas tidak terlalu berat?',
+    options: [
+      { label: 'Jarang', value: 2 },
+      { label: 'Kadang', value: 1 },
+      { label: 'Sering', value: 0 },
+    ],
+    focus: 'Kurangi begadang dan perhatikan sinyal tubuh.',
+    attention: 'Energi / rasa lelah',
+    redFlag: true,
+    healthyHabit: true,
+  },
+  {
+    id: 'stres',
+    label: 'Stres Ringan',
+    question: 'Bagaimana kondisi pikiranmu akhir-akhir ini?',
+    options: [
+      { label: 'Cukup tenang', value: 2 },
+      { label: 'Kadang penuh tekanan', value: 1 },
+      { label: 'Sering terasa berat', value: 0 },
+    ],
+    focus: 'Ambil jeda napas, kurangi beban kecil yang tidak perlu, dan cari dukungan jika terasa berat.',
+    attention: 'Kondisi pikiran',
+    redFlag: true,
+  },
+  {
+    id: 'literasi',
+    label: 'Literasi Produk',
+    question: 'Saat melihat produk kesehatan, biasanya kamu bagaimana?',
+    options: [
+      { label: 'Membaca label dan klaim dulu', value: 2 },
+      { label: 'Kadang langsung percaya testimoni', value: 1 },
+      { label: 'Sering tergoda klaim cepat atau instan', value: 0 },
+    ],
+    focus: 'Baca label, cek klaim, dan jangan jadikan testimoni sebagai bukti utama.',
+    attention: 'Literasi produk',
+    productLiteracy: true,
+  },
+];
+
+const STORAGE_KEY = 'vitanusa-vitacheck-v2-result';
+const MAX_SCORE = QUESTIONS.length * 2;
+const EDUCATION_DISCLAIMER = 'VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis, bukan pengganti dokter, apoteker, ahli gizi, psikolog, atau tenaga kesehatan profesional.';
+const RED_FLAG_COPY = 'Catatan penting: Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas harian, jangan hanya mengandalkan tips umum. Konsultasikan kepada tenaga kesehatan yang berwenang.';
 
 const RESULT_COPY = {
   strong: {
     min: 80,
-    status: 'Kebiasaanmu cukup baik',
-    summary: 'Pertahankan kebiasaan baik. Tetap jaga pola tidur, air, makan, dan gerak ringan secara konsisten.',
-    focus: ['Pertahankan rutinitas sehat.', 'Jangan mudah tergoda klaim instan.', 'Evaluasi kebiasaan setiap pekan.'],
+    status: 'Kebiasaanmu cukup kuat',
+    summary: 'Pertahankan kebiasaan baik. Jangan terlalu cepat merasa aman, tetapi juga jangan terlalu keras pada diri sendiri. Fokusmu adalah konsistensi.',
   },
   medium: {
     min: 50,
-    status: 'Cukup, perlu konsistensi',
-    summary: 'Pilih satu kebiasaan kecil untuk diperbaiki lebih dulu agar perubahan terasa ringan dan berkelanjutan.',
-    focus: ['Rapikan jam tidur.', 'Minum air lebih teratur.', 'Gerak ringan 10 menit.'],
+    status: 'Cukup, tapi perlu dirapikan',
+    summary: 'Kebiasaanmu belum buruk, tetapi ada beberapa bagian yang perlu ditata. Pilih satu kebiasaan dulu, jangan memperbaiki semuanya sekaligus.',
   },
   low: {
     min: 0,
     status: 'Perlu perhatian bertahap',
-    summary: 'Mulai dari dasar: tidur, air, makan, dan gerak ringan. Jangan memaksa semuanya berubah dalam satu hari.',
-    focus: ['Tidur lebih teratur.', 'Siapkan air minum dekat aktivitas.', 'Makan tepat waktu sebisa mungkin.'],
+    summary: 'Jangan panik. Mulai dari hal paling dasar. Tubuh sering tidak butuh perubahan ekstrem, tetapi butuh kebiasaan kecil yang diulang.',
+  },
+};
+
+const ARTICLE_RECOMMENDATIONS = {
+  habits: {
+    title: 'Sehat Itu Dimulai dari Kebiasaan Kecil yang Konsisten',
+    href: 'articles/index.html',
+    note: 'Buka daftar artikel dan pilih artikel kebiasaan kecil dari Firestore.',
+  },
+  testimony: {
+    title: 'Testimoni Bukan Bukti',
+    href: 'articles/artikel-3.html',
+    note: 'Untuk melatih sikap kritis saat membaca klaim produk.',
+  },
+  ai: {
+    title: 'AI untuk Edukasi Kesehatan',
+    href: 'articles/ai-untuk-edukasi-kesehatan.html',
+    note: 'Untuk memahami peran AI sebagai alat bantu edukasi.',
   },
 };
 
@@ -28,20 +155,27 @@ function getResultCopy(score) {
   return RESULT_COPY.low;
 }
 
-function getQuestionValues(ids) {
-  return ids.map((id) => {
-    const field = document.getElementById(id);
-    return Number(field?.value ?? 0);
-  });
+function getInitialAnswers() {
+  return QUESTIONS.map(() => null);
 }
 
-function calculateScore(values) {
-  const maxScore = QUESTION_IDS.length * 2;
-  const total = values.reduce((sum, value) => sum + value, 0);
-  return Math.round((total / maxScore) * 100);
+function calculateScoreFromAnswers(answers) {
+  const total = answers.reduce((sum, answer) => sum + Number(answer?.value ?? 0), 0);
+  return Math.round((total / MAX_SCORE) * 100);
 }
 
-function renderFocusList(listElement, items) {
+function getAnsweredCount(answers) {
+  return answers.filter((answer) => answer !== null).length;
+}
+
+function createElement(tagName, className, textContent) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  if (textContent) element.textContent = textContent;
+  return element;
+}
+
+function renderList(listElement, items) {
   listElement.replaceChildren(
     ...items.map((item) => {
       const li = document.createElement('li');
@@ -96,33 +230,98 @@ function readSavedResult() {
   }
 }
 
-function renderResult(output, score, result, { animate = true } = {}) {
-  if (animate) {
-    animateScore(output.score, score);
-  } else {
-    output.score.textContent = String(score);
-  }
+function buildVitaCheckShell(form) {
+  form.classList.add('vitacheck-form-v2');
+  form.setAttribute('novalidate', 'novalidate');
+  form.innerHTML = `
+    <div class="vitacheck-v2" data-vc-root>
+      <div class="vitacheck-intro">
+        <span class="article-category">VitaCheck V2</span>
+        <h3>Asisten refleksi kebiasaan sehat</h3>
+        <p>${EDUCATION_DISCLAIMER}</p>
+      </div>
 
-  output.status.textContent = result.status;
-  output.summary.textContent = result.summary;
-  renderFocusList(output.focus, result.focus);
+      <div class="vitacheck-progress-wrap" aria-label="Progres VitaCheck">
+        <div class="vitacheck-progress-meta">
+          <span data-vc-step> Pertanyaan 1 dari ${QUESTIONS.length}</span>
+          <span data-vc-percent>0%</span>
+        </div>
+        <div class="vitacheck-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progres jawaban VitaCheck">
+          <span data-vc-progress-bar></span>
+        </div>
+      </div>
+
+      <div class="vitacheck-question-card">
+        <p class="eyebrow" data-vc-label></p>
+        <h3 id="vitacheck-question" data-vc-question></h3>
+        <div class="vitacheck-options" data-vc-options role="group" aria-labelledby="vitacheck-question"></div>
+      </div>
+
+      <div class="vitacheck-actions">
+        <button class="btn outline" type="button" data-vc-prev>Sebelumnya</button>
+        <button class="btn primary" type="button" data-vc-next disabled>Lanjut</button>
+      </div>
+
+      <p class="note vitacheck-helper" data-vc-helper>Jawab dengan jujur sesuai kebiasaan 7 hari terakhir. Tidak perlu sempurna, cukup mulai sadar.</p>
+    </div>
+  `;
 }
 
-function buildSavedNote(form, saved) {
-  if (!saved) return null;
-
-  const note = document.createElement('p');
-  note.className = 'note';
-  note.textContent = `Hasil terakhir tersimpan: skor ${saved.score}/100. Isi ulang VitaCheck kapan saja untuk memperbarui fokus mingguan.`;
-
-  form.insertAdjacentElement('afterend', note);
-  return note;
+function getShell(form) {
+  return {
+    root: form.querySelector('[data-vc-root]'),
+    step: form.querySelector('[data-vc-step]'),
+    percent: form.querySelector('[data-vc-percent]'),
+    progress: form.querySelector('.vitacheck-progress'),
+    progressBar: form.querySelector('[data-vc-progress-bar]'),
+    label: form.querySelector('[data-vc-label]'),
+    question: form.querySelector('[data-vc-question]'),
+    options: form.querySelector('[data-vc-options]'),
+    prev: form.querySelector('[data-vc-prev]'),
+    next: form.querySelector('[data-vc-next]'),
+    helper: form.querySelector('[data-vc-helper]'),
+  };
 }
 
-export function initVitaCheck({ formSelector = '#form' } = {}) {
-  const form = document.querySelector(formSelector);
-  if (!form) return null;
+function ensureResultDetails(output) {
+  const resultCard = output.status.closest('.card') || output.status.parentElement;
+  if (!resultCard) return null;
 
+  resultCard.classList.add('vitacheck-result-card');
+  resultCard.setAttribute('aria-live', 'polite');
+  resultCard.setAttribute('aria-atomic', 'false');
+
+  let details = resultCard.querySelector('[data-vc-result-details]');
+  if (details) return details;
+
+  details = document.createElement('div');
+  details.className = 'vitacheck-result-details';
+  details.setAttribute('data-vc-result-details', '');
+  details.innerHTML = `
+    <section class="vitacheck-result-section">
+      <h4>Titik kuat</h4>
+      <ul data-vc-strong-list><li>Isi VitaCheck untuk melihat titik kuatmu.</li></ul>
+    </section>
+    <section class="vitacheck-result-section">
+      <h4>Perlu diperhatikan</h4>
+      <ul data-vc-attention-list><li>Isi VitaCheck untuk melihat bagian yang perlu dirapikan.</li></ul>
+    </section>
+    <section class="vitacheck-result-section">
+      <h4>Artikel disarankan</h4>
+      <div class="vitacheck-articles" data-vc-articles>
+        <a href="articles/index.html">Buka daftar artikel VitaNusa AI</a>
+      </div>
+    </section>
+    <p class="note vitacheck-redflag" data-vc-redflag hidden>${RED_FLAG_COPY}</p>
+    <p class="note vitacheck-disclaimer">${EDUCATION_DISCLAIMER}</p>
+    <button class="btn outline full" type="button" data-vc-reset>Ulangi VitaCheck</button>
+  `;
+
+  output.focus.insertAdjacentElement('afterend', details);
+  return details;
+}
+
+function getOutputElements() {
   const output = {
     score: document.getElementById('skor'),
     status: document.getElementById('status'),
@@ -132,42 +331,245 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
 
   if (!output.score || !output.status || !output.summary || !output.focus) return null;
 
-  const saved = readSavedResult();
-  const savedNote = buildSavedNote(form, saved);
+  const details = ensureResultDetails(output);
+  if (!details) return null;
 
-  if (saved) {
-    renderResult(output, saved.score, getResultCopy(saved.score), { animate: false });
+  return {
+    ...output,
+    strongList: details.querySelector('[data-vc-strong-list]'),
+    attentionList: details.querySelector('[data-vc-attention-list]'),
+    articles: details.querySelector('[data-vc-articles]'),
+    redFlag: details.querySelector('[data-vc-redflag]'),
+    reset: details.querySelector('[data-vc-reset]'),
+  };
+}
+
+function getAnswerSummary(answers) {
+  const answered = QUESTIONS.map((question, index) => ({ ...question, answer: answers[index] }))
+    .filter((item) => item.answer !== null);
+
+  const strong = answered
+    .filter((item) => item.answer.value === 2)
+    .map((item) => `${item.label}: ${item.answer.label}`);
+
+  const attention = answered
+    .filter((item) => item.answer.value === 0)
+    .map((item) => item.attention);
+
+  const low = answered
+    .filter((item) => item.answer.value === 0);
+
+  const medium = answered
+    .filter((item) => item.answer.value === 1);
+
+  const focusSource = low.length ? low : medium;
+  const focus = focusSource.slice(0, 4).map((item) => item.focus);
+
+  const hasRedFlag = answered.some((item) => item.redFlag && item.answer.value === 0);
+  const hasLowHealthyHabit = answered.some((item) => item.healthyHabit && item.answer.value === 0);
+  const hasLowProductLiteracy = answered.some((item) => item.productLiteracy && item.answer.value <= 1);
+
+  return {
+    strong: strong.length ? strong : ['Kesadaran untuk mengecek kebiasaan sudah menjadi langkah awal yang baik.'],
+    attention: attention.length ? attention : ['Tidak ada titik perhatian besar dari jawabanmu, tetap jaga konsistensi.'],
+    focus: focus.length ? focus : ['Pertahankan rutinitas sehat yang sudah berjalan.', 'Evaluasi kebiasaan setiap pekan.', 'Tetap kritis terhadap klaim produk yang terlalu instan.'],
+    hasRedFlag,
+    hasLowHealthyHabit,
+    hasLowProductLiteracy,
+  };
+}
+
+function getRecommendedArticles(summary) {
+  const articles = [];
+
+  if (summary.hasLowProductLiteracy) articles.push(ARTICLE_RECOMMENDATIONS.testimony);
+  if (summary.hasLowHealthyHabit) articles.push(ARTICLE_RECOMMENDATIONS.habits);
+  articles.push(ARTICLE_RECOMMENDATIONS.ai);
+
+  if (!articles.some((article) => article.href === ARTICLE_RECOMMENDATIONS.habits.href)) {
+    articles.push(ARTICLE_RECOMMENDATIONS.habits);
   }
+
+  const uniqueArticles = [];
+  for (const article of articles) {
+    if (!uniqueArticles.some((item) => item.title === article.title)) uniqueArticles.push(article);
+  }
+
+  return uniqueArticles.slice(0, 3);
+}
+
+function renderArticles(container, articles) {
+  container.replaceChildren(
+    ...articles.map((article) => {
+      const link = document.createElement('a');
+      link.href = article.href;
+      link.className = 'vitacheck-article-link';
+      link.innerHTML = `<strong>${article.title}</strong><span>${article.note}</span>`;
+      return link;
+    }),
+  );
+}
+
+function renderResult(output, payload, { animate = true } = {}) {
+  const result = getResultCopy(payload.score);
+  const summary = payload.summary || getAnswerSummary(payload.answers || []);
+  const articles = payload.articles || getRecommendedArticles(summary);
+
+  if (animate) {
+    animateScore(output.score, payload.score);
+  } else {
+    output.score.textContent = String(payload.score);
+  }
+
+  output.status.textContent = result.status;
+  output.summary.textContent = result.summary;
+  renderList(output.focus, summary.focus);
+  renderList(output.strongList, summary.strong);
+  renderList(output.attentionList, summary.attention);
+  renderArticles(output.articles, articles);
+
+  if (output.redFlag) output.redFlag.hidden = !summary.hasRedFlag;
+}
+
+function buildPayload(answers) {
+  const score = calculateScoreFromAnswers(answers);
+  const summary = getAnswerSummary(answers);
+  const articles = getRecommendedArticles(summary);
+
+  return {
+    version: 2,
+    score,
+    answers,
+    summary,
+    articles,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function renderStep(shell, answers, currentIndex) {
+  const question = QUESTIONS[currentIndex];
+  const selectedAnswer = answers[currentIndex];
+  const answeredPercent = Math.round((getAnsweredCount(answers) / QUESTIONS.length) * 100);
+
+  shell.step.textContent = `Pertanyaan ${currentIndex + 1} dari ${QUESTIONS.length}`;
+  shell.percent.textContent = `${answeredPercent}%`;
+  shell.progress.setAttribute('aria-valuenow', String(answeredPercent));
+  shell.progressBar.style.width = `${answeredPercent}%`;
+  shell.label.textContent = question.label;
+  shell.question.textContent = question.question;
+  shell.prev.disabled = currentIndex === 0;
+  shell.next.disabled = !selectedAnswer;
+  shell.next.textContent = currentIndex === QUESTIONS.length - 1 ? 'Lihat Hasil' : 'Lanjut';
+  shell.helper.textContent = selectedAnswer
+    ? `Pilihanmu: ${selectedAnswer.label}. Kamu bisa lanjut atau kembali jika ingin mengubah jawaban.`
+    : 'Pilih jawaban yang paling mendekati kondisi 7 hari terakhir.';
+
+  shell.options.replaceChildren(
+    ...question.options.map((option) => {
+      const button = document.createElement('button');
+      const isActive = selectedAnswer?.value === option.value && selectedAnswer?.label === option.label;
+
+      button.type = 'button';
+      button.className = `vitacheck-option${isActive ? ' is-active' : ''}`;
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      button.dataset.value = String(option.value);
+      button.innerHTML = `<strong>${option.label}</strong><span>${option.value === 2 ? 'Kuat' : option.value === 1 ? 'Sedang' : 'Perlu perhatian'}</span>`;
+      button.addEventListener('click', () => {
+        answers[currentIndex] = { value: option.value, label: option.label, questionId: question.id };
+        renderStep(shell, answers, currentIndex);
+      });
+
+      return button;
+    }),
+  );
+}
+
+function updateSavedNote(form, text) {
+  let note = form.parentElement?.querySelector('[data-vc-saved-note]');
+  if (!note) {
+    note = createElement('p', 'note vitacheck-saved-note', text);
+    note.setAttribute('data-vc-saved-note', '');
+    form.insertAdjacentElement('afterend', note);
+    return;
+  }
+
+  note.textContent = text;
+}
+
+export function initVitaCheck({ formSelector = '#form' } = {}) {
+  const form = document.querySelector(formSelector);
+  if (!form) return null;
+
+  buildVitaCheckShell(form);
+
+  const shell = getShell(form);
+  const output = getOutputElements();
+  if (!shell.root || !output) return null;
+
+  const answers = getInitialAnswers();
+  let currentIndex = 0;
+
+  const saved = readSavedResult();
+  if (saved) {
+    renderResult(output, saved, { animate: false });
+    updateSavedNote(form, `Hasil terakhir tersimpan: skor ${saved.score}/100. Isi ulang VitaCheck kapan saja untuk memperbarui fokus 7 hari.`);
+  }
+
+  renderStep(shell, answers, currentIndex);
+
+  const handlePrevious = () => {
+    currentIndex = Math.max(0, currentIndex - 1);
+    renderStep(shell, answers, currentIndex);
+  };
+
+  const handleNext = () => {
+    if (!answers[currentIndex]) return;
+
+    if (currentIndex < QUESTIONS.length - 1) {
+      currentIndex += 1;
+      renderStep(shell, answers, currentIndex);
+      return;
+    }
+
+    const payload = buildPayload(answers);
+    renderResult(output, payload, { animate: true });
+    saveResult(payload);
+    updateSavedNote(form, `Hasil terbaru tersimpan: skor ${payload.score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`);
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    const values = getQuestionValues(QUESTION_IDS);
-    const score = calculateScore(values);
-    const result = getResultCopy(score);
-
-    renderResult(output, score, result, { animate: true });
-
-    const payload = {
-      score,
-      values,
-      createdAt: new Date().toISOString(),
-    };
-
-    saveResult(payload);
-
-    if (savedNote) {
-      savedNote.textContent = `Hasil terbaru tersimpan: skor ${score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`;
-    }
+    handleNext();
   };
 
+  const handleReset = () => {
+    answers.fill(null);
+    currentIndex = 0;
+    output.score.textContent = '0';
+    output.status.textContent = 'Hasil Edukasi';
+    output.summary.textContent = 'Isi VitaCheck untuk melihat saran kebiasaan sehat.';
+    renderList(output.focus, ['Mulai dari satu kebiasaan kecil.']);
+    renderList(output.strongList, ['Isi VitaCheck untuk melihat titik kuatmu.']);
+    renderList(output.attentionList, ['Isi VitaCheck untuk melihat bagian yang perlu dirapikan.']);
+    renderArticles(output.articles, [{ title: 'Buka daftar artikel VitaNusa AI', href: 'articles/index.html', note: 'Pilih artikel edukasi yang paling sesuai kebutuhanmu.' }]);
+    if (output.redFlag) output.redFlag.hidden = true;
+    renderStep(shell, answers, currentIndex);
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  shell.prev.addEventListener('click', handlePrevious);
+  shell.next.addEventListener('click', handleNext);
   form.addEventListener('submit', handleSubmit);
+  output.reset?.addEventListener('click', handleReset);
 
   return {
-    calculateScore,
+    calculateScore: calculateScoreFromAnswers,
     getResultCopy,
     destroy() {
+      shell.prev.removeEventListener('click', handlePrevious);
+      shell.next.removeEventListener('click', handleNext);
       form.removeEventListener('submit', handleSubmit);
+      output.reset?.removeEventListener('click', handleReset);
     },
   };
 }
