@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Prinsip Amanah | VitaNusa AI</title>
-  <meta name="description" content="Prinsip Amanah VitaNusa AI: edukasi dulu, produk kemudian. Ruang edukasi kesehatan yang tidak menggantikan diagnosis, konsultasi tenaga kesehatan, atau label resmi produk.">
+  <meta name="description" content="Prinsip Amanah VitaNusa AI: edukasi dulu, produk kemudian. Ruang edukasi kesehatan yang membantu pembaca membaca informasi produk dengan lebih tenang dan bertanggung jawab.">
   <link rel="stylesheet" href="style.css?v=20260623-vitacheck-v2">
   <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260623-vitacheck-v2">
   <style>
@@ -42,18 +42,8 @@
     .closing-panel p{max-width:760px;color:#f3fff7}
     .footer-links{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.75rem}
     .footer-links a{color:#ffe0a4;font-weight:800;text-decoration:none}
-    @media(max-width:920px){
-      .principle-grid,.checklist-grid,.two-column-list,.copy-table{grid-template-columns:1fr}
-      .principle-hero{padding:58px 0 46px}
-    }
-    @media(max-width:680px){
-      .principle-section{padding:46px 0;scroll-margin-top:160px}
-      .badge-row,.principle-actions{flex-direction:column;align-items:stretch}
-      .badge-row span,.principle-actions .btn{width:100%;justify-content:center}
-      .limit-list li,.check-list li,.avoid-list li,.safe-list li{word-break:normal;overflow-wrap:anywhere}
-      .avoid-list li{padding-left:1rem;padding-top:2rem}
-      .avoid-list li::before{top:.65rem}
-    }
+    @media(max-width:920px){.principle-grid,.checklist-grid,.two-column-list,.copy-table{grid-template-columns:1fr}.principle-hero{padding:58px 0 46px}}
+    @media(max-width:680px){.principle-section{padding:46px 0;scroll-margin-top:160px}.badge-row,.principle-actions{flex-direction:column;align-items:stretch}.badge-row span,.principle-actions .btn{width:100%;justify-content:center}.limit-list li,.check-list li,.avoid-list li,.safe-list li{word-break:normal;overflow-wrap:anywhere}.avoid-list li{padding-left:1rem;padding-top:2rem}.avoid-list li::before{top:.65rem}}
   </style>
 </head>
 <body class="principle-page">
@@ -86,7 +76,7 @@
         <a href="index.html">Beranda</a>
         <a href="index.html#vitacheck">VitaCheck</a>
         <a href="articles/index.html">Artikel</a>
-        <a href="index.html#produk">Produk</a>
+        <a href="products/index.html">Produk</a>
         <a href="index.html#kontak">Kontak</a>
       </nav>
     </div>
@@ -98,19 +88,20 @@
         <div>
           <p class="eyebrow">Prinsip Amanah</p>
           <h1 id="pageTitle">Edukasi Dulu, Produk Kemudian</h1>
-          <p>VitaNusa AI dibangun untuk membantu pembaca memahami kebiasaan sehat, membaca klaim produk dengan lebih jernih, dan mengambil keputusan dengan hati-hati. Konten di sini bersifat edukatif, bukan diagnosis medis.</p>
+          <p>VitaNusa AI dibangun untuk membantu pembaca memahami kebiasaan sehat, membaca klaim produk dengan lebih jernih, dan mengambil keputusan dengan hati-hati. Konten di sini bersifat edukatif dan tidak menggantikan arahan tenaga kesehatan profesional.</p>
         </div>
 
         <div class="badge-row" aria-label="Batas utama VitaNusa AI">
-          <span>Bukan diagnosis</span>
-          <span>Tidak menjanjikan kesembuhan</span>
+          <span>Edukasi dulu</span>
+          <span>Tidak menjanjikan hasil</span>
           <span>Testimoni bukan bukti utama</span>
-          <span>Konsultasi saat keluhan berat</span>
+          <span>Baca label resmi</span>
         </div>
 
         <div class="principle-actions">
           <a class="btn wa" href="index.html#vitacheck">Mulai VitaCheck</a>
           <a class="btn ghost" href="articles/index.html">Baca Artikel</a>
+          <a class="btn ghost" href="products/index.html">Katalog Produk Amanah</a>
         </div>
       </div>
     </section>
@@ -128,11 +119,11 @@
           </article>
           <article class="principle-card">
             <h3>Hati-hati dalam klaim</h3>
-            <p>Klaim kesehatan perlu dibaca sesuai label, izin edar, kategori produk, dan batas informasi yang resmi.</p>
+            <p>Klaim produk perlu dibaca sesuai label, kategori, izin edar, dan batas informasi resmi.</p>
           </article>
           <article class="principle-card">
             <h3>Mengutamakan keselamatan pembaca</h3>
-            <p>Jika ada keluhan yang serius atau mengganggu, langkah yang lebih aman adalah berkonsultasi dengan tenaga kesehatan.</p>
+            <p>Jika ada kondisi khusus atau keraguan, keputusan yang lebih aman adalah bertanya kepada pihak yang berwenang.</p>
           </article>
         </div>
       </div>
@@ -145,12 +136,12 @@
           <h2 id="batasTitle">Batas VitaNusa AI</h2>
           <p>VitaNusa AI membantu pembaca belajar dan berpikir lebih jernih. Agar tidak salah paham, VitaNusa AI tidak:</p>
           <ul class="limit-list">
-            <li>memberi diagnosis medis</li>
-            <li>menggantikan dokter atau tenaga kesehatan</li>
-            <li>menjanjikan kesembuhan</li>
+            <li>memberi penilaian profesional atas kondisi pribadi</li>
+            <li>menggantikan tenaga kesehatan</li>
+            <li>menjanjikan hasil tertentu</li>
             <li>memastikan produk cocok untuk semua orang</li>
             <li>menjadikan testimoni sebagai bukti utama</li>
-            <li>mendorong orang menunda konsultasi medis</li>
+            <li>mendorong keputusan yang tergesa-gesa</li>
           </ul>
         </div>
       </div>
@@ -166,11 +157,10 @@
           <ul class="check-list" aria-label="Checklist membaca klaim produk">
             <li>Apakah klaimnya masuk akal?</li>
             <li>Apakah ada izin edar?</li>
-            <li>Produk ini termasuk makanan, suplemen, kosmetik, obat tradisional, atau obat?</li>
+            <li>Apakah kategori produknya jelas?</li>
             <li>Apakah klaimnya hanya berdasarkan testimoni?</li>
-            <li>Apakah produk membuat saya menunda konsultasi medis?</li>
-            <li>Apakah ada efek samping, batas penggunaan, atau kondisi khusus?</li>
             <li>Apakah informasi mengikuti label resmi?</li>
+            <li>Apakah ada batas penggunaan, peringatan, atau kondisi khusus?</li>
           </ul>
 
           <aside class="soft-note" aria-label="Catatan amanah">
@@ -186,7 +176,7 @@
         <div class="calm-box">
           <p class="eyebrow">Sikap Kritis</p>
           <h2 id="testimoniTitle">Testimoni Bukan Bukti Utama</h2>
-          <p>Testimoni bisa menjadi pengalaman pribadi, tetapi tidak cukup untuk membuktikan bahwa produk pasti bekerja untuk semua orang. Kondisi tubuh, pola makan, tidur, aktivitas, usia, dan riwayat kesehatan setiap orang berbeda.</p>
+          <p>Testimoni bisa menjadi pengalaman pribadi, tetapi tidak cukup untuk memastikan hasil bagi semua orang. Kondisi tubuh, pola makan, tidur, aktivitas, usia, dan kebiasaan setiap orang berbeda.</p>
           <div class="principle-actions">
             <a class="btn primary" href="articles/artikel-3.html">Baca Artikel Testimoni Bukan Bukti</a>
           </div>
@@ -197,23 +187,19 @@
     <section class="principle-section" aria-labelledby="konsultasiTitle">
       <div class="wrap">
         <div class="warning-box">
-          <p class="eyebrow">Tanda Perlu Bantuan</p>
-          <h2 id="konsultasiTitle">Kapan Harus Konsultasi Tenaga Kesehatan?</h2>
-          <p>Gunakan bahasa tubuh sebagai pesan, bukan sebagai bahan panik. Segera konsultasikan kepada tenaga kesehatan jika mengalami kondisi berikut:</p>
+          <p class="eyebrow">Tanda Perlu Bertanya</p>
+          <h2 id="konsultasiTitle">Kapan Perlu Meminta Arahan?</h2>
+          <p>Mintalah arahan tenaga kesehatan jika ada kondisi yang terasa mengkhawatirkan, berlangsung lama, mengganggu aktivitas, atau jika memiliki kondisi khusus sebelum memakai produk tertentu.</p>
           <div class="two-column-list">
             <ul class="check-list">
-              <li>keluhan berat</li>
-              <li>keluhan menetap</li>
-              <li>keluhan memburuk</li>
-              <li>ada nyeri hebat</li>
-              <li>ada perdarahan</li>
+              <li>kondisi terasa berat atau tidak biasa</li>
+              <li>kondisi berlangsung lama atau makin mengganggu</li>
+              <li>butuh keputusan yang lebih aman</li>
             </ul>
             <ul class="check-list">
-              <li>sesak napas</li>
-              <li>lemas berat</li>
-              <li>gangguan makan atau tidur yang parah</li>
-              <li>keluhan mengganggu aktivitas harian</li>
-              <li>sedang hamil, menyusui, lanjut usia, anak-anak, atau punya penyakit tertentu</li>
+              <li>memiliki kondisi khusus</li>
+              <li>ragu membaca label atau aturan penggunaan</li>
+              <li>ingin memastikan pilihan sesuai keadaan pribadi</li>
             </ul>
           </div>
         </div>
@@ -233,12 +219,17 @@
           </article>
           <article class="principle-card">
             <h3>Produk bukan pengganti konsultasi</h3>
-            <p>Untuk kondisi khusus atau keluhan yang mengkhawatirkan, rujukan terbaik adalah tenaga kesehatan yang berwenang.</p>
+            <p>Untuk kondisi khusus atau keraguan yang mengkhawatirkan, rujukan terbaik adalah pihak yang berwenang.</p>
           </article>
           <article class="principle-card">
             <h3>Produk harus dibaca sesuai label</h3>
             <p>Perhatikan aturan resmi, kategori produk, komposisi, batas penggunaan, dan peringatan pada label.</p>
           </article>
+        </div>
+
+        <div class="principle-actions" style="margin-top:1.25rem">
+          <a class="btn primary" href="products/index.html">Lihat Katalog Produk Amanah</a>
+          <a class="btn ghost" href="articles/index.html">Kembali ke Artikel</a>
         </div>
       </div>
     </section>
@@ -247,29 +238,27 @@
       <div class="wrap">
         <p class="eyebrow">Bahasa yang Bertanggung Jawab</p>
         <h2 id="copywritingTitle">Prinsip Copywriting Amanah</h2>
-        <p class="section-copy">Bahasa promosi tidak boleh membuat orang merasa takut, tergesa-gesa, atau mengira sebuah produk dapat menyelesaikan semua masalah kesehatan.</p>
+        <p class="section-copy">Bahasa promosi tidak boleh membuat orang merasa takut, tergesa-gesa, atau mengira sebuah produk dapat menyelesaikan semua kebutuhan kesehatan.</p>
 
         <div class="copy-table">
           <div class="limit-box">
-            <h3>Kata atau klaim yang harus dihindari</h3>
+            <h3>Bahasa yang harus dihindari</h3>
             <ul class="avoid-list">
-              <li>pasti sembuh</li>
-              <li>100% aman untuk semua orang</li>
-              <li>dijamin berhasil</li>
-              <li>tanpa efek samping untuk semua orang</li>
-              <li>hasil instan</li>
-              <li>pengganti obat dokter</li>
-              <li>cocok untuk semua penyakit</li>
+              <li>klaim hasil mutlak</li>
+              <li>klaim cocok untuk semua orang</li>
+              <li>klaim hasil terjamin</li>
+              <li>klaim yang membuat orang terburu-buru</li>
+              <li>klaim yang mengabaikan arahan tenaga kesehatan</li>
             </ul>
           </div>
 
           <div class="limit-box">
             <h3>Alternatif kalimat yang lebih aman</h3>
             <ul class="safe-list">
-              <li>“Membantu mendukung...”</li>
               <li>“Dapat menjadi bagian dari kebiasaan sehat...”</li>
               <li>“Hasil dapat berbeda pada setiap orang...”</li>
-              <li>“Baca label dan konsultasikan jika memiliki kondisi khusus...”</li>
+              <li>“Baca label resmi sebelum memilih...”</li>
+              <li>“Konsultasikan jika memiliki kondisi khusus...”</li>
             </ul>
           </div>
         </div>
@@ -285,6 +274,7 @@
           <div class="principle-actions">
             <a class="btn wa" href="index.html#vitacheck">Mulai VitaCheck</a>
             <a class="btn ghost" href="articles/index.html">Baca Artikel</a>
+            <a class="btn ghost" href="products/index.html">Lihat Katalog Produk Amanah</a>
             <a class="btn ghost" href="https://wa.me/6288708862581">Hubungi WhatsApp</a>
           </div>
         </div>
@@ -295,10 +285,11 @@
   <footer>
     <div class="wrap">
       <h2>VitaNusa AI</h2>
-      <p>Disclaimer: informasi di website ini bersifat edukatif dan katalog. Tidak menggantikan diagnosis, pengobatan, atau konsultasi tenaga kesehatan profesional.</p>
+      <p>Disclaimer: informasi di website ini bersifat edukatif dan katalog. Tidak menggantikan arahan tenaga kesehatan profesional.</p>
       <div class="footer-links" aria-label="Tautan footer">
         <a href="index.html">Beranda</a>
         <a href="articles/index.html">Artikel</a>
+        <a href="products/index.html">Produk Amanah</a>
         <a href="index.html#kontak">Kontak</a>
       </div>
     </div>
