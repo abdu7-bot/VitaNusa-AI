@@ -258,8 +258,6 @@ details,
   padding: clamp(.85rem, 2vw, 1.15rem);
   border: 1px solid #ffffff2e;
   border-radius: 22px;
-  background: linear-gradient(135deg, #09251ee6, #0f3d2ecf);
-  box-shadow: 0 16px 34px #0000001f;
   backdrop-filter: blur(8px);
 }
 
@@ -366,6 +364,212 @@ details,
 
 .article-actions .btn {
   white-space: normal;
+}
+
+/* VitaCheck V2: step-by-step refleksi kebiasaan sehat. */
+.vitacheck-form-v2 {
+  display: grid;
+  gap: 1rem;
+}
+
+.vitacheck-v2 {
+  display: grid;
+  gap: 1rem;
+}
+
+.vitacheck-intro {
+  display: grid;
+  gap: .55rem;
+}
+
+.vitacheck-intro h3,
+.vitacheck-question-card h3,
+.vitacheck-result-section h4 {
+  margin: 0;
+  color: var(--vn-green-dark);
+}
+
+.vitacheck-intro p,
+.vitacheck-helper {
+  margin: 0;
+  color: var(--vn-muted);
+}
+
+.vitacheck-progress-wrap {
+  display: grid;
+  gap: .45rem;
+}
+
+.vitacheck-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  color: var(--vn-muted);
+  font-size: .9rem;
+  font-weight: 850;
+}
+
+.vitacheck-progress {
+  width: 100%;
+  height: 11px;
+  border-radius: 999px;
+  background: #dbe8df;
+  overflow: hidden;
+}
+
+.vitacheck-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--vn-green), var(--vn-gold));
+  transition: width .22s ease;
+}
+
+.vitacheck-question-card {
+  display: grid;
+  gap: .8rem;
+  padding: 1rem;
+  border: 1px solid var(--vn-border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff, #f8fbf8);
+}
+
+.vitacheck-options {
+  display: grid;
+  gap: .65rem;
+}
+
+.vitacheck-option {
+  display: grid;
+  gap: .18rem;
+  width: 100%;
+  text-align: left;
+  padding: .82rem .9rem;
+  border-radius: 16px;
+  border: 1px solid var(--vn-border);
+  background: #fff;
+  color: var(--vn-text);
+  cursor: pointer;
+  box-shadow: 0 8px 18px #0000000a;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.vitacheck-option:hover,
+.vitacheck-option:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--vn-green);
+  box-shadow: 0 12px 26px #18734f1c;
+  outline: 3px solid #ffe0a466;
+  outline-offset: 2px;
+}
+
+.vitacheck-option.is-active {
+  border-color: var(--vn-green);
+  background: var(--vn-green-soft);
+  box-shadow: inset 0 0 0 2px #18734f22, 0 12px 28px #18734f18;
+}
+
+.vitacheck-option strong {
+  font-size: 1rem;
+}
+
+.vitacheck-option span {
+  color: var(--vn-muted);
+  font-size: .88rem;
+  font-weight: 760;
+}
+
+.vitacheck-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .7rem;
+}
+
+.vitacheck-actions .btn:disabled,
+.vitacheck-actions .btn[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.vitacheck-result-card {
+  align-self: stretch;
+}
+
+.vitacheck-result-details {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.vitacheck-result-section {
+  display: grid;
+  gap: .45rem;
+  padding: .85rem;
+  border: 1px solid var(--vn-border);
+  border-radius: 16px;
+  background: #f8fbf8;
+}
+
+.vitacheck-result-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.vitacheck-result-section li {
+  margin: .32rem 0;
+}
+
+.vitacheck-articles {
+  display: grid;
+  gap: .55rem;
+}
+
+.vitacheck-article-link,
+.vitacheck-articles > a {
+  display: grid;
+  gap: .2rem;
+  padding: .72rem .8rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--vn-border);
+  color: var(--vn-green);
+  text-decoration: none;
+}
+
+.vitacheck-article-link:hover,
+.vitacheck-article-link:focus-visible,
+.vitacheck-articles > a:hover,
+.vitacheck-articles > a:focus-visible {
+  border-color: var(--vn-green);
+  outline: 3px solid #ffe0a466;
+  outline-offset: 2px;
+}
+
+.vitacheck-article-link span {
+  color: var(--vn-muted);
+  font-size: .88rem;
+}
+
+.vitacheck-redflag {
+  border: 1px solid #f0d489;
+}
+
+.vitacheck-saved-note {
+  margin: 0;
+}
+
+.vn-score-pop {
+  display: inline-block;
+  animation: vnScorePop .5s ease;
+}
+
+@keyframes vnScorePop {
+  0% { transform: scale(.92); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 
 @media (max-width: 1050px) {
@@ -475,6 +679,10 @@ details,
   .product-photo {
     border-radius: 14px;
     padding: .2rem;
+  }
+
+  .vitacheck-actions {
+    grid-template-columns: 1fr;
   }
 }
 
