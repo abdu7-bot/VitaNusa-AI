@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Katalog Produk Amanah | VitaNusa AI</title>
+  <meta name="description" content="Katalog produk amanah VitaNusa AI: produk sebagai opsi pendukung, bukan jalan pintas, bukan diagnosis, dan bukan pengganti konsultasi tenaga kesehatan.">
+  <link rel="stylesheet" href="../style.css?v=20260623-vitacheck-v2">
+  <link rel="stylesheet" href="../assets/css/vitanusa-upgrade.css?v=20260623-vitacheck-v2">
+  <style>
+    .product-page{background:#f7fbf6;color:#15251e;overflow-x:hidden}
+    .product-hero{position:relative;overflow:hidden;padding:82px 0 64px;color:#fff;background:radial-gradient(circle at top right,rgba(255,224,164,.35),transparent 34%),linear-gradient(135deg,#0f3d2e,#1f7d59 58%,#2ba36f)}
+    .product-hero .wrap{display:grid;gap:1.25rem;max-width:1080px}
+    .product-hero h1{max-width:820px;font-size:clamp(2.25rem,5.8vw,4.6rem);line-height:1.03;margin:.25rem 0 .85rem}
+    .product-hero p{max-width:780px;color:#f3fff7;font-size:clamp(1.02rem,2vw,1.18rem)}
+    .product-hero .eyebrow{color:#ffe0a4}
+    .badge-row,.product-actions,.product-grid,.safe-flow,.check-grid{display:flex;gap:.75rem;flex-wrap:wrap}
+    .badge-row span{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.38);border-radius:999px;padding:.45rem .72rem;background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:.92rem}
+    .product-actions{margin-top:.65rem}
+    .product-section{padding:62px 0;scroll-margin-top:140px}
+    .product-section.muted{background:#eef8f1}
+    .section-copy{max-width:800px;color:#425348}
+    .trust-panel,.disclaimer-panel{background:#fff;border:1px solid #dbe8df;border-radius:28px;padding:clamp(1rem,3vw,1.7rem);box-shadow:0 16px 36px rgba(12,55,38,.08)}
+    .trust-grid,.catalog-grid,.promise-grid{display:grid;gap:1rem;margin-top:1.25rem}
+    .trust-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+    .promise-grid,.safe-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+    .info-card,.catalog-card,.flow-card{background:#fff;border:1px solid #dbe8df;border-radius:24px;padding:1.15rem;box-shadow:0 16px 36px rgba(12,55,38,.08)}
+    .info-card h3,.catalog-card h3,.flow-card h3{margin-top:0;color:#0f3d2e}
+    .info-card p,.catalog-card p,.flow-card p{color:#425348}
+    .catalog-card{display:grid;gap:.9rem}
+    .product-image-box{display:grid;place-items:center;min-height:230px;border-radius:22px;background:linear-gradient(180deg,#fff,#f8fbf8);border:1px solid #e3eee7;padding:1rem;overflow:hidden}
+    .product-image-box img{display:block;max-width:100%;max-height:250px;width:auto;height:auto;object-fit:contain}
+    .product-category{display:inline-flex;width:max-content;max-width:100%;border-radius:999px;padding:.38rem .65rem;background:#fff4d6;border:1px solid #f0d489;color:#664600;font-weight:800;font-size:.85rem}
+    .amanah-note{border-left:4px solid #d4a72c;background:#fff8e8;border-radius:16px;padding:.8rem;color:#4a3912}
+    .check-list,.avoid-list{display:grid;gap:.72rem;margin:1rem 0 0;padding:0;list-style:none}
+    .check-list li,.avoid-list li{position:relative;padding:.78rem .9rem .78rem 2.35rem;border-radius:16px;background:#fff;border:1px solid #dbe8df;color:#293a31}
+    .check-list li::before{content:"✓";position:absolute;left:.85rem;top:.76rem;color:#18734f;font-weight:900}
+    .avoid-list li::before{content:"Tidak";position:absolute;left:.75rem;top:.78rem;color:#7a5200;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+    .avoid-list li{padding-left:4.1rem;background:#fff8e8;border-color:#f0d489}
+    .flow-card{display:grid;gap:.45rem}
+    .flow-number{display:grid;place-items:center;width:2.35rem;height:2.35rem;border-radius:999px;background:#0f3d2e;color:#ffe0a4;font-weight:900}
+    .flow-card a{font-weight:800;color:#176b4a;text-decoration:none}
+    .disclaimer-panel{background:linear-gradient(180deg,#fffdf7,#fff4d6);border-color:#f0d489}
+    .footer-links{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.75rem}
+    .footer-links a{color:#ffe0a4;font-weight:800;text-decoration:none}
+    @media(max-width:920px){
+      .trust-grid,.catalog-grid,.promise-grid,.safe-flow{grid-template-columns:1fr}
+      .product-hero{padding:58px 0 46px}
+      .product-image-box{min-height:200px}
+    }
+    @media(max-width:680px){
+      .product-section{padding:46px 0;scroll-margin-top:160px}
+      .badge-row,.product-actions{flex-direction:column;align-items:stretch}
+      .badge-row span,.product-actions .btn{width:100%;justify-content:center}
+      .check-list li,.avoid-list li{word-break:normal;overflow-wrap:anywhere}
+      .avoid-list li{padding-left:1rem;padding-top:2rem}
+      .avoid-list li::before{top:.65rem}
+    }
+  </style>
+</head>
+<body class="product-page">
+  <a class="skip" href="#main">Lewati ke konten</a>
+
+  <header class="site-header">
+    <div class="topbar">
+      <div class="wrap topbar-inner">
+        <span>WhatsApp: <a href="https://wa.me/6288708862581">088708862581</a></span>
+        <span>Email: <a href="mailto:kopiscent99@gmail.com">kopiscent99@gmail.com</a></span>
+        <span>Instagram: proses</span>
+        <span>TikTok: proses</span>
+      </div>
+    </div>
+
+    <div class="wrap navbar">
+      <a class="brand" href="../index.html" aria-label="VitaNusa AI Beranda">
+        <img class="brand-logo" src="../images/logo-vitanusa-Ai.png" alt="Logo VitaNusa AI">
+        <span>
+          <strong>VitaNusa AI</strong>
+          <small>Sahabat edukasi sehat</small>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-controls="mainNav" aria-expanded="false">
+        <span>Menu</span>
+      </button>
+
+      <nav class="main-nav" id="mainNav" aria-label="Navigasi utama">
+        <a href="../index.html">Beranda</a>
+        <a href="../index.html#vitacheck">VitaCheck</a>
+        <a href="../articles/index.html">Artikel</a>
+        <a href="../prinsip-amanah.html">Prinsip Amanah</a>
+        <a href="../index.html#kontak">Kontak</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="product-hero" aria-labelledby="pageTitle">
+      <div class="wrap">
+        <div>
+          <p class="eyebrow">Katalog Produk Amanah</p>
+          <h1 id="pageTitle">Produk Sebagai Opsi Pendukung, Bukan Jalan Pintas</h1>
+          <p>Produk di VitaNusa AI ditampilkan sebagai katalog informasi reseller. Bacalah dengan tenang, pahami label, dan jangan menjadikan produk sebagai pengganti kebiasaan sehat atau konsultasi tenaga kesehatan.</p>
+        </div>
+
+        <div class="badge-row" aria-label="Prinsip katalog produk">
+          <span>Edukasi dulu</span>
+          <span>Baca label</span>
+          <span>Hindari klaim berlebihan</span>
+          <span>Hasil dapat berbeda</span>
+        </div>
+
+        <div class="product-actions">
+          <a class="btn ghost" href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
+          <a class="btn wa" href="https://wa.me/6288708862581">Tanya Produk via WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-section" aria-labelledby="beforeTitle">
+      <div class="wrap">
+        <div class="trust-panel">
+          <p class="eyebrow">Sebelum Melihat Produk</p>
+          <h2 id="beforeTitle">Sudah Paham Prinsip Amanah?</h2>
+          <p class="section-copy">Sebelum melihat produk, pembaca dianjurkan memahami bahwa produk bukan pengganti pola hidup sehat, bukan pengganti konsultasi tenaga kesehatan, dan tidak boleh dinilai hanya dari testimoni.</p>
+
+          <div class="trust-grid">
+            <article class="info-card">
+              <h3>Baca edukasi dulu</h3>
+              <p>Mulai dari VitaCheck dan artikel agar keputusan tidak hanya didorong rasa penasaran atau promosi.</p>
+            </article>
+            <article class="info-card">
+              <h3>Pahami batas klaim</h3>
+              <p>Bedakan informasi label, pengalaman pribadi, promosi, dan kebutuhan konsultasi kepada tenaga kesehatan.</p>
+            </article>
+            <article class="info-card">
+              <h3>Pilih dengan sadar</h3>
+              <p>Produk boleh dipertimbangkan sebagai opsi pendukung, bukan sebagai jalan pintas atau jaminan hasil.</p>
+            </article>
+          </div>
+
+          <div class="product-actions">
+            <a class="btn primary" href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="produkList" class="product-section muted" aria-labelledby="produkTitle">
+      <div class="wrap">
+        <p class="eyebrow">Produk Pilihan</p>
+        <h2 id="produkTitle">Katalog Informasi Reseller</h2>
+        <p class="section-copy">Informasi mengikuti label resmi dan kanal produk terkait. Hasil penggunaan dapat berbeda pada setiap orang.</p>
+
+        <div class="catalog-grid">
+          <article class="catalog-card">
+            <div class="product-image-box">
+              <img src="../images/key-propolis.png" alt="KEY Propolis">
+            </div>
+            <span class="product-category">Katalog reseller</span>
+            <h3>KEY Propolis</h3>
+            <p>KEY Propolis ditampilkan sebagai katalog informasi produk. Informasi penggunaan, komposisi, dan peringatan perlu mengikuti label resmi serta kanal produk terkait.</p>
+            <p class="amanah-note"><strong>Catatan amanah:</strong> Bukan pengganti konsultasi medis dan tidak menjanjikan kesembuhan.</p>
+            <div class="product-actions">
+              <a class="btn wa" href="https://wa.me/6288708862581?text=Assalamualaikum%2C%20saya%20ingin%20bertanya%20tentang%20KEY%20Propolis%20di%20VitaNusa%20AI">Tanya Produk</a>
+            </div>
+          </article>
+
+          <article class="catalog-card">
+            <div class="product-image-box">
+              <img src="../images/langfit-deto-pro.png" alt="Langfit Deto Pro">
+            </div>
+            <span class="product-category">Katalog reseller</span>
+            <h3>Langfit Deto Pro</h3>
+            <p>Langfit Deto Pro ditampilkan sebagai katalog informasi produk. Baca label, pahami aturan penggunaan, dan hindari menilai produk hanya dari testimoni.</p>
+            <p class="amanah-note"><strong>Catatan amanah:</strong> Hasil penggunaan dapat berbeda pada setiap orang. Produk bukan pengganti pola hidup sehat atau konsultasi tenaga kesehatan.</p>
+            <div class="product-actions">
+              <a class="btn wa" href="https://wa.me/6288708862581?text=Assalamualaikum%2C%20saya%20ingin%20bertanya%20tentang%20Langfit%20Deto%20Pro%20di%20VitaNusa%20AI">Tanya Produk</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-section" aria-labelledby="askTitle">
+      <div class="wrap">
+        <p class="eyebrow">Bertanya dengan Aman</p>
+        <h2 id="askTitle">Cara Bertanya Produk dengan Aman</h2>
+        <ul class="check-list">
+          <li>Tanyakan komposisi dan label resmi.</li>
+          <li>Tanyakan aturan penggunaan.</li>
+          <li>Tanyakan peringatan atau batas penggunaan.</li>
+          <li>Jelaskan jika memiliki kondisi khusus.</li>
+          <li>Jangan membeli hanya karena testimoni.</li>
+          <li>Jangan menunda konsultasi jika keluhan berat atau menetap.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="product-section muted" aria-labelledby="notPromiseTitle">
+      <div class="wrap">
+        <p class="eyebrow">Batas yang Dijaga</p>
+        <h2 id="notPromiseTitle">Yang Tidak Dijanjikan VitaNusa AI</h2>
+        <ul class="avoid-list">
+          <li>Tidak menjanjikan hasil tertentu.</li>
+          <li>Tidak menyatakan produk cocok untuk semua orang.</li>
+          <li>Tidak menggantikan dokter atau tenaga kesehatan.</li>
+          <li>Tidak menjadikan testimoni sebagai bukti utama.</li>
+          <li>Tidak mendorong pembelian tergesa-gesa.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="product-section" aria-labelledby="flowTitle">
+      <div class="wrap">
+        <p class="eyebrow">Alur Aman VitaNusa AI</p>
+        <h2 id="flowTitle">VitaCheck → Artikel → Prinsip Amanah → Produk</h2>
+        <div class="safe-flow">
+          <article class="flow-card">
+            <span class="flow-number">1</span>
+            <h3>VitaCheck</h3>
+            <p>Refleksi kebiasaan.</p>
+            <a href="../index.html#vitacheck">Mulai VitaCheck</a>
+          </article>
+          <article class="flow-card">
+            <span class="flow-number">2</span>
+            <h3>Artikel</h3>
+            <p>Baca edukasi sesuai kebutuhan.</p>
+            <a href="../articles/index.html">Baca Artikel</a>
+          </article>
+          <article class="flow-card">
+            <span class="flow-number">3</span>
+            <h3>Prinsip Amanah</h3>
+            <p>Pahami batas edukasi dan klaim produk.</p>
+            <a href="../prinsip-amanah.html">Baca Prinsip</a>
+          </article>
+          <article class="flow-card">
+            <span class="flow-number">4</span>
+            <h3>Produk</h3>
+            <p>Lihat katalog sebagai opsi pendukung.</p>
+            <a href="index.html#produkList">Lihat Katalog</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-section muted" aria-labelledby="disclaimerTitle">
+      <div class="wrap">
+        <div class="disclaimer-panel">
+          <p class="eyebrow">Disclaimer</p>
+          <h2 id="disclaimerTitle">Katalog bersifat informatif.</h2>
+          <p>Katalog produk VitaNusa AI bersifat informatif. Produk yang ditampilkan bukan diagnosis, bukan pengganti konsultasi tenaga kesehatan, dan tidak menjanjikan hasil tertentu. Bacalah label resmi, pahami batas klaim, dan konsultasikan kepada tenaga kesehatan jika memiliki keluhan berat, menetap, memburuk, atau kondisi khusus.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <h2>VitaNusa AI</h2>
+      <p>Disclaimer: informasi di website ini bersifat edukatif dan katalog. Tidak menggantikan diagnosis, pengobatan, atau konsultasi tenaga kesehatan profesional.</p>
+      <div class="footer-links" aria-label="Tautan footer">
+        <a href="../index.html">Beranda</a>
+        <a href="../articles/index.html">Artikel</a>
+        <a href="../prinsip-amanah.html">Prinsip Amanah</a>
+        <a href="https://wa.me/6288708862581">WhatsApp</a>
+      </div>
+    </div>
+  </footer>
+
+  <a class="float" href="https://wa.me/6288708862581" aria-label="WhatsApp">WA</a>
+
+  <script>
+    const menuButton = document.querySelector('.menu-toggle');
+    const mainNav = document.getElementById('mainNav');
+
+    if (menuButton && mainNav) {
+      menuButton.addEventListener('click', () => {
+        const isOpen = mainNav.classList.toggle('open');
+        menuButton.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+  </script>
+</body>
+</html>
