@@ -705,3 +705,411 @@ details,
     display: none;
   }
 }
+
+/* Chat-first homepage */
+.nusa-chat-hero {
+  color: var(--vn-text);
+  background: linear-gradient(135deg, #f7fbf6 0%, #eef8f1 48%, #fff4d6 100%);
+}
+
+.nusa-chat-hero a,
+.nusa-chat-hero .eyebrow {
+  color: var(--vn-green);
+}
+
+.nusa-chat-shell {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(320px, 1.1fr);
+  gap: clamp(1.1rem, 3vw, 2.4rem);
+  align-items: center;
+}
+
+.nusa-chat-intro {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.nusa-chat-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: .55rem .75rem;
+  border: 1px solid var(--vn-border);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 14px 32px #0f3d2e14;
+}
+
+.nusa-chat-brand img {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  object-fit: contain;
+  border-radius: 14px;
+}
+
+.nusa-chat-brand span {
+  display: grid;
+  min-width: 0;
+}
+
+.nusa-chat-brand strong {
+  color: var(--vn-green-deep);
+  line-height: 1.1;
+}
+
+.nusa-chat-brand small {
+  color: var(--vn-muted);
+}
+
+.nusa-chat-intro h1 {
+  max-width: 13ch;
+  margin: 0;
+  color: var(--vn-green-deep);
+  font-size: clamp(2rem, 5vw, 3.65rem);
+  line-height: 1.04;
+}
+
+.nusa-chat-lead {
+  max-width: 48ch;
+  margin: 0;
+  color: #243b31;
+  font-size: clamp(1.02rem, 2vw, 1.18rem);
+  font-weight: 750;
+}
+
+.nusa-chat-safety {
+  max-width: 58ch;
+  margin: 0;
+  padding: .9rem 1rem;
+  border: 1px solid #f0d489;
+  border-radius: 18px;
+  background: #fff9e8;
+  color: #5d4210;
+  font-weight: 700;
+}
+
+.nusa-chat-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 560px;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid #d8e8dd;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 24px 60px #0f3d2e24;
+}
+
+.nusa-chat-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--vn-border);
+}
+
+.nusa-chat-card-head h2 {
+  margin: 0;
+  color: var(--vn-green-deep);
+}
+
+.nusa-chat-card-head .eyebrow {
+  margin-bottom: .2rem;
+}
+
+.nusa-chat-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: .32rem .62rem;
+  border-radius: 999px;
+  background: var(--vn-green-soft);
+  color: var(--vn-green-dark);
+  font-size: .82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.nusa-chat-window {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: .85rem;
+  min-height: 230px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 1rem .15rem;
+  scroll-behavior: smooth;
+}
+
+.nusa-message {
+  display: flex;
+  max-width: min(88%, 620px);
+}
+
+.nusa-message.assistant {
+  align-self: flex-start;
+}
+
+.nusa-message.user {
+  align-self: flex-end;
+}
+
+.nusa-bubble {
+  width: 100%;
+  padding: .82rem .95rem;
+  border-radius: 20px;
+  overflow-wrap: anywhere;
+}
+
+.nusa-message.assistant .nusa-bubble {
+  border: 1px solid var(--vn-border);
+  border-bottom-left-radius: 8px;
+  background: #f8fbf8;
+  color: var(--vn-text);
+}
+
+.nusa-message.user .nusa-bubble {
+  border-bottom-right-radius: 8px;
+  background: var(--vn-green);
+  color: #fff;
+}
+
+.nusa-bubble p {
+  margin: 0;
+}
+
+.nusa-route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.nusa-route-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: .55rem .75rem;
+  border: 1px solid #b8d9c4;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--vn-green-dark);
+  font-size: .92rem;
+  font-weight: 850;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+}
+
+.nusa-route-link:hover,
+.nusa-route-link:focus-visible {
+  border-color: var(--vn-green);
+  background: var(--vn-green-soft);
+  outline: 0;
+}
+
+.nusa-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  padding: .85rem 0;
+  border-top: 1px solid var(--vn-border);
+}
+
+.nusa-chip {
+  min-height: 40px;
+  padding: .5rem .72rem;
+  border: 1px solid #cfe0d5;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--vn-green-dark);
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 800;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.nusa-chip:hover,
+.nusa-chip:focus-visible {
+  border-color: var(--vn-green);
+  background: var(--vn-green-soft);
+  outline: 0;
+}
+
+.nusa-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .6rem;
+  align-items: center;
+}
+
+.nusa-chat-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  border: 1px solid #cfe0d5;
+  border-radius: 999px;
+  padding: .7rem 1rem;
+  background: #fff;
+  color: var(--vn-text);
+  font: inherit;
+}
+
+.nusa-chat-form input:focus {
+  border-color: var(--vn-green);
+  box-shadow: 0 0 0 4px #18734f1a;
+  outline: 0;
+}
+
+.nusa-chat-submit {
+  min-height: 50px;
+  padding: .7rem 1.05rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--vn-green);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.nusa-chat-submit:hover,
+.nusa-chat-submit:focus-visible {
+  background: var(--vn-green-dark);
+  outline: 0;
+}
+
+.nusa-chat-note {
+  margin: .75rem 0 0;
+  color: var(--vn-muted);
+  font-size: .88rem;
+}
+
+.nusa-feature-routes {
+  background: #fff;
+}
+
+.nusa-route-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .85rem;
+}
+
+.nusa-route-card {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+  min-height: 142px;
+  padding: 1rem;
+  border: 1px solid var(--vn-border);
+  border-radius: 18px;
+  background: #f8fbf8;
+  color: var(--vn-text);
+  text-decoration: none;
+  box-shadow: 0 12px 30px #0f3d2e0d;
+}
+
+.nusa-route-card:hover,
+.nusa-route-card:focus-visible {
+  border-color: var(--vn-green);
+  background: var(--vn-green-soft);
+  outline: 0;
+}
+
+.nusa-route-card span {
+  color: var(--vn-green);
+  font-size: .82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nusa-route-card strong {
+  color: var(--vn-green-deep);
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.nusa-route-card small {
+  color: var(--vn-muted);
+  font-size: .92rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 920px) {
+  .nusa-chat-shell,
+  .nusa-route-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nusa-chat-intro h1 {
+    max-width: 16ch;
+  }
+
+  .nusa-chat-card {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 680px) {
+  .nusa-chat-brand {
+    width: 100%;
+  }
+
+  .nusa-chat-brand img {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+
+  .nusa-chat-intro h1 {
+    max-width: 100%;
+    font-size: 2rem;
+  }
+
+  .nusa-chat-card {
+    min-height: 0;
+    border-radius: 22px;
+  }
+
+  .nusa-chat-card-head {
+    flex-direction: column;
+  }
+
+  .nusa-chat-window {
+    max-height: 360px;
+  }
+
+  .nusa-message {
+    max-width: 94%;
+  }
+
+  .nusa-suggestions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .nusa-chip,
+  .nusa-route-link {
+    width: 100%;
+  }
+
+  .nusa-chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .nusa-chat-submit {
+    width: 100%;
+  }
+
+  .nusa-route-card {
+    min-height: 0;
+  }
+}
