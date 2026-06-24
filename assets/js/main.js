@@ -1,6 +1,6 @@
 import { initMobileNavigation } from './modules/nav.js?v=20260614-audit-1';
 import { initPremiumUI } from './modules/premium-ui.js?v=20260614-audit-1';
-import { initVitaCheck } from './modules/vitacheck.js?v=20260614-audit-1';
+import { initVitaCheck } from './modules/vitacheck.js?v=20260623-vitacheck-v2';
 
 const modules = [
   ['Premium UI', initPremiumUI],
