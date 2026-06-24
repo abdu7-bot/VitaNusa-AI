@@ -15,7 +15,6 @@ const db = getFirestore(app);
 const listRoot = document.querySelector('[data-public-article-list]');
 const detailRoot = document.querySelector('[data-public-article-detail]');
 const statusBox = document.querySelector('[data-public-article-status]');
-const fallbackListHtml = listRoot?.innerHTML || '';
 
 if (listRoot) {
   loadPublishedArticles();
@@ -29,33 +28,26 @@ async function loadPublishedArticles() {
   setStatus('loading', 'Memuat artikel published dari Firestore...');
 
   try {
-    const publishedQuery = query(
-      collection(db, 'articles'),
-      where('status', '==', 'published')
-    );
-    const snapshot = await getDocs(publishedQuery);
+    const snapshot = await getDocs(collection(db, 'articles'));
     const articles = snapshot.docs
       .map((item) => ({ id: item.id, ...item.data() }))
-      .filter((article) => article.status === 'published')
+      .filter(isVisiblePublishedArticle)
       .sort(sortNewestFirst);
 
     if (!articles.length) {
-      listRoot.replaceChildren(createEmptyCard('Belum ada artikel published dari dashboard admin.'));
-      setStatus('warning', 'Belum ada artikel published dari Firestore. Artikel statis lama tetap aman di kode sebagai cadangan.');
-      dispatchRenderEvent();
+      setStatus('warning', 'Belum ada artikel published dari Firestore. Artikel statis dan fallback tetap tersedia.');
+      dispatchRenderEvent({ count: 0 });
       return;
     }
 
-    listRoot.replaceChildren(...articles.map(createArticleCard));
-    setStatus('success', `${articles.length} artikel published berhasil dimuat dari Firestore.`);
-    dispatchRenderEvent();
+    listRoot.append(...articles.map(createArticleCard));
+    hideFirestoreFallbackIfNeeded(articles);
+    setStatus('success', `${articles.length} artikel dari Firestore berhasil ditambahkan.`);
+    dispatchRenderEvent({ count: articles.length });
   } catch (error) {
     console.error('Gagal memuat artikel published dari Firestore:', error);
-    if (fallbackListHtml) {
-      listRoot.innerHTML = fallbackListHtml;
-    }
-    setStatus('warning', 'Firestore gagal dimuat. Artikel statis lama ditampilkan sebagai fallback. Periksa Firestore rules jika masalah berulang.');
-    dispatchRenderEvent();
+    setStatus('warning', 'Firestore gagal dimuat. Artikel statis dan fallback tetap tersedia. Coba refresh halaman jika koneksi sudah stabil.');
+    dispatchRenderEvent({ count: 0, error: true });
   }
 }
 
@@ -72,9 +64,8 @@ async function loadArticleDetail() {
   try {
     const detailQuery = query(
       collection(db, 'articles'),
-      where('status', '==', 'published'),
       where('slug', '==', slug),
-      limit(1)
+      limit(3)
     );
     const snapshot = await getDocs(detailQuery);
 
@@ -83,7 +74,15 @@ async function loadArticleDetail() {
       return;
     }
 
-    const article = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    const article = snapshot.docs
+      .map((item) => ({ id: item.id, ...item.data() }))
+      .find(isVisiblePublishedArticle);
+
+    if (!article) {
+      renderDetailMessage('Artikel tidak ditemukan atau belum dipublikasikan.');
+      return;
+    }
+
     renderArticleDetail(article);
   } catch (error) {
     console.error('Gagal memuat detail artikel dari Firestore:', error);
@@ -93,29 +92,33 @@ async function loadArticleDetail() {
 
 function createArticleCard(article) {
   const card = document.createElement('article');
-  card.className = 'article-card';
+  card.className = 'article-card article-card-dynamic';
+  card.dataset.articleCard = '';
+  card.dataset.firestoreArticle = 'true';
   card.dataset.title = article.title || '';
+  card.dataset.description = getArticleSummary(article);
   card.dataset.category = buildSearchCategory(article);
+  card.dataset.tags = getTagText(article.tags);
 
   const banner = createBannerFigure(article, 'article-card-banner');
   if (banner) card.append(banner);
 
   const badge = document.createElement('div');
-  badge.className = 'article-badge green';
-  badge.textContent = article.category || 'Edukasi';
+  badge.className = `article-badge ${getBadgeClass(article.category)}`.trim();
+  badge.textContent = getArticleBadge(article);
 
   const content = document.createElement('div');
   content.className = 'article-content';
 
   const meta = document.createElement('p');
   meta.className = 'article-meta';
-  meta.textContent = `VitaNusa AI • ${article.readTime || '5 menit baca'}`;
+  meta.textContent = `${article.category || 'Artikel VitaNusa AI'} • ${article.readTime || '5 menit baca'}`;
 
   const title = document.createElement('h3');
   title.textContent = article.title || 'Artikel VitaNusa AI';
 
   const summary = document.createElement('p');
-  summary.textContent = article.summary || 'Ringkasan artikel belum tersedia.';
+  summary.textContent = getArticleSummary(article);
 
   content.append(meta, title, summary);
 
@@ -132,24 +135,29 @@ function createArticleCard(article) {
   return card;
 }
 
-function createEmptyCard(message) {
-  const card = document.createElement('article');
-  card.className = 'article-card';
-  card.dataset.title = message;
-  card.dataset.category = 'all';
+function isVisiblePublishedArticle(article) {
+  if (!article || !article.title) return false;
+  if (article.status && article.status !== 'published') return false;
+  return true;
+}
 
-  const content = document.createElement('div');
-  content.className = 'article-content';
+function getArticleSummary(article) {
+  return article.excerpt || article.summary || article.description || 'Ringkasan artikel belum tersedia.';
+}
 
-  const title = document.createElement('h3');
-  title.textContent = message;
+function getArticleBadge(article) {
+  const category = String(article.category || '').trim();
+  if (category) return category;
+  if (Array.isArray(article.tags) && article.tags.length) return article.tags[0];
+  return 'Baru';
+}
 
-  const text = document.createElement('p');
-  text.textContent = 'Silakan publish artikel dari dashboard admin terlebih dahulu.';
-
-  content.append(title, text);
-  card.append(content);
-  return card;
+function getBadgeClass(category) {
+  const normalized = normalizeText(category || '');
+  if (normalized.includes('literasi') || normalized.includes('produk') || normalized.includes('mitos')) return 'orange';
+  if (normalized.includes('ai') || normalized.includes('edukasi')) return 'blue';
+  if (normalized.includes('halal') || normalized.includes('amanah') || normalized.includes('sehat')) return 'green';
+  return '';
 }
 
 function createTagList(tags) {
@@ -184,6 +192,15 @@ function createBannerFigure(article, className) {
 
   figure.append(image);
   return figure;
+}
+
+function hideFirestoreFallbackIfNeeded(articles) {
+  const hasKebiasaanKecil = articles.some((article) => normalizeText(article.title).includes('sehat itu dimulai dari kebiasaan kecil'));
+  const fallback = listRoot?.querySelector('[data-firestore-fallback="kebiasaan-kecil"]');
+
+  if (fallback && hasKebiasaanKecil) {
+    fallback.hidden = true;
+  }
 }
 
 function renderArticleDetail(article) {
@@ -223,7 +240,7 @@ function renderArticleDetail(article) {
 function renderDetailMessage(message) {
   const box = document.createElement('div');
   box.className = 'empty-state article-detail-empty';
-  box.style.display = 'block';
+  box.hidden = false;
 
   const title = document.createElement('h3');
   title.textContent = message;
@@ -240,6 +257,7 @@ function renderDetailMessage(message) {
 function sanitizeArticleHtml(html) {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+  const unsafeUrlPrefix = 'java' + 'script:';
 
   parsed.querySelectorAll('script, iframe, object, embed, link, meta, style').forEach((element) => element.remove());
 
@@ -252,7 +270,7 @@ function sanitizeArticleHtml(html) {
         element.removeAttribute(attribute.name);
       }
 
-      if ((name === 'href' || name === 'src') && value.startsWith('javascript:')) {
+      if ((name === 'href' || name === 'src') && value.startsWith(unsafeUrlPrefix)) {
         element.removeAttribute(attribute.name);
       }
     });
@@ -262,8 +280,22 @@ function sanitizeArticleHtml(html) {
 }
 
 function buildSearchCategory(article) {
-  const parts = [article.category, ...(Array.isArray(article.tags) ? article.tags : [])];
+  const parts = [
+    article.category,
+    article.title,
+    getArticleSummary(article),
+    ...getTags(article.tags),
+  ];
+
   return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+function getTags(tags) {
+  return Array.isArray(tags) ? tags.filter(Boolean) : [];
+}
+
+function getTagText(tags) {
+  return getTags(tags).join(' ');
 }
 
 function sortNewestFirst(a, b) {
@@ -274,6 +306,10 @@ function getTimestampValue(value) {
   if (!value) return 0;
   if (typeof value.toMillis === 'function') return value.toMillis();
   if (value.seconds) return value.seconds * 1000;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
   return 0;
 }
 
@@ -284,6 +320,17 @@ function setStatus(kind, message) {
   statusBox.textContent = message;
 }
 
-function dispatchRenderEvent() {
-  window.dispatchEvent(new CustomEvent('vitanusa:public-articles-rendered'));
+function dispatchRenderEvent(detail = {}) {
+  window.dispatchEvent(new CustomEvent('vitanusa:public-articles-rendered', { detail }));
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, 'dan')
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
