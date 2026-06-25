@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260624-nusa-knowledge-router';
+import { getNusaReply } from './nusa-knowledge.js?v=20260624-nusa-article-map';
 
 function createRouteLink(action) {
   const link = document.createElement('a');
