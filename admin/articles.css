@@ -3,9 +3,26 @@
   gap: 18px;
 }
 
+.admin-page {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-main-shell,
+.admin-main,
+.admin-panel,
+.article-admin,
+.article-layout,
+.article-list-card,
+.article-form-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .article-toolbar,
 .article-form-actions,
-.article-row-actions {
+.article-row-actions,
+.article-disclaimer-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -17,6 +34,8 @@
 }
 
 .article-message {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   border: 1px solid var(--admin-line);
   border-radius: 16px;
   padding: 12px 14px;
@@ -64,7 +83,10 @@
 }
 
 .article-table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .article-table {
@@ -128,6 +150,10 @@
   color: #54616a;
 }
 
+.article-row-actions {
+  align-items: stretch;
+}
+
 .article-action-button {
   min-height: 36px;
   border-radius: 999px;
@@ -142,6 +168,7 @@
 
 .article-form label {
   display: grid;
+  max-width: 100%;
   gap: 6px;
   color: var(--admin-green-900);
   font-weight: 800;
@@ -151,6 +178,7 @@
 .article-form select,
 .article-form textarea {
   width: 100%;
+  max-width: 100%;
   border: 1px solid var(--admin-line);
   border-radius: 14px;
   background: #fbfefc;
@@ -180,6 +208,50 @@
   color: var(--admin-muted);
   font-size: 0.88rem;
   margin: -4px 0 4px;
+}
+
+.article-disclaimer-helper {
+  display: grid;
+  gap: 10px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+  background: #f6fbf8;
+  padding: 12px;
+}
+
+.article-disclaimer-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.article-disclaimer-copy strong {
+  color: var(--admin-green-900);
+}
+
+.article-disclaimer-copy p,
+.article-disclaimer-status {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.article-disclaimer-status.is-ok {
+  color: #14663d;
+  font-weight: 800;
+}
+
+.article-disclaimer-status.is-missing {
+  color: #8d5d0a;
+  font-weight: 800;
+}
+
+.article-disclaimer-button {
+  min-height: 36px;
+  padding: 7px 12px;
+  font-size: 0.86rem;
 }
 
 .article-banner-preview {
@@ -212,16 +284,70 @@
 }
 
 @media (max-width: 620px) {
+  .admin-main {
+    padding: 14px;
+  }
+
+  .admin-panel {
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .article-admin {
+    gap: 14px;
+  }
+
   .article-toolbar,
   .article-form-actions,
-  .article-row-actions {
+  .article-row-actions,
+  .article-disclaimer-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
   .article-toolbar .admin-button,
   .article-form-actions .admin-button,
-  .article-row-actions .admin-button {
+  .article-row-actions .admin-button,
+  .article-disclaimer-actions .admin-button {
     width: 100%;
+  }
+
+  .article-list-card,
+  .article-form-card {
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .article-table {
+    min-width: 620px;
+  }
+
+  .article-action-button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.84rem;
+  }
+
+  .article-form {
+    gap: 14px;
+  }
+
+  .article-form input,
+  .article-form select,
+  .article-form textarea {
+    min-height: 44px;
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .article-form textarea[name="contentHtml"] {
+    min-height: 260px;
+    font-size: 0.9rem;
+  }
+
+  .article-message,
+  .article-disclaimer-helper {
+    border-radius: 14px;
+    padding: 12px;
   }
 }
