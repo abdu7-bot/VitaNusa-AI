@@ -3,322 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>VitaNusa AI | Edukasi Kesehatan Digital</title>
-  <meta name="description" content="VitaNusa AI: edukasi kesehatan, VitaCheck, artikel, VitaStory, VitaGame, katalog produk, FAQ amanah, dan kontak WhatsApp.">
-  <link rel="stylesheet" href="style.css?v=20260624-nusa-app-shell">
-  <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260624-nusa-app-shell-refactor">
-  <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260625-chatgpt-like-minimal">
-  <style>
-    .visual-image-frame{width:100%;margin:0;padding:0;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.14)}
-    .visual-image-frame .visual-image{display:block;width:100%;height:auto;object-fit:contain;border-radius:24px}
-    .hero-banner-image,.comic-banner{align-self:center;background:#f8fbf8}
-    @media(max-width:920px){.hero-banner-image{order:-1}.visual-image-frame,.visual-image-frame .visual-image{border-radius:20px}}
-  </style>
+  <title>VitaNusa AI | Nusa AI</title>
+  <meta name="description" content="Nusa AI membantu edukasi kesehatan secara amanah. Bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.">
+  <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260625-chat-only-final">
 </head>
-<body>
-  <a class="skip" href="#main">Lewati ke konten</a>
+<body class="nusa-chat-page">
+  <main id="main" class="nusa-home-chat" aria-labelledby="nusa-chat-title">
+    <div class="nusa-chat-shell">
+      <div class="nusa-chat-intro">
+        <div class="nusa-chat-brand" aria-label="VitaNusa AI">VitaNusa AI</div>
+        <h1 id="nusa-chat-title">Assalamualaikum, saya Nusa AI.<br>Apa yang ingin kamu pahami hari ini?</h1>
+      </div>
 
-  <header class="site-header">
-    <div class="topbar">
-      <div class="wrap topbar-inner">
-        <span>WhatsApp: <a href="https://wa.me/6288708862581">088708862581</a></span>
-        <span>Email: <a href="mailto:kopiscent99@gmail.com">kopiscent99@gmail.com</a></span>
-        <span>Instagram: proses</span>
-        <span>TikTok: proses</span>
+      <div class="nusa-chat-panel" data-nusa-chat aria-label="Chat Nusa AI">
+        <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
+
+        <form class="nusa-chat-form" data-nusa-chat-form>
+          <label class="sr-only" for="nusaChatInput">Tulis pertanyaanmu di sini</label>
+          <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
+          <button class="nusa-chat-submit" type="submit" aria-label="Kirim pertanyaan">
+            <span aria-hidden="true">↑</span>
+          </button>
+        </form>
+
+        <p class="nusa-chat-note">Nusa AI bersifat edukatif, bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.</p>
       </div>
     </div>
-
-    <div class="wrap navbar">
-      <a class="brand" href="#home" aria-label="VitaNusa AI Beranda">
-        <img class="brand-logo" src="images/logo-vitanusa-Ai.png" alt="Logo VitaNusa AI">
-        <span>
-          <strong>VitaNusa AI</strong>
-          <small>Sahabat edukasi sehat</small>
-        </span>
-      </a>
-
-      <button class="menu-toggle" type="button" aria-controls="mainNav" aria-expanded="false">
-        <span>Menu</span>
-      </button>
-
-      <nav class="main-nav" id="mainNav" aria-label="Navigasi utama">
-        <a href="#home">Beranda</a>
-        <a href="#vitacheck">VitaCheck</a>
-        <a href="articles/index.html">Artikel</a>
-        <a href="prinsip-amanah.html">Prinsip Amanah</a>
-        <a href="#produk">Produk</a>
-        <a href="#faq">FAQ</a>
-        <a class="cta" href="#kontak">Kontak</a>
-      </nav>
-    </div>
-  </header>
-
-  <main id="main">
-    <section id="home" class="sec hero nusa-chat-hero" aria-labelledby="nusa-chat-title">
-      <div class="wrap nusa-chat-shell">
-        <div class="nusa-chat-intro">
-          <div class="nusa-chat-brand" aria-label="VitaNusa AI">VitaNusa AI</div>
-          <h1 id="nusa-chat-title">Assalamualaikum, saya Nusa AI.<br>Apa yang ingin kamu pahami hari ini?</h1>
-        </div>
-
-        <section class="nusa-chat-card" data-nusa-chat aria-label="Chat Nusa AI">
-          <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
-
-          <form class="nusa-chat-form" data-nusa-chat-form>
-            <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
-            <button class="nusa-chat-submit" type="submit">Kirim</button>
-          </form>
-
-          <p class="nusa-chat-note">Nusa AI bersifat edukatif, bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.</p>
-
-          <details class="nusa-suggestions-details">
-            <summary>Contoh pertanyaan</summary>
-            <div class="nusa-suggestions" aria-label="Contoh pertanyaan">
-              <button type="button" class="nusa-chip" data-nusa-prompt="Cek kebiasaan sehat">Cek kebiasaan sehat</button>
-              <button type="button" class="nusa-chip" data-nusa-prompt="Testimoni produk bisa dipercaya?">Testimoni produk bisa dipercaya?</button>
-              <button type="button" class="nusa-chip" data-nusa-prompt="Tanya produk dengan aman">Tanya produk dengan aman</button>
-              <button type="button" class="nusa-chip" data-nusa-prompt="Hubungi admin">Hubungi admin</button>
-            </div>
-          </details>
-        </section>
-      </div>
-    </section>
-
-    <section class="sec nusa-feature-routes" aria-labelledby="jalur-cepat">
-      <div class="wrap">
-        <details class="nusa-feature-details">
-          <summary id="jalur-cepat">Lihat fitur VitaNusa AI</summary>
-          <nav class="nusa-route-list" aria-label="Fitur VitaNusa AI">
-            <a href="#vitacheck">VitaCheck</a>
-            <a href="articles/index.html">Artikel</a>
-            <a href="prinsip-amanah.html">Prinsip Amanah</a>
-            <a href="products/index.html">Produk</a>
-            <a href="#faq">FAQ</a>
-            <a href="https://wa.me/6288708862581">WhatsApp</a>
-            <a href="mailto:kopiscent99@gmail.com">Email</a>
-          </nav>
-        </details>
-      </div>
-    </section>
-
-    <section id="vitacheck" class="sec">
-      <div class="wrap">
-        <p class="eyebrow">VitaCheck</p>
-        <h2>VitaCheck Versi 2</h2>
-        <p>Asisten refleksi kebiasaan sehat harian. VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis, bukan pengganti dokter, apoteker, ahli gizi, psikolog, atau tenaga kesehatan profesional.</p>
-
-        <div class="grid check-grid vitacheck-v2">
-          <form id="form" class="card vitacheck-card" data-vitacheck-form novalidate>
-            <div class="vitacheck-disclaimer">
-              VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis.
-            </div>
-
-            <div class="vitacheck-progress" aria-label="Progress VitaCheck">
-              <div class="vitacheck-progress-track">
-                <span data-vitacheck-progress-bar></span>
-              </div>
-              <p data-vitacheck-progress-text>Pertanyaan 1 dari 8</p>
-            </div>
-
-            <fieldset class="vitacheck-step">
-              <legend data-vitacheck-category>Refleksi kebiasaan</legend>
-              <h3 data-vitacheck-question tabindex="-1">VitaCheck sedang disiapkan.</h3>
-              <div class="vitacheck-options" data-vitacheck-options>
-                <p class="note">Jika JavaScript belum aktif, halaman utama tetap bisa dibaca. Aktifkan JavaScript untuk memakai VitaCheck V2.</p>
-              </div>
-            </fieldset>
-
-            <div class="vitacheck-actions">
-              <button class="btn outline" type="button" data-vitacheck-prev>Sebelumnya</button>
-              <button class="btn primary" type="button" data-vitacheck-next>Lanjut</button>
-              <button class="btn primary" type="submit" data-vitacheck-submit hidden>Lihat Hasil</button>
-            </div>
-
-            <p class="note" data-vitacheck-helper aria-live="polite">Pilih jawaban yang paling mendekati kondisi 7 hari terakhir.</p>
-
-            <noscript>
-              <p class="note">VitaCheck V2 membutuhkan JavaScript untuk menghitung skor. Konten website tetap dapat dibaca tanpa JavaScript.</p>
-            </noscript>
-          </form>
-
-          <aside class="card vitacheck-result" data-vitacheck-result aria-live="polite">
-            <p class="eyebrow">Hasil Refleksi</p>
-            <h3 id="status">Isi VitaCheck untuk melihat hasil.</h3>
-            <div class="score vitacheck-score">
-              <span id="skor">0</span><small>/100</small>
-            </div>
-            <p id="ringkasan">Hasil akan berisi kategori, titik kuat, titik perhatian, fokus 7 hari, dan artikel edukasi yang relevan.</p>
-
-            <div class="vitacheck-result-grid">
-              <section>
-                <h4>Titik kuat</h4>
-                <ul id="kekuatan" class="vitacheck-list">
-                  <li>Kesadaran untuk mengecek kebiasaan sudah menjadi langkah awal yang baik.</li>
-                </ul>
-              </section>
-
-              <section>
-                <h4>Perlu diperhatikan</h4>
-                <ul id="perhatian" class="vitacheck-list">
-                  <li>Jawab semua pertanyaan untuk melihat bagian yang perlu dirapikan.</li>
-                </ul>
-              </section>
-            </div>
-
-            <section>
-              <h4>Fokus 7 hari</h4>
-              <ul id="fokus" class="vitacheck-list">
-                <li>Mulai dari satu kebiasaan kecil.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h4>Artikel disarankan</h4>
-              <ul id="artikel-saran" class="vitacheck-list">
-                <li><a href="articles/index.html">Lihat daftar artikel VitaNusa AI</a></li>
-              </ul>
-            </section>
-
-            <p class="note vitacheck-redflag" data-vitacheck-redflag hidden>Catatan penting: Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas harian, jangan hanya mengandalkan tips umum. Konsultasikan kepada tenaga kesehatan yang berwenang.</p>
-            <p class="note">VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis, bukan pengganti dokter, apoteker, ahli gizi, psikolog, atau tenaga kesehatan profesional.</p>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <section id="produk" class="sec">
-      <div class="wrap">
-        <p class="eyebrow">Produk</p>
-        <h2>Produk Pilihan</h2>
-        <p>Katalog reseller. Informasi mengikuti label resmi dan kanal produk terkait.</p>
-
-        <div class="cards two">
-          <article class="card product-card">
-            <div class="prod">
-              <img class="product-photo" src="images/key-propolis.png" alt="KEY Propolis">
-            </div>
-            <h3>KEY Propolis</h3>
-            <p>Katalog informasi VitaNusa AI.</p>
-            <p class="note">Bukan pengganti konsultasi medis dan tidak menjanjikan kesembuhan.</p>
-            <a class="btn primary" href="https://wa.me/6288708862581">Tanya Produk</a>
-          </article>
-
-          <article class="card product-card">
-            <div class="prod">
-              <img class="product-photo" src="images/langfit-deto-pro.png" alt="Langfit Deto Pro">
-            </div>
-            <h3>Langfit Deto Pro</h3>
-            <p>Katalog informasi VitaNusa AI.</p>
-            <p class="note">Hasil penggunaan dapat berbeda. Hindari klaim berlebihan.</p>
-            <a class="btn primary" href="https://wa.me/6288708862581">Tanya Produk</a>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="vitastory" class="sec muted">
-      <div class="wrap">
-        <p class="eyebrow">VitaStory</p>
-        <h2>Komik Edukatif</h2>
-
-        <article class="card vstory-card">
-          <div>
-            <span class="article-category">Komik Sehat</span>
-            <h3>Jangan Tergoda Klaim Berlebihan!</h3>
-            <p>Komik pendek tentang memilih informasi produk kesehatan dengan lebih bijak.</p>
-            <a class="btn primary" href="komik/index.html">Baca Komik</a>
-          </div>
-
-          <figure class="visual-image-frame comic-banner">
-            <img class="visual-image" src="images/banner-komik.png" alt="Banner komik VitaStory">
-          </figure>
-        </article>
-      </div>
-    </section>
-
-    <section id="vitagame" class="sec">
-      <div class="wrap">
-        <p class="eyebrow">VitaGame</p>
-        <h2>Game Edukasi Kesehatan</h2>
-
-        <article class="card vstory-card">
-          <div>
-            <span class="article-category">Rencana Fitur</span>
-            <h3>Game Cek KLIK Produk</h3>
-            <p>Belajar memeriksa Kemasan, Label, Izin Edar, dan Kedaluwarsa sebelum percaya pada klaim produk kesehatan.</p>
-            <a class="btn primary" href="vitagame.html/">Buka VitaGame</a>
-          </div>
-
-          <div class="visual-panel light" role="img" aria-label="Ilustrasi VitaGame">
-            <div class="visual-content">
-              <span class="visual-badge">VitaGame</span>
-              <div class="visual-title">Belajar sambil bermain</div>
-              <p class="visual-sub">Kuis sehat, mitos vs fakta, dan latihan Cek KLIK secara ringan.</p>
-              <div class="visual-icons" aria-hidden="true">
-                <span>Game</span>
-                <span>KLIK</span>
-                <span>OK</span>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section id="faq" class="sec muted">
-      <div class="wrap">
-        <p class="eyebrow">FAQ Amanah</p>
-        <h2>Pertanyaan yang Sering Ditanyakan</h2>
-
-        <details open>
-          <summary>Apakah VitaCheck diagnosis medis?</summary>
-          <p>Tidak. VitaCheck hanya alat edukasi kebiasaan sehat.</p>
-        </details>
-
-        <details>
-          <summary>Apakah produk di website ini obat?</summary>
-          <p>Produk ditampilkan sebagai katalog reseller. Klaim mengikuti label resmi dan data terkait.</p>
-        </details>
-
-        <details>
-          <summary>Kapan perlu konsultasi tenaga kesehatan?</summary>
-          <p>Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, konsultasikan kepada tenaga kesehatan yang berwenang.</p>
-        </details>
-      </div>
-    </section>
-
-    <section id="kontak" class="sec contact">
-      <div class="wrap contact-grid card">
-        <div>
-          <p class="eyebrow">Kontak</p>
-          <h2>Hubungi VitaNusa AI</h2>
-          <p>Untuk produk, artikel, komik edukatif, VitaGame, dan kerja sama konten.</p>
-          <div class="actions">
-            <a class="btn wa" href="https://wa.me/6288708862581">Hubungi WhatsApp</a>
-            <a class="btn primary" href="mailto:kopiscent99@gmail.com">Kirim Email</a>
-          </div>
-        </div>
-
-        <ul class="contact-list">
-          <li><b>WhatsApp:</b> <a href="https://wa.me/6288708862581">088708862581</a></li>
-          <li><b>Email:</b> <a href="mailto:kopiscent99@gmail.com">kopiscent99@gmail.com</a></li>
-          <li><b>Instagram:</b> proses</li>
-          <li><b>TikTok:</b> proses</li>
-        </ul>
-      </div>
-    </section>
   </main>
 
-  <footer>
-    <div class="wrap">
-      <h2>VitaNusa AI</h2>
-      <p>Disclaimer: informasi di website ini bersifat edukatif dan katalog. Tidak menggantikan diagnosis, pengobatan, atau konsultasi tenaga kesehatan profesional.</p>
-      <p>VitaNusa AI.</p>
-    </div>
-  </footer>
-
-  <a class="float" href="https://wa.me/6288708862581" aria-label="WhatsApp">WA</a>
-
-  <script type="module" src="assets/js/main.js?v=20260625-chatgpt-like-minimal"></script>
+  <script type="module" src="assets/js/main.js?v=20260625-chat-only-final"></script>
 </body>
 </html>
