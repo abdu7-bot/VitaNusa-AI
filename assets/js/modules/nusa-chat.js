@@ -1,12 +1,36 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260624-nusa-article-map';
+import { getNusaReply } from './nusa-knowledge.js?v=20260625-chat-only-final';
+
+const ROUTE_OVERRIDES = Object.freeze({
+  '#vitacheck': 'vitacheck.html',
+  '#faq': 'faq.html',
+  '#kontak': 'contact.html',
+});
+
+function getActionHref(action) {
+  return ROUTE_OVERRIDES[action.href] || action.href;
+}
+
+function getContextActions(reply) {
+  const actions = reply.actions || [];
+
+  if (reply.id === 'product-suitability') {
+    return actions.filter((action) => action.href !== 'products/index.html');
+  }
+
+  if (reply.id === 'serious-complaint') {
+    return [];
+  }
+
+  return actions;
+}
 
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
-  link.href = action.href;
+  link.href = getActionHref(action);
   link.textContent = action.label;
 
-  if (action.href.startsWith('http')) {
+  if (link.href.startsWith('http')) {
     link.rel = 'noopener noreferrer';
   }
 
@@ -33,7 +57,12 @@ function appendMessage(log, role, text, actions = []) {
 
   message.append(bubble);
   log.append(message);
+  log.hidden = false;
   log.scrollTop = log.scrollHeight;
+}
+
+function renderReply(log, reply) {
+  appendMessage(log, 'assistant', reply.text, getContextActions(reply));
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -43,9 +72,11 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   const log = root.querySelector('[data-nusa-chat-log]');
   const form = root.querySelector('[data-nusa-chat-form]');
   const input = root.querySelector('[data-nusa-chat-input]');
-  const promptButtons = root.querySelectorAll('[data-nusa-prompt]');
 
   if (!log || !form || !input) return null;
+
+  log.replaceChildren();
+  log.hidden = true;
 
   function handleQuestion(value) {
     const question = value.trim();
@@ -55,8 +86,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     input.value = '';
 
     window.setTimeout(() => {
-      const reply = getNusaReply(question);
-      appendMessage(log, 'assistant', reply.text, reply.actions);
+      renderReply(log, getNusaReply(question));
     }, 120);
   }
 
@@ -65,11 +95,15 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     handleQuestion(input.value);
   });
 
-  promptButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
-      input.focus();
-    });
+  root.addEventListener('click', (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest('[data-nusa-prompt]')
+      : null;
+
+    if (!button || !root.contains(button)) return;
+
+    handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
+    input.focus();
   });
 
   return {

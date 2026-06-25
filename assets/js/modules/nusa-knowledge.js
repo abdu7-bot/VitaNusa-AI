@@ -1,4 +1,4 @@
-import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260624-nusa-article-map';
+import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260625-chatgpt-like-minimal';
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
@@ -10,6 +10,7 @@ export const NUSA_ROUTES = Object.freeze({
   amanah: 'prinsip-amanah.html',
   products: 'products/index.html',
   faq: '#faq',
+  contact: '#kontak',
   whatsapp: WHATSAPP_URL,
   email: EMAIL_URL,
 });
@@ -25,104 +26,113 @@ export const NUSA_ROUTE_BUTTONS = Object.freeze({
   amanah: { label: 'Baca Prinsip Amanah', href: NUSA_ROUTES.amanah },
   products: { label: 'Lihat Katalog Produk', href: NUSA_ROUTES.products },
   faq: { label: 'Buka FAQ', href: NUSA_ROUTES.faq },
+  contact: { label: 'Hubungi Admin', href: NUSA_ROUTES.contact },
   whatsapp: { label: 'Hubungi WhatsApp', href: NUSA_ROUTES.whatsapp },
   email: { label: 'Kirim Email', href: NUSA_ROUTES.email },
 });
 
 export const NUSA_KEYWORDS = Object.freeze({
+  greeting: ['assalamualaikum', 'assalamu alaikum', 'salam', 'halo', 'hai', 'hello'],
+  start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'saya bingung'],
+  vitacheckStart: ['mulai vitacheck', 'cek kebiasaan sehat', 'vital check', 'vitacheck'],
   habit: [
     'kebiasaan',
-    'cek kebiasaan',
-    'vitacheck',
+    'tanya kebiasaan sehat',
     'tidur',
     'makan',
-    'minum',
     'air',
-    'energi',
+    'minum',
     'lelah',
+    'energi',
     'gerak',
+    'olahraga',
     'pencernaan',
   ],
-  article: ['artikel', 'edukasi', 'baca', 'blog', 'kesehatan', 'belajar'],
-  testimonial: ['testimoni', 'bukti', 'klaim', 'klaim produk', 'promosi', 'percaya testimoni'],
-  amanah: [
-    'amanah',
-    'prinsip amanah',
-    'batas',
-    'batas klaim',
-    'edukasi dulu',
-    'produk belakangan',
-    'klaim berlebihan',
+  testimonial: [
+    'testimoni',
+    'bukti',
+    'klaim',
+    'promosi',
+    'hasil orang',
+    'cek klaim',
+    'cek testimoni',
+    'klaim produk',
+    'percaya testimoni',
   ],
   product: [
     'produk',
-    'katalog',
-    'reseller',
     'key propolis',
-    'propolis',
+    'langfit deto pro',
     'langfit',
     'deto pro',
+    'katalog',
     'harga',
     'beli',
+    'tanya produk',
     'cara membeli',
-    'produk apa yang cocok',
+    'reseller',
+    'propolis',
   ],
   productSuitability: [
+    'produk cocok untuk saya',
     'produk apa yang cocok untuk saya',
     'produk apa yang sesuai untuk saya',
     'produk yang cocok untuk saya',
     'produk yang sesuai untuk saya',
+    'mana yang cocok',
     'mana yang cocok untuk saya',
     'mana yang sesuai untuk saya',
+    'saya cocok pakai apa',
   ],
+  diagnosis: ['diagnosis', 'diagnosa', 'saya sakit apa', 'penyakit saya apa', 'apakah saya kena', 'kena penyakit apa'],
   seriousComplaint: [
-    'darurat',
     'sesak napas',
+    'sesak nafas',
     'sesak',
     'pingsan',
     'perdarahan',
+    'pendarahan',
     'nyeri hebat',
-    'keluhan berat',
+    'darurat',
     'memburuk',
+    'tidak tertahankan',
+    'keluhan berat',
     'menetap',
     'gangguan aktivitas',
     'sakit parah',
-    'tidak tertahankan',
   ],
-  diagnosis: ['diagnosis', 'diagnosa', 'saya sakit apa', 'penyakit saya apa', 'apakah saya kena'],
-  faq: ['faq', 'pertanyaan', 'bingung', 'cara pakai', 'tentang vitanusa'],
-  contact: ['whatsapp', 'wa', 'kontak', 'admin', 'hubungi', 'email', 'kerja sama', 'kolaborasi'],
+  article: ['artikel', 'edukasi', 'baca', 'blog', 'kesehatan', 'belajar'],
+  amanah: ['prinsip amanah', 'amanah', 'batas klaim', 'klaim berlebihan', 'edukasi dulu', 'produk belakangan'],
+  faq: ['faq', 'pertanyaan', 'cara pakai', 'tentang vitanusa'],
+  contact: ['wa', 'whatsapp', 'admin', 'email', 'hubungi', 'kontak', 'kerja sama', 'kolaborasi'],
 });
 
 export const NUSA_RESPONSES = Object.freeze({
-  habit: 'Untuk memahami kebiasaan harian, kamu bisa mulai dari VitaCheck. Hasilnya bersifat edukatif, bukan diagnosis.',
-  article: 'Kamu bisa mulai dari ruang artikel VitaNusa AI. Pilih topik yang paling sesuai dengan kebutuhanmu.',
-  testimonial: 'Testimoni bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk semua orang. Lebih aman membaca klaim produk dengan tenang dan memahami batasnya.',
+  greeting: 'Assalamualaikum, saya Nusa AI. Apa yang ingin kamu pahami hari ini?',
+  start: 'Kita mulai pelan-pelan. Kamu bisa bertanya langsung tentang kebiasaan sehat, artikel edukasi, klaim/testimoni, produk, atau kontak admin.',
+  vitacheckStart: 'Baik. VitaCheck membantu kamu melihat gambaran kebiasaan sehat secara edukatif. Hasilnya bukan diagnosis medis.',
+  habit: 'Kita bisa mulai dari kebiasaan harian seperti tidur, minum air, pola makan, gerak, energi, dan pencernaan. Untuk gambaran awal yang rapi, gunakan VitaCheck terlebih dahulu.',
+  article: 'Kamu bisa mulai dari ruang artikel VitaNusa AI. Pilih bacaan yang paling sesuai dengan kebutuhanmu, lalu ambil langkah kecil yang realistis.',
+  testimonial: 'Testimoni bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk semua orang. Lebih aman menilai klaim produk dengan tenang: lihat label resmi, batas klaim, dan jangan menjadikan cerita orang sebagai jaminan hasil.',
   amanah: 'Prinsip Amanah menjelaskan batas VitaNusa AI: edukasi dulu, tidak diagnosis, tidak membuat klaim berlebihan, dan produk bukan janji hasil.',
-  product: 'Produk di VitaNusa AI ditampilkan sebagai katalog informasi reseller. Sebelum mempertimbangkan produk, baca Prinsip Amanah dan pahami label resmi. Produk bukan pengganti pola hidup sehat atau konsultasi tenaga kesehatan.',
-  productSuitability: 'Saya tidak bisa memastikan produk yang cocok untuk kondisi pribadi. Saya bisa membantu mengarahkan kamu membaca informasi produk secara amanah. Jika memiliki kondisi khusus, sebaiknya konsultasikan kepada tenaga kesehatan.',
-  seriousComplaint: 'Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, sebaiknya segera berkonsultasi kepada tenaga kesehatan yang berwenang. Nusa AI hanya membantu edukasi awal dan tidak memberi diagnosis.',
-  diagnosis: 'Saya tidak bisa memberi diagnosis. Saya bisa membantu memberi arahan edukatif dan menunjukkan sumber bacaan yang relevan. Untuk diagnosis dan penanganan, konsultasikan kepada tenaga kesehatan yang berwenang.',
+  product: 'Produk di VitaNusa AI ditampilkan sebagai katalog informasi reseller. Sebelum mempertimbangkan produk, baca Prinsip Amanah dan pahami label resmi. Produk hanya opsi pendukung, bukan pengganti pola hidup sehat atau konsultasi tenaga kesehatan.',
+  productSuitability: 'Saya tidak bisa memastikan produk yang cocok untuk kondisi pribadi. Saya bisa membantu mengarahkan kamu membaca informasi produk secara amanah. Jika memiliki kondisi khusus, sedang hamil/menyusui, memakai obat, atau punya riwayat penyakit tertentu, sebaiknya konsultasikan kepada tenaga kesehatan.',
+  diagnosis: 'Saya tidak bisa memberi diagnosis. Saya bisa membantu memberi arahan edukatif dan menunjukkan bacaan yang relevan. Untuk diagnosis dan penanganan, konsultasikan kepada tenaga kesehatan yang berwenang.',
+  seriousComplaint: 'Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, sebaiknya segera berkonsultasi kepada tenaga kesehatan yang berwenang. Nusa AI hanya membantu edukasi awal dan tidak menggantikan pemeriksaan medis.',
   faq: 'Kamu bisa membuka FAQ untuk jawaban singkat tentang VitaNusa AI, VitaCheck, artikel, produk, dan batas edukasi.',
-  contact: 'Kamu bisa menghubungi admin VitaNusa AI melalui WhatsApp atau email.',
+  contact: 'Kamu bisa menghubungi admin VitaNusa AI melalui WhatsApp atau email. Untuk pertanyaan produk, sampaikan kondisi secara jujur dan jangan mengharapkan jawaban diagnosis dari admin.',
+});
+
+export const NUSA_INITIAL_REPLY = Object.freeze({
+  id: 'initial-greeting',
+  text: NUSA_RESPONSES.greeting,
+  actions: [],
 });
 
 export const NUSA_FALLBACK_RESPONSE = Object.freeze({
-  text: 'Saya bisa bantu arahkan. Pilih salah satu: VitaCheck, Artikel, Prinsip Amanah, Produk, FAQ, WhatsApp, atau Email.',
-  actions: [
-    NUSA_ROUTE_BUTTONS.vitacheck,
-    NUSA_ROUTE_BUTTONS.articles,
-    NUSA_ROUTE_BUTTONS.amanah,
-    NUSA_ROUTE_BUTTONS.products,
-    NUSA_ROUTE_BUTTONS.faq,
-    NUSA_ROUTE_BUTTONS.whatsapp,
-    NUSA_ROUTE_BUTTONS.email,
-  ],
-});
-
-export const NUSA_SERIOUS_COMPLAINT_RESPONSE = Object.freeze({
-  text: NUSA_RESPONSES.seriousComplaint,
-  actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.whatsapp],
+  id: 'fallback',
+  text: NUSA_RESPONSES.start,
+  actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah],
 });
 
 function createArticleButton(article) {
@@ -199,8 +209,14 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
     actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.whatsapp],
     matcher(text) {
       return includesAny(text, NUSA_KEYWORDS.productSuitability)
-        || (includesAny(text, ['produk']) && includesAny(text, ['cocok', 'sesuai', 'untuk saya']));
+        || (includesAny(text, ['produk', 'suplemen']) && includesAny(text, ['cocok', 'sesuai', 'untuk saya']));
     },
+  },
+  {
+    id: 'vitacheck-start',
+    keywords: NUSA_KEYWORDS.vitacheckStart,
+    response: NUSA_RESPONSES.vitacheckStart,
+    actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles],
   },
   {
     id: 'testimonial',
@@ -241,6 +257,18 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
     actions: [NUSA_ROUTE_BUTTONS.articles],
   },
   {
+    id: 'start',
+    keywords: NUSA_KEYWORDS.start,
+    response: NUSA_RESPONSES.start,
+    actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah],
+  },
+  {
+    id: 'greeting',
+    keywords: NUSA_KEYWORDS.greeting,
+    response: NUSA_RESPONSES.greeting,
+    actions: [],
+  },
+  {
     id: 'faq',
     keywords: NUSA_KEYWORDS.faq,
     response: NUSA_RESPONSES.faq,
@@ -250,7 +278,7 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
     id: 'contact',
     keywords: NUSA_KEYWORDS.contact,
     response: NUSA_RESPONSES.contact,
-    actions: [NUSA_ROUTE_BUTTONS.whatsapp, NUSA_ROUTE_BUTTONS.email],
+    actions: [NUSA_ROUTE_BUTTONS.contact, NUSA_ROUTE_BUTTONS.whatsapp, NUSA_ROUTE_BUTTONS.email],
   },
 ]);
 
@@ -301,12 +329,17 @@ function buildIntentReply(intent, normalizedText) {
   return {
     id: intent.id,
     text: intent.response,
-    actions: intent.actions,
+    actions: intent.actions || [],
   };
 }
 
 export function getNusaReply(input) {
   const normalizedText = normalizeText(input);
+
+  if (!normalizedText) {
+    return NUSA_INITIAL_REPLY;
+  }
+
   const intent = findMatchingIntent(normalizedText);
 
   if (!intent) {

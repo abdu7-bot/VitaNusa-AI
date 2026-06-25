@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VitaCheck | VitaNusa AI</title>
+  <meta name="description" content="VitaCheck membantu refleksi kebiasaan sehat secara edukatif.">
+  <link rel="stylesheet" href="style.css?v=20260624-nusa-app-shell">
+  <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260624-nusa-app-shell-refactor">
+</head>
+<body>
+  <main id="main">
+    <section class="sec">
+      <div class="wrap">
+        <p class="eyebrow">VitaNusa AI</p>
+        <h1>VitaCheck V2</h1>
+        <p>Asisten refleksi kebiasaan sehat harian. VitaCheck bersifat edukatif dan reflektif, bukan pengganti konsultasi tenaga kesehatan profesional.</p>
+        <p><a class="btn outline" href="index.html">Kembali ke Nusa AI</a></p>
+
+        <div class="grid check-grid vitacheck-v2">
+          <form id="form" class="card vitacheck-card" data-vitacheck-form novalidate>
+            <p class="note">Jika JavaScript belum aktif, halaman ini tetap bisa dibaca. Aktifkan JavaScript untuk memakai VitaCheck V2.</p>
+          </form>
+
+          <aside class="card vitacheck-result" data-vitacheck-result aria-live="polite">
+            <p class="eyebrow">Hasil Refleksi</p>
+            <h3 id="status">Hasil Edukasi</h3>
+            <div class="score vitacheck-score">
+              <span id="skor">0</span><small>/100</small>
+            </div>
+            <p id="ringkasan">Isi VitaCheck untuk melihat saran kebiasaan sehat.</p>
+
+            <section>
+              <h4>Fokus 7 hari</h4>
+              <ul id="fokus" class="vitacheck-list">
+                <li>Mulai dari satu kebiasaan kecil.</li>
+              </ul>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/main.js?v=20260625-chat-only-final"></script>
+</body>
+</html>
