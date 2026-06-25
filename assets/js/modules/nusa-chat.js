@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260625-chatgpt-like-minimal';
+import { getNusaReply } from './nusa-knowledge.js?v=20260625-chat-only-final';
 
 function createRouteLink(action) {
   const link = document.createElement('a');
