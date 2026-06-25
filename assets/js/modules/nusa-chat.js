@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260624-nusa-article-map';
+import { getNusaReply, NUSA_INITIAL_REPLY } from './nusa-knowledge.js?v=20260625-active-chatbot';
 
 function createRouteLink(action) {
   const link = document.createElement('a');
@@ -13,7 +13,24 @@ function createRouteLink(action) {
   return link;
 }
 
-function appendMessage(log, role, text, actions = []) {
+function createQuickReplyButton(reply) {
+  const button = document.createElement('button');
+  button.className = 'nusa-chip';
+  button.type = 'button';
+  button.dataset.nusaPrompt = reply.prompt || reply.label;
+  button.textContent = reply.label;
+  return button;
+}
+
+function createQuickReplies(replies) {
+  const row = document.createElement('div');
+  row.className = 'nusa-quick-replies';
+  row.setAttribute('aria-label', 'Pilihan cepat Nusa AI');
+  row.append(...replies.map(createQuickReplyButton));
+  return row;
+}
+
+function appendMessage(log, role, text, actions = [], quickReplies = []) {
   const message = document.createElement('article');
   message.className = `nusa-message ${role}`;
 
@@ -23,6 +40,10 @@ function appendMessage(log, role, text, actions = []) {
   const paragraph = document.createElement('p');
   paragraph.textContent = text;
   bubble.append(paragraph);
+
+  if (quickReplies.length) {
+    bubble.append(createQuickReplies(quickReplies));
+  }
 
   if (actions.length) {
     const actionRow = document.createElement('div');
@@ -36,6 +57,10 @@ function appendMessage(log, role, text, actions = []) {
   log.scrollTop = log.scrollHeight;
 }
 
+function renderReply(log, reply) {
+  appendMessage(log, 'assistant', reply.text, reply.actions || [], reply.quickReplies || []);
+}
+
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   const root = document.querySelector(rootSelector);
   if (!root) return null;
@@ -43,9 +68,11 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   const log = root.querySelector('[data-nusa-chat-log]');
   const form = root.querySelector('[data-nusa-chat-form]');
   const input = root.querySelector('[data-nusa-chat-input]');
-  const promptButtons = root.querySelectorAll('[data-nusa-prompt]');
 
   if (!log || !form || !input) return null;
+
+  log.replaceChildren();
+  renderReply(log, NUSA_INITIAL_REPLY);
 
   function handleQuestion(value) {
     const question = value.trim();
@@ -55,8 +82,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     input.value = '';
 
     window.setTimeout(() => {
-      const reply = getNusaReply(question);
-      appendMessage(log, 'assistant', reply.text, reply.actions);
+      renderReply(log, getNusaReply(question));
     }, 120);
   }
 
@@ -65,11 +91,15 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     handleQuestion(input.value);
   });
 
-  promptButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
-      input.focus();
-    });
+  root.addEventListener('click', (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest('[data-nusa-prompt]')
+      : null;
+
+    if (!button || !root.contains(button)) return;
+
+    handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
+    input.focus();
   });
 
   return {
