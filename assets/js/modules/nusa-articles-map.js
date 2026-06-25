@@ -9,14 +9,25 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
     keywords: [
       'testimoni bukan bukti',
       'testimoni',
+      'testi',
       'bukti',
+      'bukti utama',
+      'bukti nyata',
       'klaim',
       'klaim produk',
       'promosi',
       'promosi kesehatan',
+      'promosi aman',
       'percaya testimoni',
       'janji hasil',
+      'janji sembuh',
+      'katanya sembuh',
+      'katanya ampuh',
       'hasil instan',
+      'hasil orang',
+      'hasil orang lain',
+      'review orang',
+      'ulasan orang',
       'literasi produk',
       'ulasan produk',
       'review produk',
@@ -42,6 +53,7 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
       'batas ai',
       'ai bukan dokter',
       'ai bukan diagnosis',
+      'ai bukan pengganti dokter',
       'konten ai kesehatan',
       'video ai kesehatan',
     ],
@@ -55,6 +67,7 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
     keywords: [
       'sehat itu amanah',
       'pola hidup sehat',
+      'pola hidup',
       'gaya hidup sehat',
       'hidup sehat',
       'kebiasaan sehat',
@@ -68,8 +81,10 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
       'tawakal sehat',
       'tidur cukup',
       'makan seimbang',
+      'pola makan',
       'minum air',
       'gerak ringan',
+      'olahraga ringan',
     ],
     summary: 'Artikel tentang menjaga tubuh sebagai amanah melalui ilmu, kebiasaan baik, pilihan halal-thayyib, dan sikap kritis terhadap klaim kesehatan.',
   },
@@ -80,6 +95,7 @@ function normalizeArticleText(value) {
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
