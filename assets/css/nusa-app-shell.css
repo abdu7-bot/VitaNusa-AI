@@ -1,4 +1,4 @@
-/* Nusa AI Minimal Chat V2 */
+/* Nusa AI Active Chatbot Shell */
 
 html,
 body {
@@ -127,15 +127,11 @@ body {
   box-shadow: 0 10px 34px rgba(15, 61, 46, .06);
 }
 
-.nusa-chat-card-head {
-  display: none;
-}
-
 .nusa-chat-window {
-  min-height: 150px;
-  max-height: min(42svh, 320px);
+  min-height: 178px;
+  max-height: min(44svh, 350px);
   overflow-y: auto;
-  padding: .3rem .2rem .7rem;
+  padding: .32rem .2rem .75rem;
   scroll-behavior: smooth;
 }
 
@@ -153,8 +149,8 @@ body {
 }
 
 .nusa-bubble {
-  max-width: min(92%, 620px);
-  padding: .72rem .88rem;
+  max-width: min(94%, 640px);
+  padding: .76rem .9rem;
   border: 1px solid rgba(15, 61, 46, .09);
   border-radius: 18px;
   background: #f7faf7;
@@ -170,36 +166,55 @@ body {
 
 .nusa-bubble p {
   margin: 0;
-  line-height: 1.55;
+  line-height: 1.58;
 }
 
+.nusa-quick-replies,
 .nusa-route-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: .45rem;
-  margin-top: .7rem;
+  gap: .42rem;
+  margin-top: .72rem;
 }
 
-.nusa-route-link {
+.nusa-route-link,
+.nusa-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 34px;
-  padding: .42rem .68rem;
-  border: 1px solid rgba(15, 61, 46, .14);
   border-radius: 999px;
-  background: #fff;
-  color: #15392a;
-  font-size: .85rem;
+  font: inherit;
+  font-size: .84rem;
   font-weight: 700;
   line-height: 1.2;
   text-decoration: none;
+  box-shadow: none;
+}
+
+.nusa-route-link {
+  padding: .42rem .7rem;
+  border: 1px solid rgba(15, 61, 46, .14);
+  background: #fff;
+  color: #15392a;
+}
+
+.nusa-chip {
+  padding: .38rem .68rem;
+  border: 1px solid rgba(15, 61, 46, .13);
+  background: rgba(255, 255, 255, .72);
+  color: #27473a;
+  cursor: pointer;
 }
 
 .nusa-route-link:hover,
-.nusa-route-link:focus-visible {
-  border-color: rgba(15, 61, 46, .3);
-  background: #f4f8f4;
+.nusa-route-link:focus-visible,
+.nusa-chip:hover,
+.nusa-chip:focus-visible {
+  border-color: rgba(15, 61, 46, .28);
+  background: #f1f7f1;
+  outline: none;
 }
 
 .nusa-chat-form {
@@ -245,6 +260,7 @@ body {
 .nusa-chat-submit:hover,
 .nusa-chat-submit:focus-visible {
   background: #0f2f24;
+  outline: none;
 }
 
 .nusa-chat-note {
@@ -256,50 +272,7 @@ body {
 }
 
 .nusa-suggestions-details {
-  margin-top: .55rem;
-  border-top: 1px solid rgba(15, 61, 46, .08);
-  color: #5d7067;
-  font-size: .86rem;
-}
-
-.nusa-suggestions-details summary {
-  width: fit-content;
-  margin: .55rem auto 0;
-  cursor: pointer;
-  list-style-position: inside;
-  color: #50645b;
-  font-weight: 650;
-}
-
-.nusa-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: .35rem;
-  padding: .6rem 0 0;
-}
-
-.nusa-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 32px;
-  padding: .35rem .6rem;
-  border: 1px solid rgba(15, 61, 46, .12);
-  border-radius: 999px;
-  background: transparent;
-  color: #27473a;
-  font: inherit;
-  font-size: .82rem;
-  font-weight: 650;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.nusa-chip:hover,
-.nusa-chip:focus-visible {
-  background: #f6f9f6;
-  border-color: rgba(15, 61, 46, .24);
+  display: none;
 }
 
 .nusa-feature-routes {
@@ -417,8 +390,8 @@ body {
   }
 
   .nusa-chat-window {
-    min-height: 120px;
-    max-height: 34svh;
+    min-height: 160px;
+    max-height: 38svh;
     padding-bottom: .55rem;
   }
 
@@ -442,15 +415,14 @@ body {
     font-size: .75rem;
   }
 
+  .nusa-quick-replies,
   .nusa-route-actions,
-  .nusa-suggestions,
   .nusa-route-list {
     gap: .38rem;
   }
 
   .nusa-route-link,
   .nusa-chip {
-    max-width: 100%;
     min-height: 34px;
     font-size: .82rem;
   }
@@ -463,5 +435,15 @@ body {
 
   .nusa-bubble {
     max-width: 100%;
+  }
+
+  .nusa-quick-replies,
+  .nusa-route-actions {
+    align-items: stretch;
+  }
+
+  .nusa-route-link,
+  .nusa-chip {
+    flex: 1 1 auto;
   }
 }
