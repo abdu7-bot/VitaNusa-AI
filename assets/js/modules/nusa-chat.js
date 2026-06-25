@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260625-chat-only-final';
+import { getNusaReply } from './nusa-knowledge.js?v=20260625-nusa-brain-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -11,17 +11,7 @@ function getActionHref(action) {
 }
 
 function getContextActions(reply) {
-  const actions = reply.actions || [];
-
-  if (reply.id === 'product-suitability') {
-    return actions.filter((action) => action.href !== 'products/index.html');
-  }
-
-  if (reply.id === 'serious-complaint') {
-    return [];
-  }
-
-  return actions;
+  return reply.actions || [];
 }
 
 function createRouteLink(action) {
