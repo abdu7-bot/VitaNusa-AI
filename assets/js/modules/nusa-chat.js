@@ -1,12 +1,36 @@
 import { getNusaReply } from './nusa-knowledge.js?v=20260625-chat-only-final';
 
+const ROUTE_OVERRIDES = Object.freeze({
+  '#vitacheck': 'vitacheck.html',
+  '#faq': 'faq.html',
+  '#kontak': 'contact.html',
+});
+
+function getActionHref(action) {
+  return ROUTE_OVERRIDES[action.href] || action.href;
+}
+
+function getContextActions(reply) {
+  const actions = reply.actions || [];
+
+  if (reply.id === 'product-suitability') {
+    return actions.filter((action) => action.href !== 'products/index.html');
+  }
+
+  if (reply.id === 'serious-complaint') {
+    return [];
+  }
+
+  return actions;
+}
+
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
-  link.href = action.href;
+  link.href = getActionHref(action);
   link.textContent = action.label;
 
-  if (action.href.startsWith('http')) {
+  if (link.href.startsWith('http')) {
     link.rel = 'noopener noreferrer';
   }
 
@@ -38,7 +62,7 @@ function appendMessage(log, role, text, actions = []) {
 }
 
 function renderReply(log, reply) {
-  appendMessage(log, 'assistant', reply.text, reply.actions || []);
+  appendMessage(log, 'assistant', reply.text, getContextActions(reply));
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
