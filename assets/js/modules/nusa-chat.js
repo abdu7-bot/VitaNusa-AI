@@ -1,4 +1,4 @@
-import { getNusaReply, NUSA_INITIAL_REPLY } from './nusa-knowledge.js?v=20260625-active-chatbot';
+import { getNusaReply } from './nusa-knowledge.js?v=20260625-chatgpt-like-minimal';
 
 function createRouteLink(action) {
   const link = document.createElement('a');
@@ -13,24 +13,7 @@ function createRouteLink(action) {
   return link;
 }
 
-function createQuickReplyButton(reply) {
-  const button = document.createElement('button');
-  button.className = 'nusa-chip';
-  button.type = 'button';
-  button.dataset.nusaPrompt = reply.prompt || reply.label;
-  button.textContent = reply.label;
-  return button;
-}
-
-function createQuickReplies(replies) {
-  const row = document.createElement('div');
-  row.className = 'nusa-quick-replies';
-  row.setAttribute('aria-label', 'Pilihan cepat Nusa AI');
-  row.append(...replies.map(createQuickReplyButton));
-  return row;
-}
-
-function appendMessage(log, role, text, actions = [], quickReplies = []) {
+function appendMessage(log, role, text, actions = []) {
   const message = document.createElement('article');
   message.className = `nusa-message ${role}`;
 
@@ -41,10 +24,6 @@ function appendMessage(log, role, text, actions = [], quickReplies = []) {
   paragraph.textContent = text;
   bubble.append(paragraph);
 
-  if (quickReplies.length) {
-    bubble.append(createQuickReplies(quickReplies));
-  }
-
   if (actions.length) {
     const actionRow = document.createElement('div');
     actionRow.className = 'nusa-route-actions';
@@ -54,11 +33,12 @@ function appendMessage(log, role, text, actions = [], quickReplies = []) {
 
   message.append(bubble);
   log.append(message);
+  log.hidden = false;
   log.scrollTop = log.scrollHeight;
 }
 
 function renderReply(log, reply) {
-  appendMessage(log, 'assistant', reply.text, reply.actions || [], reply.quickReplies || []);
+  appendMessage(log, 'assistant', reply.text, reply.actions || []);
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -72,7 +52,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   if (!log || !form || !input) return null;
 
   log.replaceChildren();
-  renderReply(log, NUSA_INITIAL_REPLY);
+  log.hidden = true;
 
   function handleQuestion(value) {
     const question = value.trim();
