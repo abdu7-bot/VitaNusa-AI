@@ -7,7 +7,7 @@
   <meta name="description" content="VitaNusa AI: edukasi kesehatan, VitaCheck, artikel, VitaStory, VitaGame, katalog produk, FAQ amanah, dan kontak WhatsApp.">
   <link rel="stylesheet" href="style.css?v=20260624-nusa-app-shell">
   <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260624-nusa-app-shell-refactor">
-  <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260624-nusa-minimal-chat-v2">
+  <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260625-chatgpt-like-minimal">
   <style>
     .visual-image-frame{width:100%;margin:0;padding:0;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,.14)}
     .visual-image-frame .visual-image{display:block;width:100%;height:auto;object-fit:contain;border-radius:24px}
@@ -57,38 +57,26 @@
     <section id="home" class="sec hero nusa-chat-hero" aria-labelledby="nusa-chat-title">
       <div class="wrap nusa-chat-shell">
         <div class="nusa-chat-intro">
-          <div class="nusa-chat-brand" aria-label="VitaNusa AI">
-            <img src="images/logo-vitanusa-Ai.png" alt="">
-            <span>VitaNusa AI</span>
-          </div>
-
-          <h1 id="nusa-chat-title">Assalamualaikum, saya Nusa AI.</h1>
-          <p class="nusa-chat-lead">Apa yang ingin kamu pahami hari ini?</p>
+          <div class="nusa-chat-brand" aria-label="VitaNusa AI">VitaNusa AI</div>
+          <h1 id="nusa-chat-title">Assalamualaikum, saya Nusa AI.<br>Apa yang ingin kamu pahami hari ini?</h1>
         </div>
 
         <section class="nusa-chat-card" data-nusa-chat aria-label="Chat Nusa AI">
-          <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions">
-            <article class="nusa-message assistant">
-              <div class="nusa-bubble">
-                <p>Tulis pertanyaanmu. Saya akan bantu arahkan secara edukatif.</p>
-              </div>
-            </article>
-          </div>
+          <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
 
           <form class="nusa-chat-form" data-nusa-chat-form>
             <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
             <button class="nusa-chat-submit" type="submit">Kirim</button>
           </form>
 
-          <p class="nusa-chat-note">Nusa AI bersifat edukatif. Tidak menggantikan diagnosis, pengobatan, atau konsultasi tenaga kesehatan profesional.</p>
+          <p class="nusa-chat-note">Nusa AI bersifat edukatif, bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.</p>
 
           <details class="nusa-suggestions-details">
             <summary>Contoh pertanyaan</summary>
-            <div class="nusa-suggestions" aria-label="Saran pertanyaan">
+            <div class="nusa-suggestions" aria-label="Contoh pertanyaan">
               <button type="button" class="nusa-chip" data-nusa-prompt="Cek kebiasaan sehat">Cek kebiasaan sehat</button>
               <button type="button" class="nusa-chip" data-nusa-prompt="Testimoni produk bisa dipercaya?">Testimoni produk bisa dipercaya?</button>
               <button type="button" class="nusa-chip" data-nusa-prompt="Tanya produk dengan aman">Tanya produk dengan aman</button>
-              <button type="button" class="nusa-chip" data-nusa-prompt="Saya sakit apa?">Saya sakit apa?</button>
               <button type="button" class="nusa-chip" data-nusa-prompt="Hubungi admin">Hubungi admin</button>
             </div>
           </details>
@@ -331,6 +319,6 @@
 
   <a class="float" href="https://wa.me/6288708862581" aria-label="WhatsApp">WA</a>
 
-  <script type="module" src="assets/js/main.js?v=20260624-nusa-article-map"></script>
+  <script type="module" src="assets/js/main.js?v=20260625-chatgpt-like-minimal"></script>
 </body>
 </html>
