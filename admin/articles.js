@@ -7,6 +7,7 @@ import {
   updateDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+
 const articleApp = document.querySelector('[data-article-app]');
 const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
 const VALID_STATUSES = new Set(['draft', 'published', 'archived']);
@@ -23,6 +24,49 @@ const RISK_TERMS = [
   'menyembuhkan diabetes',
   'menyembuhkan penyakit kronis'
 ];
+const EDUCATIONAL_CONTEXT_TERMS = [
+  'contoh klaim',
+  'klaim berisiko',
+  'perlu diwaspadai',
+  'yang perlu diwaspadai',
+  'hindari klaim',
+  'hindari promosi',
+  'jangan percaya klaim',
+  'bahaya klaim',
+  'klaim berlebihan',
+  'overclaim',
+  'bukan bukti',
+  'tidak boleh menjanjikan',
+  'waspadai promosi',
+  'literasi produk',
+  'membahas bahaya',
+  'mengkritisi klaim',
+  'perlu dikritisi',
+  'harus dikritisi',
+  'sebagai peringatan',
+  'bukan menjanjikan',
+  'bukan klaim promosi'
+];
+const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
+  'edukasi',
+  'edukatif',
+  'peringatan'
+];
+const PROMOTIONAL_CONTEXT_TERMS = [
+  'produk ini',
+  'produk kami',
+  'produk tersebut',
+  'setelah konsumsi',
+  'setelah minum',
+  'setelah pakai',
+  'konsumsi produk',
+  'gunakan produk',
+  'beli produk',
+  'ampuh',
+  'garansi',
+  'terbukti menyembuhkan'
+];
+const RISK_CONTEXT_WINDOW = 140;
 
 const state = {
   initialized: false,
@@ -48,7 +92,10 @@ function initArticleCrud() {
   const form = getForm();
   const titleInput = form?.elements.title;
   const slugInput = form?.elements.slug;
+  const contentInput = form?.elements.contentHtml;
   const bannerInput = getBannerInput();
+
+  initDisclaimerHelper();
 
   document.querySelector('[data-article-new]')?.addEventListener('click', () => resetForm());
   document.querySelector('[data-article-refresh]')?.addEventListener('click', () => loadArticles());
@@ -57,6 +104,7 @@ function initArticleCrud() {
   document.querySelector('[data-banner-clear]')?.addEventListener('click', clearBannerSelection);
   form?.addEventListener('submit', handleSaveArticle);
 
+  contentInput?.addEventListener('input', updateDisclaimerStatus);
   bannerInput?.addEventListener('change', handleBannerSelection);
 
   titleInput?.addEventListener('input', () => {
@@ -122,6 +170,18 @@ function normalizeSlug(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
+}
+
+function normalizePlainText(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 function parseTags(value) {
@@ -191,6 +251,12 @@ function renderArticles() {
     const actionCell = document.createElement('td');
 
     titleCell.className = 'article-title-cell';
+    titleCell.dataset.label = 'Artikel';
+    statusCell.dataset.label = 'Status';
+    categoryCell.dataset.label = 'Kategori';
+    updatedCell.dataset.label = 'Update';
+    actionCell.dataset.label = 'Aksi';
+
     titleCell.append(createStrong(article.title || '(tanpa judul)'));
     titleCell.append(createSmall(article.slug || '-'));
 
@@ -308,8 +374,8 @@ function getPayloadFromForm() {
 function validateArticle(payload, currentId = null) {
   const errors = [];
   const warnings = [];
-  const riskTerms = findRiskTerms(`${payload.summary} ${payload.contentHtml}`);
-  const missingDisclaimer = !payload.contentHtml.toLowerCase().includes(REQUIRED_DISCLAIMER.toLowerCase());
+  const riskAnalysis = analyzeRiskContext(`${payload.summary} ${payload.contentHtml}`);
+  const missingDisclaimer = !hasRequiredDisclaimer(payload.contentHtml);
 
   if (!payload.title) errors.push('Title wajib diisi.');
   if (!payload.slug) errors.push('Slug wajib diisi.');
@@ -323,15 +389,28 @@ function validateArticle(payload, currentId = null) {
   const duplicate = state.articles.find((article) => article.slug === payload.slug && article.id !== currentId);
   if (duplicate) errors.push('Slug sudah dipakai artikel lain.');
 
-  if (riskTerms.length) {
-    warnings.push(`Ditemukan kata berisiko: ${riskTerms.join(', ')}.`);
+  if (riskAnalysis.riskLevel === 'promotional') {
+    warnings.push('Ditemukan klaim berisiko yang terdengar seperti promosi kesehatan. Artikel disimpan sebagai draft agar tidak menampilkan klaim berlebihan.');
+  }
+
+  if (riskAnalysis.riskLevel === 'educational') {
+    warnings.push('Artikel mengandung istilah berisiko dalam konteks edukasi. Pastikan kalimatnya membahas bahaya klaim, bukan menjanjikan hasil.');
   }
 
   if (missingDisclaimer) {
-    warnings.push('Disclaimer edukasi kesehatan wajib dipertahankan sebelum publish.');
+    warnings.push('Disclaimer edukasi kesehatan wajib ditambahkan sebelum artikel bisa dipublish.');
   }
 
-  return { errors, warnings, riskTerms, missingDisclaimer };
+  const forceDraft = payload.status === 'published' && (missingDisclaimer || riskAnalysis.riskLevel === 'promotional');
+
+  return {
+    errors,
+    warnings,
+    riskTerms: riskAnalysis.riskTerms,
+    riskLevel: riskAnalysis.riskLevel,
+    missingDisclaimer,
+    forceDraft
+  };
 }
 
 function validateBannerFile(file) {
@@ -350,8 +429,69 @@ function validateBannerFile(file) {
 }
 
 function findRiskTerms(text) {
-  const lowerText = String(text || '').toLowerCase();
+  const lowerText = normalizePlainText(text);
   return RISK_TERMS.filter((term) => lowerText.includes(term));
+}
+
+function analyzeRiskContext(text) {
+  const normalizedText = normalizePlainText(text);
+  const riskTerms = findRiskTerms(normalizedText);
+
+  if (!riskTerms.length) {
+    return {
+      riskTerms,
+      riskLevel: 'none'
+    };
+  }
+
+  return {
+    riskTerms,
+    riskLevel: isEducationalRiskContext(normalizedText, riskTerms) ? 'educational' : 'promotional'
+  };
+}
+
+function isEducationalRiskContext(text, riskTerms) {
+  return riskTerms.every((term) => {
+    const windows = getRiskTermWindows(text, term);
+    return windows.length > 0 && windows.every((windowText) => hasEducationalCue(windowText));
+  });
+}
+
+function getRiskTermWindows(text, term) {
+  const windows = [];
+  let searchStart = 0;
+
+  while (searchStart < text.length) {
+    const index = text.indexOf(term, searchStart);
+    if (index === -1) break;
+
+    windows.push(text.slice(
+      Math.max(0, index - RISK_CONTEXT_WINDOW),
+      Math.min(text.length, index + term.length + RISK_CONTEXT_WINDOW)
+    ));
+    searchStart = index + term.length;
+  }
+
+  return windows;
+}
+
+function hasEducationalCue(text) {
+  const hasStrongCue = EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
+  if (hasStrongCue) return true;
+
+  const hasWeakCue = WEAK_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
+  const hasPromotionalCue = PROMOTIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
+  return hasWeakCue && !hasPromotionalCue;
+}
+
+function hasRequiredDisclaimer(contentHtml) {
+  return normalizePlainText(contentHtml).includes(normalizePlainText(REQUIRED_DISCLAIMER));
+}
+
+function getValidationMessage(validation, fallback = '') {
+  const parts = [...validation.errors, ...validation.warnings];
+  if (fallback) parts.push(fallback);
+  return parts.filter(Boolean).join(' ');
 }
 
 async function handleSaveArticle(event) {
@@ -370,7 +510,7 @@ async function handleSaveArticle(event) {
   }
 
   let forcedDraft = false;
-  if (payload.status === 'published' && (validation.riskTerms.length || validation.missingDisclaimer)) {
+  if (validation.forceDraft) {
     payload.status = 'draft';
     forcedDraft = true;
   }
@@ -410,7 +550,7 @@ async function handleSaveArticle(event) {
       : '';
 
     if (forcedDraft) {
-      setMessage('warning', `${validation.warnings.join(' ')} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
+      setMessage('warning', `${getValidationMessage(validation)} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
       return;
     }
 
@@ -425,6 +565,80 @@ async function handleSaveArticle(event) {
     const submitButton = event.submitter;
     if (submitButton) submitButton.disabled = false;
     setMessage('error', error.message || 'Gagal menyimpan artikel.');
+  }
+}
+
+function initDisclaimerHelper() {
+  const form = getForm();
+  const contentInput = form?.elements.contentHtml;
+  if (!contentInput || document.querySelector('[data-article-disclaimer-helper]')) return;
+
+  const helper = document.createElement('div');
+  helper.className = 'article-disclaimer-helper';
+  helper.dataset.articleDisclaimerHelper = '';
+  helper.innerHTML = `
+    <div class="article-disclaimer-copy">
+      <strong>Disclaimer wajib</strong>
+      <p>${REQUIRED_DISCLAIMER}</p>
+    </div>
+    <p class="article-disclaimer-status" data-article-disclaimer-status></p>
+    <div class="article-disclaimer-actions">
+      <button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-add-disclaimer>Tambahkan Disclaimer</button>
+      <button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-copy-disclaimer>Salin disclaimer wajib</button>
+    </div>
+  `;
+
+  const helpText = contentInput.closest('label')?.nextElementSibling;
+  if (helpText?.classList.contains('article-help')) {
+    helpText.after(helper);
+  } else {
+    contentInput.closest('label')?.after(helper);
+  }
+
+  helper.querySelector('[data-article-add-disclaimer]')?.addEventListener('click', appendRequiredDisclaimer);
+  helper.querySelector('[data-article-copy-disclaimer]')?.addEventListener('click', copyRequiredDisclaimer);
+  updateDisclaimerStatus();
+}
+
+function updateDisclaimerStatus() {
+  const form = getForm();
+  const status = document.querySelector('[data-article-disclaimer-status]');
+  if (!form || !status) return;
+
+  const hasDisclaimer = hasRequiredDisclaimer(form.elements.contentHtml?.value || '');
+  status.classList.toggle('is-ok', hasDisclaimer);
+  status.classList.toggle('is-missing', !hasDisclaimer);
+  status.textContent = hasDisclaimer
+    ? 'Disclaimer wajib sudah ada di Content HTML.'
+    : 'Disclaimer wajib belum ada. Artikel published akan ditahan sebagai draft sampai disclaimer ditambahkan.';
+}
+
+function appendRequiredDisclaimer() {
+  const form = getForm();
+  const contentInput = form?.elements.contentHtml;
+  if (!contentInput) return;
+
+  if (hasRequiredDisclaimer(contentInput.value)) {
+    updateDisclaimerStatus();
+    setMessage('success', 'Disclaimer wajib sudah ada di Content HTML.');
+    return;
+  }
+
+  const currentContent = contentInput.value.trim();
+  const separator = currentContent ? '\n\n' : '';
+  contentInput.value = `${currentContent}${separator}<p>${REQUIRED_DISCLAIMER}</p>`;
+  contentInput.focus();
+  updateDisclaimerStatus();
+  setMessage('success', 'Disclaimer wajib berhasil ditambahkan ke Content HTML.');
+}
+
+async function copyRequiredDisclaimer() {
+  try {
+    await navigator.clipboard.writeText(REQUIRED_DISCLAIMER);
+    setMessage('success', 'Disclaimer wajib berhasil disalin.');
+  } catch (error) {
+    console.warn('Gagal menyalin disclaimer:', error);
+    setMessage('warning', 'Gagal menyalin otomatis. Silakan salin teks disclaimer wajib yang tampil di bawah Content HTML.');
   }
 }
 
@@ -516,6 +730,7 @@ function fillForm(article) {
     hideBannerPreview();
   }
 
+  updateDisclaimerStatus();
   document.querySelector('[data-article-form-title]').textContent = 'Edit Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -532,6 +747,7 @@ function resetForm() {
   form.elements.contentHtml.value = `<p>${REQUIRED_DISCLAIMER}</p>`;
   if (form.elements.bannerFile) form.elements.bannerFile.value = '';
   hideBannerPreview();
+  updateDisclaimerStatus();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
 }
 
@@ -544,8 +760,13 @@ async function publishArticle(article) {
     contentHtml: article.contentHtml || ''
   }, article.id);
 
-  if (validation.errors.length || validation.riskTerms.length || validation.missingDisclaimer) {
-    const message = [...validation.errors, ...validation.warnings, 'Artikel tidak dipublish. Perbaiki konten lalu simpan ulang.'].join(' ');
+  if (validation.errors.length) {
+    setMessage('error', validation.errors.join(' '));
+    return;
+  }
+
+  if (validation.forceDraft) {
+    const message = getValidationMessage(validation, 'Artikel tidak dipublish. Perbaiki konten lalu simpan ulang.');
     setMessage('warning', message);
     return;
   }
@@ -562,6 +783,12 @@ async function publishArticle(article) {
 
     await updateDoc(doc(db, 'articles', article.id), updatePayload);
     await loadArticles();
+
+    if (validation.warnings.length) {
+      setMessage('warning', `Artikel berhasil dipublish. ${validation.warnings.join(' ')}`);
+      return;
+    }
+
     setMessage('success', 'Artikel berhasil dipublish.');
   } catch (error) {
     setMessage('error', error.message || 'Gagal publish artikel.');
