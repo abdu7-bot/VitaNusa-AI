@@ -1,3 +1,5 @@
+import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260624-nusa-article-map';
+
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
 
@@ -123,6 +125,60 @@ export const NUSA_SERIOUS_COMPLAINT_RESPONSE = Object.freeze({
   actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.whatsapp],
 });
 
+function createArticleButton(article) {
+  return {
+    label: `Baca Artikel ${article.title}`,
+    href: article.href,
+  };
+}
+
+function getRelatedArticleActions(article) {
+  if (article.id === 'testimoni-bukan-bukti') {
+    return [NUSA_ROUTE_BUTTONS.amanah];
+  }
+
+  if (article.id === 'sehat-itu-amanah') {
+    return [NUSA_ROUTE_BUTTONS.vitacheck];
+  }
+
+  if (article.id === 'ai-untuk-edukasi-kesehatan') {
+    return [NUSA_ROUTE_BUTTONS.amanah];
+  }
+
+  return [];
+}
+
+function createArticleResponseText(article) {
+  if (article.id === 'sehat-itu-amanah') {
+    return 'Kamu bisa mulai dari artikel “Sehat Itu Amanah” untuk memahami pola hidup sehat sebagai amanah: kebiasaan kecil, pilihan halal-thayyib, dan sikap kritis terhadap klaim kesehatan. Jika ingin refleksi awal, mulai juga dari VitaCheck.';
+  }
+
+  if (article.id === 'ai-untuk-edukasi-kesehatan') {
+    return 'AI bisa membantu edukasi kesehatan dengan bahasa yang lebih mudah dipahami, tetapi tetap bukan dokter dan bukan alat diagnosis. Artikel ini menjelaskan batas aman memakai AI untuk belajar kesehatan secara amanah.';
+  }
+
+  if (article.id === 'testimoni-bukan-bukti') {
+    return NUSA_RESPONSES.testimonial;
+  }
+
+  return `Kamu bisa membaca artikel “${article.title}”. ${article.summary}`;
+}
+
+function createArticleSpecificReply(normalizedText) {
+  const article = findMatchingNusaArticle(normalizedText);
+
+  if (!article) return null;
+
+  return {
+    id: `article-${article.id}`,
+    text: createArticleResponseText(article),
+    actions: [
+      createArticleButton(article),
+      ...getRelatedArticleActions(article),
+    ],
+  };
+}
+
 export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   {
     id: 'serious-complaint',
@@ -163,6 +219,14 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
     keywords: NUSA_KEYWORDS.product,
     response: NUSA_RESPONSES.product,
     actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.whatsapp],
+  },
+  {
+    id: 'article-specific',
+    keywords: [],
+    matcher(text) {
+      return Boolean(findMatchingNusaArticle(text));
+    },
+    getReply: createArticleSpecificReply,
   },
   {
     id: 'habit',
@@ -229,6 +293,18 @@ function findMatchingIntent(normalizedText) {
   });
 }
 
+function buildIntentReply(intent, normalizedText) {
+  if (typeof intent.getReply === 'function') {
+    return intent.getReply(normalizedText);
+  }
+
+  return {
+    id: intent.id,
+    text: intent.response,
+    actions: intent.actions,
+  };
+}
+
 export function getNusaReply(input) {
   const normalizedText = normalizeText(input);
   const intent = findMatchingIntent(normalizedText);
@@ -237,9 +313,5 @@ export function getNusaReply(input) {
     return NUSA_FALLBACK_RESPONSE;
   }
 
-  return {
-    id: intent.id,
-    text: intent.response,
-    actions: intent.actions,
-  };
+  return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
 }
