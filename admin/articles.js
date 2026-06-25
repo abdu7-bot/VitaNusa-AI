@@ -45,12 +45,52 @@ const EDUCATIONAL_CONTEXT_TERMS = [
   'harus dikritisi',
   'sebagai peringatan',
   'bukan menjanjikan',
-  'bukan klaim promosi'
+  'bukan klaim promosi',
+  'laporan penelitian',
+  'penelitian ilmiah',
+  'tinjauan kritis',
+  'analisis empiris',
+  'analisis toksikologi',
+  'pemasaran berlebihan',
+  'praktik overclaim',
+  'fenomena overclaim',
+  'klaim manfaat secara berlebihan',
+  'tanpa didukung oleh bukti ilmiah',
+  'uji klinis yang valid',
+  'bukan materi promosi',
+  'bukan promosi',
+  'bukan iklan',
+  'kewaspadaan konsumen',
+  'konten disajikan secara kritis',
+  'melindungi konsumen',
+  'informasi yang menyesatkan'
 ];
 const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
   'edukasi',
   'edukatif',
-  'peringatan'
+  'peringatan',
+  'kritis',
+  'risiko',
+  'konsumen'
+];
+const GLOBAL_EDUCATIONAL_CONTEXT_TERMS = [
+  'laporan penelitian',
+  'ringkasan dari laporan penelitian',
+  'penelitian ilmiah',
+  'tinjauan kritis',
+  'dokumen ini adalah ringkasan',
+  'bukan materi promosi',
+  'bukan promosi',
+  'bukan iklan',
+  'konten disajikan secara kritis',
+  'kewaspadaan konsumen',
+  'fenomena pemasaran berlebihan',
+  'praktik overclaim',
+  'overclaim produk',
+  'tanpa didukung oleh bukti ilmiah',
+  'uji klinis yang valid',
+  'melindungi konsumen',
+  'informasi yang menyesatkan'
 ];
 const PROMOTIONAL_CONTEXT_TERMS = [
   'produk ini',
@@ -66,7 +106,7 @@ const PROMOTIONAL_CONTEXT_TERMS = [
   'garansi',
   'terbukti menyembuhkan'
 ];
-const RISK_CONTEXT_WINDOW = 140;
+const RISK_CONTEXT_WINDOW = 220;
 
 const state = {
   initialized: false,
@@ -390,7 +430,7 @@ function validateArticle(payload, currentId = null) {
   if (duplicate) errors.push('Slug sudah dipakai artikel lain.');
 
   if (riskAnalysis.riskLevel === 'promotional') {
-    warnings.push('Ditemukan klaim berisiko yang terdengar seperti promosi kesehatan. Artikel disimpan sebagai draft agar tidak menampilkan klaim berlebihan.');
+    warnings.push('Ditemukan klaim berisiko yang terdengar seperti promosi kesehatan. Hindari klaim sembuh, hasil pasti, atau manfaat berlebihan.');
   }
 
   if (riskAnalysis.riskLevel === 'educational') {
@@ -451,10 +491,15 @@ function analyzeRiskContext(text) {
 }
 
 function isEducationalRiskContext(text, riskTerms) {
-  return riskTerms.every((term) => {
+  const everyRiskWindowHasEducationalCue = riskTerms.every((term) => {
     const windows = getRiskTermWindows(text, term);
     return windows.length > 0 && windows.every((windowText) => hasEducationalCue(windowText));
   });
+
+  if (everyRiskWindowHasEducationalCue) return true;
+  if (!hasGlobalEducationalContext(text)) return false;
+
+  return !hasPromotionalRiskCue(text, riskTerms);
 }
 
 function getRiskTermWindows(text, term) {
@@ -482,6 +527,20 @@ function hasEducationalCue(text) {
   const hasWeakCue = WEAK_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
   const hasPromotionalCue = PROMOTIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
   return hasWeakCue && !hasPromotionalCue;
+}
+
+function hasGlobalEducationalContext(text) {
+  return GLOBAL_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
+}
+
+function hasPromotionalRiskCue(text, riskTerms) {
+  return riskTerms.some((term) => {
+    const windows = getRiskTermWindows(text, term);
+    return windows.some((windowText) => {
+      const hasPromotion = PROMOTIONAL_CONTEXT_TERMS.some((cue) => windowText.includes(cue));
+      return hasPromotion && !hasEducationalCue(windowText);
+    });
+  });
 }
 
 function hasRequiredDisclaimer(contentHtml) {
