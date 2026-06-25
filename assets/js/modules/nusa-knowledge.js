@@ -1,4 +1,4 @@
-import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260625-active-chatbot';
+import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260625-chatgpt-like-minimal';
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
@@ -31,25 +31,6 @@ export const NUSA_ROUTE_BUTTONS = Object.freeze({
   email: { label: 'Kirim Email', href: NUSA_ROUTES.email },
 });
 
-export const NUSA_QUICK_REPLIES = Object.freeze({
-  main: [
-    { label: 'Mulai VitaCheck', prompt: 'Mulai VitaCheck' },
-    { label: 'Tanya Kebiasaan Sehat', prompt: 'Tanya Kebiasaan Sehat' },
-    { label: 'Cek Klaim/Testimoni', prompt: 'Cek Klaim/Testimoni' },
-    { label: 'Tanya Produk', prompt: 'Tanya Produk' },
-    { label: 'Baca Artikel', prompt: 'Baca Artikel' },
-    { label: 'Hubungi Admin', prompt: 'Hubungi Admin' },
-  ],
-  choosePath: [
-    { label: 'Kebiasaan sehat', prompt: 'Tanya Kebiasaan Sehat' },
-    { label: 'Artikel edukasi', prompt: 'Baca Artikel' },
-    { label: 'Klaim/testimoni', prompt: 'Cek Klaim/Testimoni' },
-    { label: 'Produk', prompt: 'Tanya Produk' },
-    { label: 'Prinsip Amanah', prompt: 'Baca Prinsip Amanah' },
-    { label: 'Hubungi admin', prompt: 'Hubungi Admin' },
-  ],
-});
-
 export const NUSA_KEYWORDS = Object.freeze({
   greeting: ['assalamualaikum', 'assalamu alaikum', 'salam', 'halo', 'hai', 'hello'],
   start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'saya bingung'],
@@ -67,7 +48,17 @@ export const NUSA_KEYWORDS = Object.freeze({
     'olahraga',
     'pencernaan',
   ],
-  testimonial: ['testimoni', 'bukti', 'klaim', 'promosi', 'hasil orang', 'cek klaim', 'cek testimoni', 'klaim produk', 'percaya testimoni'],
+  testimonial: [
+    'testimoni',
+    'bukti',
+    'klaim',
+    'promosi',
+    'hasil orang',
+    'cek klaim',
+    'cek testimoni',
+    'klaim produk',
+    'percaya testimoni',
+  ],
   product: [
     'produk',
     'key propolis',
@@ -117,8 +108,8 @@ export const NUSA_KEYWORDS = Object.freeze({
 });
 
 export const NUSA_RESPONSES = Object.freeze({
-  greeting: 'Assalamualaikum, saya Nusa AI. Saya bisa membantu kamu memahami kebiasaan sehat, artikel edukasi, prinsip amanah, dan produk secara hati-hati.',
-  start: 'Kita mulai pelan-pelan. Kamu ingin membahas kebiasaan sehat, artikel edukasi, klaim/testimoni, produk, atau hubungi admin?',
+  greeting: 'Assalamualaikum, saya Nusa AI. Apa yang ingin kamu pahami hari ini?',
+  start: 'Kita mulai pelan-pelan. Kamu bisa bertanya langsung tentang kebiasaan sehat, artikel edukasi, klaim/testimoni, produk, atau kontak admin.',
   vitacheckStart: 'Baik. VitaCheck membantu kamu melihat gambaran kebiasaan sehat secara edukatif. Hasilnya bukan diagnosis medis.',
   habit: 'Kita bisa mulai dari kebiasaan harian seperti tidur, minum air, pola makan, gerak, energi, dan pencernaan. Untuk gambaran awal yang rapi, gunakan VitaCheck terlebih dahulu.',
   article: 'Kamu bisa mulai dari ruang artikel VitaNusa AI. Pilih bacaan yang paling sesuai dengan kebutuhanmu, lalu ambil langkah kecil yang realistis.',
@@ -135,13 +126,12 @@ export const NUSA_RESPONSES = Object.freeze({
 export const NUSA_INITIAL_REPLY = Object.freeze({
   id: 'initial-greeting',
   text: NUSA_RESPONSES.greeting,
-  quickReplies: NUSA_QUICK_REPLIES.main,
+  actions: [],
 });
 
 export const NUSA_FALLBACK_RESPONSE = Object.freeze({
   id: 'fallback',
   text: NUSA_RESPONSES.start,
-  quickReplies: NUSA_QUICK_REPLIES.choosePath,
   actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah],
 });
 
@@ -270,14 +260,13 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
     id: 'start',
     keywords: NUSA_KEYWORDS.start,
     response: NUSA_RESPONSES.start,
-    quickReplies: NUSA_QUICK_REPLIES.choosePath,
     actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah],
   },
   {
     id: 'greeting',
     keywords: NUSA_KEYWORDS.greeting,
     response: NUSA_RESPONSES.greeting,
-    quickReplies: NUSA_QUICK_REPLIES.main,
+    actions: [],
   },
   {
     id: 'faq',
@@ -341,7 +330,6 @@ function buildIntentReply(intent, normalizedText) {
     id: intent.id,
     text: intent.response,
     actions: intent.actions || [],
-    quickReplies: intent.quickReplies || [],
   };
 }
 
