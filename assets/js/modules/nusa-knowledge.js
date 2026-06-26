@@ -2,7 +2,7 @@ import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
-const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260626-firestore-article-router-v1';
+const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260626-content-library-metadata-v1';
 const FIRESTORE_ARTICLE_TIMEOUT_MS = 3500;
 
 export const NUSA_ROUTES = Object.freeze({
@@ -38,20 +38,20 @@ export const NUSA_ROUTE_BUTTONS = Object.freeze({
 
 export const NUSA_KEYWORDS = Object.freeze({
   greeting: ['assalamualaikum', 'assalamu alaikum', 'salam', 'halo', 'hai', 'hello'],
-  start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'arahkan saya', 'saya bingung', 'aku bingung', 'harus mulai dari mana', 'mulainya dari mana', 'langkah awal'],
-  vitacheckStart: ['mulai vitacheck', 'cara memakai vitacheck', 'cara pakai vitacheck', 'pakai vitacheck', 'hasil vitacheck', 'hasil vita check', 'maksud hasil vitacheck', 'cek kebiasaan sehat', 'cek kebiasaan', 'cek habit', 'vital check', 'vita check', 'vitacheck', 'skor kebiasaan'],
-  habit: ['kebiasaan', 'kebiasaan sehat', 'tanya kebiasaan sehat', 'pola hidup', 'hidup sehat', 'mau hidup sehat', 'ingin hidup sehat', 'mau mulai hidup sehat', 'mulai hidup sehat', 'mulai kebiasaan sehat', 'rutinitas sehat', 'gaya hidup sehat', 'habit sehat', 'tidur', 'tidur buruk', 'tidur berantakan', 'kurang tidur', 'susah tidur', 'begadang', 'makan', 'pola makan', 'makan berantakan', 'air', 'air putih', 'minum', 'minum air', 'kurang minum', 'lelah', 'sering lelah', 'capek', 'mudah capek', 'energi', 'fokus', 'mood', 'gerak', 'kurang gerak', 'olahraga', 'pencernaan', 'pencernaan saya kurang nyaman', 'pencernaan kurang nyaman', 'perut tidak nyaman', 'perut sering tidak nyaman', 'perut tidak nyaman ringan', 'mual ringan', 'kembung ringan', 'stres ringan', 'stress ringan'],
-  generalHealth: ['menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'cara menjaga kesehatan tubuh', 'menjaga tubuh', 'merawat tubuh', 'tubuh sehat', 'agar tubuh sehat', 'supaya tubuh sehat', 'bagaimana agar tubuh tetap sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'tips sehat sehari-hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'kesehatan tubuh', 'menjaga badan', 'cara menjaga badan', 'badan sehat', 'tips agar badan sehat', 'pola sehat', 'kebiasaan sehat sehari hari', 'kebiasaan sehat sehari-hari', 'apa yang harus dilakukan supaya sehat', 'bagaimana agar tetap sehat', 'langkah menjaga kesehatan', 'mulai menjaga kesehatan', 'mulai hidup sehat dari mana', 'langkah awal hidup sehat', 'agar tidak mudah lelah', 'menjaga tubuh agar tidak mudah lelah'],
-  testimonial: ['testimoni', 'testi', 'bukti', 'bukti nyata', 'klaim', 'klaim produk', 'klaim produk ini aman', 'promosi', 'promosi aman', 'hasil orang', 'hasil orang lain', 'review orang', 'ulasan orang', 'cek klaim', 'cek testimoni', 'percaya testimoni', 'testimoni produk bisa dipercaya', 'testimoni bisa dipercaya', 'apakah testimoni bisa dipercaya', 'testimoni produk ini benar', 'klaim produk benar', 'katanya sembuh', 'katanya ampuh', 'cerita sembuh', 'janji sembuh', 'hasil instan', 'hasilnya instan', 'produk ini hasilnya instan', 'apakah produk ini hasilnya instan'],
-  productShortcut: ['produk bukan jalan pintas', 'produk jalan pintas', 'produk bisa jadi jalan pintas', 'produk ini solusi cepat', 'produk solusi cepat', 'produk bisa menggantikan pola hidup sehat', 'produk menggantikan pola hidup', 'produk ini bisa menyembuhkan', 'produk bisa menyembuhkan', 'produk bisa sembuhkan', 'produk bukan obat', 'produk bukan janji sembuh', 'suplemen bukan obat', 'suplemen bisa menyembuhkan', 'suplemen solusi cepat'],
-  product: ['produk', 'info produk', 'tanya produk', 'tanya langfit', 'tanya key propolis', 'key propolis', 'langfit deto pro', 'langfit', 'deto pro', 'propolis', 'katalog', 'katalog produk', 'harga', 'berapa harga', 'beli', 'mau beli', 'cara membeli', 'cara beli', 'reseller', 'stok produk'],
-  productSuitability: ['produk cocok untuk saya', 'produk apa yang cocok untuk saya', 'produk apa cocok untuk saya', 'produk apa yang cocok untuk menjaga kesehatan saya', 'produk apa yang cocok untuk penyakit saya', 'produk apa untuk penyakit saya', 'produk untuk penyakit saya', 'produk apa untuk keluhan saya', 'produk apa untuk sakit saya', 'produk apa yang sesuai untuk saya', 'produk yang cocok untuk saya', 'produk yang sesuai untuk saya', 'produk mana yang pas', 'produk mana yang cocok', 'mana yang cocok', 'mana yang cocok untuk saya', 'mana yang sesuai untuk saya', 'saya cocok pakai apa', 'aku cocok pakai apa', 'cocok gak', 'cocok nggak', 'cocok ga', 'cocok tidak', 'aman gak untuk saya', 'aman nggak untuk saya', 'aman ga untuk saya', 'aman tidak untuk saya', 'saya boleh minum ini', 'boleh minum ini', 'bisa minum ini', 'boleh konsumsi ini', 'suplemen apa untuk keluhan saya', 'untuk penyakit saya pakai apa', 'propolis cocok untuk penyakit saya', 'propolis cocok untuk keluhan saya', 'langfit cocok untuk saya', 'langfit cocok untuk keluhan saya', 'deto pro cocok untuk saya'],
-  diagnosis: ['diagnosis', 'diagnosa', 'saya sakit apa', 'aku sakit apa', 'penyakit saya apa', 'penyakit aku apa', 'ini penyakit apa', 'gejala ini apa', 'gejala saya apa', 'gejala aku apa', 'apakah saya kena', 'apakah aku kena', 'apa saya kena', 'apa aku kena', 'kena penyakit apa', 'diagnosa saya apa', 'diagnosis saya apa', 'apakah ini maag', 'apakah ini asam lambung', 'apakah ini diabetes', 'apakah saya diabetes', 'apakah aku diabetes', 'apakah saya kena maag', 'apakah aku kena maag'],
-  seriousComplaint: ['sesak ' + 'napas', 'sesak ' + 'nafas', 'nyeri ' + 'dada', 'dada ' + 'nyeri', 'nyeri dada berat', 'sakit dada berat', 'mau pingsan', 'hampir pingsan', 'pingsan', 'per' + 'darahan', 'pend' + 'arahan', 'darah banyak', 'muntah terus', 'muntah terus menerus', 'demam tinggi', 'nyeri hebat', 'sakit hebat', 'sakit parah', 'keluhan berat', 'tidak tertahankan', 'sakit tidak tertahankan', 'tidak kuat', 'nggak kuat', 'gak kuat', 'ga kuat', 'parah kali', 'makin parah', 'semakin parah', 'memburuk', 'gejala memburuk', 'gangguan aktivitas berat', 'mengganggu aktivitas berat', 'darurat'],
-  tawakal: ['tawakal', 'tawakkal', 'cukup tawakal', 'tawakal saja cukup', 'tawakal aja cukup', 'pasrah saja', 'pasrah aja', 'ikhtiar dan tawakal', 'ikhtiar dulu atau tawakal'],
-  fatwa: ['fatwa', 'memberi fatwa', 'bisa memberi fatwa', 'nusa ai bisa memberi fatwa', 'hukum agama final', 'menentukan hukum agama', 'tafsir sendiri', 'ahli tafsir', 'ustadz', 'ulama kompeten'],
-  article: ['artikel', 'baca artikel', 'baca edukasi', 'edukasi', 'blog', 'bacaan', 'belajar kesehatan', 'saya mau belajar kesehatan', 'edukasi produk', 'artikel testimoni', 'artikel pola hidup'],
-  amanah: ['prinsip amanah', 'apa itu prinsip amanah', 'amanah', 'batas klaim', 'batas promosi', 'klaim berlebihan', 'edukasi dulu', 'produk belakangan', 'jangan klaim berlebihan', 'tidak klaim sembuh'],
+  start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'arahkan saya', 'harus mulai dari mana', 'langkah awal'],
+  vitacheckStart: ['mulai vitacheck', 'cara memakai vitacheck', 'cara pakai vitacheck', 'pakai vitacheck', 'hasil vitacheck', 'vita check', 'vitacheck', 'skor kebiasaan'],
+  habit: ['kebiasaan', 'kebiasaan sehat', 'pola hidup', 'hidup sehat', 'rutinitas sehat', 'tidur', 'begadang', 'makan', 'pola makan', 'air putih', 'minum air', 'lelah', 'capek', 'energi', 'gerak', 'olahraga', 'pencernaan', 'perut tidak nyaman', 'mual ringan', 'kembung ringan', 'stres ringan', 'stress ringan'],
+  generalHealth: ['menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'cara menjaga kesehatan tubuh', 'menjaga tubuh', 'merawat tubuh', 'tubuh sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'menjaga badan', 'badan sehat', 'mulai hidup sehat dari mana'],
+  testimonial: ['testimoni', 'testi', 'bukti', 'bukti nyata', 'klaim', 'klaim produk', 'promosi', 'hasil orang', 'review orang', 'ulasan orang', 'cek klaim', 'cek testimoni', 'percaya testimoni', 'katanya ' + 'sembuh', 'katanya ampuh', 'cerita ' + 'sembuh', 'janji ' + 'sembuh', 'hasil ' + 'instan'],
+  productShortcut: ['produk bukan jalan pintas', 'produk jalan pintas', 'produk solusi cepat', 'produk menggantikan pola hidup', 'produk ini bisa menyem' + 'buhkan', 'produk bisa ' + 'sembuhkan', 'produk bukan obat', 'produk bukan janji ' + 'sembuh', 'suplemen bukan obat', 'suplemen solusi cepat'],
+  product: ['produk', 'info produk', 'tanya produk', 'tanya langfit', 'tanya key propolis', 'key propolis', 'langfit deto pro', 'langfit', 'deto pro', 'propolis', 'katalog', 'katalog produk', 'harga', 'berapa harga', 'beli', 'cara beli', 'reseller', 'stok produk'],
+  productSuitability: ['produk cocok untuk saya', 'produk apa yang cocok untuk saya', 'produk apa cocok untuk saya', 'produk apa untuk keluhan saya', 'produk apa untuk sakit saya', 'produk yang sesuai untuk saya', 'produk mana yang pas', 'saya cocok pakai apa', 'aman gak untuk saya', 'aman nggak untuk saya', 'saya boleh minum ini', 'boleh konsumsi ini', 'suplemen apa untuk keluhan saya', 'untuk penyakit saya pakai apa', 'langfit cocok untuk saya'],
+  diagnosis: ['diagnosis', 'diagnosa', 'saya sakit apa', 'aku sakit apa', 'penyakit saya apa', 'ini penyakit apa', 'gejala ini apa', 'gejala saya apa', 'apakah saya kena', 'kena penyakit apa', 'diagnosa saya apa', 'diagnosis saya apa', 'apakah ini maag', 'apakah ini asam lambung', 'apakah ini diabetes'],
+  seriousComplaint: ['sesak ' + 'napas', 'sesak ' + 'nafas', 'nyeri ' + 'dada', 'dada ' + 'nyeri', 'mau pingsan', 'hampir pingsan', 'pingsan', 'per' + 'darahan', 'darah banyak', 'muntah terus', 'demam tinggi', 'nyeri hebat', 'sakit hebat', 'sakit parah', 'keluhan berat', 'tidak tertahankan', 'tidak kuat', 'gak kuat', 'makin parah', 'semakin parah', 'memburuk', 'darurat'],
+  tawakal: ['tawakal', 'tawakkal', 'cukup tawakal', 'tawakal saja cukup', 'tawakal aja cukup', 'pasrah saja', 'ikhtiar dan tawakal', 'ikhtiar dulu atau tawakal'],
+  fatwa: ['fatwa', 'memberi fatwa', 'bisa memberi fatwa', 'nusa ai bisa memberi fatwa', 'hukum agama final', 'menentukan hukum agama', 'tafsir sendiri', 'ustadz', 'ulama kompeten'],
+  article: ['artikel', 'baca artikel', 'baca edukasi', 'edukasi', 'blog', 'bacaan', 'belajar kesehatan', 'edukasi produk', 'artikel testimoni', 'artikel pola hidup'],
+  amanah: ['prinsip amanah', 'apa itu prinsip amanah', 'amanah', 'batas klaim', 'batas promosi', 'klaim berlebihan', 'edukasi dulu', 'produk belakangan', 'jangan klaim berlebihan', 'tidak klaim berlebihan'],
   faq: ['faq', 'pertanyaan umum', 'pertanyaan', 'cara pakai vitanusa', 'tentang vitanusa'],
   contact: ['wa', 'whatsapp', 'admin', 'email', 'hubungi', 'hubungi admin', 'kontak', 'kontak admin', 'kerja sama', 'kolaborasi'],
 });
@@ -67,11 +67,11 @@ export const NUSA_RESPONSES = Object.freeze({
   habit: 'Kebiasaan sehat adalah ikhtiar kecil untuk menjaga amanah tubuh. Mulai dari tidur lebih teratur, cukup minum, makan lebih rapi, dan gerak ringan. Gunakan VitaCheck sebagai refleksi edukatif, bukan diagnosis.',
   generalHealth: 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Mulailah dari ikhtiar kecil: tidur lebih teratur, cukup minum, makan lebih sadar, dan bergerak ringan tanpa ekstrem. Jika ada keluhan berat atau memburuk, jangan menunda bertanya kepada tenaga kesehatan. Ini edukasi umum, bukan diagnosis.',
   article: 'Kamu bisa mulai dari ruang artikel VitaNusa AI. Pilih bacaan yang paling sesuai, lalu ambil satu langkah kecil yang realistis.',
-  testimonial: 'Testimoni perlu disikapi dengan tabayyun. Itu bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan percaya janji sembuh atau hasil instan.',
+  testimonial: 'Testimoni perlu disikapi dengan tabayyun. Itu bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan percaya janji hasil mutlak.',
   amanah: 'Prinsip Amanah menjelaskan batas VitaNusa AI: edukasi dulu, tidak diagnosis, tidak membuat klaim berlebihan, dan produk bukan janji hasil.',
   product: 'Produk di VitaNusa AI ditampilkan sebagai katalog informasi reseller. Sebelum melihat katalog, baca Prinsip Amanah agar kamu paham batas klaim, label resmi, dan posisi produk sebagai opsi pendukung. Produk bukan pengganti pola hidup sehat atau konsultasi tenaga kesehatan.',
-  productSuitability: 'Saya tidak bisa menentukan produk yang cocok untuk kondisi pribadi. Dalam prinsip amanah, produk hanya boleh dilihat sebagai informasi, bukan janji sembuh atau pengganti tenaga kesehatan. Jika ada keluhan, riwayat penyakit, sedang memakai obat, hamil, atau menyusui, lebih aman berkonsultasi kepada tenaga kesehatan.',
-  productShortcut: 'Produk bukan jalan pintas, bukan pengganti pola hidup sehat, dan bukan janji sembuh. Waspadai klaim hasil instan, baca label resmi, dan gunakan Prinsip Amanah agar keputusan lebih tenang.',
+  productSuitability: 'Saya tidak bisa menentukan produk yang cocok untuk kondisi pribadi. Dalam prinsip amanah, produk hanya boleh dilihat sebagai informasi, bukan janji hasil atau pengganti tenaga kesehatan. Jika ada keluhan, riwayat penyakit, sedang memakai obat, hamil, atau menyusui, lebih aman berkonsultasi kepada tenaga kesehatan.',
+  productShortcut: 'Produk bukan jalan pintas, bukan pengganti pola hidup sehat, dan bukan janji hasil. Waspadai klaim berlebihan, baca label resmi, dan gunakan Prinsip Amanah agar keputusan lebih tenang.',
   diagnosis: 'Saya tidak bisa menentukan diagnosis. Itu perlu pemeriksaan tenaga kesehatan yang berwenang. Saya bisa bantu memberi edukasi umum dan mengajak melihat kebiasaan lewat VitaCheck, tetapi hasilnya tetap bukan diagnosis.',
   seriousComplaint: 'Keluhan seperti ini perlu diprioritaskan. Jangan menunda pertolongan; segera hubungi tenaga kesehatan, fasilitas kesehatan, atau layanan darurat setempat. Saya tidak memberi diagnosis dan tidak mengarahkan ke produk untuk kondisi berat.',
   tawakal: 'Tawakal bukan alasan berhenti berikhtiar. Berikhtiar dengan ilmu dan menjaga keselamatan adalah bagian dari amanah; setelah itu hasilnya kita kembalikan kepada Allah. Jika ada keluhan berat, jangan menunda pertolongan.',
@@ -83,10 +83,7 @@ export const NUSA_RESPONSES = Object.freeze({
 export const NUSA_INITIAL_REPLY = Object.freeze({ id: 'initial-greeting', text: NUSA_RESPONSES.greeting, actions: [] });
 export const NUSA_FALLBACK_RESPONSE = Object.freeze({ id: 'fallback', text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis sedikit lebih spesifik: apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?', actions: [] });
 
-function createArticleButton(article) {
-  return { label: `Baca Artikel ${article.title}`, href: article.href };
-}
-
+function createArticleButton(article) { return { label: `Baca Artikel ${article.title}`, href: article.href }; }
 function mergeActions(...groups) {
   const seen = new Set();
   return groups.flat().filter(Boolean).filter((action) => {
@@ -96,7 +93,6 @@ function mergeActions(...groups) {
     return true;
   });
 }
-
 function getRelatedArticleActions(article) {
   const map = {
     'testimoni-bukan-bukti': [NUSA_ROUTE_BUTTONS.amanah],
@@ -110,7 +106,6 @@ function getRelatedArticleActions(article) {
   };
   return map[article.id] || [];
 }
-
 function createArticleResponseText(article) {
   const texts = {
     'sehat-itu-amanah': 'Kamu bisa membaca artikel “Sehat Itu Amanah” untuk memahami pola hidup sehat sebagai amanah: kebiasaan kecil, pilihan halal-thayyib, dan sikap kritis terhadap klaim kesehatan. Jika ingin refleksi awal, mulai juga dari VitaCheck.',
@@ -125,47 +120,21 @@ function createArticleResponseText(article) {
   };
   return texts[article.id] || `Kamu bisa membaca artikel “${article.title}”. ${article.summary}`;
 }
-
-function createArticleReply(article, extraActions = []) {
-  return {
-    id: `article-${article.id}`,
-    text: createArticleResponseText(article),
-    actions: mergeActions([createArticleButton(article), ...extraActions, ...getRelatedArticleActions(article)]),
-  };
-}
-
-function createArticleSpecificReply(normalizedText) {
-  const article = findMatchingNusaArticle(normalizedText);
-  return article ? createArticleReply(article) : null;
-}
-
+function createArticleReply(article, extraActions = []) { return { id: `article-${article.id}`, text: createArticleResponseText(article), actions: mergeActions([createArticleButton(article), ...extraActions, ...getRelatedArticleActions(article)]) }; }
+function createArticleSpecificReply(normalizedText) { const article = findMatchingNusaArticle(normalizedText); return article ? createArticleReply(article) : null; }
 function createVitaCheckReply(normalizedText) {
   const article = findMatchingNusaArticle(normalizedText);
-  if (article && article.id === 'cara-memakai-vitacheck') {
-    return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]);
-  }
+  if (article && article.id === 'cara-memakai-vitacheck') return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]);
   return { id: 'vitacheck-start', text: NUSA_RESPONSES.vitacheckStart, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles] };
 }
-
 function createHabitReply(normalizedText) {
   const article = findMatchingNusaArticle(normalizedText);
   const habitArticleIds = ['kebiasaan-sehat-7-hari', 'tidur-dan-energi-harian', 'pencernaan-dan-pola-makan', 'sehat-itu-amanah'];
-  if (article && habitArticleIds.includes(article.id)) {
-    return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]);
-  }
+  if (article && habitArticleIds.includes(article.id)) return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]);
   return { id: 'habit', text: NUSA_RESPONSES.habit, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles] };
 }
-
 function createGeneralHealthReply() {
-  return {
-    id: 'general-health',
-    text: NUSA_RESPONSES.generalHealth,
-    actions: [
-      NUSA_ROUTE_BUTTONS.vitacheck,
-      NUSA_ROUTE_BUTTONS.healthyHabitsArticle,
-      NUSA_ROUTE_BUTTONS.healthyAmanahArticle,
-    ],
-  };
+  return { id: 'general-health', text: NUSA_RESPONSES.generalHealth, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.healthyHabitsArticle, NUSA_ROUTE_BUTTONS.healthyAmanahArticle] };
 }
 
 export const NUSA_KNOWLEDGE_MAP = Object.freeze([
@@ -173,44 +142,13 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'diagnosis', keywords: NUSA_KEYWORDS.diagnosis, response: NUSA_RESPONSES.diagnosis, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'fatwa', keywords: NUSA_KEYWORDS.fatwa, response: NUSA_RESPONSES.fatwa, actions: [NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'tawakal', keywords: NUSA_KEYWORDS.tawakal, response: NUSA_RESPONSES.tawakal, actions: [NUSA_ROUTE_BUTTONS.amanah] },
-  {
-    id: 'product-suitability',
-    keywords: NUSA_KEYWORDS.productSuitability,
-    response: NUSA_RESPONSES.productSuitability,
-    actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.products],
-    matcher(text) {
-      return includesAny(text, NUSA_KEYWORDS.productSuitability) || (includesAny(text, ['produk', 'suplemen', 'langfit', 'deto pro', 'propolis', 'key propolis']) && includesAny(text, ['cocok', 'sesuai', 'pas', 'aman', 'boleh', 'konsumsi', 'minum']) && includesAny(text, ['untuk saya', 'buat saya', 'bagi saya', 'keluhan saya', 'penyakit saya', 'riwayat saya', 'sakit saya']));
-    },
-  },
-  {
-    id: 'product-shortcut',
-    keywords: NUSA_KEYWORDS.productShortcut,
-    response: NUSA_RESPONSES.productShortcut,
-    actions: [NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.testimonialArticle],
-    matcher(text) {
-      return includesAny(text, NUSA_KEYWORDS.productShortcut) || (includesAny(text, ['produk', 'suplemen']) && includesAny(text, ['jalan pintas', 'solusi cepat', 'menyembuhkan', 'sembuhkan', 'pengganti pola hidup', 'menggantikan pola hidup']));
-    },
-  },
-  {
-    id: 'product',
-    keywords: [],
-    response: NUSA_RESPONSES.product,
-    actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.whatsapp],
-    matcher(text) {
-      return includesAny(text, NUSA_KEYWORDS.product) && !includesAny(text, NUSA_KEYWORDS.testimonial) && !includesAny(text, NUSA_KEYWORDS.productShortcut);
-    },
-  },
+  { id: 'product-suitability', keywords: NUSA_KEYWORDS.productSuitability, response: NUSA_RESPONSES.productSuitability, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.products], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productSuitability) || (includesAny(text, ['produk','suplemen','langfit','deto pro','propolis','key propolis']) && includesAny(text, ['cocok','sesuai','pas','aman','boleh','konsumsi','minum']) && includesAny(text, ['untuk saya','buat saya','bagi saya','keluhan saya','penyakit saya','riwayat saya','sakit saya'])); } },
+  { id: 'product-shortcut', keywords: NUSA_KEYWORDS.productShortcut, response: NUSA_RESPONSES.productShortcut, actions: [NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.testimonialArticle], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productShortcut) || (includesAny(text, ['produk','suplemen']) && includesAny(text, ['jalan pintas','solusi cepat','pengganti pola hidup','menggantikan pola hidup'])); } },
+  { id: 'product', keywords: [], response: NUSA_RESPONSES.product, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.whatsapp], matcher(text) { return includesAny(text, NUSA_KEYWORDS.product) && !includesAny(text, NUSA_KEYWORDS.testimonial) && !includesAny(text, NUSA_KEYWORDS.productShortcut); } },
   { id: 'testimonial', keywords: NUSA_KEYWORDS.testimonial, response: NUSA_RESPONSES.testimonial, actions: [NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'vitacheck-start', keywords: NUSA_KEYWORDS.vitacheckStart, getReply: createVitaCheckReply },
   { id: 'habit', keywords: NUSA_KEYWORDS.habit, getReply: createHabitReply },
-  {
-    id: 'general-health',
-    keywords: NUSA_KEYWORDS.generalHealth,
-    getReply: createGeneralHealthReply,
-    matcher(text) {
-      return includesAny(text, NUSA_KEYWORDS.generalHealth) || includesAny(text, GENERAL_HEALTH_SIGNAL_TERMS);
-    },
-  },
+  { id: 'general-health', keywords: NUSA_KEYWORDS.generalHealth, getReply: createGeneralHealthReply, matcher(text) { return includesAny(text, NUSA_KEYWORDS.generalHealth) || includesAny(text, GENERAL_HEALTH_SIGNAL_TERMS); } },
   { id: 'article-specific', keywords: [], matcher: (text) => Boolean(findMatchingNusaArticle(text)), getReply: createArticleSpecificReply },
   { id: 'article', keywords: NUSA_KEYWORDS.article, response: NUSA_RESPONSES.article, actions: [NUSA_ROUTE_BUTTONS.articles] },
   { id: 'amanah', keywords: NUSA_KEYWORDS.amanah, response: NUSA_RESPONSES.amanah, actions: [NUSA_ROUTE_BUTTONS.amanah] },
@@ -220,145 +158,56 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'faq', keywords: NUSA_KEYWORDS.faq, response: NUSA_RESPONSES.faq, actions: [NUSA_ROUTE_BUTTONS.faq] },
 ]);
 
-function normalizeText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function includesTerm(normalizedText, term) {
-  const normalizedTerm = normalizeText(term);
-  if (!normalizedTerm) return false;
-  if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `);
-  return normalizedText.includes(normalizedTerm);
-}
-
-function includesAny(normalizedText, terms) {
-  return terms.some((term) => includesTerm(normalizedText, term));
-}
-
-function findMatchingIntent(normalizedText) {
-  return NUSA_KNOWLEDGE_MAP.find((intent) => {
-    if (typeof intent.matcher === 'function' && intent.matcher(normalizedText)) return true;
-    return includesAny(normalizedText, intent.keywords);
-  });
-}
-
-function buildIntentReply(intent, normalizedText) {
-  if (typeof intent.getReply === 'function') return intent.getReply(normalizedText);
-  return { id: intent.id, text: intent.response, actions: intent.actions || [] };
-}
-
-function isFirestoreBlockedIntent(intent) {
-  return Boolean(intent && FIRESTORE_ONLY_BLOCKED_INTENTS.has(intent.id));
-}
-
-function canAttachFirestoreArticles(intent) {
-  return Boolean(intent && FIRESTORE_SAFE_ATTACH_INTENTS.has(intent.id));
-}
-
+function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
+function includesAny(normalizedText, terms) { return terms.some((term) => includesTerm(normalizedText, term)); }
+function findMatchingIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => { if (typeof intent.matcher === 'function' && intent.matcher(normalizedText)) return true; return includesAny(normalizedText, intent.keywords); }); }
+function buildIntentReply(intent, normalizedText) { if (typeof intent.getReply === 'function') return intent.getReply(normalizedText); return { id: intent.id, text: intent.response, actions: intent.actions || [] }; }
+function isFirestoreBlockedIntent(intent) { return Boolean(intent && FIRESTORE_ONLY_BLOCKED_INTENTS.has(intent.id)); }
+function canAttachFirestoreArticles(intent) { return Boolean(intent && FIRESTORE_SAFE_ATTACH_INTENTS.has(intent.id)); }
 function createFirestoreArticleText(intentId) {
-  if (intentId === 'general-health' || intentId === 'habit' || intentId === 'vitacheck-start') {
-    return 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Saya juga menemukan artikel terkait yang bisa kamu baca sebagai panduan awal. Nusa AI tetap bersifat edukatif, bukan diagnosis.';
-  }
-
-  if (intentId === 'testimonial' || intentId === 'product-shortcut') {
-    return 'Untuk klaim produk, prinsipnya tabayyun dulu. Saya menemukan artikel terkait agar kamu bisa menilai klaim dengan lebih tenang. Jangan menjadikan testimoni sebagai janji hasil atau bukti utama untuk semua orang.';
-  }
-
+  if (intentId === 'general-health' || intentId === 'habit' || intentId === 'vitacheck-start') return 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Saya juga menemukan artikel terkait yang bisa kamu baca sebagai panduan awal. Nusa AI tetap bersifat edukatif, bukan diagnosis.';
+  if (intentId === 'testimonial' || intentId === 'product-shortcut') return 'Untuk klaim produk, prinsipnya tabayyun dulu. Saya menemukan artikel terkait agar kamu bisa menilai klaim dengan lebih tenang. Jangan menjadikan testimoni sebagai janji hasil atau bukti utama untuk semua orang.';
   return 'Saya menemukan artikel yang relevan. Baca dulu dengan tenang, lalu ambil satu langkah kecil yang aman. Nusa AI tetap bersifat edukatif, bukan diagnosis.';
 }
-
 async function getFirestoreArticleActions(normalizedText, options = {}) {
   try {
     const firestoreArticles = await import(FIRESTORE_ARTICLE_MODULE_URL);
-    const matches = await withTimeout(
-      firestoreArticles.findMatchingFirestoreArticles(normalizedText, options),
-      FIRESTORE_ARTICLE_TIMEOUT_MS,
-      []
-    );
-
-    return matches
-      .map((article) => firestoreArticles.createFirestoreArticleAction(article))
-      .filter(Boolean);
+    const matches = await withTimeout(firestoreArticles.findMatchingFirestoreArticles(normalizedText, options), FIRESTORE_ARTICLE_TIMEOUT_MS, []);
+    return matches.map((article) => firestoreArticles.createFirestoreArticleAction(article)).filter(Boolean);
   } catch (error) {
-    console.warn('[Nusa AI] Firestore article router fallback:', error);
+    console.warn('Firestore article router fallback:', error);
     return [];
   }
 }
-
 function withTimeout(promise, timeoutMs, fallbackValue) {
   let timeoutId;
-  const timeoutPromise = new Promise((resolve) => {
-    timeoutId = globalThis.setTimeout(() => resolve(fallbackValue), timeoutMs);
-  });
-
-  return Promise.race([
-    Promise.resolve(promise).finally(() => globalThis.clearTimeout(timeoutId)),
-    timeoutPromise,
-  ]);
+  const timeoutPromise = new Promise((resolve) => { timeoutId = globalThis.setTimeout(() => resolve(fallbackValue), timeoutMs); });
+  return Promise.race([Promise.resolve(promise).finally(() => globalThis.clearTimeout(timeoutId)), timeoutPromise]);
 }
-
-function shouldTryFirestoreOnly(normalizedText) {
-  if (normalizedText.length < 8) return false;
-  const tokens = normalizedText.split(' ').filter((token) => token.length > 2);
-  return tokens.length >= 2;
-}
-
+function shouldTryFirestoreOnly(normalizedText) { if (normalizedText.length < 8) return false; const tokens = normalizedText.split(' ').filter((token) => token.length > 2); return tokens.length >= 2; }
 async function buildFirestoreOnlyReply(normalizedText, intentId = 'firestore-article') {
   if (!shouldTryFirestoreOnly(normalizedText)) return null;
-
-  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: false });
+  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: false, intentId });
   if (!actions.length) return null;
-
-  return {
-    id: intentId,
-    text: createFirestoreArticleText(intentId),
-    actions,
-  };
+  return { id: intentId, text: createFirestoreArticleText(intentId), actions };
 }
-
 async function attachFirestoreArticles(baseReply, normalizedText, intentId) {
-  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: true });
+  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: true, intentId });
   if (!actions.length) return baseReply;
-
-  if (intentId === 'article' || intentId === 'article-specific') {
-    return {
-      id: `firestore-${intentId}`,
-      text: createFirestoreArticleText(intentId),
-      actions: mergeActions(actions, baseReply?.actions || []),
-    };
-  }
-
-  return {
-    ...baseReply,
-    id: `${baseReply.id}-firestore`,
-    actions: mergeActions(baseReply.actions || [], actions),
-  };
+  if (intentId === 'article' || intentId === 'article-specific') return { id: `firestore-${intentId}`, text: createFirestoreArticleText(intentId), actions: mergeActions(actions, baseReply?.actions || []) };
+  return { ...baseReply, id: `${baseReply.id}-firestore`, actions: mergeActions(baseReply.actions || [], actions) };
 }
 
 export async function getNusaReply(input) {
   const normalizedText = normalizeText(input);
   if (!normalizedText) return NUSA_INITIAL_REPLY;
-
   const intent = findMatchingIntent(normalizedText);
-
-  if (isFirestoreBlockedIntent(intent)) {
-    return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
-  }
-
+  if (isFirestoreBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
   if (intent && canAttachFirestoreArticles(intent)) {
     const baseReply = buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
     return attachFirestoreArticles(baseReply, normalizedText, intent.id);
   }
-
-  if (!intent) {
-    return await buildFirestoreOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
-  }
-
+  if (!intent) return await buildFirestoreOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
   return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
 }
