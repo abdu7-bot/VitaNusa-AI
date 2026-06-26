@@ -67,7 +67,24 @@ const EDUCATIONAL_CONTEXT_TERMS = [
   'nilai guna objektif',
   'promosi manipulatif',
   'penyesatan informasi',
-  'klaim kesehatan palsu'
+  'klaim kesehatan palsu',
+  'regulasi penandaan',
+  'literasi membaca label',
+  'membaca label',
+  'ketentuan penulisan label',
+  'aturan penulisan label',
+  'batasan yang ketat',
+  'menghindari penipuan publik',
+  'pengawasan periklanan',
+  'regulasi periklanan',
+  'larangan klaim absolut',
+  'larangan klaim',
+  'iklan dilarang',
+  'dilarang menggunakan',
+  'dilarang memberikan kesan',
+  'garansi penyembuhan mutlak',
+  'spot warning',
+  'melindungi masyarakat'
 ];
 const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
   'edukasi',
@@ -77,7 +94,11 @@ const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
   'risiko',
   'konsumen',
   'pemasaran',
-  'testimoni'
+  'testimoni',
+  'label',
+  'regulasi',
+  'dilarang',
+  'larangan'
 ];
 const GLOBAL_EDUCATIONAL_CONTEXT_TERMS = [
   'laporan penelitian',
@@ -99,7 +120,14 @@ const GLOBAL_EDUCATIONAL_CONTEXT_TERMS = [
   'informasi yang menyesatkan',
   'penyesatan informasi',
   'promosi manipulatif',
-  'klaim kesehatan palsu'
+  'klaim kesehatan palsu',
+  'regulasi penandaan',
+  'literasi membaca label',
+  'membaca label produk',
+  'pengawasan periklanan',
+  'regulasi periklanan',
+  'larangan klaim absolut',
+  'cek klik'
 ];
 const DIRECT_PROMOTIONAL_CONTEXT_TERMS = [
   'produk ini',
@@ -118,7 +146,23 @@ const DIRECT_PROMOTIONAL_CONTEXT_TERMS = [
   'memberikan hasil instan',
   'mendapat hasil instan'
 ];
-const RISK_CONTEXT_WINDOW = 260;
+const PROHIBITION_CONTEXT_TERMS = [
+  'dilarang',
+  'larangan',
+  'tidak boleh',
+  'wajib menghindari',
+  'menghindari penipuan',
+  'batasan yang ketat',
+  'regulasi periklanan',
+  'pengawasan periklanan',
+  'ketentuan penulisan label',
+  'aturan penulisan label',
+  'garansi penyembuhan mutlak',
+  'seperti "',
+  'seperti ',
+  'contoh'
+];
+const RISK_CONTEXT_WINDOW = 300;
 
 const state = {
   initialized: false,
@@ -544,12 +588,16 @@ function hasGlobalEducationalContext(text) {
   return GLOBAL_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
 }
 
+function hasProhibitionCue(text) {
+  return PROHIBITION_CONTEXT_TERMS.some((term) => text.includes(term));
+}
+
 function hasDirectPromotionalRiskCue(text, riskTerms) {
   return riskTerms.some((term) => {
     const windows = getRiskTermWindows(text, term);
     return windows.some((windowText) => {
       const hasDirectPromotion = DIRECT_PROMOTIONAL_CONTEXT_TERMS.some((cue) => windowText.includes(cue));
-      return hasDirectPromotion && !hasEducationalCue(windowText);
+      return hasDirectPromotion && !hasEducationalCue(windowText) && !hasProhibitionCue(windowText);
     });
   });
 }
