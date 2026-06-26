@@ -76,6 +76,17 @@
   padding: clamp(16px, 3vw, 22px);
 }
 
+.article-list-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 190px);
+  overflow: hidden;
+}
+
+.article-form-card {
+  scroll-margin-top: 90px;
+}
+
 .article-list-card h3,
 .article-form-card h3 {
   margin: 0 0 12px;
@@ -83,9 +94,11 @@
 }
 
 .article-table-wrap {
+  flex: 1;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -281,6 +294,15 @@
   .article-layout {
     grid-template-columns: 1fr;
   }
+
+  .article-form-card {
+    order: -1;
+  }
+
+  .article-list-card {
+    order: 1;
+    max-height: 72dvh;
+  }
 }
 
 @media (max-width: 620px) {
@@ -318,8 +340,12 @@
     padding: 14px;
   }
 
+  .article-list-card {
+    max-height: 65dvh;
+  }
+
   .article-table-wrap {
-    overflow-x: visible;
+    overflow: auto;
   }
 
   .article-table {
