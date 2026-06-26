@@ -558,6 +558,13 @@ function hasRequiredDisclaimer(contentHtml) {
   return normalizePlainText(contentHtml).includes(normalizePlainText(REQUIRED_DISCLAIMER));
 }
 
+function withRequiredDisclaimer(contentHtml) {
+  const currentContent = String(contentHtml || '').trim();
+  if (hasRequiredDisclaimer(currentContent)) return currentContent;
+  const separator = currentContent ? '\n\n' : '';
+  return `${currentContent}${separator}<p>${REQUIRED_DISCLAIMER}</p>`;
+}
+
 function getValidationMessage(validation, fallback = '') {
   const parts = [...validation.errors, ...validation.warnings];
   if (fallback) parts.push(fallback);
@@ -569,6 +576,11 @@ async function handleSaveArticle(event) {
   clearMessage();
 
   const payload = getPayloadFromForm();
+  const autoDisclaimerAdded = payload.status === 'published' && !hasRequiredDisclaimer(payload.contentHtml);
+  if (autoDisclaimerAdded) {
+    payload.contentHtml = withRequiredDisclaimer(payload.contentHtml);
+  }
+
   const currentId = state.editingId;
   const existing = state.articles.find((article) => article.id === currentId);
   const validation = validateArticle(payload, currentId);
@@ -618,6 +630,9 @@ async function handleSaveArticle(event) {
     const bannerMessage = bannerUploadDisabled
       ? ' Upload banner via Firebase Storage sedang nonaktif; artikel memakai Banner URL manual.'
       : '';
+    const disclaimerMessage = autoDisclaimerAdded && !forcedDraft
+      ? ' Disclaimer wajib otomatis ditambahkan.'
+      : '';
 
     if (forcedDraft) {
       setMessage('warning', `${getValidationMessage(validation)} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
@@ -625,11 +640,11 @@ async function handleSaveArticle(event) {
     }
 
     if (validation.warnings.length) {
-      setMessage('warning', `${validation.warnings.join(' ')} Artikel tersimpan sebagai ${payload.status}.${bannerMessage}`);
+      setMessage('warning', `${validation.warnings.join(' ')} Artikel tersimpan sebagai ${payload.status}.${disclaimerMessage}${bannerMessage}`);
       return;
     }
 
-    setMessage('success', `Artikel berhasil disimpan sebagai ${payload.status}.${bannerMessage}`);
+    setMessage('success', `Artikel berhasil disimpan sebagai ${payload.status}.${disclaimerMessage}${bannerMessage}`);
   } catch (error) {
     console.error('Gagal menyimpan artikel:', error);
     const submitButton = event.submitter;
@@ -680,7 +695,7 @@ function updateDisclaimerStatus() {
   status.classList.toggle('is-missing', !hasDisclaimer);
   status.textContent = hasDisclaimer
     ? 'Disclaimer wajib sudah ada di Content HTML.'
-    : 'Disclaimer wajib belum ada. Artikel published akan ditahan sebagai draft sampai disclaimer ditambahkan.';
+    : 'Disclaimer wajib belum ada. Saat publish, sistem akan menambahkan disclaimer wajib otomatis.';
 }
 
 function appendRequiredDisclaimer() {
@@ -694,9 +709,7 @@ function appendRequiredDisclaimer() {
     return;
   }
 
-  const currentContent = contentInput.value.trim();
-  const separator = currentContent ? '\n\n' : '';
-  contentInput.value = `${currentContent}${separator}<p>${REQUIRED_DISCLAIMER}</p>`;
+  contentInput.value = withRequiredDisclaimer(contentInput.value);
   contentInput.focus();
   updateDisclaimerStatus();
   setMessage('success', 'Disclaimer wajib berhasil ditambahkan ke Content HTML.');
@@ -822,12 +835,17 @@ function resetForm() {
 }
 
 async function publishArticle(article) {
+  const autoDisclaimerAdded = !hasRequiredDisclaimer(article.contentHtml || '');
+  const publishContentHtml = autoDisclaimerAdded
+    ? withRequiredDisclaimer(article.contentHtml || '')
+    : article.contentHtml || '';
+
   const validation = validateArticle({
     title: article.title || '',
     slug: article.slug || '',
     status: 'published',
     summary: article.summary || '',
-    contentHtml: article.contentHtml || ''
+    contentHtml: publishContentHtml
   }, article.id);
 
   if (validation.errors.length) {
@@ -847,6 +865,10 @@ async function publishArticle(article) {
       updatedAt: serverTimestamp()
     };
 
+    if (autoDisclaimerAdded) {
+      updatePayload.contentHtml = publishContentHtml;
+    }
+
     if (article.status !== 'published') {
       updatePayload.publishedAt = serverTimestamp();
     }
@@ -854,12 +876,14 @@ async function publishArticle(article) {
     await updateDoc(doc(db, 'articles', article.id), updatePayload);
     await loadArticles();
 
+    const disclaimerMessage = autoDisclaimerAdded ? ' Disclaimer wajib otomatis ditambahkan.' : '';
+
     if (validation.warnings.length) {
-      setMessage('warning', `Artikel berhasil dipublish. ${validation.warnings.join(' ')}`);
+      setMessage('warning', `Artikel berhasil dipublish.${disclaimerMessage} ${validation.warnings.join(' ')}`);
       return;
     }
 
-    setMessage('success', 'Artikel berhasil dipublish.');
+    setMessage('success', `Artikel berhasil dipublish.${disclaimerMessage}`);
   } catch (error) {
     setMessage('error', error.message || 'Gagal publish artikel.');
   }
