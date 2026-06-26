@@ -1,9 +1,14 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260626-islamic-tone-v1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260626-firestore-article-router-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
   '#faq': 'faq.html',
   '#kontak': 'contact.html',
+});
+
+const SAFE_FALLBACK_REPLY = Object.freeze({
+  text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis sedikit lebih spesifik: apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?',
+  actions: [],
 });
 
 function getActionHref(action) {
@@ -70,8 +75,14 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     appendMessage(log, 'user', question);
     input.value = '';
 
-    setTimeout(() => {
-      renderReply(log, getNusaReply(question));
+    setTimeout(async () => {
+      try {
+        const reply = await getNusaReply(question);
+        renderReply(log, reply || SAFE_FALLBACK_REPLY);
+      } catch (error) {
+        console.warn('[Nusa AI] Gagal membuat balasan:', error);
+        renderReply(log, SAFE_FALLBACK_REPLY);
+      }
     }, 120);
   }
 
