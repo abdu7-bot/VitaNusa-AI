@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260626-nusa-brain-v3-1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260626-islamic-tone-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
