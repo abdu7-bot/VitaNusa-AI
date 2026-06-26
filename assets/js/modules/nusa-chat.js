@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260625-nusa-brain-v2';
+import { getNusaReply } from './nusa-knowledge.js?v=20260626-nusa-brain-v3-1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -10,20 +10,11 @@ function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
 }
 
-function getContextActions(reply) {
-  return reply.actions || [];
-}
-
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
   link.href = getActionHref(action);
   link.textContent = action.label;
-
-  if (link.href.startsWith('http')) {
-    link.rel = 'noopener noreferrer';
-  }
-
   return link;
 }
 
@@ -52,7 +43,7 @@ function appendMessage(log, role, text, actions = []) {
 }
 
 function renderReply(log, reply) {
-  appendMessage(log, 'assistant', reply.text, getContextActions(reply));
+  appendMessage(log, 'assistant', reply.text, reply.actions || []);
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -75,7 +66,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     appendMessage(log, 'user', question);
     input.value = '';
 
-    window.setTimeout(() => {
+    setTimeout(() => {
       renderReply(log, getNusaReply(question));
     }, 120);
   }
@@ -83,17 +74,6 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     handleQuestion(input.value);
-  });
-
-  root.addEventListener('click', (event) => {
-    const button = event.target instanceof Element
-      ? event.target.closest('[data-nusa-prompt]')
-      : null;
-
-    if (!button || !root.contains(button)) return;
-
-    handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
-    input.focus();
   });
 
   return {
