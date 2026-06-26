@@ -43,12 +43,8 @@
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Navigasi admin">
       <a class="admin-brand" href="index.html" aria-label="VitaNusa AI Admin Dashboard">
         <span class="admin-brand-mark">VN</span>
-        <span>
-          <strong>VitaNusa AI Admin</strong>
-          <small>Firebase Auth aktif</small>
-        </span>
+        <span><strong>VitaNusa AI Admin</strong><small>Firebase Auth aktif</small></span>
       </a>
-
       <nav class="admin-nav" aria-label="Menu admin">
         <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard">Dashboard</button>
         <button class="admin-nav-link" type="button" data-admin-section="articles">Artikel</button>
@@ -59,18 +55,13 @@
         <button class="admin-nav-link" type="button" data-admin-section="settings">Pengaturan</button>
         <button class="admin-nav-link" type="button" data-logout-button>Logout</button>
       </nav>
-
       <a class="admin-public-link" href="../index.html">Kembali ke Website Publik</a>
     </aside>
 
     <div class="admin-main-shell">
       <header class="admin-topbar">
         <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false">Menu</button>
-        <div>
-          <p class="admin-kicker">Phase 6</p>
-          <h1>VitaNusa AI Admin</h1>
-          <p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p>
-        </div>
+        <div><p class="admin-kicker">Phase 6</p><h1>VitaNusa AI Admin</h1><p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p></div>
         <button class="admin-button admin-button-light" type="button" data-logout-button>Logout</button>
       </header>
 
@@ -81,216 +72,80 @@
         </section>
 
         <section class="admin-panel is-active" data-admin-panel="dashboard" aria-labelledby="dashboardTitle">
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Ringkasan</p>
-            <h2 id="dashboardTitle">Dashboard</h2>
-            <p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p>
-          </div>
-
+          <div class="admin-section-heading"><p class="admin-kicker">Ringkasan</p><h2 id="dashboardTitle">Dashboard</h2><p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p></div>
           <div class="admin-card-grid">
-            <article class="admin-card">
-              <span class="admin-card-label">Artikel</span>
-              <strong>CRUD</strong>
-              <p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p>
-            </article>
-            <article class="admin-card">
-              <span class="admin-card-label">Komik</span>
-              <strong>0</strong>
-              <p>Panel komik belum terhubung.</p>
-            </article>
-            <article class="admin-card">
-              <span class="admin-card-label">Media / File</span>
-              <strong>GitHub</strong>
-              <p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p>
-            </article>
-            <article class="admin-card">
-              <span class="admin-card-label">Produk</span>
-              <strong>0</strong>
-              <p>Katalog produk belum terhubung.</p>
-            </article>
-            <article class="admin-card">
-              <span class="admin-card-label">FAQ</span>
-              <strong>0</strong>
-              <p>FAQ dinamis belum aktif.</p>
-            </article>
-            <article class="admin-card">
-              <span class="admin-card-label">Pengaturan</span>
-              <strong>Draft</strong>
-              <p>Site settings belum terhubung.</p>
-            </article>
+            <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong><p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Komik</span><strong>0</strong><p>Panel komik belum terhubung.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Media / File</span><strong>GitHub</strong><p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Produk</span><strong>0</strong><p>Katalog produk belum terhubung.</p></article>
+            <article class="admin-card"><span class="admin-card-label">FAQ</span><strong>0</strong><p>FAQ dinamis belum aktif.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Pengaturan</span><strong>Draft</strong><p>Site settings belum terhubung.</p></article>
           </div>
         </section>
 
         <section class="admin-panel" data-admin-panel="articles" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>Artikel</h2>
-            <p>Kelola artikel Firestore sebagai draft, published, atau archived. Konten berisiko akan ditahan sebagai draft.</p>
-          </div>
-
+          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Artikel</h2><p>Kelola artikel Firestore sebagai draft, published, atau archived. Konten berisiko akan ditahan sebagai draft.</p></div>
           <div class="article-admin" data-article-app>
-            <div class="article-toolbar">
-              <button class="admin-button admin-button-primary" type="button" data-article-new>Tambah Artikel</button>
-              <button class="admin-button admin-button-light" type="button" data-article-refresh>Refresh Daftar</button>
-            </div>
-
+            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button" data-article-new>Tambah Artikel</button><button class="admin-button admin-button-light" type="button" data-article-refresh>Refresh Daftar</button></div>
             <div class="article-message" data-article-message hidden></div>
-
             <div class="article-layout">
               <section class="article-list-card" aria-labelledby="articleListTitle">
                 <h3 id="articleListTitle">Daftar Artikel</h3>
-                <div class="article-table-wrap">
-                  <table class="article-table">
-                    <thead>
-                      <tr>
-                        <th>Artikel</th>
-                        <th>Status</th>
-                        <th>Kategori</th>
-                        <th>Update</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody data-article-list>
-                      <tr>
-                        <td colspan="5">Menunggu verifikasi admin aktif...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                <div class="article-table-wrap"><table class="article-table"><thead><tr><th>Artikel</th><th>Status</th><th>Kategori</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-article-list><tr><td colspan="5">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
               </section>
-
               <section class="article-form-card" aria-labelledby="articleFormTitle">
                 <h3 id="articleFormTitle" data-article-form-title>Tambah Artikel</h3>
                 <form class="article-form" data-article-form>
                   <input type="hidden" name="articleId">
-
-                  <label>
-                    Title
-                    <input name="title" type="text" required autocomplete="off">
-                  </label>
-
-                  <label>
-                    Slug
-                    <input name="slug" type="text" required autocomplete="off" placeholder="contoh-artikel-edukasi">
-                  </label>
-
-                  <label>
-                    Category
-                    <input name="category" type="text" autocomplete="off" placeholder="Edukasi Kesehatan">
-                  </label>
-
-                  <label>
-                    Summary
-                    <textarea name="summary" required rows="4"></textarea>
-                  </label>
-
-                  <label>
-                    Content HTML
-                    <textarea name="contentHtml" rows="10"></textarea>
-                  </label>
+                  <label>Title<input name="title" type="text" required autocomplete="off"></label>
+                  <label>Slug<input name="slug" type="text" required autocomplete="off" placeholder="contoh-artikel-edukasi"></label>
+                  <label>Category<input name="category" type="text" autocomplete="off" placeholder="Edukasi Kesehatan"></label>
+                  <label>Summary<textarea name="summary" required rows="4"></textarea></label>
+                  <label>Content HTML<textarea name="contentHtml" rows="10"></textarea></label>
                   <p class="article-help">Pertahankan disclaimer: Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.</p>
-
-                  <label>
-                    Banner URL
-                    <input name="bannerUrl" type="url" autocomplete="off" placeholder="../assets/img/artikel/banner-artikel-admin-1.webp">
-                  </label>
+                  <label>Banner URL<input name="bannerUrl" type="url" autocomplete="off" placeholder="../assets/img/artikel/banner-artikel-admin-1.webp"></label>
                   <p class="article-help">Isi manual dengan path gambar GitHub, contoh: ../assets/img/artikel/banner-artikel-admin-1.webp.</p>
-
-                  <label class="article-upload-label" hidden>
-                    Upload Banner Artikel
-                    <input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file disabled>
-                  </label>
+                  <label class="article-upload-label" hidden>Upload Banner Artikel<input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file disabled></label>
                   <p class="article-help">Upload banner via Firebase Storage dinonaktifkan sementara. Upload gambar ke GitHub lalu isi Banner URL/path secara manual.</p>
-                  <div class="article-banner-preview" data-banner-preview hidden>
-                    <img data-banner-preview-image alt="Preview banner artikel">
-                    <button class="admin-button admin-button-light" type="button" data-banner-clear>Hapus pilihan gambar</button>
-                  </div>
-
-                  <label>
-                    PDF URL
-                    <input name="pdfUrl" type="url" autocomplete="off" placeholder="https://... atau documents/file.pdf">
-                  </label>
-
-                  <label>
-                    Read Time
-                    <input name="readTime" type="text" autocomplete="off" placeholder="6 menit baca">
-                  </label>
-
-                  <label>
-                    Tags
-                    <input name="tags" type="text" autocomplete="off" placeholder="edukasi, kesehatan, amanah">
-                  </label>
+                  <div class="article-banner-preview" data-banner-preview hidden><img data-banner-preview-image alt="Preview banner artikel"><button class="admin-button admin-button-light" type="button" data-banner-clear>Hapus pilihan gambar</button></div>
+                  <label>PDF URL<input name="pdfUrl" type="url" autocomplete="off" placeholder="https://... atau documents/file.pdf"></label>
+                  <label>Read Time<input name="readTime" type="text" autocomplete="off" placeholder="6 menit baca"></label>
+                  <label>Tags<input name="tags" type="text" autocomplete="off" placeholder="edukasi, kesehatan, amanah"></label>
                   <p class="article-help">Pisahkan tag dengan koma. Tag akan disimpan sebagai array.</p>
 
-                  <label>
-                    Status
-                    <select name="status" required>
-                      <option value="draft">draft</option>
-                      <option value="published">published</option>
-                      <option value="archived">archived</option>
-                    </select>
-                  </label>
-
-                  <div class="article-form-actions">
-                    <button class="admin-button admin-button-primary" type="submit">Simpan Artikel</button>
-                    <button class="admin-button admin-button-light" type="button" data-article-reset>Bersihkan Form</button>
+                  <div class="article-metadata-block">
+                    <h4>Content Library Metadata V1</h4>
+                    <p class="article-help">Metadata membantu Nusa AI memilih bacaan yang relevan tanpa berubah menjadi dokter, ustadz, mufti, atau sales produk.</p>
+                    <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
+                    <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+                    <div class="article-checkbox-grid" aria-label="Sensitive flags"><label class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive" type="checkbox"><span>Product sensitive</span></label><label class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic sensitive</span></label></div>
+                    <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off" placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
+                    <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Sistem akan membersihkan menjadi array slug.</p>
+                    <label>Content Depth<select name="contentDepth"><option value="basic">basic</option><option value="intermediate">intermediate</option><option value="deep">deep</option></select></label>
+                    <label>Primary Action<select name="primaryAction"><option value="read-article">read-article</option><option value="start-vitacheck">start-vitacheck</option><option value="read-prinsip-amanah">read-prinsip-amanah</option><option value="contact-admin">contact-admin</option><option value="seek-professional-help">seek-professional-help</option><option value="view-products">view-products</option></select></label>
+                    <p class="article-help">Untuk riskLevel high atau medical sensitive, jangan arahkan langsung ke view-products.</p>
+                    <label>Reviewer Note<textarea name="reviewerNote" rows="3" placeholder="Catatan editor/admin"></textarea></label>
                   </div>
+
+                  <label>Status<select name="status" required><option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option></select></label>
+                  <div class="article-form-actions"><button class="admin-button admin-button-primary" type="submit">Simpan Artikel</button><button class="admin-button admin-button-light" type="button" data-article-reset>Bersihkan Form</button></div>
                 </form>
               </section>
             </div>
           </div>
         </section>
 
-        <section class="admin-panel" data-admin-panel="comics" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>Komik</h2>
-            <p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p>
-          </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 6.">Kelola Komik</button>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="media" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>Media / Files</h2>
-            <p>Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p>
-          </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Upload Storage belum menjadi alur utama. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="products" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>Produk</h2>
-            <p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p>
-          </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="faq" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>FAQ</h2>
-            <p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p>
-          </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button>
-        </section>
-
-        <section class="admin-panel" data-admin-panel="settings" hidden>
-          <div class="admin-section-heading">
-            <p class="admin-kicker">Modul</p>
-            <h2>Site Settings</h2>
-            <p>Placeholder untuk pengaturan publik seperti tagline, disclaimer, dan status media sosial.</p>
-          </div>
-          <button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 6.">Simpan Pengaturan</button>
-        </section>
+        <section class="admin-panel" data-admin-panel="comics" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Komik</h2><p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 6.">Kelola Komik</button></section>
+        <section class="admin-panel" data-admin-panel="media" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Media / Files</h2><p>Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Upload Storage belum menjadi alur utama. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button></section>
+        <section class="admin-panel" data-admin-panel="products" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Produk</h2><p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button></section>
+        <section class="admin-panel" data-admin-panel="faq" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>FAQ</h2><p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button></section>
+        <section class="admin-panel" data-admin-panel="settings" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Site Settings</h2><p>Placeholder untuk pengaturan publik seperti tagline, disclaimer, dan status media sosial.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 6.">Simpan Pengaturan</button></section>
       </main>
     </div>
   </div>
 
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
-  <script type="module" src="articles.js?v=20260626-admin-v5"></script>
+  <script type="module" src="articles.js?v=20260626-content-library-metadata-v1"></script>
 </body>
 </html>
