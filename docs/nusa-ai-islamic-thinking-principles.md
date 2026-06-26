@@ -259,15 +259,9 @@ Jika ada docs index atau README yang relevan, boleh tambahkan satu link ke dokum
 
 ## 15. Conflict Marker Check
 
-Pastikan tidak ada marker konflik seperti:
+Pastikan tidak ada marker konflik Git di file apa pun. Jangan menulis marker konflik secara literal di dokumen, kode, README, atau file konfigurasi. Jika ditemukan, bereskan sebelum commit.
 
-```text
-<<<<<<<
-=======
->>>>>>>
-```
-
-Dokumen ini juga tidak memakai marker konflik dekoratif seperti deretan simbol pembuka/penutup yang menyerupai konflik merge.
+Dokumen ini juga tidak memakai marker konflik dekoratif berupa deretan simbol pembuka atau penutup yang menyerupai konflik merge.
 
 ## 16. Catatan Amanah
 
