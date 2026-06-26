@@ -63,7 +63,11 @@ const EDUCATIONAL_CONTEXT_TERMS = [
   'kewaspadaan konsumen',
   'konten disajikan secara kritis',
   'melindungi konsumen',
-  'informasi yang menyesatkan'
+  'informasi yang menyesatkan',
+  'nilai guna objektif',
+  'promosi manipulatif',
+  'penyesatan informasi',
+  'klaim kesehatan palsu'
 ];
 const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
   'edukasi',
@@ -71,7 +75,9 @@ const WEAK_EDUCATIONAL_CONTEXT_TERMS = [
   'peringatan',
   'kritis',
   'risiko',
-  'konsumen'
+  'konsumen',
+  'pemasaran',
+  'testimoni'
 ];
 const GLOBAL_EDUCATIONAL_CONTEXT_TERMS = [
   'laporan penelitian',
@@ -90,12 +96,14 @@ const GLOBAL_EDUCATIONAL_CONTEXT_TERMS = [
   'tanpa didukung oleh bukti ilmiah',
   'uji klinis yang valid',
   'melindungi konsumen',
-  'informasi yang menyesatkan'
+  'informasi yang menyesatkan',
+  'penyesatan informasi',
+  'promosi manipulatif',
+  'klaim kesehatan palsu'
 ];
-const PROMOTIONAL_CONTEXT_TERMS = [
+const DIRECT_PROMOTIONAL_CONTEXT_TERMS = [
   'produk ini',
   'produk kami',
-  'produk tersebut',
   'setelah konsumsi',
   'setelah minum',
   'setelah pakai',
@@ -104,9 +112,13 @@ const PROMOTIONAL_CONTEXT_TERMS = [
   'beli produk',
   'ampuh',
   'garansi',
-  'terbukti menyembuhkan'
+  'dijamin',
+  'terbukti menyembuhkan',
+  'memberi hasil instan',
+  'memberikan hasil instan',
+  'mendapat hasil instan'
 ];
-const RISK_CONTEXT_WINDOW = 220;
+const RISK_CONTEXT_WINDOW = 260;
 
 const state = {
   initialized: false,
@@ -491,15 +503,14 @@ function analyzeRiskContext(text) {
 }
 
 function isEducationalRiskContext(text, riskTerms) {
+  if (hasDirectPromotionalRiskCue(text, riskTerms)) return false;
+
   const everyRiskWindowHasEducationalCue = riskTerms.every((term) => {
     const windows = getRiskTermWindows(text, term);
     return windows.length > 0 && windows.every((windowText) => hasEducationalCue(windowText));
   });
 
-  if (everyRiskWindowHasEducationalCue) return true;
-  if (!hasGlobalEducationalContext(text)) return false;
-
-  return !hasPromotionalRiskCue(text, riskTerms);
+  return everyRiskWindowHasEducationalCue || hasGlobalEducationalContext(text);
 }
 
 function getRiskTermWindows(text, term) {
@@ -525,20 +536,20 @@ function hasEducationalCue(text) {
   if (hasStrongCue) return true;
 
   const hasWeakCue = WEAK_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
-  const hasPromotionalCue = PROMOTIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
-  return hasWeakCue && !hasPromotionalCue;
+  const hasDirectPromotion = DIRECT_PROMOTIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
+  return hasWeakCue && !hasDirectPromotion;
 }
 
 function hasGlobalEducationalContext(text) {
   return GLOBAL_EDUCATIONAL_CONTEXT_TERMS.some((term) => text.includes(term));
 }
 
-function hasPromotionalRiskCue(text, riskTerms) {
+function hasDirectPromotionalRiskCue(text, riskTerms) {
   return riskTerms.some((term) => {
     const windows = getRiskTermWindows(text, term);
     return windows.some((windowText) => {
-      const hasPromotion = PROMOTIONAL_CONTEXT_TERMS.some((cue) => windowText.includes(cue));
-      return hasPromotion && !hasEducationalCue(windowText);
+      const hasDirectPromotion = DIRECT_PROMOTIONAL_CONTEXT_TERMS.some((cue) => windowText.includes(cue));
+      return hasDirectPromotion && !hasEducationalCue(windowText);
     });
   });
 }
