@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260626-firestore-article-router-v1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260626-content-library-metadata-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -80,7 +80,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
         const reply = await getNusaReply(question);
         renderReply(log, reply || SAFE_FALLBACK_REPLY);
       } catch (error) {
-        console.warn('[Nusa AI] Gagal membuat balasan:', error);
+        console.warn('Nusa reply failed:', error);
         renderReply(log, SAFE_FALLBACK_REPLY);
       }
     }, 120);
