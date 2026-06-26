@@ -1,4 +1,4 @@
-import { initNusaChat } from './modules/nusa-chat.js?v=20260626-firestore-article-router-v1';
+import { initNusaChat } from './modules/nusa-chat.js?v=20260626-content-library-metadata-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
 const modules = [
@@ -13,7 +13,7 @@ function bootVitaNusa() {
     try {
       init();
     } catch (error) {
-      console.warn(`[VitaNusa AI] Module ${name} gagal dimuat:`, error);
+      console.warn('VitaNusa module failed:', name, error);
     }
   }
 }
