@@ -22,7 +22,7 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
     title: 'Kebiasaan Sehat 7 Hari',
     href: 'articles/kebiasaan-sehat-7-hari.html',
     category: 'Kebiasaan Sehat',
-    keywords: ['kebiasaan sehat', '7 hari', 'hidup sehat', 'pola hidup', 'rutinitas', 'mulai hidup sehat', 'mau mulai hidup sehat', 'langkah kecil', 'habit sehat', 'kebiasaan sehat 7 hari', 'rutinitas sehat 7 hari', 'mulai kebiasaan sehat', 'mulai dari mana hidup sehat'],
+    keywords: ['kebiasaan sehat', '7 hari', 'hidup sehat', 'pola hidup', 'rutinitas', 'mulai hidup sehat', 'mau mulai hidup sehat', 'langkah kecil', 'habit sehat', 'kebiasaan sehat 7 hari', 'rutinitas sehat 7 hari', 'mulai kebiasaan sehat', 'mulai dari mana hidup sehat', 'menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'tubuh sehat', 'agar tubuh sehat', 'supaya tubuh sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'kesehatan tubuh', 'menjaga badan', 'badan sehat', 'pola sehat', 'kebiasaan sehat sehari hari', 'apa yang harus dilakukan supaya sehat', 'bagaimana agar tetap sehat', 'langkah menjaga kesehatan', 'mulai menjaga kesehatan'],
     summary: 'Rute awal 7 hari untuk merapikan tidur, air, makan, gerak ringan, dan energi tanpa langkah ekstrem.',
   },
   {
@@ -30,7 +30,7 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
     title: 'Tidur dan Energi Harian',
     href: 'articles/tidur-dan-energi-harian.html',
     category: 'Kebiasaan Sehat',
-    keywords: ['tidur', 'energi', 'lelah', 'kurang tidur', 'begadang', 'fokus', 'mood', 'susah tidur', 'capek', 'tidur berantakan', 'sering lelah', 'jam tidur', 'energi harian'],
+    keywords: ['tidur', 'energi', 'lelah', 'kurang tidur', 'begadang', 'fokus', 'mood', 'susah tidur', 'capek', 'tidur berantakan', 'sering lelah', 'jam tidur', 'energi harian', 'tidak mudah lelah', 'mudah lelah'],
     summary: 'Bacaan aman tentang hubungan tidur dengan energi, fokus, mood, dan kebiasaan makan, disertai langkah umum yang realistis.',
   },
   {
@@ -70,7 +70,7 @@ export const NUSA_ARTICLE_MAP = Object.freeze([
     title: 'Sehat Itu Amanah',
     href: 'articles/sehat-itu-amanah.html',
     category: 'Halal-Thayyib & Gaya Hidup',
-    keywords: ['sehat itu amanah', 'pola hidup sehat', 'pola hidup', 'gaya hidup sehat', 'hidup sehat', 'kebiasaan sehat', 'kebiasaan kecil', 'amanah tubuh', 'menjaga tubuh', 'merawat tubuh', 'halal thayyib', 'halal-thayyib', 'ikhtiar sehat', 'tawakal sehat', 'tidur cukup', 'makan seimbang', 'pola makan', 'minum air', 'gerak ringan', 'olahraga ringan'],
+    keywords: ['sehat itu amanah', 'pola hidup sehat', 'pola hidup', 'gaya hidup sehat', 'hidup sehat', 'kebiasaan sehat', 'kebiasaan kecil', 'amanah tubuh', 'menjaga tubuh', 'merawat tubuh', 'menjaga kesehatan', 'menjaga kesehatan tubuh', 'merawat badan', 'merawat kesehatan', 'halal thayyib', 'halal-thayyib', 'ikhtiar sehat', 'tawakal sehat', 'tidur cukup', 'makan seimbang', 'pola makan', 'minum air', 'gerak ringan', 'olahraga ringan'],
     summary: 'Artikel tentang menjaga tubuh sebagai amanah melalui ilmu, kebiasaan baik, pilihan halal-thayyib, dan sikap kritis terhadap klaim kesehatan.',
   },
 ]);
