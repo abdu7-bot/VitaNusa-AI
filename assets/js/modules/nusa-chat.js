@@ -10,6 +10,10 @@ function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
 }
 
+function getContextActions(reply) {
+  return reply.actions || [];
+}
+
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
@@ -43,7 +47,7 @@ function appendMessage(log, role, text, actions = []) {
 }
 
 function renderReply(log, reply) {
-  appendMessage(log, 'assistant', reply.text, reply.actions || []);
+  appendMessage(log, 'assistant', reply.text, getContextActions(reply));
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -74,6 +78,17 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     handleQuestion(input.value);
+  });
+
+  root.addEventListener('click', (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest('[data-nusa-prompt]')
+      : null;
+
+    if (!button || !root.contains(button)) return;
+
+    handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
+    input.focus();
   });
 
   return {
