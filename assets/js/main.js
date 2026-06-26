@@ -1,4 +1,4 @@
-import { initNusaChat } from './modules/nusa-chat.js?v=20260626-nusa-brain-v3-1';
+import { initNusaChat } from './modules/nusa-chat.js?v=20260626-islamic-tone-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
 const modules = [
