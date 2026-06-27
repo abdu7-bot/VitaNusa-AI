@@ -22,7 +22,8 @@
 .article-toolbar,
 .article-form-actions,
 .article-row-actions,
-.article-disclaimer-actions {
+.article-disclaimer-actions,
+.article-import-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -223,6 +224,74 @@
   margin: -4px 0 4px;
 }
 
+.article-import-block {
+  display: grid;
+  gap: 12px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid #b8dcc7;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f7fffa 0%, #eef8f3 100%);
+  padding: 14px;
+}
+
+.article-import-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.article-import-heading h4,
+.article-metadata-block h4 {
+  margin: 0;
+  color: var(--admin-green-900);
+}
+
+.article-import-heading p {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.article-import-label textarea {
+  min-height: 190px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.9rem;
+}
+
+.article-import-status {
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: var(--admin-green-900);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.article-import-status.is-success {
+  border-color: #b8dcc7;
+  background: #eef8f3;
+  color: #14663d;
+}
+
+.article-import-status.is-warning {
+  border-color: #ead59e;
+  background: var(--admin-danger-soft);
+  color: #6a4a10;
+}
+
+.article-import-status.is-error {
+  border-color: #e6b3a8;
+  background: #fff0ec;
+  color: #8d2d25;
+}
+
+.article-import-status[hidden] {
+  display: none;
+}
+
 .article-disclaimer-helper {
   display: grid;
   gap: 10px;
@@ -322,7 +391,8 @@
   .article-toolbar,
   .article-form-actions,
   .article-row-actions,
-  .article-disclaimer-actions {
+  .article-disclaimer-actions,
+  .article-import-actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -330,7 +400,8 @@
   .article-toolbar .admin-button,
   .article-form-actions .admin-button,
   .article-row-actions .admin-button,
-  .article-disclaimer-actions .admin-button {
+  .article-disclaimer-actions .admin-button,
+  .article-import-actions .admin-button {
     width: 100%;
   }
 
@@ -418,8 +489,14 @@
     font-size: 0.9rem;
   }
 
+  .article-import-label textarea {
+    min-height: 240px;
+  }
+
   .article-message,
-  .article-disclaimer-helper {
+  .article-disclaimer-helper,
+  .article-import-block,
+  .article-import-status {
     border-radius: 14px;
     padding: 12px;
   }
