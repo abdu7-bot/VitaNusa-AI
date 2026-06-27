@@ -1,0 +1,1 @@
+katanya pulih pulih total
