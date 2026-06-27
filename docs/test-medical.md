@@ -1,0 +1,1 @@
+isMedicalSensitive medicalDisclaimer safetyDisclaimer
