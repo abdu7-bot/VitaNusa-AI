@@ -1,0 +1,61 @@
+[
+  {
+    "title": "Jangan Salah Memahami Tawakal",
+    "slug": "jangan-salah-memahami-tawakal",
+    "summary": "Refleksi bahwa tawakal bukan meninggalkan ikhtiar, tetapi bersandar kepada Allah setelah menempuh sebab yang benar.",
+    "file": "content/articles/islamic-drafts-batch-01/jangan-salah-memahami-tawakal.html",
+    "status": "draft",
+    "category": "Ikhtiar dan Tawakal",
+    "tags": [
+      "tawakal",
+      "ikhtiar",
+      "refleksi islami",
+      "amanah diri"
+    ],
+    "intentTarget": "islamic-reflection",
+    "riskLevel": "medium",
+    "isMedicalSensitive": false,
+    "isProductSensitive": false,
+    "isIslamicSensitive": true,
+    "relatedArticles": [
+      "memahami-tawakal-dengan-ikhtiar",
+      "sehat-itu-amanah"
+    ],
+    "contentDepth": "deep",
+    "primaryAction": "read-article",
+    "readTime": "6 menit baca",
+    "publishedAt": "",
+    "updatedAt": "2026-06-27",
+    "reviewerNote": "Draft Islami. Perlu review ustadz/ulama sebelum publish."
+  },
+  {
+    "title": "Memahami Tawakal dengan Ikhtiar yang Benar",
+    "slug": "memahami-tawakal-dengan-ikhtiar",
+    "summary": "Tawakal bukan pasrah kosong. Tawakal adalah hati yang bersandar kepada Allah sambil tetap menempuh sebab yang halal, aman, dan bertanggung jawab.",
+    "file": "content/articles/islamic-reflection/memahami-tawakal-dengan-ikhtiar.html",
+    "status": "published",
+    "category": "Ikhtiar dan Tawakal",
+    "tags": [
+      "tawakal",
+      "ikhtiar",
+      "amanah diri",
+      "refleksi islami",
+      "tabayyun"
+    ],
+    "intentTarget": "islamic-reflection",
+    "riskLevel": "medium",
+    "isMedicalSensitive": false,
+    "isProductSensitive": false,
+    "isIslamicSensitive": true,
+    "relatedArticles": [
+      "sehat-itu-amanah",
+      "produk-bukan-jalan-pintas"
+    ],
+    "contentDepth": "deep",
+    "primaryAction": "read-article",
+    "readTime": "6 menit baca",
+    "publishedAt": "2026-06-27",
+    "updatedAt": "2026-06-27",
+    "reviewerNote": "Artikel refleksi Islami umum untuk uji GitHub Article Source. Bukan fatwa dan bukan tafsir final; tetap perlu review berkala oleh ustadz/ulama kompeten sebelum produksi luas."
+  }
+]
