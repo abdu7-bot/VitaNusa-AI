@@ -9,6 +9,7 @@ import {
   limit
 } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
 
+const MAX_PUBLIC_ARTICLES = 80;
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -28,7 +29,12 @@ async function loadPublishedArticles() {
   setStatus('loading', 'Memuat artikel published dari Firestore...');
 
   try {
-    const snapshot = await getDocs(collection(db, 'articles'));
+    const publishedQuery = query(
+      collection(db, 'articles'),
+      where('status', '==', 'published'),
+      limit(MAX_PUBLIC_ARTICLES)
+    );
+    const snapshot = await getDocs(publishedQuery);
     const articles = snapshot.docs
       .map((item) => ({ id: item.id, ...item.data() }))
       .filter(isVisiblePublishedArticle)
@@ -52,7 +58,7 @@ async function loadPublishedArticles() {
 }
 
 async function loadArticleDetail() {
-  const slug = new URLSearchParams(window.location.search).get('slug');
+  const slug = normalizeSlugParam(new URLSearchParams(window.location.search).get('slug'));
 
   if (!slug) {
     renderDetailMessage('Artikel tidak ditemukan atau belum dipublikasikan.');
@@ -65,7 +71,8 @@ async function loadArticleDetail() {
     const detailQuery = query(
       collection(db, 'articles'),
       where('slug', '==', slug),
-      limit(3)
+      where('status', '==', 'published'),
+      limit(1)
     );
     const snapshot = await getDocs(detailQuery);
 
@@ -127,7 +134,7 @@ function createArticleCard(article) {
 
   const link = document.createElement('a');
   link.className = 'read-link';
-  link.href = `detail.html?slug=${encodeURIComponent(article.slug || article.id)}`;
+  link.href = `detail.html?slug=${encodeURIComponent(article.slug)}`;
   link.textContent = 'Baca Artikel';
 
   footer.append(createTagList(article.tags), link);
@@ -136,9 +143,12 @@ function createArticleCard(article) {
 }
 
 function isVisiblePublishedArticle(article) {
-  if (!article || !article.title) return false;
-  if (article.status && article.status !== 'published') return false;
-  return true;
+  return Boolean(
+    article &&
+    article.status === 'published' &&
+    String(article.title || '').trim() &&
+    String(article.slug || '').trim()
+  );
 }
 
 function getArticleSummary(article) {
@@ -257,9 +267,10 @@ function renderDetailMessage(message) {
 function sanitizeArticleHtml(html) {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+  const wrapper = parsed.body.firstElementChild;
   const unsafeUrlPrefix = 'java' + 'script:';
 
-  parsed.querySelectorAll('script, iframe, object, embed, link, meta, style').forEach((element) => element.remove());
+  parsed.querySelectorAll('script, iframe, object, embed, link, meta, style, base, title').forEach((element) => element.remove());
 
   parsed.querySelectorAll('*').forEach((element) => {
     [...element.attributes].forEach((attribute) => {
@@ -276,7 +287,7 @@ function sanitizeArticleHtml(html) {
     });
   });
 
-  return parsed.body.innerHTML;
+  return wrapper ? wrapper.innerHTML : '';
 }
 
 function buildSearchCategory(article) {
@@ -322,6 +333,15 @@ function setStatus(kind, message) {
 
 function dispatchRenderEvent(detail = {}) {
   window.dispatchEvent(new CustomEvent('vitanusa:public-articles-rendered', { detail }));
+}
+
+function normalizeSlugParam(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
 }
 
 function normalizeText(value) {

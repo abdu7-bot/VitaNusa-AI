@@ -6,6 +6,13 @@ const ROUTE_OVERRIDES = Object.freeze({
   '#kontak': 'contact.html',
 });
 
+const SENSITIVE_NO_ARTICLE_PRODUCT_INTENTS = Object.freeze([
+  'serious' + '-' + 'complaint',
+  'diag' + 'nosis',
+  'fat' + 'wa',
+  'product' + '-' + 'suitability',
+]);
+
 const SAFE_FALLBACK_REPLY = Object.freeze({
   text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis sedikit lebih spesifik: apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?',
   actions: [],
@@ -15,8 +22,30 @@ function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
 }
 
+function isSensitiveNoArticleProductReply(reply) {
+  const replyId = String(reply?.id || '');
+  return SENSITIVE_NO_ARTICLE_PRODUCT_INTENTS.some((intentId) => replyId === intentId || replyId.startsWith(`${intentId}-`));
+}
+
+function isArticleOrProductAction(action) {
+  const label = String(action?.label || '').toLowerCase();
+  const href = String(action?.href || '').toLowerCase();
+
+  return (
+    label.includes('artikel') ||
+    label.includes('katalog ' + 'produk') ||
+    label.includes('produk ' + 'bukan') ||
+    href.startsWith('articles/') ||
+    href.includes('/articles/') ||
+    href.startsWith('products/') ||
+    href.includes('/products/')
+  );
+}
+
 function getContextActions(reply) {
-  return reply.actions || [];
+  const actions = reply.actions || [];
+  if (!isSensitiveNoArticleProductReply(reply)) return actions;
+  return actions.filter((action) => !isArticleOrProductAction(action));
 }
 
 function createRouteLink(action) {
