@@ -2,8 +2,10 @@ import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
-const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260626-content-library-metadata-v1';
-const FIRESTORE_ARTICLE_TIMEOUT_MS = 3500;
+const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260627-github-article-source-v1';
+const GITHUB_ARTICLE_MODULE_URL = './nusa-github-articles.js?v=20260627-github-article-source-v1';
+const ARTICLE_SOURCE_TIMEOUT_MS = 3500;
+const MAX_COMBINED_ARTICLE_ACTIONS = 3;
 
 export const NUSA_ROUTES = Object.freeze({
   vitacheck: '#vitacheck',
@@ -57,8 +59,8 @@ export const NUSA_KEYWORDS = Object.freeze({
 });
 
 const GENERAL_HEALTH_SIGNAL_TERMS = Object.freeze(['sehat', 'kesehatan', 'tubuh', 'badan', 'menjaga', 'merawat', 'pola', 'kebiasaan', 'hidup sehat']);
-const FIRESTORE_SAFE_ATTACH_INTENTS = new Set(['product-shortcut', 'testimonial', 'vitacheck-start', 'habit', 'general-health', 'article-specific', 'article']);
-const FIRESTORE_ONLY_BLOCKED_INTENTS = new Set(['serious-complaint', 'diagnosis', 'fatwa', 'tawakal', 'product-suitability', 'product', 'amanah', 'contact', 'start', 'greeting', 'faq']);
+const ARTICLE_SAFE_ATTACH_INTENTS = new Set(['product-shortcut', 'testimonial', 'vitacheck-start', 'habit', 'general-health', 'article-specific', 'article', 'tawakal', 'amanah']);
+const ARTICLE_BLOCKED_INTENTS = new Set(['serious-complaint', 'diagnosis', 'fatwa', 'product-suitability']);
 
 export const NUSA_RESPONSES = Object.freeze({
   greeting: 'Assalamualaikum, saya Nusa AI. Apa yang ingin kamu pahami hari ini?',
@@ -142,7 +144,7 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'diagnosis', keywords: NUSA_KEYWORDS.diagnosis, response: NUSA_RESPONSES.diagnosis, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'fatwa', keywords: NUSA_KEYWORDS.fatwa, response: NUSA_RESPONSES.fatwa, actions: [NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'tawakal', keywords: NUSA_KEYWORDS.tawakal, response: NUSA_RESPONSES.tawakal, actions: [NUSA_ROUTE_BUTTONS.amanah] },
-  { id: 'product-suitability', keywords: NUSA_KEYWORDS.productSuitability, response: NUSA_RESPONSES.productSuitability, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.products], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productSuitability) || (includesAny(text, ['produk','suplemen','langfit','deto pro','propolis','key propolis']) && includesAny(text, ['cocok','sesuai','pas','aman','boleh','konsumsi','minum']) && includesAny(text, ['untuk saya','buat saya','bagi saya','keluhan saya','penyakit saya','riwayat saya','sakit saya'])); } },
+  { id: 'product-suitability', keywords: NUSA_KEYWORDS.productSuitability, response: NUSA_RESPONSES.productSuitability, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productSuitability) || (includesAny(text, ['produk','suplemen','langfit','deto pro','propolis','key propolis']) && includesAny(text, ['cocok','sesuai','pas','aman','boleh','konsumsi','minum']) && includesAny(text, ['untuk saya','buat saya','bagi saya','keluhan saya','penyakit saya','riwayat saya','sakit saya'])); } },
   { id: 'product-shortcut', keywords: NUSA_KEYWORDS.productShortcut, response: NUSA_RESPONSES.productShortcut, actions: [NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.testimonialArticle], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productShortcut) || (includesAny(text, ['produk','suplemen']) && includesAny(text, ['jalan pintas','solusi cepat','pengganti pola hidup','menggantikan pola hidup'])); } },
   { id: 'product', keywords: [], response: NUSA_RESPONSES.product, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.whatsapp], matcher(text) { return includesAny(text, NUSA_KEYWORDS.product) && !includesAny(text, NUSA_KEYWORDS.testimonial) && !includesAny(text, NUSA_KEYWORDS.productShortcut); } },
   { id: 'testimonial', keywords: NUSA_KEYWORDS.testimonial, response: NUSA_RESPONSES.testimonial, actions: [NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.amanah] },
@@ -163,51 +165,122 @@ function includesTerm(normalizedText, term) { const normalizedTerm = normalizeTe
 function includesAny(normalizedText, terms) { return terms.some((term) => includesTerm(normalizedText, term)); }
 function findMatchingIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => { if (typeof intent.matcher === 'function' && intent.matcher(normalizedText)) return true; return includesAny(normalizedText, intent.keywords); }); }
 function buildIntentReply(intent, normalizedText) { if (typeof intent.getReply === 'function') return intent.getReply(normalizedText); return { id: intent.id, text: intent.response, actions: intent.actions || [] }; }
-function isFirestoreBlockedIntent(intent) { return Boolean(intent && FIRESTORE_ONLY_BLOCKED_INTENTS.has(intent.id)); }
-function canAttachFirestoreArticles(intent) { return Boolean(intent && FIRESTORE_SAFE_ATTACH_INTENTS.has(intent.id)); }
-function createFirestoreArticleText(intentId) {
+function isArticleBlockedIntent(intent) { return Boolean(intent && ARTICLE_BLOCKED_INTENTS.has(intent.id)); }
+function canAttachArticleSources(intent) { return Boolean(intent && ARTICLE_SAFE_ATTACH_INTENTS.has(intent.id)); }
+function createArticleSourceText(intentId) {
   if (intentId === 'general-health' || intentId === 'habit' || intentId === 'vitacheck-start') return 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Saya juga menemukan artikel terkait yang bisa kamu baca sebagai panduan awal. Nusa AI tetap bersifat edukatif, bukan diagnosis.';
   if (intentId === 'testimonial' || intentId === 'product-shortcut') return 'Untuk klaim produk, prinsipnya tabayyun dulu. Saya menemukan artikel terkait agar kamu bisa menilai klaim dengan lebih tenang. Jangan menjadikan testimoni sebagai janji hasil atau bukti utama untuk semua orang.';
+  if (intentId === 'tawakal' || intentId === 'amanah') return 'Saya menemukan bacaan refleksi yang relevan. Baca sebagai edukasi umum dan pengingat amanah, bukan fatwa atau tafsir final.';
   return 'Saya menemukan artikel yang relevan. Baca dulu dengan tenang, lalu ambil satu langkah kecil yang aman. Nusa AI tetap bersifat edukatif, bukan diagnosis.';
 }
-async function getFirestoreArticleActions(normalizedText, options = {}) {
+async function getFirestoreArticleEntries(normalizedText, options = {}) {
   try {
     const firestoreArticles = await import(FIRESTORE_ARTICLE_MODULE_URL);
-    const matches = await withTimeout(firestoreArticles.findMatchingFirestoreArticles(normalizedText, options), FIRESTORE_ARTICLE_TIMEOUT_MS, []);
-    return matches.map((article) => firestoreArticles.createFirestoreArticleAction(article)).filter(Boolean);
+    const matches = await withTimeout(firestoreArticles.findScoredMatchingFirestoreArticles(normalizedText, options), ARTICLE_SOURCE_TIMEOUT_MS, []);
+    return matches.map((entry) => ({
+      source: 'firestore',
+      article: entry.article,
+      score: Number(entry.score) || 0,
+      action: firestoreArticles.createFirestoreArticleAction(entry.article),
+    })).filter((entry) => entry.article && entry.action);
   } catch (error) {
     console.warn('Firestore article router fallback:', error);
     return [];
   }
+}
+async function getGitHubArticleEntries(normalizedText, options = {}) {
+  try {
+    const githubArticles = await import(GITHUB_ARTICLE_MODULE_URL);
+    const matches = await withTimeout(githubArticles.findScoredMatchingGitHubArticles(normalizedText, options), ARTICLE_SOURCE_TIMEOUT_MS, []);
+    return matches.map((entry) => ({
+      source: 'github',
+      article: entry.article,
+      score: Number(entry.score) || 0,
+      action: githubArticles.createGitHubArticleAction(entry.article),
+    })).filter((entry) => entry.article && entry.action);
+  } catch (error) {
+    console.warn('GitHub article router fallback:', error);
+    return [];
+  }
+}
+async function getCombinedArticleActions(normalizedText, options = {}) {
+  const [firestoreEntries, githubEntries] = await Promise.all([
+    getFirestoreArticleEntries(normalizedText, options),
+    getGitHubArticleEntries(normalizedText, options),
+  ]);
+
+  return mergeAndSortArticleEntries([...firestoreEntries, ...githubEntries])
+    .slice(0, MAX_COMBINED_ARTICLE_ACTIONS)
+    .map((entry) => entry.action)
+    .filter(Boolean);
+}
+function mergeAndSortArticleEntries(entries) {
+  const bySlug = new Map();
+
+  for (const entry of entries) {
+    const slug = normalizeArticleSlug(entry);
+    if (!slug) continue;
+
+    const existing = bySlug.get(slug);
+    if (!existing || shouldReplaceArticleEntry(entry, existing)) {
+      bySlug.set(slug, entry);
+    }
+  }
+
+  return [...bySlug.values()].sort(sortCombinedArticleEntries);
+}
+function normalizeArticleSlug(entry) {
+  return String(entry?.article?.slug || entry?.article?.id || '').trim().toLowerCase();
+}
+function shouldReplaceArticleEntry(next, current) {
+  if (next.score !== current.score) return next.score > current.score;
+  if (next.source === current.source) return getArticleTimestamp(next) > getArticleTimestamp(current);
+  return next.source === 'firestore';
+}
+function sortCombinedArticleEntries(a, b) {
+  if (b.score !== a.score) return b.score - a.score;
+  if (a.source !== b.source) return a.source === 'firestore' ? -1 : 1;
+  return getArticleTimestamp(b) - getArticleTimestamp(a);
+}
+function getArticleTimestamp(entry) {
+  const value = entry?.article?.publishedAt || entry?.article?.updatedAt;
+  if (!value) return 0;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (value.seconds) return value.seconds * 1000;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
 }
 function withTimeout(promise, timeoutMs, fallbackValue) {
   let timeoutId;
   const timeoutPromise = new Promise((resolve) => { timeoutId = globalThis.setTimeout(() => resolve(fallbackValue), timeoutMs); });
   return Promise.race([Promise.resolve(promise).finally(() => globalThis.clearTimeout(timeoutId)), timeoutPromise]);
 }
-function shouldTryFirestoreOnly(normalizedText) { if (normalizedText.length < 8) return false; const tokens = normalizedText.split(' ').filter((token) => token.length > 2); return tokens.length >= 2; }
-async function buildFirestoreOnlyReply(normalizedText, intentId = 'firestore-article') {
-  if (!shouldTryFirestoreOnly(normalizedText)) return null;
-  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: false, intentId });
+function shouldTryArticleSources(normalizedText) { if (normalizedText.length < 8) return false; const tokens = normalizedText.split(' ').filter((token) => token.length > 2); return tokens.length >= 2; }
+async function buildArticleSourceOnlyReply(normalizedText, intentId = 'article-source') {
+  if (!shouldTryArticleSources(normalizedText)) return null;
+  const actions = await getCombinedArticleActions(normalizedText, { allowShortQuery: false, intentId });
   if (!actions.length) return null;
-  return { id: intentId, text: createFirestoreArticleText(intentId), actions };
+  return { id: intentId, text: createArticleSourceText(intentId), actions };
 }
-async function attachFirestoreArticles(baseReply, normalizedText, intentId) {
-  const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: true, intentId });
+async function attachArticleSources(baseReply, normalizedText, intentId) {
+  const actions = await getCombinedArticleActions(normalizedText, { allowShortQuery: true, intentId });
   if (!actions.length) return baseReply;
-  if (intentId === 'article' || intentId === 'article-specific') return { id: `firestore-${intentId}`, text: createFirestoreArticleText(intentId), actions: mergeActions(actions, baseReply?.actions || []) };
-  return { ...baseReply, id: `${baseReply.id}-firestore`, actions: mergeActions(baseReply.actions || [], actions) };
+  if (intentId === 'article' || intentId === 'article-specific') return { id: `article-source-${intentId}`, text: createArticleSourceText(intentId), actions: mergeActions(actions, baseReply?.actions || []) };
+  return { ...baseReply, id: `${baseReply.id}-article-source`, actions: mergeActions(baseReply.actions || [], actions) };
 }
 
 export async function getNusaReply(input) {
   const normalizedText = normalizeText(input);
   if (!normalizedText) return NUSA_INITIAL_REPLY;
   const intent = findMatchingIntent(normalizedText);
-  if (isFirestoreBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
-  if (intent && canAttachFirestoreArticles(intent)) {
+  if (isArticleBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
+  if (intent && canAttachArticleSources(intent)) {
     const baseReply = buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
-    return attachFirestoreArticles(baseReply, normalizedText, intent.id);
+    return attachArticleSources(baseReply, normalizedText, intent.id);
   }
-  if (!intent) return await buildFirestoreOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
+  if (!intent) return await buildArticleSourceOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
   return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
 }
