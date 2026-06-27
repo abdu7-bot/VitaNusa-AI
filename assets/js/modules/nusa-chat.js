@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260627-github-article-source-v1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260627-github-article-source-v2';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
