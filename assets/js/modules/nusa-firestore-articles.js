@@ -63,16 +63,20 @@ export async function loadPublishedFirestoreArticles() {
 }
 
 export async function findMatchingFirestoreArticles(queryText, options = {}) {
+  const matches = await findScoredMatchingFirestoreArticles(queryText, options);
+  return matches.map((entry) => entry.article);
+}
+
+export async function findScoredMatchingFirestoreArticles(queryText, options = {}) {
   const normalizedQuery = normalizeSearchText(queryText);
   if (!shouldSearchFirestore(normalizedQuery, options)) return [];
   try {
     const articles = await loadPublishedFirestoreArticles();
     return articles
-      .map((article) => ({ article, score: scoreArticle(article, normalizedQuery, options) }))
+      .map((article) => ({ source: 'firestore', article, score: scoreArticle(article, normalizedQuery, options) }))
       .filter((entry) => entry.score >= MIN_MATCH_SCORE)
       .sort(sortScoredArticles)
-      .slice(0, MAX_MATCHED_ARTICLES)
-      .map((entry) => entry.article);
+      .slice(0, MAX_MATCHED_ARTICLES);
   } catch (error) {
     console.warn('Firestore article search failed:', error);
     return [];
