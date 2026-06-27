@@ -53,9 +53,51 @@ const METADATA_FIELD_ALIASES = Object.freeze({
   reviewernote: 'reviewerNote',
   catatanreviewer: 'reviewerNote'
 });
-const ISLAMIC_IMPORT_TERMS = ['ayat al-qur', 'ayat al qur', 'al-qur', 'al qur', 'alquran', 'hadits', 'hadis', 'fatwa', 'hukum islam', 'tawakal', 'ikhtiar'];
-const MEDICAL_IMPORT_TERMS = ['diagnosis', 'gejala berat', 'penyakit', 'obat', 'dosis', 'tenaga kesehatan'];
-const PRODUCT_IMPORT_TERMS = ['klaim produk', 'testimoni', 'hasil instan', 'pasti sembuh', 'produk'];
+const IMPORT_DISCLAIMER_PHRASES = [
+  'bukan diagnosis',
+  'bukan fatwa',
+  'bukan rekomendasi produk',
+  'bukan pengganti tenaga kesehatan',
+  'bukan pengganti ulama',
+  'segera konsultasikan kepada tenaga kesehatan',
+  'segera konsultasikan kepada tenaga kesehatan profesional',
+  'bertanya kepada ulama',
+  'rujuk kepada ulama',
+  'konsultasikan kepada ulama'
+];
+const ISLAMIC_STRONG_PATTERNS = [
+  /ayat\s+al[-\s]?qur/i,
+  /\bq\.?s\.?\b/i,
+  /al[-\s]?qur['’]?an/i,
+  /\bhadits?\b/i,
+  /\bhadis\b/i,
+  /nabi\s*ﷺ/i,
+  /hukum\s+islam/i,
+  /halal\s+haram/i,
+  /\btafsir\b/i
+];
+const ISLAMIC_MAIN_TOPIC_TERMS = ['tawakal', 'ikhtiar'];
+const MEDICAL_STRONG_PATTERNS = [
+  /\bdiagnosis\b/i,
+  /gejala\s+berat/i,
+  /\bobat\b/i,
+  /\bdosis\b/i,
+  /\bterapi\b/i,
+  /pemeriksaan\s+medis/i,
+  /keluhan\s+medis\s+rinci/i,
+  /\b(diabetes|kanker|hipertensi|stroke|asma|jantung|ginjal|autoimun|tuberkulosis|tbc|demam\s+berdarah|gerd|maag\s+kronis)\b/i
+];
+const PRODUCT_STRONG_PATTERNS = [
+  /testimoni\s+produk/i,
+  /klaim\s+produk/i,
+  /hasil\s+instan/i,
+  /pasti\s+sembuh/i,
+  /beli\s+produk/i,
+  /konsumsi\s+produk/i,
+  /\bcheckout\b/i,
+  /\blangfit\b/i,
+  /\bdeto\s+pro\b/i
+];
 const DEFAULT_METADATA = Object.freeze({ intentTarget: 'article-general', riskLevel: 'low', isMedicalSensitive: false, isProductSensitive: false, isIslamicSensitive: false, relatedArticles: [], contentDepth: 'basic', primaryAction: 'read-article', reviewerNote: '' });
 const state = { initialized: false, articles: [], editingId: null, slugTouched: false, selectedBannerFile: null, previewObjectUrl: null };
 
@@ -140,6 +182,8 @@ function normalizePlainText(value) {
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
     .replace(/\s+/g, ' ')
@@ -394,6 +438,11 @@ function parseArticleImportText(rawText) {
   const contentHtml = cleanImportSection(sections.contentHtml);
   const reviewNote = cleanImportSection(sections.reviewNote);
   const metadata = parseImportMetadata(cleanImportSection(sections.metadata));
+  const explicitFlags = {
+    isMedicalSensitive: Object.prototype.hasOwnProperty.call(metadata, 'isMedicalSensitive'),
+    isProductSensitive: Object.prototype.hasOwnProperty.call(metadata, 'isProductSensitive'),
+    isIslamicSensitive: Object.prototype.hasOwnProperty.call(metadata, 'isIslamicSensitive')
+  };
   const warnings = [];
 
   if (!title) throw new Error('Judul tidak ditemukan.');
@@ -417,6 +466,7 @@ function parseArticleImportText(rawText) {
     primaryAction: safeValue(VALID_PRIMARY_ACTIONS, metadata.primaryAction || DEFAULT_METADATA.primaryAction, DEFAULT_METADATA.primaryAction),
     reviewerNote: buildImportedReviewerNote(metadata.reviewerNote, reviewNote),
     slugWasProvided: Boolean(slug),
+    explicitFlags,
     warnings
   };
 
@@ -508,9 +558,10 @@ function parseImportMetadata(metadataText) {
   return metadata;
 }
 function parseFlexibleBool(value, fallback = false) {
+  if (typeof value === 'boolean') return value;
   const normalized = String(value ?? '').trim().toLowerCase();
-  if (['true', 'ya', 'iya', 'yes', '1', 'benar'].includes(normalized)) return true;
-  if (['false', 'tidak', 'no', '0', 'salah'].includes(normalized)) return false;
+  if (['true', 'ya', 'iya', 'yes', 'y', '1', 'benar'].includes(normalized)) return true;
+  if (['false', 'tidak', 'no', 'n', '0', 'salah'].includes(normalized)) return false;
   return fallback;
 }
 function buildImportedReviewerNote(metadataReviewerNote, reviewSection) {
@@ -524,33 +575,41 @@ function buildImportedReviewerNote(metadataReviewerNote, reviewSection) {
   return parts.join('\n\n');
 }
 function normalizeImportSensitivityText(contentHtml) {
-  const normalized = normalizePlainText(contentHtml);
+  let html = String(contentHtml || '');
+  html = html.replace(/<section\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/section>/gi, ' ');
+  html = html.replace(/<div\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, ' ');
+  html = html.replace(/<section\b[^>]*data-review-amanah[^>]*>[\s\S]*?<\/section>/gi, ' ');
+  let normalized = normalizePlainText(html);
   const disclaimer = normalizePlainText(REQUIRED_DISCLAIMER);
-  return normalized.split(disclaimer).join(' ').replace(/\s+/g, ' ').trim();
+  normalized = normalized.split(disclaimer).join(' ');
+  for (const phrase of IMPORT_DISCLAIMER_PHRASES) {
+    normalized = normalized.split(normalizePlainText(phrase)).join(' ');
+  }
+  return normalized.replace(/\s+/g, ' ').trim();
+}
+function hasStrongPattern(normalizedText, patterns) {
+  return patterns.some((pattern) => pattern.test(normalizedText));
+}
+function hasMainTopicCue(term, imported) {
+  const titleAndSummary = normalizePlainText(`${imported.title} ${imported.summary}`);
+  if (titleAndSummary.includes(term)) return true;
+  const headingPattern = new RegExp(`<h[1-3][^>]*>[^<]*${term}[^<]*<\\/h[1-3]>`, 'i');
+  return headingPattern.test(imported.contentHtml || '');
+}
+function setImportedSensitiveFlag(imported, key, warning) {
+  if (imported[key] !== true) imported[key] = true;
+  imported.status = 'draft';
+  if (!imported.warnings.includes(warning)) imported.warnings.push(warning);
 }
 function applyImportSensitivityRules(imported) {
-  const normalizedHtml = normalizeImportSensitivityText(imported.contentHtml);
-  const hasIslamicCue = ISLAMIC_IMPORT_TERMS.some((term) => normalizedHtml.includes(term));
-  const hasMedicalCue = MEDICAL_IMPORT_TERMS.some((term) => normalizedHtml.includes(term));
-  const hasProductCue = PRODUCT_IMPORT_TERMS.some((term) => normalizedHtml.includes(term));
+  const normalizedMainText = normalizeImportSensitivityText(imported.contentHtml);
+  const hasIslamicCue = hasStrongPattern(normalizedMainText, ISLAMIC_STRONG_PATTERNS) || ISLAMIC_MAIN_TOPIC_TERMS.some((term) => hasMainTopicCue(term, imported));
+  const hasMedicalCue = hasStrongPattern(normalizedMainText, MEDICAL_STRONG_PATTERNS);
+  const hasProductCue = hasStrongPattern(normalizedMainText, PRODUCT_STRONG_PATTERNS);
 
-  if (hasIslamicCue) {
-    imported.isIslamicSensitive = true;
-    imported.status = 'draft';
-    imported.warnings.push('Artikel Islami perlu review ustadz/ulama sebelum publish.');
-  }
-
-  if (hasMedicalCue) {
-    imported.isMedicalSensitive = true;
-    imported.status = 'draft';
-    imported.warnings.push('Artikel medical sensitive perlu review.');
-  }
-
-  if (hasProductCue) {
-    imported.isProductSensitive = true;
-    imported.status = 'draft';
-    imported.warnings.push('Artikel product sensitive perlu audit klaim.');
-  }
+  if (hasIslamicCue) setImportedSensitiveFlag(imported, 'isIslamicSensitive', 'Artikel Islami perlu review ustadz/ulama sebelum publish.');
+  if (hasMedicalCue) setImportedSensitiveFlag(imported, 'isMedicalSensitive', 'Artikel medical sensitive perlu review.');
+  if (hasProductCue) setImportedSensitiveFlag(imported, 'isProductSensitive', 'Artikel product sensitive perlu audit klaim.');
 
   if (imported.primaryAction === 'view-products' && (imported.riskLevel === 'high' || imported.isMedicalSensitive || imported.isProductSensitive)) {
     imported.primaryAction = 'read-prinsip-amanah';
