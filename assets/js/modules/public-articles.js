@@ -78,7 +78,7 @@ function createArticleCard(article) {
 }
 
 function isVisiblePublishedArticle(article) {
-  return Boolean(article && article.status === 'published');
+  return article.status === 'published';
 }
 
 function renderArticleDetail(article) {
@@ -173,7 +173,7 @@ function setStatus(kind, message) {
   statusBox.textContent = message;
 }
 function dispatchRenderEvent(detail = {}) { window.dispatchEvent(new CustomEvent('vitanusa:public-articles-rendered', { detail })); }
-function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, 'dan').replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, 'dan').replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function el(tagName, className = '', text = '') {
   const node = document.createElement(tagName);
   if (className) node.className = className;
