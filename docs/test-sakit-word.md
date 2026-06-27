@@ -1,0 +1,1 @@
+saya sakit apa
