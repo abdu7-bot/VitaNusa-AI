@@ -33,7 +33,7 @@
     "slug": "memahami-tawakal-dengan-ikhtiar",
     "summary": "Tawakal bukan pasrah kosong. Tawakal adalah hati yang bersandar kepada Allah sambil tetap menempuh sebab yang halal, aman, dan bertanggung jawab.",
     "file": "content/articles/islamic-reflection/memahami-tawakal-dengan-ikhtiar.html",
-    "status": "published",
+    "status": "draft",
     "category": "Ikhtiar dan Tawakal",
     "tags": [
       "tawakal",
@@ -54,8 +54,38 @@
     "contentDepth": "deep",
     "primaryAction": "read-article",
     "readTime": "6 menit baca",
+    "publishedAt": "",
+    "updatedAt": "2026-06-27",
+    "reviewerNote": "Draft Islami. Perlu review ustadz/ulama sebelum publish. Bukan fatwa dan bukan tafsir final."
+  },
+  {
+    "title": "Cara Aman Membaca Artikel Edukasi VitaNusa AI",
+    "slug": "cara-aman-membaca-artikel-edukasi-vitanusa-ai",
+    "summary": "Panduan ringan agar pembaca memahami artikel VitaNusa AI sebagai edukasi awal, bukan diagnosis, fatwa, atau pengganti tenaga ahli.",
+    "file": "content/articles/general/cara-aman-membaca-artikel-edukasi-vitanusa-ai.html",
+    "status": "published",
+    "category": "AI untuk Edukasi Kesehatan",
+    "tags": [
+      "artikel edukasi",
+      "vitanusa ai",
+      "cara membaca",
+      "edukasi aman",
+      "bukan diagnosis"
+    ],
+    "intentTarget": "article-general",
+    "riskLevel": "low",
+    "isMedicalSensitive": false,
+    "isProductSensitive": false,
+    "isIslamicSensitive": false,
+    "relatedArticles": [
+      "cara-aman-bertanya-kesehatan-kepada-ai",
+      "kebiasaan-sehat-7-hari"
+    ],
+    "contentDepth": "basic",
+    "primaryAction": "read-article",
+    "readTime": "5 menit baca",
     "publishedAt": "2026-06-27",
     "updatedAt": "2026-06-27",
-    "reviewerNote": "Artikel refleksi Islami umum untuk uji GitHub Article Source. Bukan fatwa dan bukan tafsir final; tetap perlu review berkala oleh ustadz/ulama kompeten sebelum produksi luas."
+    "reviewerNote": "Artikel test low-risk untuk menguji GitHub Article Source. Tidak membahas diagnosis, fatwa, atau produk."
   }
 ]
