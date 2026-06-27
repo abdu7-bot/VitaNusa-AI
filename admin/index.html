@@ -6,7 +6,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
   <link rel="stylesheet" href="admin.css?v=20260626-admin-v5">
-  <link rel="stylesheet" href="articles.css?v=20260626-admin-v5">
+  <link rel="stylesheet" href="articles.css?v=20260627-admin-metadata-v2">
+  <link rel="stylesheet" href="articles-metadata.css?v=20260627-admin-metadata-v2">
 </head>
 <body class="admin-page admin-dashboard-page" data-admin-auth-page="dashboard">
   <section class="admin-auth-gate" aria-label="Status autentikasi admin">
@@ -113,8 +114,9 @@
                   <label>Tags<input name="tags" type="text" autocomplete="off" placeholder="edukasi, kesehatan, amanah"></label>
                   <p class="article-help">Pisahkan tag dengan koma. Tag akan disimpan sebagai array.</p>
 
-                  <div class="article-metadata-block">
-                    <h4>Content Library Metadata V1</h4>
+                  <div class="article-metadata-block" data-article-metadata-block role="group" aria-labelledby="articleMetadataTitle">
+                    <p class="article-metadata-status" data-article-metadata-status>Content Library Metadata V1 aktif</p>
+                    <h4 id="articleMetadataTitle">Content Library Metadata V1</h4>
                     <p class="article-help">Metadata membantu Nusa AI memilih bacaan yang relevan tanpa berubah menjadi dokter, ustadz, mufti, atau sales produk.</p>
                     <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
                     <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
@@ -146,6 +148,6 @@
 
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
-  <script type="module" src="articles.js?v=20260626-content-library-metadata-v1"></script>
+  <script type="module" src="articles.js?v=20260627-admin-metadata-v2"></script>
 </body>
 </html>
