@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
   <link rel="stylesheet" href="admin.css?v=20260626-admin-v5">
-  <link rel="stylesheet" href="articles.css?v=20260626-admin-v5">
+  <link rel="stylesheet" href="articles.css?v=20260627-import-prompt-v1">
 </head>
 <body class="admin-page admin-dashboard-page" data-admin-auth-page="dashboard">
   <section class="admin-auth-gate" aria-label="Status autentikasi admin">
@@ -97,6 +97,22 @@
                 <h3 id="articleFormTitle" data-article-form-title>Tambah Artikel</h3>
                 <form class="article-form" data-article-form>
                   <input type="hidden" name="articleId">
+
+                  <div class="article-import-block" aria-labelledby="articleImportTitle">
+                    <div class="article-import-heading">
+                      <h4 id="articleImportTitle">Import Artikel dari Prompt</h4>
+                      <p>Paste artikel lengkap dari ChatGPT, lalu parse untuk mengisi form. Tetap review ulang sebelum simpan.</p>
+                    </div>
+                    <label class="article-import-label">Output Artikel ChatGPT
+                      <textarea name="articleImportText" data-article-import-text rows="10" placeholder="Paste output artikel ChatGPT lengkap di sini..."></textarea>
+                    </label>
+                    <div class="article-import-actions">
+                      <button class="admin-button admin-button-primary" type="button" data-article-import-parse>Parse ke Form</button>
+                      <button class="admin-button admin-button-light" type="button" data-article-import-clear>Bersihkan Import</button>
+                    </div>
+                    <div class="article-import-status" data-article-import-status role="status" aria-live="polite" hidden></div>
+                  </div>
+
                   <label>Title<input name="title" type="text" required autocomplete="off"></label>
                   <label>Slug<input name="slug" type="text" required autocomplete="off" placeholder="contoh-artikel-edukasi"></label>
                   <label>Category<input name="category" type="text" autocomplete="off" placeholder="Edukasi Kesehatan"></label>
@@ -146,6 +162,6 @@
 
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
-  <script type="module" src="articles.js?v=20260626-content-library-metadata-v1"></script>
+  <script type="module" src="articles.js?v=20260627-import-prompt-v1"></script>
 </body>
 </html>
