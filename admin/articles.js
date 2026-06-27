@@ -573,7 +573,8 @@ function buildImportedReviewerNote(metadataReviewerNote, reviewSection) {
   if (reviewNote) parts.push(`Catatan Review Amanah:\n${reviewNote}`);
 
   return parts.join('\n\n');
-}\nfunction normalizeImportSensitivityText(contentHtml) {
+}
+function normalizeImportSensitivityText(contentHtml) {
   let html = String(contentHtml || '');
   html = html.replace(/<section\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/section>/gi, ' ');
   html = html.replace(/<div\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, ' ');
