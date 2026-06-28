@@ -54,17 +54,48 @@ const METADATA_FIELD_ALIASES = Object.freeze({
   catatanreviewer: 'reviewerNote'
 });
 const IMPORT_DISCLAIMER_PHRASES = [
+  'tidak berisi diagnosis',
+  'tidak ada diagnosis',
   'bukan diagnosis',
+  'tidak berisi dosis',
+  'tidak ada dosis',
+  'bukan dosis',
+  'tidak berisi obat',
+  'tidak ada obat',
+  'bukan obat',
+  'tidak berisi terapi',
+  'tidak ada terapi',
+  'bukan terapi',
+  'tidak berisi fatwa',
+  'tidak ada fatwa',
   'bukan fatwa',
+  'tidak berisi klaim produk',
+  'tidak ada klaim produk',
+  'bukan klaim produk',
+  'tidak membahas produk',
+  'tidak memakai ayat',
+  'tidak ada ayat',
+  'tidak memakai hadits',
+  'tidak ada hadits',
+  'tidak memakai hadis',
+  'tidak ada hadis',
+  'tidak berisi janji hasil instan',
+  'tidak ada janji hasil instan',
   'bukan rekomendasi produk',
   'bukan pengganti tenaga kesehatan',
   'bukan pengganti ulama',
+  'tidak memberi diagnosis',
+  'tidak memberi fatwa',
+  'tidak memberi klaim produk',
+  'tidak memberi dosis',
+  'tidak menjanjikan hasil instan',
   'segera konsultasikan kepada tenaga kesehatan',
   'segera konsultasikan kepada tenaga kesehatan profesional',
   'bertanya kepada ulama',
   'rujuk kepada ulama',
   'konsultasikan kepada ulama'
 ];
+const IMPORT_NEGATION_SENTENCE_PATTERN = /\b(?:tidak\s+(?:berisi|ada|memakai|membahas|memberi|menjanjikan)|bukan)[^.!?]{0,220}\b(?:diagnosis|fatwa|klaim\s+produk|dosis|obat|terapi|ayat|hadits|hadis|janji\s+hasil\s+instan|rekomendasi\s+produk|pengganti\s+tenaga\s+kesehatan|pengganti\s+ulama|hasil\s+instan)\b[^.!?]{0,220}(?:[.!?]|$)/gi;
 const ISLAMIC_STRONG_PATTERNS = [
   /ayat\s+al[-\s]?qur/i,
   /\bq\.?s\.?\b/i,
@@ -74,9 +105,9 @@ const ISLAMIC_STRONG_PATTERNS = [
   /nabi\s*ﷺ/i,
   /hukum\s+islam/i,
   /halal\s+haram/i,
-  /\btafsir\b/i
+  /\btafsir\b/i,
+  /fatwa\s+final/i
 ];
-const ISLAMIC_MAIN_TOPIC_TERMS = ['tawakal', 'ikhtiar'];
 const MEDICAL_STRONG_PATTERNS = [
   /\bdiagnosis\b/i,
   /gejala\s+berat/i,
@@ -574,27 +605,55 @@ function buildImportedReviewerNote(metadataReviewerNote, reviewSection) {
 
   return parts.join('\n\n');
 }
-function normalizeImportSensitivityText(contentHtml) {
+function stripImportNonMainHtml(contentHtml) {
   let html = String(contentHtml || '');
-  html = html.replace(/<section\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/section>/gi, ' ');
-  html = html.replace(/<div\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, ' ');
-  html = html.replace(/<section\b[^>]*data-review-amanah[^>]*>[\s\S]*?<\/section>/gi, ' ');
-  let normalized = normalizePlainText(html);
+
+  if (typeof DOMParser === 'function') {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<article>${html}</article>`, 'text/html');
+
+    doc.querySelectorAll([
+      'section.article-note',
+      'div.article-note',
+      'section.article-references',
+      'div.article-references',
+      'section[data-review-amanah]',
+      'div[data-review-amanah]'
+    ].join(',')).forEach((node) => node.remove());
+
+    doc.querySelectorAll('section, div').forEach((node) => {
+      const normalizedText = normalizePlainText(node.textContent || '');
+      if (normalizedText.startsWith('catatan review amanah')) node.remove();
+    });
+
+    return doc.body?.innerHTML || html;
+  }
+
+  html = html.replace(/<(section|div)\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, ' ');
+  html = html.replace(/<(section|div)\b[^>]*class=["'][^"']*\barticle-references\b[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, ' ');
+  html = html.replace(/<(section|div)\b[^>]*data-review-amanah[^>]*>[\s\S]*?<\/\1>/gi, ' ');
+  html = html.replace(/<(section|div)\b[^>]*>[\s\S]{0,500}?catatan\s+review\s+amanah[\s\S]*?<\/\1>/gi, ' ');
+
+  return html;
+}
+function removeImportNegationText(normalizedText) {
+  let text = String(normalizedText || '');
+  text = text.replace(IMPORT_NEGATION_SENTENCE_PATTERN, ' ');
+
+  for (const phrase of IMPORT_DISCLAIMER_PHRASES) {
+    text = text.split(normalizePlainText(phrase)).join(' ');
+  }
+
+  return text.replace(/\s+/g, ' ').trim();
+}
+function normalizeImportSensitivityText(contentHtml) {
+  let normalized = normalizePlainText(stripImportNonMainHtml(contentHtml));
   const disclaimer = normalizePlainText(REQUIRED_DISCLAIMER);
   normalized = normalized.split(disclaimer).join(' ');
-  for (const phrase of IMPORT_DISCLAIMER_PHRASES) {
-    normalized = normalized.split(normalizePlainText(phrase)).join(' ');
-  }
-  return normalized.replace(/\s+/g, ' ').trim();
+  return removeImportNegationText(normalized);
 }
 function hasStrongPattern(normalizedText, patterns) {
   return patterns.some((pattern) => pattern.test(normalizedText));
-}
-function hasMainTopicCue(term, imported) {
-  const titleAndSummary = normalizePlainText(`${imported.title} ${imported.summary}`);
-  if (titleAndSummary.includes(term)) return true;
-  const headingPattern = new RegExp(`<h[1-3][^>]*>[^<]*${term}[^<]*<\\/h[1-3]>`, 'i');
-  return headingPattern.test(imported.contentHtml || '');
 }
 function setImportedSensitiveFlag(imported, key, warning) {
   if (imported[key] !== true) imported[key] = true;
@@ -603,13 +662,13 @@ function setImportedSensitiveFlag(imported, key, warning) {
 }
 function applyImportSensitivityRules(imported) {
   const normalizedMainText = normalizeImportSensitivityText(imported.contentHtml);
-  const hasIslamicCue = hasStrongPattern(normalizedMainText, ISLAMIC_STRONG_PATTERNS) || ISLAMIC_MAIN_TOPIC_TERMS.some((term) => hasMainTopicCue(term, imported));
   const hasMedicalCue = hasStrongPattern(normalizedMainText, MEDICAL_STRONG_PATTERNS);
   const hasProductCue = hasStrongPattern(normalizedMainText, PRODUCT_STRONG_PATTERNS);
+  const hasIslamicCue = hasStrongPattern(normalizedMainText, ISLAMIC_STRONG_PATTERNS);
 
-  if (hasIslamicCue) setImportedSensitiveFlag(imported, 'isIslamicSensitive', 'Artikel Islami perlu review ustadz/ulama sebelum publish.');
-  if (hasMedicalCue) setImportedSensitiveFlag(imported, 'isMedicalSensitive', 'Artikel medical sensitive perlu review.');
-  if (hasProductCue) setImportedSensitiveFlag(imported, 'isProductSensitive', 'Artikel product sensitive perlu audit klaim.');
+  if (hasMedicalCue) setImportedSensitiveFlag(imported, 'isMedicalSensitive', 'Medical sensitive diaktifkan karena ditemukan pembahasan dosis/obat di isi utama artikel.');
+  if (hasProductCue) setImportedSensitiveFlag(imported, 'isProductSensitive', 'Product sensitive diaktifkan karena ditemukan klaim produk/hasil instan di isi utama artikel.');
+  if (hasIslamicCue) setImportedSensitiveFlag(imported, 'isIslamicSensitive', 'Islamic sensitive diaktifkan karena ditemukan ayat/hadits/tafsir di isi utama artikel. Review ustadz/ulama diperlukan sebelum publish.');
 
   if (imported.primaryAction === 'view-products' && (imported.riskLevel === 'high' || imported.isMedicalSensitive || imported.isProductSensitive)) {
     imported.primaryAction = 'read-prinsip-amanah';
