@@ -24,7 +24,8 @@ export const NUSA_ROUTE_BUTTONS = Object.freeze({
 });
 
 export const NUSA_KEYWORDS = Object.freeze({
-  greeting: ['assalamualaikum', 'assalamu alaikum', 'salam', 'halo', 'hai', 'hello'],
+  greeting: ['assalamualaikum', 'assalamu alaikum', 'salam', 'halo', 'hai', 'hello', 'pagi', 'siang', 'sore', 'malam'],
+  gratitude: ['terima kasih', 'makasih', 'thanks', 'thank you', 'syukron', 'jazakallah'],
   start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'arahkan saya', 'harus mulai dari mana', 'langkah awal'],
   vitacheckStart: ['mulai vitacheck', 'cara memakai vitacheck', 'cara pakai vitacheck', 'pakai vitacheck', 'hasil vitacheck', 'vita check', 'vitacheck', 'skor kebiasaan'],
   habit: ['kebiasaan', 'kebiasaan sehat', 'pola hidup', 'hidup sehat', 'rutinitas sehat', 'tidur', 'begadang', 'makan', 'pola makan', 'air putih', 'minum air', 'lelah', 'capek', 'energi', 'gerak', 'olahraga', 'pencernaan', 'perut tidak nyaman', 'mual ringan', 'kembung ringan', 'stres ringan', 'stress ringan'],
@@ -52,30 +53,41 @@ const BASIC_EDUCATION_SIGNALS = Object.freeze(['sudah baca', 'sudah membaca', 's
 const PRODUCT_EDUCATION_ACTIONS = Object.freeze([NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.educationArticles]);
 
 export const NUSA_RESPONSES = Object.freeze({
-  greeting: 'Assalamualaikum, saya Nusa AI. Apa yang ingin kamu pahami hari ini?',
-  start: 'Kita mulai pelan-pelan. Kamu bisa bertanya tentang menjaga kesehatan, memakai VitaCheck, membaca artikel edukasi, memahami klaim produk dengan tabayyun, atau melihat Prinsip Amanah.',
-  vitacheckStart: 'Baik. VitaCheck membantu melihat kebiasaan seperti tidur, minum, makan, gerak, energi, pencernaan, stres ringan, dan literasi produk. Hasilnya bukan penentuan kondisi tubuh; ambil satu fokus kecil selama 7 hari.',
-  habit: 'Kebiasaan sehat adalah ikhtiar kecil untuk menjaga amanah tubuh. Mulai dari tidur lebih teratur, cukup minum, makan lebih rapi, dan gerak ringan. Gunakan VitaCheck sebagai refleksi edukatif, bukan penentuan kondisi tubuh.',
-  generalHealth: 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Mulailah dari ikhtiar kecil: tidur lebih teratur, cukup minum, makan lebih sadar, dan bergerak ringan tanpa ekstrem. Jika ada keluhan berat atau memburuk, jangan menunda bertanya kepada ahli medis. Ini edukasi umum, bukan penentuan kondisi tubuh.',
-  article: 'Kamu bisa mulai dari ruang artikel VitaNusa AI. Pilih bacaan yang paling sesuai, lalu ambil satu langkah kecil yang realistis.',
-  testimonial: 'Testimoni perlu disikapi dengan tabayyun. Itu bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan percaya janji hasil mutlak.',
-  amanah: 'Prinsip Amanah menjelaskan batas VitaNusa AI: edukasi dulu, tidak menentukan kondisi tubuh, tidak membuat klaim berlebihan, dan produk bukan janji hasil.',
-  product: 'Produk di VitaNusa AI ditampilkan sebagai katalog informasi reseller. Sebelum melihat katalog, baca Prinsip Amanah agar kamu paham batas klaim, label resmi, dan posisi produk sebagai opsi pendukung. Produk bukan pengganti pola hidup sehat atau konsultasi ahli medis.',
-  productEducationGate: 'Sebelum masuk ke katalog produk, Nusa AI perlu memastikan edukasi dasarnya jelas dulu: produk bukan obat, bukan janji hasil, bukan pengganti pola hidup sehat, dan bukan pengganti ahli medis. Mulai dari artikel amanah dan batas klaim terlebih dahulu.',
-  productAfterEducation: 'Baik. Karena kamu sudah masuk dari jalur edukasi dasar, kamu boleh melihat katalog sebagai informasi reseller. Tetap baca label resmi, jangan mengejar klaim mutlak, dan konsultasikan dulu bila punya keluhan, riwayat kondisi tubuh, sedang minum obat, hamil, atau menyusui.',
-  productSuitability: 'Saya tidak bisa menentukan produk yang cocok untuk kondisi pribadi. Dalam prinsip amanah, produk hanya boleh dilihat sebagai informasi, bukan janji hasil atau pengganti ahli medis. Jika ada keluhan, riwayat kondisi tubuh, sedang memakai obat, hamil, atau menyusui, lebih aman berkonsultasi kepada ahli medis.',
-  productShortcut: 'Produk bukan jalan pintas, bukan pengganti pola hidup sehat, dan bukan janji hasil. Waspadai klaim berlebihan, baca label resmi, dan gunakan Prinsip Amanah agar keputusan lebih tenang.',
-  [DX]: 'Saya tidak bisa menentukan kondisi tubuh secara personal. Itu perlu pemeriksaan ahli medis yang berwenang. Saya bisa bantu memberi edukasi umum dan mengajak melihat kebiasaan lewat VitaCheck, tetapi hasilnya tetap bukan penentuan kondisi tubuh.',
-  seriousComplaint: 'Keluhan seperti ini perlu diprioritaskan. Jangan menunda pertolongan; segera hubungi ahli medis, fasilitas layanan setempat, atau layanan darurat. Saya tidak menentukan kondisi tubuh dan tidak mengarahkan ke produk untuk kondisi berat.',
-  tawakal: 'Tawakal bukan alasan berhenti berikhtiar. Berikhtiar dengan ilmu dan menjaga keselamatan adalah bagian dari amanah; setelah itu hasilnya kita kembalikan kepada Allah. Jika ada keluhan berat, jangan menunda pertolongan.',
-  fatwa: 'Nusa AI tidak memberi fatwa dan tidak menentukan hukum agama secara final. Untuk hukum agama yang rinci, lebih aman bertanya kepada ustadz atau ulama yang kompeten. Nusa AI hanya membantu edukasi umum dengan batas amanah.',
+  greeting: 'Waalaikumussalam. Senang kamu datang. Silakan tulis hal yang ingin kamu pahami hari ini. Kalau bingung mulai dari mana, kamu bisa mulai dari VitaCheck, artikel edukasi, atau Prinsip Amanah.',
+  greetingGeneral: 'Halo. Senang kamu datang. Silakan tulis hal yang ingin kamu pahami hari ini. Kalau bingung, kamu bisa mulai dari kebiasaan sehat, VitaCheck, artikel edukasi, atau Prinsip Amanah.',
+  gratitude: 'Sama-sama. Senang bisa membantu. Kalau masih ada yang ingin kamu pahami, tulis saja dengan bahasa sederhana.',
+  start: 'Kita mulai pelan-pelan. Pilih satu dulu: mau cek kebiasaan lewat VitaCheck, membaca artikel edukasi, memahami klaim produk dengan lebih aman, atau bertanya tentang langkah kecil menjaga kesehatan?',
+  vitacheckStart: 'Baik. VitaCheck bisa dipakai sebagai cermin kebiasaan: tidur, minum, makan, gerak, energi, pencernaan, stres ringan, dan literasi produk. Hasilnya bukan diagnosis. Ambil satu fokus kecil saja untuk 7 hari ke depan.',
+  habit: 'Bisa. Untuk mulai hidup lebih sehat, jangan ubah semuanya sekaligus. Pilih satu langkah kecil dulu: tidur sedikit lebih teratur, minum air lebih sadar, makan lebih rapi, atau gerak ringan. VitaCheck bisa membantu melihat bagian mana yang paling perlu diperbaiki.',
+  generalHealth: 'Menjaga kesehatan tidak harus ekstrem. Mulai dari dasar: tidur lebih teratur, cukup minum, makan lebih sadar, dan bergerak ringan. Kalau ada keluhan berat, menetap, atau memburuk, lebih aman bertanya kepada tenaga kesehatan. Nusa AI hanya membantu edukasi umum.',
+  article: 'Kamu bisa mulai dari artikel edukasi VitaNusa AI. Pilih bacaan yang paling dekat dengan kebutuhanmu, lalu ambil satu langkah kecil yang realistis.',
+  testimonial: 'Testimoni perlu disikapi dengan tenang. Itu bisa menjadi pengalaman pribadi seseorang, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan mudah percaya janji hasil mutlak.',
+  amanah: 'Prinsip Amanah adalah pagar VitaNusa AI: edukasi dulu, tidak menentukan kondisi tubuh, tidak membuat klaim berlebihan, dan tidak menjadikan produk sebagai janji hasil.',
+  product: 'Produk di VitaNusa AI ditampilkan sebagai informasi reseller. Sebelum melihat katalog, pahami dulu Prinsip Amanah: produk bukan obat, bukan janji hasil, dan bukan pengganti pola hidup sehat atau tenaga kesehatan.',
+  productEducationGate: 'Sebelum masuk ke katalog produk, kita luruskan dulu batasnya: produk bukan obat, bukan janji hasil, bukan pengganti pola hidup sehat, dan bukan pengganti tenaga kesehatan. Mulai dari artikel amanah dan batas klaim terlebih dahulu.',
+  productAfterEducation: 'Baik. Karena kamu sudah masuk dari jalur edukasi dasar, katalog boleh dilihat sebagai informasi reseller. Tetap baca label resmi, jangan mengejar klaim mutlak, dan konsultasikan dulu bila punya keluhan, riwayat kondisi tubuh, sedang minum obat, hamil, atau menyusui.',
+  productSuitability: 'Saya tidak bisa menentukan produk yang cocok untuk kondisi pribadi. Produk hanya boleh dilihat sebagai informasi, bukan janji hasil atau pengganti tenaga kesehatan. Jika kamu punya keluhan, riwayat penyakit, sedang minum obat, hamil, atau menyusui, lebih aman konsultasi kepada tenaga kesehatan.',
+  productShortcut: 'Produk bukan jalan pintas. Ia tidak boleh dijadikan pengganti pola hidup sehat, bukan obat, dan bukan janji hasil. Lebih aman baca label resmi, cek klaim dengan tenang, dan gunakan Prinsip Amanah sebelum mengambil keputusan.',
+  [DX]: 'Saya tidak bisa menentukan kondisi tubuh secara personal. Itu perlu pemeriksaan tenaga kesehatan yang berwenang. Saya bisa membantu memberi edukasi umum dan mengajak melihat kebiasaan lewat VitaCheck, tetapi hasilnya tetap bukan diagnosis.',
+  seriousComplaint: 'Keluhan seperti ini perlu diprioritaskan. Jangan menunda pertolongan. Segera hubungi tenaga kesehatan, fasilitas layanan terdekat, atau layanan darurat jika keluhan berat, tiba-tiba, atau memburuk. Saya tidak mendiagnosis dan tidak mengarahkan ke produk untuk kondisi berat.',
+  tawakal: 'Tawakal bukan berarti berhenti berikhtiar. Berusaha dengan ilmu, menjaga keselamatan, dan mengambil sebab yang benar adalah bagian dari amanah. Setelah itu, hasilnya kita kembalikan kepada Allah. Jika ada keluhan berat, jangan menunda pertolongan.',
+  fatwa: 'Nusa AI tidak memberi fatwa dan tidak menentukan hukum agama secara final. Untuk hukum agama yang rinci, lebih aman bertanya kepada ustadz atau ulama yang kompeten. Saya hanya membantu refleksi dan edukasi umum dengan batas amanah.',
   faq: 'Kamu bisa membuka FAQ untuk jawaban singkat tentang VitaNusa AI, VitaCheck, artikel, produk, dan batas edukasi.',
-  contact: 'Kamu bisa menghubungi admin VitaNusa AI melalui WhatsApp atau email. Untuk keluhan berat atau pertanyaan kondisi tubuh pribadi, admin bukan pengganti ahli medis.',
-  outOfCapacity: 'Saya belum bisa menjawab itu dengan aman. Silakan konsultasi langsung dengan ahli medis atau ahlinya.',
+  contact: 'Kamu bisa menghubungi admin VitaNusa AI melalui WhatsApp atau email. Untuk keluhan berat atau pertanyaan kondisi tubuh pribadi, admin bukan pengganti tenaga kesehatan.',
+  outOfCapacity: 'Saya belum bisa menjawab itu dengan aman. Coba tulis lebih jelas, atau konsultasikan langsung kepada tenaga kesehatan, ustadz/ulama, atau pihak yang memang berwenang sesuai masalahnya.',
 });
 
-export const NUSA_INITIAL_REPLY = Object.freeze({ id: 'initial-greeting', text: NUSA_RESPONSES.greeting, actions: [] });
-export const NUSA_FALLBACK_RESPONSE = Object.freeze({ id: 'fallback', text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis sedikit lebih spesifik: apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?', actions: [] });
+export const NUSA_INITIAL_REPLY = Object.freeze({
+  id: 'initial-greeting',
+  text: 'Saya siap membantu. Tulis saja dengan bahasa sederhana: mau membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?',
+  actions: []
+});
+
+export const NUSA_FALLBACK_RESPONSE = Object.freeze({
+  id: 'fallback',
+  text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis lebih sederhana. Misalnya: “aku mau hidup sehat”, “mau mulai VitaCheck”, “testimoni itu bukti gak?”, atau “mau hubungi admin”.',
+  actions: []
+});
 export const NUSA_OUT_OF_CAPACITY_REPLY = Object.freeze({ id: 'out-of-capacity', text: NUSA_RESPONSES.outOfCapacity, actions: [NUSA_ROUTE_BUTTONS.faq, NUSA_ROUTE_BUTTONS.contact] });
 
 function createArticleButton(article) { return { label: `Baca Artikel ${article.title}`, href: article.href }; }
@@ -87,7 +99,22 @@ function createArticleSpecificReply(normalizedText) { const article = findMatchi
 function createVitaCheckReply(normalizedText) { const article = findMatchingNusaArticle(normalizedText); if (article && article.id === 'cara-memakai-vitacheck') return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]); return { id: 'vitacheck-start', text: NUSA_RESPONSES.vitacheckStart, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles] }; }
 function createHabitReply(normalizedText) { const article = findMatchingNusaArticle(normalizedText); const ids = ['kebiasaan-sehat-7-hari', 'tidur-dan-energi-harian', 'pencernaan-dan-pola-makan', 'sehat-itu-amanah']; if (article && ids.includes(article.id)) return createArticleReply(article, [NUSA_ROUTE_BUTTONS.vitacheck]); return { id: 'habit', text: NUSA_RESPONSES.habit, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles] }; }
 function createGeneralHealthReply() { return { id: 'general-health', text: NUSA_RESPONSES.generalHealth, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.healthyHabitsArticle, NUSA_ROUTE_BUTTONS.healthyAmanahArticle] }; }
+function createGreetingReply(normalizedText) {
+  const isIslamicGreeting = includesAny(normalizedText, ['assalamualaikum', 'assalamu alaikum', 'salam']);
+  return {
+    id: 'greeting',
+    text: isIslamicGreeting ? NUSA_RESPONSES.greeting : NUSA_RESPONSES.greetingGeneral,
+    actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.educationArticles, NUSA_ROUTE_BUTTONS.amanah]
+  };
+}
 
+function createGratitudeReply() {
+  return {
+    id: 'gratitude',
+    text: NUSA_RESPONSES.gratitude,
+    actions: []
+  };
+}
 export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'serious-complaint', keywords: NUSA_KEYWORDS.seriousComplaint, response: NUSA_RESPONSES.seriousComplaint, actions: [] },
   { id: DX, keywords: NUSA_KEYWORDS[DX], response: NUSA_RESPONSES[DX], actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
@@ -104,10 +131,10 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'article', keywords: NUSA_KEYWORDS.article, response: NUSA_RESPONSES.article, actions: [NUSA_ROUTE_BUTTONS.articles] },
   { id: 'amanah', keywords: NUSA_KEYWORDS.amanah, response: NUSA_RESPONSES.amanah, actions: [NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'contact', keywords: NUSA_KEYWORDS.contact, response: NUSA_RESPONSES.contact, actions: [NUSA_ROUTE_BUTTONS.whatsapp, NUSA_ROUTE_BUTTONS.email] },
-  { id: 'start', keywords: NUSA_KEYWORDS.start, response: NUSA_RESPONSES.start, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
-  { id: 'greeting', keywords: NUSA_KEYWORDS.greeting, response: NUSA_RESPONSES.greeting, actions: [] },
+ { id: 'start', keywords: NUSA_KEYWORDS.start, response: NUSA_RESPONSES.start, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
+  { id: 'greeting', keywords: NUSA_KEYWORDS.greeting, getReply: createGreetingReply },
+  { id: 'gratitude', keywords: NUSA_KEYWORDS.gratitude, getReply: createGratitudeReply },
   { id: 'faq', keywords: NUSA_KEYWORDS.faq, response: NUSA_RESPONSES.faq, actions: [NUSA_ROUTE_BUTTONS.faq] },
-]);
 
 function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
