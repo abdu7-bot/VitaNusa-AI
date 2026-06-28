@@ -38,7 +38,7 @@ async function loadArticleDetail() {
   if (!slug) return renderDetailMessage('Artikel tidak ditemukan atau belum dipublikasikan.');
   renderDetailMessage('Memuat artikel...');
   try {
-    const detailQuery = query(collection(db, 'articles'), where('slug', '==', slug), limit(3));
+    const detailQuery = query(collection(db, 'articles'), where('slug', '==', slug), where('status', '==', 'published'), limit(1));
     const snapshot = await getDocs(detailQuery);
     if (snapshot.empty) return renderDetailMessage('Artikel tidak ditemukan atau belum dipublikasikan.');
     const article = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).find(isVisiblePublishedArticle);
