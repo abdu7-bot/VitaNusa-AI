@@ -134,7 +134,8 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
  { id: 'start', keywords: NUSA_KEYWORDS.start, response: NUSA_RESPONSES.start, actions: [NUSA_ROUTE_BUTTONS.vitacheck, NUSA_ROUTE_BUTTONS.articles, NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'greeting', keywords: NUSA_KEYWORDS.greeting, getReply: createGreetingReply },
   { id: 'gratitude', keywords: NUSA_KEYWORDS.gratitude, getReply: createGratitudeReply },
-  { id: 'faq', keywords: NUSA_KEYWORDS.faq, response: NUSA_RESPONSES.faq, actions: [NUSA_ROUTE_BUTTONS.faq] },
+    { id: 'faq', keywords: NUSA_KEYWORDS.faq, response: NUSA_RESPONSES.faq, actions: [NUSA_ROUTE_BUTTONS.faq] },
+]);
 
 function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
