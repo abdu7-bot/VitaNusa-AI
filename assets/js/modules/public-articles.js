@@ -14,7 +14,8 @@ if (detailRoot) loadArticleDetail();
 async function loadPublishedArticles() {
   setStatus('loading', 'Memuat artikel published dari Firestore...');
   try {
-    const snapshot = await where('status', '==', 'published')
+    const publishedQuery = query(collection(db, 'articles'), where('status', '==', 'published'));
+const snapshot = await getDocs(publishedQuery);
     const articles = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).filter(isVisiblePublishedArticle).sort(sortNewestFirst);
     if (!articles.length) {
       setStatus('warning', 'Belum ada artikel published dari Firestore. Artikel statis dan fallback tetap tersedia.');
