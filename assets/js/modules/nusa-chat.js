@@ -106,3 +106,30 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     ask: handleQuestion,
   };
 }
+function updateNusaSession(session, question, reply) {
+  session.turnCount += 1;
+  session.lastUserMessage = question;
+  session.lastAssistantReply = reply;
+  session.lastIntent = reply?.id || '';
+  session.lastActions = reply?.actions || [];
+
+  if (reply?.id?.includes('product') || question.toLowerCase().includes('produk')) {
+    session.lastTopic = 'product';
+  }
+
+  if (question.toLowerCase().includes('vitacheck')) {
+    session.lastTopic = 'vitacheck';
+  }
+
+  if (question.toLowerCase().includes('artikel')) {
+    session.lastTopic = 'article';
+  }
+
+  if (
+    question.toLowerCase().includes('prinsip amanah') ||
+    question.toLowerCase().includes('produk bukan obat') ||
+    question.toLowerCase().includes('testimoni bukan bukti')
+  ) {
+    session.productEducationSeen = true;
+  }
+}
