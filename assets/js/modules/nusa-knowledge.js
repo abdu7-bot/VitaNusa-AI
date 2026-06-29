@@ -2,7 +2,7 @@
  * CONSTITUTION ENFORCEMENT
  * Nusa AI follows docs/nusa-ai-constitution.md as its safety baseline.
  * Safety-first order: urgent complaints / personal condition calls / fatwa boundaries first,
- * product routing after basic education, Firestore only from safe published articles,
+ * product routing after basic education, article sources only from safe published entries,
  * and honest fallback when no reliable article is relevant.
  */
 import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-brain-v3-1';
@@ -10,7 +10,9 @@ import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
 const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260627-constitution-v1';
+const GITHUB_ARTICLE_MODULE_URL = './github-article-source.js?v=20260630-github-source-v1';
 const FIRESTORE_ARTICLE_TIMEOUT_MS = 3500;
+const GITHUB_ARTICLE_TIMEOUT_MS = 2500;
 const DX = 'diag' + 'nosis';
 const DX_ALT = 'diagno' + 'sa';
 const CURE = 'sem' + 'buh';
@@ -45,8 +47,8 @@ export const NUSA_KEYWORDS = Object.freeze({
 });
 
 const GENERAL_HEALTH_SIGNAL_TERMS = Object.freeze(['sehat', 'kesehatan', 'tubuh', 'badan', 'menjaga', 'merawat', 'pola', 'kebiasaan', 'hidup sehat']);
-const FIRESTORE_SAFE_ATTACH_INTENTS = new Set(['product-shortcut', 'testimonial', 'vitacheck-start', 'habit', 'general-health', 'article-specific', 'article']);
-const FIRESTORE_ONLY_BLOCKED_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal', 'product-suitability', 'product', 'amanah', 'contact', 'start', 'greeting', 'faq']);
+const ARTICLE_SOURCE_SAFE_ATTACH_INTENTS = new Set(['product-shortcut', 'testimonial', 'vitacheck-start', 'habit', 'general-health', 'article-specific', 'article']);
+const ARTICLE_SOURCE_BLOCKED_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal', 'product-suitability', 'product', 'amanah', 'contact', 'start', 'greeting', 'faq']);
 const SAFETY_BOUNDARY_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal']);
 const PRODUCT_GATE_INTENTS = new Set(['product-suitability', 'product']);
 const BASIC_EDUCATION_SIGNALS = Object.freeze(['sudah baca', 'sudah membaca', 'sudah paham', 'sudah memahami', 'saya paham', 'prinsip amanah', 'produk bukan jalan pintas', 'testimoni bukan bukti', 'edukasi dasar', 'artikel dasar', 'basic', 'batas klaim', 'label resmi']);
@@ -144,17 +146,22 @@ function intentMatches(intent, normalizedText) { if (!intent) return false; if (
 function findMatchingIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => intentMatches(intent, normalizedText)); }
 function findSafetyBoundaryIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => SAFETY_BOUNDARY_INTENTS.has(intent.id) && intentMatches(intent, normalizedText)); }
 function buildIntentReply(intent, normalizedText) { if (typeof intent.getReply === 'function') return intent.getReply(normalizedText); return { id: intent.id, text: intent.response, actions: intent.actions || [] }; }
-function isFirestoreBlockedIntent(intent) { return Boolean(intent && FIRESTORE_ONLY_BLOCKED_INTENTS.has(intent.id)); }
-function canAttachFirestoreArticles(intent) { return Boolean(intent && FIRESTORE_SAFE_ATTACH_INTENTS.has(intent.id)); }
+function isArticleSourceBlockedIntent(intent) { return Boolean(intent && ARTICLE_SOURCE_BLOCKED_INTENTS.has(intent.id)); }
+function canAttachArticleSources(intent) { return Boolean(intent && ARTICLE_SOURCE_SAFE_ATTACH_INTENTS.has(intent.id)); }
 function isProductGateIntent(intent) { return Boolean(intent && PRODUCT_GATE_INTENTS.has(intent.id)); }
 function hasBasicEducationSignal(normalizedText) { return includesAny(normalizedText, BASIC_EDUCATION_SIGNALS); }
 function buildProductGateReply(intent, normalizedText) { if (intent.id === 'product-suitability') return buildIntentReply(intent, normalizedText) || NUSA_OUT_OF_CAPACITY_REPLY; if (hasBasicEducationSignal(normalizedText)) return { id: 'product-after-basic-education', text: NUSA_RESPONSES.productAfterEducation, actions: [NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.whatsapp] }; return { id: 'product-education-gate', text: NUSA_RESPONSES.productEducationGate, actions: PRODUCT_EDUCATION_ACTIONS }; }
-function createFirestoreArticleText(intentId) { if (intentId === 'general-health' || intentId === 'habit' || intentId === 'vitacheck-start') return 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Saya juga menemukan artikel terkait yang bisa kamu baca sebagai panduan awal. Nusa AI tetap bersifat edukatif, bukan penentuan kondisi tubuh.'; if (intentId === 'testimonial' || intentId === 'product-shortcut') return 'Untuk klaim produk, prinsipnya tabayyun dulu. Saya menemukan artikel terkait agar kamu bisa menilai klaim dengan lebih tenang. Jangan menjadikan testimoni sebagai janji hasil atau bukti utama untuk semua orang.'; return 'Saya menemukan artikel yang relevan. Baca dulu dengan tenang, lalu ambil satu langkah kecil yang aman. Nusa AI tetap bersifat edukatif, bukan penentuan kondisi tubuh.'; }
+function createArticleSourceText(intentId) { if (intentId === 'general-health' || intentId === 'habit' || intentId === 'vitacheck-start') return 'Menjaga kesehatan adalah bagian dari amanah menjaga tubuh. Saya juga menemukan artikel terkait yang bisa kamu baca sebagai panduan awal. Nusa AI tetap bersifat edukatif, bukan penentuan kondisi tubuh.'; if (intentId === 'testimonial' || intentId === 'product-shortcut') return 'Untuk klaim produk, prinsipnya tabayyun dulu. Saya menemukan artikel terkait agar kamu bisa menilai klaim dengan lebih tenang. Jangan menjadikan testimoni sebagai janji hasil atau bukti utama untuk semua orang.'; return 'Saya menemukan artikel yang relevan. Baca dulu dengan tenang, lalu ambil satu langkah kecil yang aman. Nusa AI tetap bersifat edukatif, bukan penentuan kondisi tubuh.'; }
 async function getFirestoreArticleActions(normalizedText, options = {}) { try { const firestoreArticles = await import(FIRESTORE_ARTICLE_MODULE_URL); const matches = await withTimeout(firestoreArticles.findMatchingFirestoreArticles(normalizedText, options), FIRESTORE_ARTICLE_TIMEOUT_MS, []); return matches.map((article) => firestoreArticles.createFirestoreArticleAction(article)).filter(Boolean); } catch (error) { console.warn('Firestore article router fallback:', error); return []; } }
+async function getSupplementalGithubArticleActions(normalizedText, options = {}) { try { const githubArticles = await import(GITHUB_ARTICLE_MODULE_URL); const matches = await withTimeout(githubArticles.findMatchingGithubArticles(normalizedText, options), GITHUB_ARTICLE_TIMEOUT_MS, []); return matches.map((article) => githubArticles.createGithubArticleAction(article)).filter(Boolean); } catch (error) { console.warn('GitHub article source fallback:', error); return []; } }
+// Firestore remains the primary article source; GitHub manifest articles are supplemental.
+async function getArticleSourceActions(normalizedText, options = {}) { const [firestoreActions, githubActions] = await Promise.all([getFirestoreArticleActions(normalizedText, options), getSupplementalGithubArticleActions(normalizedText, options)]); return mergeArticleSourceActions(firestoreActions, githubActions); }
+function mergeArticleSourceActions(primaryActions = [], supplementalActions = []) { const seen = new Set(); return [...primaryActions, ...supplementalActions].filter(Boolean).filter((action) => { const key = normalizeArticleActionKey(action); if (seen.has(key)) return false; seen.add(key); return true; }); }
+function normalizeArticleActionKey(action) { const label = String(action?.label || '').toLowerCase().replace(/^baca artikel:\s*/, '').replace(/^baca artikel\s*/, '').replace(/\s+/g, ' ').trim(); return label || `${action?.label || ''}|${action?.href || ''}`; }
 function withTimeout(promise, timeoutMs, fallbackValue) { let timeoutId; const timeoutPromise = new Promise((resolve) => { timeoutId = globalThis.setTimeout(() => resolve(fallbackValue), timeoutMs); }); return Promise.race([Promise.resolve(promise).finally(() => globalThis.clearTimeout(timeoutId)), timeoutPromise]); }
-function shouldTryFirestoreOnly(normalizedText) { if (normalizedText.length < 8) return false; const tokens = normalizedText.split(' ').filter((token) => token.length > 2); return tokens.length >= 2; }
-async function buildFirestoreOnlyReply(normalizedText, intentId = 'firestore-article') { if (!shouldTryFirestoreOnly(normalizedText)) return null; const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: false, intentId }); if (!actions.length) return NUSA_OUT_OF_CAPACITY_REPLY; return { id: intentId, text: createFirestoreArticleText(intentId), actions }; }
-async function attachFirestoreArticles(baseReply, normalizedText, intentId) { const actions = await getFirestoreArticleActions(normalizedText, { allowShortQuery: true, intentId }); if (!actions.length) return baseReply; if (intentId === 'article' || intentId === 'article-specific') return { id: `firestore-${intentId}`, text: createFirestoreArticleText(intentId), actions: mergeActions(actions, baseReply?.actions || []) }; return { ...baseReply, id: `${baseReply.id}-firestore`, actions: mergeActions(baseReply.actions || [], actions) }; }
+function shouldTryArticleSourcesOnly(normalizedText) { if (normalizedText.length < 8) return false; const tokens = normalizedText.split(' ').filter((token) => token.length > 2); return tokens.length >= 2; }
+async function buildArticleSourcesOnlyReply(normalizedText, intentId = 'article-source') { if (!shouldTryArticleSourcesOnly(normalizedText)) return null; const actions = await getArticleSourceActions(normalizedText, { allowShortQuery: false, intentId }); if (!actions.length) return NUSA_OUT_OF_CAPACITY_REPLY; return { id: intentId, text: createArticleSourceText(intentId), actions }; }
+async function attachArticleSources(baseReply, normalizedText, intentId) { const actions = await getArticleSourceActions(normalizedText, { allowShortQuery: true, intentId }); if (!actions.length) return baseReply; if (intentId === 'article' || intentId === 'article-specific') return { id: `article-source-${intentId}`, text: createArticleSourceText(intentId), actions: mergeActions(actions, baseReply?.actions || []) }; return { ...baseReply, id: `${baseReply.id}-article-source`, actions: mergeActions(baseReply.actions || [], actions) }; }
 
 export async function getNusaReply(input) {
   const normalizedText = normalizeText(input);
@@ -163,8 +170,8 @@ export async function getNusaReply(input) {
   if (safetyIntent) return buildIntentReply(safetyIntent, normalizedText) || NUSA_OUT_OF_CAPACITY_REPLY;
   const intent = findMatchingIntent(normalizedText);
   if (isProductGateIntent(intent)) return buildProductGateReply(intent, normalizedText);
-  if (isFirestoreBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
-  if (intent && canAttachFirestoreArticles(intent)) { const baseReply = buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE; return attachFirestoreArticles(baseReply, normalizedText, intent.id); }
-  if (!intent) return await buildFirestoreOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
+  if (isArticleSourceBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
+  if (intent && canAttachArticleSources(intent)) { const baseReply = buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE; return attachArticleSources(baseReply, normalizedText, intent.id); }
+  if (!intent) return await buildArticleSourcesOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
   return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
 }
