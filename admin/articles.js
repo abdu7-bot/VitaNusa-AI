@@ -145,6 +145,39 @@ const PRODUCT_STRONG_PATTERNS = [
   /\blangfit\b/i,
   /\bdeto\s+pro\b/i
 ];
+const EDUCATIONAL_RISK_CONTEXT_TERMS = [
+  'hindari',
+  'jangan percaya',
+  'jangan memakai',
+  'jangan membuat',
+  'jangan menulis',
+  'jangan menjanjikan',
+  'tidak boleh',
+  'tidak berisi',
+  'tidak ada',
+  'tidak memberi',
+  'tidak membuat',
+  'tidak menjanjikan',
+  'tidak menggantikan',
+  'bukan diagnosis',
+  'bukan terapi',
+  'bukan obat',
+  'bukan klaim',
+  'bukan bukti',
+  'belum tentu',
+  'tidak otomatis',
+  'tidak berarti',
+  'waspada',
+  'hati-hati',
+  'kritisi',
+  'menilai klaim',
+  'klaim berlebihan',
+  'klaim palsu',
+  'klaim mutlak',
+  'contoh klaim yang harus dihindari',
+  'contoh klaim berisiko',
+  'segera konsultasikan'
+];
 const DEFAULT_METADATA = Object.freeze({ intentTarget: 'article-general', riskLevel: 'low', isMedicalSensitive: false, isProductSensitive: false, isIslamicSensitive: false, relatedArticles: [], contentDepth: 'basic', primaryAction: 'read-article', reviewerNote: '' });
 const state = { initialized: false, articles: [], editingId: null, slugTouched: false, selectedBannerFile: null, previewObjectUrl: null };
 
@@ -237,6 +270,37 @@ function normalizePlainText(value) {
     .trim()
     .toLowerCase();
 }
+function splitValidationSentences(value) {
+  return String(value || '')
+    .split(/[.!?。！？\n]+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
+function hasRiskTerm(sentence) {
+  return RISK_TERMS.some((term) => sentence.includes(term));
+}
+
+function hasEducationalRiskContext(sentence) {
+  return EDUCATIONAL_RISK_CONTEXT_TERMS.some((term) => sentence.includes(term));
+}
+
+function removeEducationalRiskSentences(normalizedText) {
+  return splitValidationSentences(normalizedText)
+    .filter((sentence) => !(hasRiskTerm(sentence) && hasEducationalRiskContext(sentence)))
+    .join(' ')
+    .trim();
+}
+
+function getPrimaryRiskTerms(normalizedText) {
+  const claimText = removeEducationalRiskSentences(normalizedText);
+  return RISK_TERMS.filter((term) => claimText.includes(term));
+}
+
+function getEducationalRiskMentions(normalizedText) {
+  const claimText = removeEducationalRiskSentences(normalizedText);
+  return RISK_TERMS.filter((term) => normalizedText.includes(term) && !claimText.includes(term));
+    }
 function parseCsv(value) {
   return String(value || '').split(',').map((item) => normalizeSlug(item.trim()) || item.trim()).map((item) => item.trim()).filter(Boolean);
 }
