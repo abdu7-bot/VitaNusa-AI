@@ -190,6 +190,8 @@ function initArticleCrud() {
   form?.addEventListener('submit', handleSaveArticle);
   contentInput?.addEventListener('input', updateDisclaimerStatus);
   bannerInput?.addEventListener('change', handleBannerSelection);
+  form?.addEventListener('input', handleFormPreviewUpdate);
+  form?.addEventListener('change', handleFormPreviewUpdate);
   titleInput?.addEventListener('input', () => {
     if (!state.slugTouched && slugInput) slugInput.value = normalizeSlug(titleInput.value);
   });
@@ -207,6 +209,7 @@ function getPreviewBox() { return document.querySelector('[data-banner-preview]'
 function getPreviewImage() { return document.querySelector('[data-banner-preview-image]'); }
 function getImportTextarea() { return document.querySelector('[data-article-import-text]'); }
 function getImportStatusBox() { return document.querySelector('[data-article-import-status]'); }
+function getMetadataPreviewBox() { return document.querySelector('[data-article-metadata-preview]'); }
 function setMessage(kind, message) {
   const box = document.querySelector('[data-article-message]');
   if (!box) return;
@@ -360,7 +363,7 @@ function renderArticles() {
 
     titleCell.append(createStrong(article.title || '(tanpa judul)'));
     titleCell.append(createSmall(article.slug || '-'));
-    titleCell.append(createSmall(`Intent: ${article.intentTarget} • Risk: ${article.riskLevel}`));
+    titleCell.append(createIndicatorGroup(getArticleIndicatorItems(article)));
     if (article.bannerUrl) {
       const bannerFlag = createSmall('Banner: tersedia');
       bannerFlag.className = 'article-meta-muted article-banner-flag';
@@ -408,6 +411,40 @@ function createStatusBadge(status) {
   badge.className = `article-status article-status-${normalized}`;
   badge.textContent = normalized;
   return badge;
+}
+function createIndicatorChip(label, tone = 'neutral') {
+  const chip = document.createElement('span');
+  chip.className = `article-indicator article-indicator-${tone}`;
+  chip.textContent = label;
+  return chip;
+}
+function getArticleIndicatorItems(article, validation = null) {
+  const safeArticle = withMetadataDefaults(article);
+  const checkedValidation = validation || validateArticle(safeArticle, safeArticle.id || null);
+  const status = safeValue(VALID_STATUSES, safeArticle.status, 'draft');
+  const items = [
+    { label: `status: ${status}`, tone: status === 'published' ? 'success' : status === 'archived' ? 'muted' : 'warning' },
+    { label: `risk: ${safeArticle.riskLevel}`, tone: safeArticle.riskLevel === 'high' ? 'danger' : safeArticle.riskLevel === 'medium' ? 'warning' : 'success' },
+    { label: `intent: ${safeArticle.intentTarget}`, tone: 'neutral' },
+    { label: `action: ${safeArticle.primaryAction}`, tone: safeArticle.primaryAction === 'view-products' ? 'warning' : 'neutral' },
+    { label: `depth: ${safeArticle.contentDepth}`, tone: 'neutral' }
+  ];
+
+  if (safeArticle.isMedicalSensitive) items.push({ label: 'medical sensitive', tone: 'danger' });
+  if (safeArticle.isProductSensitive) items.push({ label: 'product sensitive', tone: 'danger' });
+  if (safeArticle.isIslamicSensitive) items.push({ label: 'islamic sensitive', tone: 'warning' });
+  if (checkedValidation.missingDisclaimer) items.push({ label: 'missing disclaimer', tone: 'danger' });
+  if (checkedValidation.riskTerms?.length) items.push({ label: 'klaim promosi berisiko', tone: 'danger' });
+  if (safeArticle.relatedArticles.length) items.push({ label: `related: ${safeArticle.relatedArticles.length}`, tone: 'neutral' });
+  if (safeArticle.reviewerNote) items.push({ label: 'reviewer note ada', tone: 'success' });
+
+  return items;
+}
+function createIndicatorGroup(items) {
+  const group = document.createElement('div');
+  group.className = 'article-indicator-group';
+  items.forEach((item) => group.append(createIndicatorChip(item.label, item.tone)));
+  return group;
 }
 function createActionButton(label, action, id) {
   const button = document.createElement('button');
@@ -485,15 +522,15 @@ function validateArticle(payload, currentId = null) {
   const duplicate = state.articles.find((article) => article.slug === payload.slug && article.id !== currentId);
   if (duplicate) errors.push('Slug sudah dipakai artikel lain.');
 
-  if (missingDisclaimer) warnings.push('Disclaimer edukasi kesehatan wajib ditambahkan sebelum artikel bisa dipublish.');
-  if (hasPromotionalRisk) warnings.push('Ditemukan klaim berisiko. Hindari klaim hasil mutlak, hasil cepat, atau manfaat berlebihan.');
+  if (missingDisclaimer) warnings.push('Disclaimer belum ada. Jika artikel dipublish dan lolos validasi risiko, sistem akan menambahkannya otomatis.');
+  if (hasPromotionalRisk) warnings.push('Ditemukan klaim promosi berisiko pada isi utama. Publish ditahan sampai klaim hasil mutlak, hasil cepat, atau manfaat berlebihan dihapus/dikontekstualkan.');
   if (educationalRiskMentions.length) {
     warnings.push(`Frasa risiko hanya muncul dalam konteks edukasi/penolakan klaim: ${educationalRiskMentions.join(', ')}.`);
   }
-  if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') warnings.push('Artikel medical sensitive tidak boleh langsung mengarah ke view-products.');
-  if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Artikel high risk wajib punya disclaimer edukasi sebelum publish.');
-  if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Artikel product sensitive mengandung klaim berisiko. Sistem menahan publish agar dikritisi ulang.');
-  if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Artikel Islamic sensitive terdengar seperti fatwa final. Rujukkan hukum rinci kepada ustadz/ulama kompeten.');
+  if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') warnings.push('Medical sensitive tidak boleh langsung diarahkan ke view-products. Ubah Primary Action ke read-article, seek-professional-help, atau read-prinsip-amanah.');
+  if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Risk level high perlu disclaimer edukasi. Saat publish, disclaimer akan ditambahkan otomatis bila artikel tidak ditahan oleh risiko promosi.');
+  if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Product sensitive mengandung klaim utama berisiko. Publish ditahan agar klaim produk direview ulang.');
+  if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Islamic sensitive terdengar seperti fatwa final. Ini warning review, bukan force draft otomatis; rujukkan hukum rinci kepada ustadz/ulama kompeten.');
 
   const forceDraft = payload.status === 'published' && (
     hasPromotionalRisk
@@ -778,6 +815,7 @@ function applyImportedArticleToForm(imported) {
   if (form.elements.bannerFile) form.elements.bannerFile.value = '';
   hideBannerPreview();
   updateDisclaimerStatus();
+  updateArticleFormPreview();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -802,6 +840,50 @@ function getValidationMessage(validation, fallback = '') {
   const parts = [...validation.errors, ...validation.warnings];
   if (fallback) parts.push(fallback);
   return parts.filter(Boolean).join(' ');
+}
+
+function handleFormPreviewUpdate(event) {
+  if (event?.target?.name === 'contentHtml') updateDisclaimerStatus();
+  updateArticleFormPreview();
+}
+function updateArticleFormPreview() {
+  const box = getMetadataPreviewBox();
+  const form = getForm();
+  if (!box || !form) return;
+
+  const payload = getPayloadFromForm();
+  const validation = validateArticle(payload, state.editingId);
+  const summary = document.createElement('div');
+  summary.className = 'article-validation-summary';
+
+  if (validation.errors.length) {
+    summary.append(createValidationText('error', `Error: ${validation.errors.join(' ')}`));
+  } else if (validation.forceDraft) {
+    summary.append(createValidationText('error', 'Publish akan ditahan. Artikel akan disimpan sebagai draft sampai klaim atau arah aksi berisiko diperbaiki.'));
+  } else if (payload.status === 'published' && validation.missingDisclaimer) {
+    summary.append(createValidationText('warning', 'Saat publish, disclaimer wajib akan ditambahkan otomatis.'));
+  } else {
+    summary.append(createValidationText('success', 'Validasi dasar siap. Tetap review isi artikel sebelum publish.'));
+  }
+
+  if (validation.warnings.length) {
+    const list = document.createElement('ul');
+    list.className = 'article-validation-list';
+    validation.warnings.forEach((warning) => {
+      const item = document.createElement('li');
+      item.textContent = warning;
+      list.append(item);
+    });
+    summary.append(list);
+  }
+
+  box.replaceChildren(createIndicatorGroup(getArticleIndicatorItems(payload, validation)), summary);
+}
+function createValidationText(kind, text) {
+  const paragraph = document.createElement('p');
+  paragraph.className = `article-validation-text article-validation-${kind}`;
+  paragraph.textContent = text;
+  return paragraph;
 }
 
 async function handleSaveArticle(event) {
@@ -851,7 +933,7 @@ async function handleSaveArticle(event) {
     const disclaimerMessage = autoDisclaimerAdded ? ' Disclaimer wajib otomatis ditambahkan.' : '';
 
     if (forcedDraft) {
-      setMessage('warning', `${getValidationMessage(validation)} Artikel disimpan sebagai draft, bukan published.${bannerMessage}`);
+      setMessage('warning', `${getValidationMessage(validation)} Artikel disimpan sebagai draft, bukan published. Perbaiki warning utama sebelum publish.${bannerMessage}`);
       return;
     }
 
@@ -877,7 +959,7 @@ function initDisclaimerHelper() {
   const helper = document.createElement('div');
   helper.className = 'article-disclaimer-helper';
   helper.dataset.articleDisclaimerHelper = '';
-  helper.innerHTML = `<div class="article-disclaimer-copy"><strong>Disclaimer wajib</strong><p>${REQUIRED_DISCLAIMER}</p></div><p class="article-disclaimer-status" data-article-disclaimer-status></p><div class="article-disclaimer-actions"><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-add-disclaimer>Tambahkan Disclaimer</button><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-copy-disclaimer>Salin disclaimer wajib</button></div>`;
+  helper.innerHTML = `<div class="article-disclaimer-copy"><strong>Disclaimer wajib</strong><p>${REQUIRED_DISCLAIMER}</p><small>Untuk artikel published, disclaimer ini wajib ada. Jika artikel lolos validasi, sistem bisa menambahkannya otomatis; jika ada klaim promosi berisiko, artikel tetap ditahan sebagai draft.</small></div><p class="article-disclaimer-status" data-article-disclaimer-status></p><div class="article-disclaimer-actions"><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-add-disclaimer>Tambahkan Disclaimer</button><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-copy-disclaimer>Salin disclaimer wajib</button></div>`;
 
   const helpText = contentInput.closest('label')?.nextElementSibling;
   if (helpText?.classList.contains('article-help')) helpText.after(helper);
@@ -895,7 +977,7 @@ function updateDisclaimerStatus() {
   const hasDisclaimer = hasRequiredDisclaimer(form.elements.contentHtml?.value || '');
   status.classList.toggle('is-ok', hasDisclaimer);
   status.classList.toggle('is-missing', !hasDisclaimer);
-  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer wajib belum ada. Saat publish, sistem akan menambahkan disclaimer wajib otomatis selama artikel tidak ditahan oleh validasi klaim berisiko.';
+  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer belum ada. Artikel published akan mendapat disclaimer otomatis bila tidak ditahan oleh validasi klaim promosi atau aksi sensitif.';
 }
 function appendRequiredDisclaimer() {
   const form = getForm();
@@ -1012,6 +1094,7 @@ function fillForm(article) {
   else hideBannerPreview();
 
   updateDisclaimerStatus();
+  updateArticleFormPreview();
   document.querySelector('[data-article-form-title]').textContent = 'Edit Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1039,6 +1122,7 @@ function resetForm() {
 
   hideBannerPreview();
   updateDisclaimerStatus();
+  updateArticleFormPreview();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
 }
 async function publishArticle(article) {

@@ -140,6 +140,52 @@
   font-weight: 800;
 }
 
+.article-indicator-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.article-indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: 100%;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  background: #f8fbfa;
+  color: var(--admin-ink);
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.article-indicator-success {
+  border-color: #b8dcc7;
+  background: #eaf8ef;
+  color: #14663d;
+}
+
+.article-indicator-warning {
+  border-color: #ead59e;
+  background: #fff7df;
+  color: #6a4a10;
+}
+
+.article-indicator-danger {
+  border-color: #e6b3a8;
+  background: #fff0ec;
+  color: #8d2d25;
+}
+
+.article-indicator-muted {
+  background: #eceff2;
+  color: #54616a;
+}
+
 .article-status {
   display: inline-flex;
   border-radius: 999px;
@@ -257,6 +303,47 @@
   padding: 14px;
 }
 
+.article-metadata-preview {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.article-validation-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.article-validation-text {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.article-validation-success {
+  color: #14663d;
+}
+
+.article-validation-warning {
+  color: #6a4a10;
+}
+
+.article-validation-error {
+  color: #8d2d25;
+}
+
+.article-validation-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--admin-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .article-metadata-block > .article-help {
   margin: -2px 0 2px;
 }
@@ -361,6 +448,7 @@
 }
 
 .article-disclaimer-copy p,
+.article-disclaimer-copy small,
 .article-disclaimer-status {
   margin: 0;
   color: var(--admin-muted);
@@ -545,6 +633,15 @@
     gap: 14px;
     border-radius: 14px;
     padding: 12px;
+  }
+
+  .article-indicator-group {
+    gap: 7px;
+  }
+
+  .article-indicator {
+    min-height: 26px;
+    font-size: 0.76rem;
   }
 
   .article-metadata-block h4 {
