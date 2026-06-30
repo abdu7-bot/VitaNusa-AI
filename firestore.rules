@@ -56,6 +56,11 @@ service cloud.firestore {
       allow create, update, delete: if isActiveAdmin();
     }
 
+    match /nusaKnowledge/{knowledgeId} {
+      allow get, list: if resource.data.status == "published" || isActiveAdmin();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
     match /siteSettings/public {
       allow get: if true;
       allow list: if false;

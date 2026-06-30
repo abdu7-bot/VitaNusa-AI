@@ -61,6 +61,20 @@
   display: none;
 }
 
+.knowledge-admin .article-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+}
+
+.knowledge-table {
+  min-width: 860px;
+}
+
+.knowledge-analyze-button {
+  border-color: #c29a3b;
+  background: #fff7df;
+  color: #6a4a10;
+}
+
 .article-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);

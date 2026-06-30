@@ -5,6 +5,9 @@
  * product routing after basic education, article sources only from safe published entries,
  * and honest fallback when no reliable article is relevant.
  */
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
+import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-brain-v3-1';
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
@@ -53,6 +56,16 @@ const SAFETY_BOUNDARY_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawa
 const PRODUCT_GATE_INTENTS = new Set(['product-suitability', 'product']);
 const BASIC_EDUCATION_SIGNALS = Object.freeze(['sudah baca', 'sudah membaca', 'sudah paham', 'sudah memahami', 'saya paham', 'prinsip amanah', 'produk bukan jalan pintas', 'testimoni bukan bukti', 'edukasi dasar', 'artikel dasar', 'basic', 'batas klaim', 'label resmi']);
 const PRODUCT_EDUCATION_ACTIONS = Object.freeze([NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.educationArticles]);
+const KNOWLEDGE_COLLECTION = 'nusaKnowledge';
+const KNOWLEDGE_THRESHOLD = 45;
+const COMMON_KEYWORDS = new Set(['sehat', 'kesehatan', 'produk', 'artikel', 'amanah', 'bukti', 'klaim', 'tanya', 'cara', 'apa']);
+const EMERGENCY_TERMS = Object.freeze(['sesak berat', 'nyeri dada', 'pingsan', 'kejang', 'stroke', 'bunuh diri', 'perdarahan hebat', 'demam tinggi pada bayi', 'keracunan']);
+const DOSE_DIAGNOSIS_TERMS = Object.freeze(['diagnosis', 'diagnosa', 'dosis', 'resep obat', 'obat apa', 'minum apa', 'harus minum obat']);
+const FINAL_FATWA_TERMS = Object.freeze(['fatwa final', 'pasti halal', 'pasti haram', 'hukum final', 'menurut islam pasti', 'halal menurut islam', 'haram menurut islam']);
+const PRODUCT_CLAIM_TERMS = Object.freeze(['pasti menyembuhkan', 'pasti sembuh', 'menyembuhkan diabetes', 'menyembuhkan kanker', 'obat segala penyakit', 'sembuh total', '100% aman']);
+const BLOCKED_HTML_SELECTOR = 'script, iframe, object, embed, link, meta, style';
+let knowledgeLoadPromise = null;
+let knowledgeLoadFailed = false;
 
 export const NUSA_RESPONSES = Object.freeze({
   greeting: 'Waalaikumussalam. Senang kamu datang. Silakan tulis hal yang ingin kamu pahami hari ini. Kalau bingung mulai dari mana, kamu bisa mulai dari VitaCheck, artikel edukasi, atau Prinsip Amanah.',
@@ -142,6 +155,174 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
 function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
 function includesAny(normalizedText, terms) { return terms.some((term) => includesTerm(normalizedText, term)); }
+function getPublicDb() {
+  const app = getApps().find((item) => item.name === 'vitanusa-nusa-knowledge') || initializeApp(firebaseConfig, 'vitanusa-nusa-knowledge');
+  return getFirestore(app);
+}
+function mapKnowledgeDoc(snapshot) {
+  const data = snapshot.data() || {};
+  return {
+    id: snapshot.id,
+    question: String(data.question || ''),
+    alternateQuestions: Array.isArray(data.alternateQuestions) ? data.alternateQuestions.map(String) : [],
+    shortAnswer: String(data.shortAnswer || ''),
+    answerHtml: String(data.answerHtml || ''),
+    keywords: Array.isArray(data.keywords) ? data.keywords.map(String) : [],
+    category: String(data.category || ''),
+    intentTarget: String(data.intentTarget || ''),
+    riskLevel: String(data.riskLevel || 'low'),
+    isMedicalSensitive: Boolean(data.isMedicalSensitive),
+    isProductSensitive: Boolean(data.isProductSensitive),
+    isIslamicSensitive: Boolean(data.isIslamicSensitive),
+    primaryAction: String(data.primaryAction || 'answer-only'),
+    relatedArticles: Array.isArray(data.relatedArticles) ? data.relatedArticles.map(String).filter(Boolean) : [],
+    priority: Number(data.priority || 0),
+    status: String(data.status || 'draft')
+  };
+}
+export async function load() {
+  if (knowledgeLoadPromise) return knowledgeLoadPromise;
+  knowledgeLoadPromise = (async () => {
+    try {
+      const db = getPublicDb();
+      const snapshot = await getDocs(query(collection(db, KNOWLEDGE_COLLECTION), where('status', '==', 'published')));
+      knowledgeLoadFailed = false;
+      window.vitaNusaKnowledgeLibrary = snapshot.docs.map(mapKnowledgeDoc).filter((item) => item.status === 'published');
+      return window.vitaNusaKnowledgeLibrary;
+    } catch (error) {
+      console.warn('Pustaka Nusa AI belum berhasil dimuat:', error);
+      knowledgeLoadFailed = true;
+      window.vitaNusaKnowledgeLibrary = [];
+      return [];
+    }
+  })();
+  return knowledgeLoadPromise;
+}
+export const ready = load();
+function scorePhrase(normalizedQuestion, normalizedCandidate, exactScore, containsScore) {
+  if (!normalizedQuestion || !normalizedCandidate) return 0;
+  if (normalizedQuestion === normalizedCandidate) return exactScore;
+  if (normalizedQuestion.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedQuestion)) return containsScore;
+  return 0;
+}
+function scoreKnowledgeItem(userQuestion, item) {
+  const normalized = normalizeText(userQuestion);
+  let score = scorePhrase(normalized, normalizeText(item.question), 100, 60);
+  for (const alternate of item.alternateQuestions || []) {
+    score += scorePhrase(normalized, normalizeText(alternate), 50, 20);
+  }
+  for (const keyword of item.keywords || []) {
+    const normalizedKeyword = normalizeText(keyword);
+    if (!normalizedKeyword || !includesTerm(normalized, normalizedKeyword)) continue;
+    score += COMMON_KEYWORDS.has(normalizedKeyword) ? 4 : 15;
+  }
+  if (item.category && includesTerm(normalized, item.category)) score += 10;
+  if (item.intentTarget && includesTerm(normalized, item.intentTarget)) score += 10;
+  score += Number(item.priority || 0);
+  return score;
+}
+export async function findBestAnswer(userQuestion) {
+  const library = await load();
+  const safe = buildSafeAnswer(userQuestion);
+  if (safe) return safe;
+  if (knowledgeLoadFailed) return createGuardAnswer('knowledge-load-failed', 'Pustaka Nusa AI belum berhasil dimuat. Silakan coba lagi atau baca artikel yang tersedia.', 'low', 'read-article');
+  if (!library.length) return {
+    matched: false,
+    score: 0,
+    safetyNote: 'Pustaka Nusa AI belum berhasil dimuat. Silakan coba lagi atau baca artikel yang tersedia.'
+  };
+  let best = null;
+  let bestScore = 0;
+  for (const item of library) {
+    const score = scoreKnowledgeItem(userQuestion, item);
+    if (score > bestScore) {
+      best = item;
+      bestScore = score;
+    }
+  }
+  if (!best || bestScore < KNOWLEDGE_THRESHOLD) return { matched: false, score: bestScore, safetyNote: 'Nusa AI belum menemukan jawaban yang cukup relevan dari pustaka admin.' };
+  return {
+    matched: true,
+    score: bestScore,
+    question: best.question,
+    shortAnswer: best.shortAnswer,
+    answerHtml: sanitizeKnowledgeHtml(best.answerHtml),
+    intentTarget: best.intentTarget,
+    riskLevel: best.riskLevel,
+    primaryAction: best.primaryAction,
+    relatedArticles: best.relatedArticles || [],
+    safetyNote: createSafetyNote(best)
+  };
+}
+export function buildSafeAnswer(userQuestion) {
+  const normalized = normalizeText(userQuestion);
+  if (includesAny(normalized, EMERGENCY_TERMS)) return createGuardAnswer('medical-emergency', 'Pertanyaan ini terlihat serius. Nusa AI tidak dapat memberi diagnosis atau penanganan darurat. Segera hubungi tenaga kesehatan profesional atau layanan darurat terdekat.', 'high', 'seek-professional-help');
+  if (includesAny(normalized, DOSE_DIAGNOSIS_TERMS)) return createGuardAnswer('medical-boundary', 'Nusa AI tidak memberikan diagnosis, dosis, atau resep obat. Informasi ini hanya edukasi umum.', 'medium', 'seek-professional-help');
+  if (includesAny(normalized, FINAL_FATWA_TERMS)) return createGuardAnswer('fatwa-boundary', 'Nusa AI tidak memberi fatwa final. Untuk hukum rinci, rujuk kepada ustadz/ulama yang kompeten.', 'medium', 'read-article');
+  if (includesAny(normalized, PRODUCT_CLAIM_TERMS)) return createGuardAnswer('product-claim-boundary', 'Nusa AI tidak memastikan produk menyembuhkan penyakit. Produk hanya boleh dibahas sebagai informasi umum dan harus dinilai secara amanah.', 'high', 'read-prinsip-amanah');
+  return null;
+}
+function createGuardAnswer(question, text, riskLevel, primaryAction) {
+  return {
+    matched: true,
+    score: 999,
+    question,
+    shortAnswer: text,
+    answerHtml: '',
+    intentTarget: question,
+    riskLevel,
+    primaryAction,
+    relatedArticles: [],
+    safetyNote: 'Jawaban ini adalah guardrail keamanan Nusa AI.'
+  };
+}
+function sanitizeKnowledgeHtml(html) {
+  const template = document.createElement('template');
+  template.innerHTML = String(html || '');
+  template.content.querySelectorAll(BLOCKED_HTML_SELECTOR).forEach((node) => node.remove());
+  template.content.querySelectorAll('*').forEach((node) => {
+    [...node.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = String(attr.value || '').trim().toLowerCase();
+      if (name.startsWith('on') || ((name === 'href' || name === 'src') && value.startsWith('javascript:'))) {
+        node.removeAttribute(attr.name);
+      }
+    });
+  });
+  return template.innerHTML;
+}
+function createSafetyNote(answer) {
+  if (answer.riskLevel === 'high') return 'Catatan amanah: topik ini berisiko tinggi. Gunakan sebagai edukasi umum dan rujuk pihak kompeten.';
+  if (answer.isMedicalSensitive) return 'Catatan amanah: konten kesehatan ini bukan diagnosis, dosis, terapi, atau pengganti tenaga kesehatan.';
+  if (answer.isIslamicSensitive) return 'Catatan amanah: konten Islami ini bersifat refleksi, bukan fatwa final.';
+  if (answer.isProductSensitive) return 'Catatan amanah: produk tidak boleh dipastikan menyembuhkan penyakit dan bukan pengganti ikhtiar sehat.';
+  return 'Catatan amanah: jawaban ini mengikuti pustaka yang dikurasi admin.';
+}
+function createPrimaryAction(primaryAction) {
+  const map = {
+    'read-article': NUSA_ROUTE_BUTTONS.articles,
+    'start-vitacheck': NUSA_ROUTE_BUTTONS.vitacheck,
+    'read-prinsip-amanah': NUSA_ROUTE_BUTTONS.amanah,
+    'contact-admin': NUSA_ROUTE_BUTTONS.contact,
+    'seek-professional-help': { label: 'Konsultasi Tenaga Profesional', href: 'contact.html' },
+    'view-products': NUSA_ROUTE_BUTTONS.products
+  };
+  return map[primaryAction] || null;
+}
+function createKnowledgeReply(answer) {
+  const actions = [];
+  const primary = createPrimaryAction(answer.primaryAction);
+  if (primary) actions.push(primary);
+  for (const slug of answer.relatedArticles || []) {
+    actions.push({ label: `Baca Artikel ${slug.replace(/-/g, ' ')}`, href: `articles/detail.html?slug=${encodeURIComponent(slug)}` });
+  }
+  return {
+    id: `admin-knowledge-${answer.intentTarget || 'answer'}`,
+    text: [answer.shortAnswer, answer.safetyNote].filter(Boolean).join('\n\n'),
+    html: answer.answerHtml,
+    actions: mergeActions(actions)
+  };
+}
 function intentMatches(intent, normalizedText) { if (!intent) return false; if (typeof intent.matcher === 'function' && intent.matcher(normalizedText)) return true; return includesAny(normalizedText, intent.keywords || []); }
 function findMatchingIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => intentMatches(intent, normalizedText)); }
 function findSafetyBoundaryIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => SAFETY_BOUNDARY_INTENTS.has(intent.id) && intentMatches(intent, normalizedText)); }
@@ -166,6 +347,8 @@ async function attachArticleSources(baseReply, normalizedText, intentId) { const
 export async function getNusaReply(input) {
   const normalizedText = normalizeText(input);
   if (!normalizedText) return NUSA_INITIAL_REPLY;
+  const adminKnowledgeAnswer = await findBestAnswer(input);
+  if (adminKnowledgeAnswer?.matched) return createKnowledgeReply(adminKnowledgeAnswer);
   const safetyIntent = findSafetyBoundaryIntent(normalizedText);
   if (safetyIntent) return buildIntentReply(safetyIntent, normalizedText) || NUSA_OUT_OF_CAPACITY_REPLY;
   const intent = findMatchingIntent(normalizedText);
@@ -175,3 +358,11 @@ export async function getNusaReply(input) {
   if (!intent) return await buildArticleSourcesOnlyReply(normalizedText) || NUSA_FALLBACK_RESPONSE;
   return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
 }
+
+window.vitaNusaKnowledgeLibrary = window.vitaNusaKnowledgeLibrary || [];
+window.vitaNusaKnowledge = {
+  ready,
+  load,
+  findBestAnswer,
+  buildSafeAnswer
+};

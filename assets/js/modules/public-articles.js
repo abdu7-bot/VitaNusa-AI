@@ -15,10 +15,10 @@ async function loadPublishedArticles() {
   setStatus('loading', 'Memuat artikel published dari Firestore...');
   try {
     const publishedQuery = query(collection(db, 'articles'), where('status', '==', 'published'));
-const snapshot = await getDocs(publishedQuery);
+    const snapshot = await getDocs(publishedQuery);
     const articles = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).filter(isVisiblePublishedArticle).sort(sortNewestFirst);
     if (!articles.length) {
-      setStatus('warning', 'Belum ada artikel published dari Firestore. Artikel statis dan fallback tetap tersedia.');
+      setStatus('warning', 'Konten dinamis belum tersedia. Silakan baca artikel pilihan yang sudah tersedia.');
       dispatchRenderEvent({ count: 0 });
       return;
     }
@@ -94,8 +94,23 @@ function renderArticleDetail(article) {
   const banner = createBannerFigure(article, 'article-detail-banner');
   const body = el('article', 'article-detail-body');
   body.innerHTML = sanitizeArticleHtml(article.contentHtml || '<p>Konten artikel belum tersedia.</p>');
-  detailRoot.append(...[header, banner, body].filter(Boolean));
+  const related = createRelatedArticles(article);
+  detailRoot.append(...[header, banner, body, related].filter(Boolean));
   document.title = `${article.title || 'Artikel'} | VitaNusa AI`;
+}
+
+function createRelatedArticles(article) {
+  if (!article.relatedArticles?.length) return null;
+  const section = el('section', 'article-related');
+  section.append(el('h2', '', 'Artikel terkait'));
+  const list = el('div', 'article-related-list');
+  article.relatedArticles.forEach((slug) => {
+    const link = el('a', 'article-related-link', slug.replace(/-/g, ' '));
+    link.href = `detail.html?slug=${encodeURIComponent(slug)}`;
+    list.append(link);
+  });
+  section.append(list);
+  return section;
 }
 
 function renderDetailMessage(message) {

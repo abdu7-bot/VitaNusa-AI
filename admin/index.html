@@ -48,6 +48,7 @@
       <nav class="admin-nav" aria-label="Menu admin">
         <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard">Dashboard</button>
         <button class="admin-nav-link" type="button" data-admin-section="articles">Artikel</button>
+        <button class="admin-nav-link" type="button" data-admin-section="knowledge">Knowledge</button>
         <button class="admin-nav-link" type="button" data-admin-section="comics">Komik</button>
         <button class="admin-nav-link" type="button" data-admin-section="media">Media</button>
         <button class="admin-nav-link" type="button" data-admin-section="products">Produk</button>
@@ -72,14 +73,14 @@
         </section>
 
         <section class="admin-panel is-active" data-admin-panel="dashboard" aria-labelledby="dashboardTitle">
-          <div class="admin-section-heading"><p class="admin-kicker">Ringkasan</p><h2 id="dashboardTitle">Dashboard</h2><p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p></div>
+          <div class="admin-section-heading"><p class="admin-kicker">Ringkasan</p><h2 id="dashboardTitle">Dashboard</h2><p>Ringkasan cepat untuk memantau konten edukasi, validasi amanah, dan status publish artikel.</p></div>
           <div class="admin-card-grid">
-            <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong><p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Komik</span><strong>0</strong><p>Panel komik belum terhubung.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Media / File</span><strong>GitHub</strong><p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Produk</span><strong>0</strong><p>Katalog produk belum terhubung.</p></article>
-            <article class="admin-card"><span class="admin-card-label">FAQ</span><strong>0</strong><p>FAQ dinamis belum aktif.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Pengaturan</span><strong>Draft</strong><p>Site settings belum terhubung.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong><p>Tambah, edit, publish, dan archive artikel sudah aktif. Artikel baru default draft.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Draft</span><strong>–</strong><p>Artikel yang masih menunggu review dapat disimpan sebagai draft.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Published</span><strong>–</strong><p>Artikel yang lolos validasi amanah dan siap tampil publik.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Archived</span><strong>–</strong><p>Artikel yang tidak aktif tetap tersimpan dan tidak tampil publik.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Knowledge</span><strong>Siap</strong><p>Struktur Q&amp;A sudah tersedia untuk integrasi lanjutan.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Catatan</span><strong>Amanah</strong><p>Publish hanya untuk konten yang sudah direview. Konten medis sensitif jangan diarahkan langsung ke produk.</p></article>
           </div>
         </section>
 
@@ -152,6 +153,42 @@
           </div>
         </section>
 
+        <section class="admin-panel" data-admin-panel="knowledge" hidden>
+          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Knowledge / Q&amp;A Nusa AI</h2><p>Kelola pustaka pertanyaan dan jawaban yang akan dipakai Nusa AI. Jawaban tetap harus edukatif, amanah, dan bukan pengganti ahli.</p></div>
+          <div class="article-admin knowledge-admin" data-knowledge-app>
+            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button" data-knowledge-new>Tambah Q&amp;A</button><button class="admin-button admin-button-light" type="button" data-knowledge-refresh>Refresh Daftar</button></div>
+            <div class="article-message" data-knowledge-message hidden></div>
+            <div class="article-layout">
+              <section class="article-list-card" aria-labelledby="knowledgeListTitle">
+                <h3 id="knowledgeListTitle">Daftar Q&amp;A</h3>
+                <div class="article-table-wrap"><table class="article-table knowledge-table"><thead><tr><th>Pertanyaan</th><th>Intent</th><th>Risk</th><th>Status</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-knowledge-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
+              </section>
+              <section class="article-form-card" aria-labelledby="knowledgeFormTitle">
+                <h3 id="knowledgeFormTitle" data-knowledge-form-title>Tambah Q&amp;A</h3>
+                <form class="article-form knowledge-form" data-knowledge-form>
+                  <input type="hidden" name="knowledgeId">
+                  <label>Question<input name="question" type="text" required autocomplete="off"></label>
+                  <label>Alternate Questions<textarea name="alternateQuestions" rows="3" placeholder="Pisahkan dengan koma atau baris baru"></textarea></label>
+                  <label>Short Answer<textarea name="shortAnswer" required rows="4"></textarea></label>
+                  <label>Answer HTML<textarea name="answerHtml" required rows="8" placeholder="<p>Jawaban edukatif...</p>"></textarea></label>
+                  <label>Keywords<input name="keywords" type="text" autocomplete="off" placeholder="testimoni, bukti, klaim produk"></label>
+                  <label>Category<input name="category" type="text" autocomplete="off" placeholder="Amanah Produk"></label>
+                  <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
+                  <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+                  <div class="article-checkbox-grid" aria-label="Sensitive flags"><label class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive" type="checkbox"><span>Product sensitive</span></label><label class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic sensitive</span></label></div>
+                  <label>Primary Action<select name="primaryAction"><option value="answer-only">answer-only</option><option value="read-article">read-article</option><option value="start-vitacheck">start-vitacheck</option><option value="read-prinsip-amanah">read-prinsip-amanah</option><option value="contact-admin">contact-admin</option><option value="seek-professional-help">seek-professional-help</option><option value="view-products">view-products</option></select></label>
+                  <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off" placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
+                  <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Draft dan archived tidak akan dibaca publik.</p>
+                  <label>Priority<input name="priority" type="number" step="1" value="0"></label>
+                  <label>Status<select name="status" required><option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option></select></label>
+                  <label>Reviewer Note<textarea name="reviewerNote" rows="3" placeholder="Catatan internal admin, tidak tampil di publik"></textarea></label>
+                  <div class="article-form-actions"><button class="admin-button admin-button-light knowledge-analyze-button" type="button" data-knowledge-analyze>Analisis Amanah</button><button class="admin-button admin-button-primary" type="submit">Simpan Q&amp;A</button><button class="admin-button admin-button-light" type="button" data-knowledge-reset>Bersihkan Form</button></div>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <section class="admin-panel" data-admin-panel="comics" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Komik</h2><p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 6.">Kelola Komik</button></section>
         <section class="admin-panel" data-admin-panel="media" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Media / Files</h2><p>Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Upload Storage belum menjadi alur utama. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button></section>
         <section class="admin-panel" data-admin-panel="products" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Produk</h2><p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button></section>
@@ -164,5 +201,6 @@
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
   <script type="module" src="articles.js?v=20260628-import-parser-v2-sensitive-negation"></script>
+  <script type="module" src="knowledge.js?v=20260701-knowledge-admin-v1"></script>
 </body>
 </html>

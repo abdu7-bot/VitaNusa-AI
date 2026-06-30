@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260626-content-library-metadata-v1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260701-nusa-knowledge-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -27,7 +27,7 @@ function createRouteLink(action) {
   return link;
 }
 
-function appendMessage(log, role, text, actions = []) {
+function appendMessage(log, role, text, actions = [], html = '') {
   const message = document.createElement('article');
   message.className = `nusa-message ${role}`;
 
@@ -37,6 +37,13 @@ function appendMessage(log, role, text, actions = []) {
   const paragraph = document.createElement('p');
   paragraph.textContent = text;
   bubble.append(paragraph);
+
+  if (html) {
+    const detail = document.createElement('div');
+    detail.className = 'nusa-knowledge-detail';
+    detail.innerHTML = html;
+    bubble.append(detail);
+  }
 
   if (actions.length) {
     const actionRow = document.createElement('div');
@@ -52,7 +59,7 @@ function appendMessage(log, role, text, actions = []) {
 }
 
 function renderReply(log, reply) {
-  appendMessage(log, 'assistant', reply.text, getContextActions(reply));
+  appendMessage(log, 'assistant', reply.text, getContextActions(reply), reply.html || '');
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {

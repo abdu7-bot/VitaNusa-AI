@@ -1,4 +1,4 @@
-import { initNusaChat } from './modules/nusa-chat.js?v=20260626-content-library-metadata-v1';
+import { initNusaChat } from './modules/nusa-chat.js?v=20260701-nusa-knowledge-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
 const modules = [
