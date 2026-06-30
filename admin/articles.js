@@ -23,6 +23,22 @@ const RISK_TERMS = [
   textJoin('menyem', 'buhkan penyakit kro', 'nis'),
   textJoin('menyem', 'buhkan peny', 'akit')
 ];
+const EDUCATIONAL_RISK_CONTEXT_TERMS = [
+  'jangan percaya',
+  'hindari',
+  'tidak percaya',
+  'bukan bukti',
+  'bukan klaim',
+  'tidak menjamin',
+  'tidak ada jaminan',
+  'tidak selalu',
+  'tidak boleh',
+  'edu',
+  'edukasi',
+  'penolakan',
+  'tidak menjanjikan',
+  'bukan pengganti'
+];
 const FATWA_FINAL_TERMS = ['hukum final', 'fatwa final', 'wajib secara mutlak', 'haram secara mutlak', 'pasti halal', 'pasti haram', 'menurut islam pasti'];
 const IMPORT_SECTION_ALIASES = Object.freeze({
   judul: 'title',
@@ -397,12 +413,66 @@ function getPayloadFromForm() {
   });
 }
 
+function splitValidationSentences(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .split(/(?<=[.!?;])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+function hasRiskTerm(sentence) {
+  const normalizedSentence = normalizePlainText(sentence);
+  if (!normalizedSentence) return false;
+  return RISK_TERMS.some((term) => normalizedSentence.includes(term));
+}
+function hasEducationalRiskContext(sentence) {
+  const normalizedSentence = normalizePlainText(sentence);
+  if (!normalizedSentence) return false;
+  return EDUCATIONAL_RISK_CONTEXT_TERMS.some((term) => normalizedSentence.includes(term));
+}
+function removeEducationalRiskSentences(normalizedText) {
+  return splitValidationSentences(normalizedText)
+    .filter((sentence) => !(hasRiskTerm(sentence) && hasEducationalRiskContext(sentence)))
+    .join(' ');
+}
+function getPrimaryRiskTerms(normalizedText) {
+  const filteredText = removeEducationalRiskSentences(normalizedText);
+  const terms = [];
+  splitValidationSentences(filteredText).forEach((sentence) => {
+    const matchedTerms = RISK_TERMS.filter((term) => normalizePlainText(sentence).includes(term));
+    matchedTerms.forEach((term) => {
+      if (!terms.includes(term)) terms.push(term);
+    });
+  });
+  return terms;
+}
+function getEducationalRiskMentions(normalizedText) {
+  const mentions = [];
+  splitValidationSentences(normalizedText).forEach((sentence) => {
+    const normalizedSentence = normalizePlainText(sentence);
+    if (hasRiskTerm(normalizedSentence) && hasEducationalRiskContext(normalizedSentence)) {
+      const matchedTerms = RISK_TERMS.filter((term) => normalizedSentence.includes(term));
+      matchedTerms.forEach((term) => {
+        if (!mentions.includes(term)) mentions.push(term);
+      });
+    }
+  });
+  return mentions;
+}
+
 function validateArticle(payload, currentId = null) {
   const errors = [];
   const warnings = [];
   const normalizedBody = normalizePlainText(`${payload.summary} ${payload.contentHtml}`);
   const missingDisclaimer = !hasRequiredDisclaimer(payload.contentHtml);
-  const riskTerms = RISK_TERMS.filter((term) => normalizedBody.includes(term));
+  const riskTerms = getPrimaryRiskTerms(normalizedBody);
+  const educationalRiskMentions = getEducationalRiskMentions(normalizedBody);
   const hasPromotionalRisk = riskTerms.length > 0;
   const hasFatwaFinalCue = FATWA_FINAL_TERMS.some((term) => normalizedBody.includes(term));
 
@@ -422,12 +492,19 @@ function validateArticle(payload, currentId = null) {
 
   if (missingDisclaimer) warnings.push('Disclaimer edukasi kesehatan wajib ditambahkan sebelum artikel bisa dipublish.');
   if (hasPromotionalRisk) warnings.push('Ditemukan klaim berisiko. Hindari klaim hasil mutlak, hasil cepat, atau manfaat berlebihan.');
+  if (educationalRiskMentions.length) {
+    warnings.push(`Frasa risiko hanya muncul dalam konteks edukasi/penolakan klaim: ${educationalRiskMentions.join(', ')}.`);
+  }
   if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') warnings.push('Artikel medical sensitive tidak boleh langsung mengarah ke view-products.');
   if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Artikel high risk wajib punya disclaimer edukasi sebelum publish.');
   if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Artikel product sensitive mengandung klaim berisiko. Sistem menahan publish agar dikritisi ulang.');
   if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Artikel Islamic sensitive terdengar seperti fatwa final. Rujukkan hukum rinci kepada ustadz/ulama kompeten.');
 
-  const forceDraft = payload.status === 'published' && (hasPromotionalRisk || (payload.isMedicalSensitive && payload.primaryAction === 'view-products') || (payload.riskLevel === 'high' && missingDisclaimer) || (payload.isProductSensitive && hasPromotionalRisk));
+  const forceDraft = payload.status === 'published' && (
+    hasPromotionalRisk
+    || (payload.isMedicalSensitive && payload.primaryAction === 'view-products')
+    || (payload.isProductSensitive && hasPromotionalRisk)
+  );
   return { errors, warnings, riskTerms, missingDisclaimer, forceDraft };
 }
 
@@ -823,7 +900,7 @@ function updateDisclaimerStatus() {
   const hasDisclaimer = hasRequiredDisclaimer(form.elements.contentHtml?.value || '');
   status.classList.toggle('is-ok', hasDisclaimer);
   status.classList.toggle('is-missing', !hasDisclaimer);
-  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer wajib belum ada. Saat publish, sistem akan menambahkan disclaimer wajib otomatis jika riskLevel tidak high.';
+  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer wajib belum ada. Saat publish, sistem akan menambahkan disclaimer wajib otomatis selama artikel tidak ditahan oleh validasi klaim berisiko.';
 }
 function appendRequiredDisclaimer() {
   const form = getForm();
