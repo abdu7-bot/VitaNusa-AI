@@ -54,7 +54,7 @@ function renderKnowledge() {
   const body = getListBody();
   if (!body) return;
   if (!state.knowledge.length) {
-    body.innerHTML = '<tr><td colspan="6">Belum ada Q&amp;A.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A untuk membuat pustaka pertama. Item baru sebaiknya disimpan sebagai draft, dianalisis, lalu direview manual sebelum publish.</span></td></tr>';
     return;
   }
   body.replaceChildren(...state.knowledge.map(createKnowledgeRow));
@@ -79,11 +79,9 @@ function createKnowledgeRow(item) {
   status.classList.add(`article-status-${item.status || 'draft'}`);
   row.children[4].textContent = formatDate(item.updatedAt);
   const actions = row.querySelector('.article-row-actions');
-  actions.append(
-    createActionButton('Edit', 'edit', item.id),
-    createActionButton('Publish', 'publish', item.id),
-    createActionButton('Archive', 'archive', item.id)
-  );
+  actions.append(createActionButton('Edit', 'edit', item.id));
+  if (item.status !== 'published') actions.append(createActionButton('Publish', 'publish', item.id));
+  if (item.status !== 'archived') actions.append(createActionButton('Archive', 'archive', item.id));
   return row;
 }
 
@@ -116,6 +114,7 @@ function validateKnowledgePayload(payload, { publishing = false } = {}) {
   if (!payload.question) errors.push('Question wajib diisi.');
   if (!payload.shortAnswer) errors.push('Short answer wajib diisi.');
   if (!payload.answerHtml) errors.push('Answer HTML wajib diisi.');
+  if (!payload.keywords.length) warnings.push('Keywords kosong. Jawaban tetap bisa disimpan, tetapi pencocokan Nusa AI mungkin lemah.');
   if (!VALID_STATUSES.has(payload.status)) errors.push('Status tidak valid.');
   if (!VALID_RISK_LEVELS.has(payload.riskLevel)) errors.push('Risk level tidak valid.');
   if (!VALID_INTENT_TARGETS.has(payload.intentTarget)) errors.push('Intent target tidak valid.');
@@ -295,7 +294,8 @@ function analyzeKnowledgeAmanah() {
   form.elements.isIslamicSensitive.checked = isIslamic;
   form.elements.primaryAction.value = isMedical && primaryAction === 'view-products' ? 'seek-professional-help' : primaryAction;
   form.elements.reviewerNote.value = notes.join(' ');
-  setMessage(riskLevel === 'high' ? 'warning' : 'success', notes.join(' ') || 'Analisis amanah selesai. Tidak ada sinyal sensitif kuat.');
+  const analysisMessage = ['Analisis selesai. Tetap review manual sebelum publish.', ...notes].join(' ');
+  setMessage(riskLevel === 'high' ? 'warning' : 'success', analysisMessage);
 }
 
 function findMainRiskClaims(text) {
