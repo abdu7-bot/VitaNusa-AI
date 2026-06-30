@@ -24,20 +24,37 @@ const RISK_TERMS = [
   textJoin('menyem', 'buhkan peny', 'akit')
 ];
 const EDUCATIONAL_RISK_CONTEXT_TERMS = [
-  'jangan percaya',
   'hindari',
-  'tidak percaya',
-  'bukan bukti',
-  'bukan klaim',
-  'tidak menjamin',
-  'tidak ada jaminan',
-  'tidak selalu',
+  'jangan percaya',
+  'jangan memakai',
+  'jangan membuat',
+  'jangan menulis',
+  'jangan menjanjikan',
   'tidak boleh',
-  'edu',
-  'edukasi',
-  'penolakan',
+  'tidak berisi',
+  'tidak ada',
+  'tidak memberi',
+  'tidak membuat',
   'tidak menjanjikan',
-  'bukan pengganti'
+  'tidak menggantikan',
+  'bukan diagnosis',
+  'bukan terapi',
+  'bukan obat',
+  'bukan klaim',
+  'bukan bukti',
+  'belum tentu',
+  'tidak otomatis',
+  'tidak berarti',
+  'waspada',
+  'hati-hati',
+  'kritisi',
+  'menilai klaim',
+  'klaim berlebihan',
+  'klaim palsu',
+  'klaim mutlak',
+  'contoh klaim yang harus dihindari',
+  'contoh klaim berisiko',
+  'segera konsultasikan'
 ];
 const FATWA_FINAL_TERMS = ['hukum final', 'fatwa final', 'wajib secara mutlak', 'haram secara mutlak', 'pasti halal', 'pasti haram', 'menurut islam pasti'];
 const IMPORT_SECTION_ALIASES = Object.freeze({
@@ -144,39 +161,6 @@ const PRODUCT_STRONG_PATTERNS = [
   /\bcheckout\b/i,
   /\blangfit\b/i,
   /\bdeto\s+pro\b/i
-];
-const EDUCATIONAL_RISK_CONTEXT_TERMS = [
-  'hindari',
-  'jangan percaya',
-  'jangan memakai',
-  'jangan membuat',
-  'jangan menulis',
-  'jangan menjanjikan',
-  'tidak boleh',
-  'tidak berisi',
-  'tidak ada',
-  'tidak memberi',
-  'tidak membuat',
-  'tidak menjanjikan',
-  'tidak menggantikan',
-  'bukan diagnosis',
-  'bukan terapi',
-  'bukan obat',
-  'bukan klaim',
-  'bukan bukti',
-  'belum tentu',
-  'tidak otomatis',
-  'tidak berarti',
-  'waspada',
-  'hati-hati',
-  'kritisi',
-  'menilai klaim',
-  'klaim berlebihan',
-  'klaim palsu',
-  'klaim mutlak',
-  'contoh klaim yang harus dihindari',
-  'contoh klaim berisiko',
-  'segera konsultasikan'
 ];
 const DEFAULT_METADATA = Object.freeze({ intentTarget: 'article-general', riskLevel: 'low', isMedicalSensitive: false, isProductSensitive: false, isIslamicSensitive: false, relatedArticles: [], contentDepth: 'basic', primaryAction: 'read-article', reviewerNote: '' });
 const state = { initialized: false, articles: [], editingId: null, slugTouched: false, selectedBannerFile: null, previewObjectUrl: null };
@@ -300,7 +284,7 @@ function getPrimaryRiskTerms(normalizedText) {
 function getEducationalRiskMentions(normalizedText) {
   const claimText = removeEducationalRiskSentences(normalizedText);
   return RISK_TERMS.filter((term) => normalizedText.includes(term) && !claimText.includes(term));
-    }
+}
 function parseCsv(value) {
   return String(value || '').split(',').map((item) => normalizeSlug(item.trim()) || item.trim()).map((item) => item.trim()).filter(Boolean);
 }
@@ -475,59 +459,6 @@ function getPayloadFromForm() {
     primaryAction: String(formData.get('primaryAction') || DEFAULT_METADATA.primaryAction).trim(),
     reviewerNote: String(formData.get('reviewerNote') || '').trim()
   });
-}
-
-function splitValidationSentences(value) {
-  return String(value || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .split(/(?<=[.!?;])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-}
-function hasRiskTerm(sentence) {
-  const normalizedSentence = normalizePlainText(sentence);
-  if (!normalizedSentence) return false;
-  return RISK_TERMS.some((term) => normalizedSentence.includes(term));
-}
-function hasEducationalRiskContext(sentence) {
-  const normalizedSentence = normalizePlainText(sentence);
-  if (!normalizedSentence) return false;
-  return EDUCATIONAL_RISK_CONTEXT_TERMS.some((term) => normalizedSentence.includes(term));
-}
-function removeEducationalRiskSentences(normalizedText) {
-  return splitValidationSentences(normalizedText)
-    .filter((sentence) => !(hasRiskTerm(sentence) && hasEducationalRiskContext(sentence)))
-    .join(' ');
-}
-function getPrimaryRiskTerms(normalizedText) {
-  const filteredText = removeEducationalRiskSentences(normalizedText);
-  const terms = [];
-  splitValidationSentences(filteredText).forEach((sentence) => {
-    const matchedTerms = RISK_TERMS.filter((term) => normalizePlainText(sentence).includes(term));
-    matchedTerms.forEach((term) => {
-      if (!terms.includes(term)) terms.push(term);
-    });
-  });
-  return terms;
-}
-function getEducationalRiskMentions(normalizedText) {
-  const mentions = [];
-  splitValidationSentences(normalizedText).forEach((sentence) => {
-    const normalizedSentence = normalizePlainText(sentence);
-    if (hasRiskTerm(normalizedSentence) && hasEducationalRiskContext(normalizedSentence)) {
-      const matchedTerms = RISK_TERMS.filter((term) => normalizedSentence.includes(term));
-      matchedTerms.forEach((term) => {
-        if (!mentions.includes(term)) mentions.push(term);
-      });
-    }
-  });
-  return mentions;
 }
 
 function validateArticle(payload, currentId = null) {
