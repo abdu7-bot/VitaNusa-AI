@@ -5,8 +5,6 @@
  * product routing after basic education, article sources only from safe published entries,
  * and honest fallback when no reliable article is relevant.
  */
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
-import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-brain-v3-1';
 
@@ -58,7 +56,21 @@ const BASIC_EDUCATION_SIGNALS = Object.freeze(['sudah baca', 'sudah membaca', 's
 const PRODUCT_EDUCATION_ACTIONS = Object.freeze([NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.educationArticles]);
 const KNOWLEDGE_COLLECTION = 'nusaKnowledge';
 const KNOWLEDGE_THRESHOLD = 45;
+const KNOWLEDGE_LOAD_TIMEOUT_MS = 3000;
+const KNOWLEDGE_RETRY_AFTER_MS = 15000;
 const COMMON_KEYWORDS = new Set(['sehat', 'kesehatan', 'produk', 'artikel', 'amanah', 'bukti', 'klaim', 'tanya', 'cara', 'apa']);
+const KNOWLEDGE_STOPWORDS = new Set(['apa', 'apakah', 'bagaimana', 'gimana', 'yang', 'dan', 'atau', 'ini', 'itu', 'bisa', 'boleh', 'untuk', 'dengan', 'dari', 'ke', 'di', 'saya', 'aku', 'kamu', 'nusa', 'ai']);
+const KNOWLEDGE_SYNONYM_GROUPS = Object.freeze([
+  ['testimoni', 'testi', 'review', 'ulasan', 'pengalaman pribadi', 'cerita orang'],
+  ['bukti', 'bukti ilmiah', 'dasar ilmiah', 'valid', 'terpercaya', 'dipercaya'],
+  ['klaim', 'janji', 'promosi', 'iklan'],
+  ['produk', 'suplemen', 'langfit', 'deto pro', 'katalog'],
+  ['sembuh', 'menyembuhkan', 'pulih', 'ampuh'],
+  ['dokter', 'tenaga kesehatan', 'nakes', 'medis'],
+  ['fatwa', 'hukum islam', 'halal', 'haram'],
+  ['vitacheck', 'vita check', 'cek kebiasaan', 'skor kebiasaan'],
+  ['amanah', 'tabayyun', 'hati hati', 'waspada']
+]);
 const EMERGENCY_TERMS = Object.freeze(['sesak berat', 'nyeri dada', 'pingsan', 'kejang', 'stroke', 'bunuh diri', 'perdarahan hebat', 'demam tinggi pada bayi', 'keracunan']);
 const DOSE_DIAGNOSIS_TERMS = Object.freeze(['diagnosis', 'diagnosa', 'dosis', 'resep obat', 'obat apa', 'minum apa', 'harus minum obat']);
 const FINAL_FATWA_TERMS = Object.freeze(['fatwa final', 'pasti halal', 'pasti haram', 'hukum final', 'menurut islam pasti', 'halal menurut islam', 'haram menurut islam']);
@@ -66,6 +78,8 @@ const PRODUCT_CLAIM_TERMS = Object.freeze(['pasti menyembuhkan', 'pasti sembuh',
 const BLOCKED_HTML_SELECTOR = 'script, iframe, object, embed, link, meta, style';
 let knowledgeLoadPromise = null;
 let knowledgeLoadFailed = false;
+let knowledgeLastFailureAt = 0;
+let firebaseModulesPromise = null;
 
 export const NUSA_RESPONSES = Object.freeze({
   greeting: 'Waalaikumussalam. Senang kamu datang. Silakan tulis hal yang ingin kamu pahami hari ini. Kalau bingung mulai dari mana, kamu bisa mulai dari VitaCheck, artikel edukasi, atau Prinsip Amanah.',
@@ -155,7 +169,61 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
 function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
 function includesAny(normalizedText, terms) { return terms.some((term) => includesTerm(normalizedText, term)); }
-function getPublicDb() {
+function tokenizeKnowledge(value) {
+  return normalizeText(value).split(' ').filter((token) => token.length > 2 && !KNOWLEDGE_STOPWORDS.has(token));
+}
+function getTokenSet(value) {
+  return new Set(tokenizeKnowledge(value));
+}
+function getTokenOverlapScore(userText, candidateText, pointsPerToken = 6) {
+  const userTokens = getTokenSet(userText);
+  if (!userTokens.size) return 0;
+  let overlap = 0;
+  for (const token of getTokenSet(candidateText)) {
+    if (userTokens.has(token)) overlap += 1;
+  }
+  return overlap * pointsPerToken;
+}
+function getSynonymScore(userQuestion, item) {
+  const combined = normalizeText([
+    item.question,
+    ...(item.alternateQuestions || []),
+    ...(item.keywords || []),
+    item.category,
+    item.intentTarget
+  ].join(' '));
+  const user = normalizeText(userQuestion);
+  let score = 0;
+  for (const group of KNOWLEDGE_SYNONYM_GROUPS) {
+    const userHit = group.some((term) => includesTerm(user, term));
+    const itemHit = group.some((term) => includesTerm(combined, term));
+    if (userHit && itemHit) score += 12;
+  }
+  return score;
+}
+async function loadFirebaseModules() {
+  if (!firebaseModulesPromise) {
+    firebaseModulesPromise = withTimeout(Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js')
+    ]), KNOWLEDGE_LOAD_TIMEOUT_MS, null).then((modules) => {
+      if (!modules) throw new Error('Firebase public SDK timeout.');
+      const [appModule, firestoreModule] = modules;
+      return {
+        initializeApp: appModule.initializeApp,
+        getApps: appModule.getApps,
+        getFirestore: firestoreModule.getFirestore,
+        collection: firestoreModule.collection,
+        getDocs: firestoreModule.getDocs,
+        query: firestoreModule.query,
+        where: firestoreModule.where
+      };
+    });
+  }
+  return firebaseModulesPromise;
+}
+async function getPublicDb() {
+  const { initializeApp, getApps, getFirestore } = await loadFirebaseModules();
   const app = getApps().find((item) => item.name === 'vitanusa-nusa-knowledge') || initializeApp(firebaseConfig, 'vitanusa-nusa-knowledge');
   return getFirestore(app);
 }
@@ -181,17 +249,25 @@ function mapKnowledgeDoc(snapshot) {
   };
 }
 export async function load() {
-  if (knowledgeLoadPromise) return knowledgeLoadPromise;
+  if (knowledgeLoadPromise && (!knowledgeLoadFailed || Date.now() - knowledgeLastFailureAt < KNOWLEDGE_RETRY_AFTER_MS)) return knowledgeLoadPromise;
+  if (knowledgeLoadFailed) {
+    knowledgeLoadPromise = null;
+    firebaseModulesPromise = null;
+  }
   knowledgeLoadPromise = (async () => {
     try {
-      const db = getPublicDb();
-      const snapshot = await getDocs(query(collection(db, KNOWLEDGE_COLLECTION), where('status', '==', 'published')));
+      const { collection, getDocs, query, where } = await loadFirebaseModules();
+      const db = await getPublicDb();
+      const publishedQuery = query(collection(db, KNOWLEDGE_COLLECTION), where('status', '==', 'published'));
+      const snapshot = await withTimeout(getDocs(publishedQuery), KNOWLEDGE_LOAD_TIMEOUT_MS, null);
+      if (!snapshot) throw new Error('nusaKnowledge load timeout.');
       knowledgeLoadFailed = false;
       window.vitaNusaKnowledgeLibrary = snapshot.docs.map(mapKnowledgeDoc).filter((item) => item.status === 'published');
       return window.vitaNusaKnowledgeLibrary;
     } catch (error) {
       console.warn('Pustaka Nusa AI belum berhasil dimuat:', error);
       knowledgeLoadFailed = true;
+      knowledgeLastFailureAt = Date.now();
       window.vitaNusaKnowledgeLibrary = [];
       return [];
     }
@@ -208,24 +284,31 @@ function scorePhrase(normalizedQuestion, normalizedCandidate, exactScore, contai
 function scoreKnowledgeItem(userQuestion, item) {
   const normalized = normalizeText(userQuestion);
   let score = scorePhrase(normalized, normalizeText(item.question), 100, 60);
+  score += getTokenOverlapScore(userQuestion, item.question, 8);
   for (const alternate of item.alternateQuestions || []) {
     score += scorePhrase(normalized, normalizeText(alternate), 50, 20);
+    score += getTokenOverlapScore(userQuestion, alternate, 5);
   }
   for (const keyword of item.keywords || []) {
     const normalizedKeyword = normalizeText(keyword);
     if (!normalizedKeyword || !includesTerm(normalized, normalizedKeyword)) continue;
     score += COMMON_KEYWORDS.has(normalizedKeyword) ? 4 : 15;
   }
+  score += getSynonymScore(userQuestion, item);
   if (item.category && includesTerm(normalized, item.category)) score += 10;
   if (item.intentTarget && includesTerm(normalized, item.intentTarget)) score += 10;
   score += Number(item.priority || 0);
   return score;
 }
 export async function findBestAnswer(userQuestion) {
-  const library = await load();
   const safe = buildSafeAnswer(userQuestion);
   if (safe) return safe;
-  if (knowledgeLoadFailed) return createGuardAnswer('knowledge-load-failed', 'Pustaka Nusa AI belum berhasil dimuat. Silakan coba lagi atau baca artikel yang tersedia.', 'low', 'read-article');
+  const library = await load();
+  if (knowledgeLoadFailed) return {
+    matched: false,
+    score: 0,
+    safetyNote: 'Pustaka Nusa AI belum berhasil dimuat. Silakan coba lagi atau baca artikel yang tersedia.'
+  };
   if (!library.length) return {
     matched: false,
     score: 0,
