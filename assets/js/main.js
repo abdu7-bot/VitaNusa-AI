@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260702-shell-zindex-fix-v1';
+import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260702-final-chat-shell-v1';
 import { initNusaChat } from './modules/nusa-chat.js?v=20260701-nusa-knowledge-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
