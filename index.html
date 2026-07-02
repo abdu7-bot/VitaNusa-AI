@@ -8,83 +8,93 @@
   <meta name="theme-color" content="#14532d">
   <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260626-langfit-green-chat-v1">
   <style>
+    :root {
+      --nusa-green-dark: #14532d;
+      --nusa-green: #16a34a;
+      --nusa-green-soft: #dcfce7;
+      --nusa-cream: #fbf7ed;
+      --nusa-paper: #ffffff;
+      --nusa-ink: #143d2c;
+      --nusa-muted: #64766b;
+      --nusa-line: rgba(22, 163, 74, .15);
+      --nusa-shadow: 0 24px 70px rgba(20, 83, 45, .11);
+    }
+
     .nusa-chat-page {
+      min-height: 100svh;
       background:
         radial-gradient(circle at top left, rgba(220, 252, 231, .92), transparent 34rem),
-        radial-gradient(circle at bottom right, rgba(250, 244, 226, .92), transparent 30rem),
+        radial-gradient(circle at bottom right, rgba(250, 244, 226, .94), transparent 32rem),
         #f6fbf7;
+      color: var(--nusa-ink);
     }
 
-    .nusa-chat-shell {
-      align-items: stretch;
+    .nusa-home-chat {
+      min-height: 100svh;
+      padding: clamp(14px, 2.2vw, 28px);
     }
 
-    .nusa-plugin-rail {
-      position: sticky;
-      top: 16px;
-      max-height: calc(100svh - 32px);
+    .nusa-app-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+      gap: clamp(16px, 2.2vw, 28px);
+      width: min(1440px, 100%);
+      margin-inline: auto;
+      align-items: start;
     }
 
-    .nusa-brand-link {
-      border: 1px solid rgba(22, 163, 74, .12);
-      background: linear-gradient(135deg, #ffffff, #f0fdf4);
-    }
-
-    .nusa-brand-mark {
-      box-shadow: 0 10px 22px rgba(20, 83, 45, .22);
-    }
-
-    .nusa-plugin {
-      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
-    }
-
-    .nusa-plugin:hover,
-    .nusa-plugin:focus-visible,
-    .nusa-plugin.is-active {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba(20, 83, 45, .07);
-    }
-
-    .nusa-rail-note {
-      align-self: end;
-      margin: 8px 2px 0;
-      padding: 12px;
-      border: 1px solid rgba(22, 163, 74, .14);
-      border-radius: 16px;
-      background: rgba(240, 253, 244, .78);
-      color: #335445;
-      font-size: .78rem;
-      line-height: 1.5;
+    .nusa-chat-main {
+      min-width: 0;
     }
 
     .nusa-chat-panel {
       position: relative;
+      display: flex;
+      min-height: calc(100svh - clamp(28px, 4.4vw, 56px));
+      flex-direction: column;
       overflow: hidden;
+      border: 1px solid rgba(22, 163, 74, .13);
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(255, 255, 255, .86)),
+        #ffffff;
+      box-shadow: var(--nusa-shadow);
     }
 
     .nusa-chat-panel::before {
       content: "";
       position: absolute;
       inset: 0 0 auto;
-      height: 190px;
-      background: linear-gradient(135deg, rgba(220, 252, 231, .88), rgba(255, 255, 255, .2));
+      height: 220px;
+      background: linear-gradient(135deg, rgba(220, 252, 231, .9), rgba(255, 255, 255, .22));
       pointer-events: none;
-      z-index: -1;
+      z-index: 0;
     }
 
-    .nusa-chat-intro {
-      padding-bottom: 10px;
+    .nusa-chat-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .nusa-chat-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px clamp(16px, 3vw, 28px) 0;
     }
 
     .nusa-chat-brand {
       display: inline-flex;
       width: fit-content;
       align-items: center;
-      gap: 8px;
-      padding: 7px 11px;
+      gap: 9px;
+      padding: 8px 12px;
       border: 1px solid rgba(22, 163, 74, .15);
       border-radius: 999px;
-      background: rgba(255, 255, 255, .78);
+      background: rgba(255, 255, 255, .82);
+      color: var(--nusa-green-dark);
+      font-weight: 800;
       box-shadow: 0 8px 18px rgba(20, 83, 45, .06);
     }
 
@@ -93,23 +103,64 @@
       width: 8px;
       height: 8px;
       border-radius: 999px;
-      background: #16a34a;
+      background: var(--nusa-green);
       box-shadow: 0 0 0 5px rgba(22, 163, 74, .12);
     }
 
+    .nusa-sidebar-toggle,
+    .nusa-sidebar-close {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      border: 1px solid rgba(22, 163, 74, .18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .9);
+      color: var(--nusa-green-dark);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(20, 83, 45, .08);
+    }
+
+    .nusa-sidebar-toggle {
+      gap: 8px;
+      padding: 9px 13px;
+    }
+
+    .nusa-sidebar-toggle:focus-visible,
+    .nusa-sidebar-close:focus-visible {
+      outline: 3px solid rgba(22, 163, 74, .22);
+      outline-offset: 2px;
+    }
+
+    .nusa-chat-intro {
+      display: grid;
+      gap: 10px;
+      padding: clamp(18px, 4vw, 34px) clamp(16px, 4vw, 44px) 14px;
+    }
+
     .nusa-chat-intro h1 {
-      letter-spacing: -.035em;
+      max-width: 820px;
+      margin: 0;
+      color: #123d2b;
+      font-size: clamp(2rem, 5.5vw, 4.7rem);
+      line-height: .98;
+      letter-spacing: -.055em;
     }
 
     .nusa-chat-intro p {
-      font-size: 1rem;
+      max-width: 760px;
+      margin: 0;
+      color: #3f5c4d;
+      font-size: clamp(.98rem, 1.35vw, 1.12rem);
+      line-height: 1.65;
     }
 
     .nusa-value-strip {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 2px clamp(14px, 3vw, 26px) 4px;
+      margin: 0 clamp(16px, 4vw, 44px) 6px;
     }
 
     .nusa-value-strip span {
@@ -119,10 +170,10 @@
       padding: 6px 10px;
       border: 1px solid rgba(22, 163, 74, .16);
       border-radius: 999px;
-      background: rgba(255, 255, 255, .78);
+      background: rgba(255, 255, 255, .8);
       color: #28503d;
       font-size: .82rem;
-      font-weight: 680;
+      font-weight: 700;
       line-height: 1.15;
     }
 
@@ -130,26 +181,27 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      margin: 0 clamp(14px, 3vw, 26px);
+      margin: 6px clamp(16px, 4vw, 44px) 12px;
     }
 
     .nusa-prompt-card {
       min-height: 66px;
-      padding: 12px 13px;
+      padding: 13px 14px;
       border: 1px solid rgba(22, 163, 74, .16);
       border-radius: 18px;
-      background: #ffffff;
+      background: rgba(255, 255, 255, .92);
       color: #143d2c;
       text-align: left;
       cursor: pointer;
-      box-shadow: 0 10px 22px rgba(20, 83, 45, .06);
-      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      box-shadow: 0 10px 22px rgba(20, 83, 45, .055);
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
     .nusa-prompt-card:hover,
     .nusa-prompt-card:focus-visible {
       transform: translateY(-2px);
       border-color: rgba(22, 163, 74, .32);
+      background: #ffffff;
       box-shadow: 0 16px 28px rgba(20, 83, 45, .1);
       outline: none;
     }
@@ -166,122 +218,264 @@
 
     .nusa-prompt-card small {
       margin-top: 5px;
-      color: #64766b;
+      color: var(--nusa-muted);
       font-size: .78rem;
       line-height: 1.35;
-    }
-
-    .nusa-home-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin: 0 clamp(14px, 3vw, 26px) 2px;
-    }
-
-    .nusa-home-card {
-      min-height: 112px;
-      padding: 14px;
-      border: 1px solid rgba(22, 163, 74, .13);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .88);
-      color: #153d2d;
-      text-decoration: none;
-      box-shadow: 0 10px 22px rgba(20, 83, 45, .05);
-    }
-
-    .nusa-home-card:hover,
-    .nusa-home-card:focus-visible {
-      border-color: rgba(22, 163, 74, .3);
-      background: #ffffff;
-      outline: none;
-    }
-
-    .nusa-home-card span {
-      display: inline-grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      margin-bottom: 10px;
-      border-radius: 12px;
-      background: #e7f6ed;
-      color: #14532d;
-      font-size: .78rem;
-      font-weight: 850;
-    }
-
-    .nusa-home-card strong,
-    .nusa-home-card small {
-      display: block;
-    }
-
-    .nusa-home-card strong {
-      font-size: .95rem;
-      line-height: 1.25;
-    }
-
-    .nusa-home-card small {
-      margin-top: 5px;
-      color: #64766b;
-      font-size: .78rem;
-      line-height: 1.4;
     }
 
     .nusa-amanah-box {
       display: grid;
       gap: 3px;
-      margin: 0 clamp(14px, 3vw, 26px);
+      margin: 0 clamp(16px, 4vw, 44px) 12px;
       padding: 13px 14px;
       border: 1px solid rgba(180, 83, 9, .16);
       border-radius: 18px;
-      background: linear-gradient(135deg, rgba(255, 251, 235, .92), rgba(255, 255, 255, .86));
+      background: linear-gradient(135deg, rgba(255, 251, 235, .94), rgba(255, 255, 255, .88));
       color: #4f3c20;
       font-size: .86rem;
       line-height: 1.5;
     }
 
     .nusa-amanah-box strong {
-      color: #14532d;
+      color: var(--nusa-green-dark);
     }
 
     .nusa-chat-window {
-      min-height: min(31svh, 300px);
-      margin-inline: clamp(10px, 2vw, 18px);
+      flex: 1;
+      min-height: min(38svh, 390px);
+      margin: 0 clamp(10px, 2vw, 18px);
       padding-top: 6px;
     }
 
     .nusa-chat-form {
+      margin: 8px clamp(10px, 2vw, 18px) 0;
+    }
+
+    .nusa-chat-note {
+      margin: 10px clamp(16px, 4vw, 44px) 18px;
+      color: #5e756a;
+      font-size: .82rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .nusa-home-grid,
+    .nusa-mobile-plugins {
+      display: none;
+    }
+
+    .nusa-plugin-rail,
+    .nusa-right-sidebar {
+      position: sticky;
+      top: clamp(14px, 2.2vw, 28px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100svh - clamp(28px, 4.4vw, 56px));
+      padding: 16px;
+      overflow: auto;
+      border: 1px solid rgba(22, 163, 74, .13);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, .86);
+      box-shadow: 0 24px 60px rgba(20, 83, 45, .09);
+      backdrop-filter: blur(18px);
+    }
+
+    .nusa-sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .nusa-brand-link {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid rgba(22, 163, 74, .12);
+      border-radius: 20px;
+      background: linear-gradient(135deg, #ffffff, #f0fdf4);
+      color: var(--nusa-green-dark);
+      text-decoration: none;
+    }
+
+    .nusa-brand-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #14532d, #16a34a);
+      color: #ffffff;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(20, 83, 45, .22);
+    }
+
+    .nusa-brand-link strong,
+    .nusa-brand-link small {
+      display: block;
+    }
+
+    .nusa-brand-link small {
       margin-top: 2px;
+      color: #557066;
+      font-size: .78rem;
+      line-height: 1.25;
     }
 
-    @media (max-width: 900px) {
-      .nusa-chat-shell {
-        grid-template-columns: 240px minmax(0, 1fr);
-      }
+    .nusa-plugin-list {
+      display: grid;
+      gap: 8px;
+    }
 
-      .nusa-home-grid {
-        grid-template-columns: 1fr;
+    .nusa-plugin {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 62px;
+      padding: 10px;
+      border: 1px solid rgba(22, 163, 74, .12);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .7);
+      color: #173d2d;
+      text-decoration: none;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .nusa-plugin:hover,
+    .nusa-plugin:focus-visible,
+    .nusa-plugin.is-active {
+      transform: translateY(-1px);
+      border-color: rgba(22, 163, 74, .26);
+      background: #ffffff;
+      box-shadow: 0 10px 22px rgba(20, 83, 45, .07);
+      outline: none;
+    }
+
+    .nusa-plugin.is-active {
+      background: linear-gradient(135deg, #ecfdf5, #ffffff);
+    }
+
+    .nusa-plugin.is-muted {
+      opacity: .68;
+      cursor: not-allowed;
+    }
+
+    .nusa-plugin-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      border-radius: 13px;
+      background: #e7f6ed;
+      color: var(--nusa-green-dark);
+      font-size: .78rem;
+      font-weight: 850;
+    }
+
+    .nusa-plugin strong,
+    .nusa-plugin small {
+      display: block;
+    }
+
+    .nusa-plugin small {
+      margin-top: 3px;
+      color: #63766d;
+      font-size: .78rem;
+      line-height: 1.3;
+    }
+
+    .nusa-rail-note {
+      margin: 2px;
+      padding: 12px;
+      border: 1px solid rgba(22, 163, 74, .14);
+      border-radius: 16px;
+      background: rgba(240, 253, 244, .8);
+      color: #335445;
+      font-size: .78rem;
+      line-height: 1.5;
+    }
+
+    .nusa-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(8, 28, 18, .46);
+      backdrop-filter: blur(4px);
+    }
+
+    .nusa-sidebar-overlay[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 1040px) {
+      .nusa-app-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 310px);
+        gap: 16px;
       }
     }
 
-    @media (max-width: 680px) {
-      .nusa-plugin-rail {
-        position: static;
+    @media (max-width: 860px) {
+      .nusa-home-chat {
+        padding: 10px;
+      }
+
+      .nusa-app-layout {
+        display: block;
+        width: 100%;
+      }
+
+      .nusa-chat-panel {
+        min-height: calc(100svh - 20px);
+        border-radius: 24px;
+      }
+
+      .nusa-sidebar-toggle,
+      .nusa-sidebar-close {
+        display: inline-flex;
+      }
+
+      .nusa-sidebar-close {
+        width: 40px;
+        padding: 0;
+      }
+
+      .nusa-right-sidebar {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        bottom: 10px;
+        z-index: 100;
+        width: min(360px, calc(100vw - 28px));
         max-height: none;
+        transform: translateX(calc(100% + 18px));
+        transition: transform .24s ease;
+      }
+
+      body.nusa-sidebar-open {
+        overflow: hidden;
+      }
+
+      body.nusa-sidebar-open .nusa-right-sidebar {
+        transform: translateX(0);
+      }
+
+      .nusa-chat-intro {
+        padding-top: 18px;
+      }
+
+      .nusa-chat-intro h1 {
+        font-size: clamp(2rem, 12vw, 3.4rem);
       }
 
       .nusa-value-strip,
       .nusa-prompt-grid,
-      .nusa-home-grid,
       .nusa-amanah-box {
-        margin-inline: 0;
-      }
-
-      .nusa-value-strip {
-        gap: 7px;
-      }
-
-      .nusa-value-strip span {
-        font-size: .76rem;
+        margin-inline: 14px;
       }
 
       .nusa-prompt-grid {
@@ -294,32 +488,125 @@
         border-radius: 16px;
       }
 
-      .nusa-home-grid {
-        gap: 8px;
-      }
-
-      .nusa-home-card {
-        min-height: auto;
-        padding: 12px;
-      }
-
       .nusa-chat-window {
-        min-height: 28svh;
+        min-height: 30svh;
+        margin-inline: 10px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .nusa-chat-topbar {
+        padding-inline: 14px;
+      }
+
+      .nusa-chat-brand {
+        max-width: 52vw;
+      }
+
+      .nusa-sidebar-toggle span:last-child {
+        display: none;
+      }
+
+      .nusa-chat-intro,
+      .nusa-value-strip,
+      .nusa-prompt-grid,
+      .nusa-amanah-box {
         margin-inline: 0;
+      }
+
+      .nusa-chat-intro {
+        padding-inline: 14px;
+      }
+
+      .nusa-value-strip {
+        gap: 7px;
+      }
+
+      .nusa-value-strip span {
+        font-size: .76rem;
+      }
+
+      .nusa-chat-note {
+        margin-inline: 14px;
       }
     }
   </style>
 </head>
 <body class="nusa-chat-page">
   <main id="main" class="nusa-home-chat" aria-labelledby="nusa-chat-title">
-    <div class="nusa-chat-shell">
-      <aside class="nusa-plugin-rail" aria-label="Plugin VitaNusa AI">
-        <a class="nusa-brand-link" href="index.html" aria-label="VitaNusa AI">
-          <span class="nusa-brand-mark">VN</span>
-          <span><strong>VitaNusa AI</strong><small>Asisten edukasi amanah</small></span>
-        </a>
+    <div class="nusa-sidebar-overlay" data-nusa-sidebar-overlay aria-hidden="true" hidden></div>
 
-        <nav class="nusa-plugin-list" aria-label="Daftar plugin VitaNusa">
+    <div class="nusa-app-layout">
+      <section class="nusa-chat-main" aria-label="Area utama Nusa Chat">
+        <div class="nusa-chat-panel" data-nusa-chat aria-label="Chat Nusa AI">
+          <div class="nusa-chat-topbar">
+            <div class="nusa-chat-brand" aria-label="VitaNusa AI">Nusa AI</div>
+            <button class="nusa-sidebar-toggle" type="button" data-nusa-sidebar-toggle aria-label="Buka menu fitur VitaNusa" aria-controls="nusaRightSidebar" aria-expanded="false">
+              <span aria-hidden="true">☰</span>
+              <span>Fitur</span>
+            </button>
+          </div>
+
+          <header class="nusa-chat-intro">
+            <h1 id="nusa-chat-title">Pahami kesehatan dengan tenang, jujur, dan amanah.</h1>
+            <p>Tanya Nusa AI untuk memahami kebiasaan sehat, VitaCheck, artikel edukasi, cerita visual, dan batas klaim produk tanpa janji berlebihan.</p>
+          </header>
+
+          <div class="nusa-value-strip" aria-label="Nilai utama VitaNusa AI">
+            <span>Edukasi, bukan diagnosis</span>
+            <span>Klaim produk lebih hati-hati</span>
+            <span>Bahasa sederhana</span>
+            <span>Berpihak pada amanah</span>
+          </div>
+
+          <section class="nusa-prompt-grid" aria-label="Pertanyaan cepat Nusa AI">
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa itu VitaCheck dan bagaimana cara memakainya?">
+              <strong>Mulai dari VitaCheck</strong>
+              <small>Cek kebiasaan sehat secara ringan dan edukatif.</small>
+            </button>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Bagaimana cara bijak menilai klaim produk kesehatan?">
+              <strong>Nilai klaim produk</strong>
+              <small>Bedakan testimoni, bukti, dan klaim berlebihan.</small>
+            </button>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Tunjukkan artikel edukasi yang cocok untuk pemula.">
+              <strong>Cari artikel edukasi</strong>
+              <small>Baca topik sehat dengan bahasa yang membumi.</small>
+            </button>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa prinsip amanah VitaNusa AI dalam membahas produk?">
+              <strong>Pahami prinsip amanah</strong>
+              <small>Produk sebagai opsi pendukung, bukan janji ajaib.</small>
+            </button>
+          </section>
+
+          <aside class="nusa-amanah-box" aria-label="Batas amanah Nusa AI">
+            <strong>Batas amanah:</strong>
+            <span>Nusa AI membantu memahami informasi kesehatan, tetapi bukan pengganti diagnosis, resep, atau konsultasi tenaga kesehatan profesional. Produk hanya opsi pendukung, bukan janji ajaib.</span>
+          </aside>
+
+          <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
+
+          <form class="nusa-chat-form" data-nusa-chat-form>
+            <label class="sr-only" for="nusaChatInput">Tulis pertanyaanmu di sini</label>
+            <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
+            <button class="nusa-chat-submit" type="submit" aria-label="Kirim pertanyaan">
+              <span aria-hidden="true">↑</span>
+            </button>
+          </form>
+
+          <p class="nusa-chat-note">Nusa AI bersifat edukatif, bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.</p>
+        </div>
+      </section>
+
+      <aside id="nusaRightSidebar" class="nusa-plugin-rail nusa-right-sidebar" data-nusa-sidebar aria-label="Fitur VitaNusa AI" aria-hidden="false">
+        <div class="nusa-sidebar-head">
+          <a class="nusa-brand-link" href="index.html" aria-label="VitaNusa AI">
+            <span class="nusa-brand-mark">VN</span>
+            <span><strong>VitaNusa AI</strong><small>Asisten edukasi amanah</small></span>
+          </a>
+          <button class="nusa-sidebar-close" type="button" data-nusa-sidebar-close aria-label="Tutup menu fitur VitaNusa">×</button>
+        </div>
+
+        <nav class="nusa-plugin-list" aria-label="Daftar fitur VitaNusa">
           <a class="nusa-plugin is-active" href="index.html">
             <span class="nusa-plugin-icon" aria-hidden="true">AI</span>
             <span><strong>Nusa Chat</strong><small>Tanya edukasi amanah</small></span>
@@ -356,86 +643,38 @@
 
         <p class="nusa-rail-note"><strong>Catatan amanah:</strong> edukasi dulu, produk belakangan. Klaim sehat harus tetap jujur, wajar, dan tidak menggantikan tenaga medis.</p>
       </aside>
-
-      <div class="nusa-chat-panel" data-nusa-chat aria-label="Chat Nusa AI">
-        <header class="nusa-chat-intro">
-          <div class="nusa-chat-brand" aria-label="VitaNusa AI">Nusa AI</div>
-          <h1 id="nusa-chat-title">Pahami kesehatan dengan tenang, jujur, dan amanah.</h1>
-          <p>Tanya Nusa AI untuk memahami kebiasaan sehat, VitaCheck, artikel edukasi, cerita visual, dan batas klaim produk tanpa janji berlebihan.</p>
-        </header>
-
-        <div class="nusa-value-strip" aria-label="Nilai utama VitaNusa AI">
-          <span>Edukasi, bukan diagnosis</span>
-          <span>Klaim produk lebih hati-hati</span>
-          <span>Bahasa sederhana</span>
-          <span>Berpihak pada amanah</span>
-        </div>
-
-        <section class="nusa-prompt-grid" aria-label="Pertanyaan cepat Nusa AI">
-          <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa itu VitaCheck dan bagaimana cara memakainya?">
-            <strong>Mulai dari VitaCheck</strong>
-            <small>Cek kebiasaan sehat secara ringan dan edukatif.</small>
-          </button>
-          <button class="nusa-prompt-card" type="button" data-nusa-prompt="Bagaimana cara bijak menilai klaim produk kesehatan?">
-            <strong>Nilai klaim produk</strong>
-            <small>Bedakan testimoni, bukti, dan klaim berlebihan.</small>
-          </button>
-          <button class="nusa-prompt-card" type="button" data-nusa-prompt="Tunjukkan artikel edukasi yang cocok untuk pemula.">
-            <strong>Cari artikel edukasi</strong>
-            <small>Baca topik sehat dengan bahasa yang membumi.</small>
-          </button>
-          <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa prinsip amanah VitaNusa AI dalam membahas produk?">
-            <strong>Pahami prinsip amanah</strong>
-            <small>Produk sebagai opsi pendukung, bukan janji ajaib.</small>
-          </button>
-        </section>
-
-        <div class="nusa-mobile-plugins" aria-label="Plugin VitaNusa mobile">
-          <a href="vitacheck.html">VitaCheck</a>
-          <a href="vitagame.html">VitaGame</a>
-          <a href="komik/">Komik</a>
-          <a href="articles/index.html">Artikel</a>
-          <a href="products/index.html">Produk</a>
-        </div>
-
-        <section class="nusa-home-grid" aria-label="Menu utama VitaNusa AI">
-          <a class="nusa-home-card" href="vitacheck.html">
-            <span>VC</span>
-            <strong>VitaCheck</strong>
-            <small>Refleksi kebiasaan tidur, makan, minum, gerak, dan energi harian.</small>
-          </a>
-          <a class="nusa-home-card" href="articles/index.html">
-            <span>AR</span>
-            <strong>Artikel Edukasi</strong>
-            <small>Bacaan sehat yang menenangkan, kritis, dan tidak menakut-nakuti.</small>
-          </a>
-          <a class="nusa-home-card" href="products/index.html">
-            <span>PA</span>
-            <strong>Produk Amanah</strong>
-            <small>Katalog reseller dengan batas klaim yang lebih bertanggung jawab.</small>
-          </a>
-        </section>
-
-        <aside class="nusa-amanah-box" aria-label="Batas amanah Nusa AI">
-          <strong>Batas amanah:</strong>
-          <span>Nusa AI membantu memahami informasi kesehatan, tetapi bukan pengganti diagnosis, resep, atau konsultasi tenaga kesehatan profesional.</span>
-        </aside>
-
-        <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
-
-        <form class="nusa-chat-form" data-nusa-chat-form>
-          <label class="sr-only" for="nusaChatInput">Tulis pertanyaanmu di sini</label>
-          <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
-          <button class="nusa-chat-submit" type="submit" aria-label="Kirim pertanyaan">
-            <span aria-hidden="true">↑</span>
-          </button>
-        </form>
-
-        <p class="nusa-chat-note">Nusa AI bersifat edukatif, bukan pengganti diagnosis atau konsultasi tenaga kesehatan profesional.</p>
-      </div>
     </div>
   </main>
 
+  <script>
+    (() => {
+      const body = document.body;
+      const sidebar = document.querySelector('[data-nusa-sidebar]');
+      const toggle = document.querySelector('[data-nusa-sidebar-toggle]');
+      const closeButton = document.querySelector('[data-nusa-sidebar-close]');
+      const overlay = document.querySelector('[data-nusa-sidebar-overlay]');
+      if (!sidebar || !toggle || !closeButton || !overlay) return;
+
+      const setSidebarState = (isOpen) => {
+        body.classList.toggle('nusa-sidebar-open', isOpen);
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        sidebar.setAttribute('aria-hidden', String(!isOpen && window.matchMedia('(max-width: 860px)').matches));
+        overlay.hidden = !isOpen;
+        overlay.setAttribute('aria-hidden', String(!isOpen));
+        if (isOpen) closeButton.focus({ preventScroll: true });
+      };
+
+      toggle.addEventListener('click', () => setSidebarState(!body.classList.contains('nusa-sidebar-open')));
+      closeButton.addEventListener('click', () => setSidebarState(false));
+      overlay.addEventListener('click', () => setSidebarState(false));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') setSidebarState(false);
+      });
+      window.addEventListener('resize', () => {
+        if (!window.matchMedia('(max-width: 860px)').matches) setSidebarState(false);
+      });
+    })();
+  </script>
   <script type="module" src="assets/js/modules/nusa-knowledge.js?v=20260701-nusa-knowledge-v1"></script>
   <script type="module" src="assets/js/main.js?v=20260701-nusa-knowledge-v1"></script>
 </body>
