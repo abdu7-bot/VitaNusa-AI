@@ -74,6 +74,15 @@ function cleanPlaceholders() {
   });
 }
 
+function normalizeExistingLinks() {
+  document.querySelectorAll('a[href="vitagame.html"]').forEach((link) => {
+    link.setAttribute('href', 'vitagame.html/');
+  });
+  document.querySelectorAll('a[href="../vitagame.html"]').forEach((link) => {
+    link.setAttribute('href', '../vitagame.html/');
+  });
+}
+
 function buildRail(prefix, currentKey) {
   const aside = document.createElement('aside');
   aside.className = 'vn-right-rail';
@@ -101,6 +110,7 @@ export function initNusaUiShell() {
   document.body.classList.add('vn-shell-polished');
   injectShellStyles();
   cleanPlaceholders();
+  normalizeExistingLinks();
 
   if (document.querySelector('.nusa-right-sidebar, [data-vn-right-rail]')) return;
 
