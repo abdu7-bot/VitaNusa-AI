@@ -501,79 +501,69 @@
         transform: translateX(0);
       }
 
+      .nusa-chat-topbar {
+        padding: 14px 14px 0;
+      }
+
       .nusa-chat-intro {
-        padding-top: 16px;
-        padding-bottom: 10px;
+        gap: 6px;
+        padding: 18px 18px 8px;
       }
 
       .nusa-chat-intro h1 {
-        font-size: clamp(1.72rem, 9.5vw, 2.85rem);
+        font-size: clamp(1.35rem, 7.2vw, 2.15rem);
+        line-height: 1.05;
+        letter-spacing: -.045em;
       }
 
       .nusa-chat-intro p {
-        font-size: .92rem;
-        line-height: 1.5;
+        display: none;
       }
 
       .nusa-value-strip,
-      .nusa-prompt-grid,
       .nusa-amanah-box {
-        margin-inline: 14px;
-      }
-
-      .nusa-value-strip {
-        gap: 6px;
-        margin-bottom: 4px;
-      }
-
-      .nusa-value-strip span {
-        min-height: 26px;
-        padding: 5px 9px;
+        display: none;
       }
 
       .nusa-prompt-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 7px;
-        margin-top: 4px;
-        margin-bottom: 9px;
+        margin: 6px 14px 8px;
       }
 
       .nusa-prompt-card {
-        min-height: 52px;
-        padding: 10px 12px;
-        border-radius: 16px;
+        min-height: 48px;
+        padding: 9px 10px;
+        border-radius: 14px;
+      }
+
+      .nusa-prompt-card strong {
+        font-size: .8rem;
+        line-height: 1.15;
       }
 
       .nusa-prompt-card small {
         display: none;
       }
 
-      .nusa-amanah-box {
-        margin-bottom: 8px;
-        padding: 10px 12px;
-        font-size: .8rem;
-      }
-
       .nusa-chat-window {
-        min-height: 0;
+        flex: 1 1 auto;
+        min-height: 48px;
         margin-inline: 10px;
       }
 
       .nusa-chat-form {
-        margin-top: 7px;
+        margin: 8px 10px 0;
       }
 
       .nusa-chat-note {
-        margin-top: 8px;
-        margin-bottom: 12px;
+        margin: 7px 14px 10px;
+        font-size: .72rem;
+        line-height: 1.32;
       }
     }
 
     @media (max-width: 520px) {
-      .nusa-chat-topbar {
-        padding-inline: 14px;
-      }
-
       .nusa-chat-brand {
         max-width: 52vw;
       }
@@ -582,24 +572,16 @@
         display: none;
       }
 
-      .nusa-chat-intro,
-      .nusa-value-strip,
-      .nusa-prompt-grid,
-      .nusa-amanah-box {
-        margin-inline: 0;
+      .nusa-chat-intro h1 {
+        font-size: clamp(1.28rem, 7vw, 1.95rem);
       }
 
-      .nusa-chat-intro {
-        padding-inline: 14px;
-      }
-
-      .nusa-value-strip span {
-        font-size: .74rem;
+      .nusa-prompt-grid {
+        margin-inline: 10px;
       }
 
       .nusa-chat-note {
-        margin-inline: 14px;
-        font-size: .76rem;
+        margin-inline: 12px;
       }
     }
   </style>
@@ -748,6 +730,6 @@
     })();
   </script>
   <script type="module" src="assets/js/modules/nusa-knowledge.js?v=20260701-nusa-knowledge-v1"></script>
-  <script type="module" src="assets/js/main.js?v=20260701-nusa-knowledge-v1"></script>
+  <script type="module" src="assets/js/main.js?v=20260702-unified-shell-v1"></script>
 </body>
 </html>
