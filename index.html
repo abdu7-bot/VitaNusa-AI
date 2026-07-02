@@ -18,6 +18,8 @@
       --nusa-muted: #64766b;
       --nusa-line: rgba(22, 163, 74, .15);
       --nusa-shadow: 0 24px 70px rgba(20, 83, 45, .11);
+      --nusa-shell-top: clamp(14px, 2.2vw, 28px);
+      --nusa-shell-gap: clamp(28px, 4.4vw, 56px);
     }
 
     .nusa-chat-page {
@@ -31,7 +33,7 @@
 
     .nusa-home-chat {
       min-height: 100svh;
-      padding: clamp(14px, 2.2vw, 28px);
+      padding: var(--nusa-shell-top);
     }
 
     .nusa-app-layout {
@@ -44,13 +46,17 @@
     }
 
     .nusa-chat-main {
+      position: sticky;
+      top: var(--nusa-shell-top);
+      align-self: start;
       min-width: 0;
     }
 
     .nusa-chat-panel {
       position: relative;
       display: flex;
-      min-height: calc(100svh - clamp(28px, 4.4vw, 56px));
+      height: calc(100svh - var(--nusa-shell-gap));
+      min-height: 640px;
       flex-direction: column;
       overflow: hidden;
       border: 1px solid rgba(22, 163, 74, .13);
@@ -78,6 +84,7 @@
 
     .nusa-chat-topbar {
       display: flex;
+      flex: 0 0 auto;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
@@ -135,6 +142,7 @@
 
     .nusa-chat-intro {
       display: grid;
+      flex: 0 0 auto;
       gap: 10px;
       padding: clamp(18px, 4vw, 34px) clamp(16px, 4vw, 44px) 14px;
     }
@@ -158,6 +166,7 @@
 
     .nusa-value-strip {
       display: flex;
+      flex: 0 0 auto;
       flex-wrap: wrap;
       gap: 8px;
       margin: 0 clamp(16px, 4vw, 44px) 6px;
@@ -179,6 +188,7 @@
 
     .nusa-prompt-grid {
       display: grid;
+      flex: 0 0 auto;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       margin: 6px clamp(16px, 4vw, 44px) 12px;
@@ -225,6 +235,7 @@
 
     .nusa-amanah-box {
       display: grid;
+      flex: 0 0 auto;
       gap: 3px;
       margin: 0 clamp(16px, 4vw, 44px) 12px;
       padding: 13px 14px;
@@ -241,17 +252,21 @@
     }
 
     .nusa-chat-window {
-      flex: 1;
-      min-height: min(38svh, 390px);
+      flex: 1 1 auto;
+      min-height: 0;
       margin: 0 clamp(10px, 2vw, 18px);
       padding-top: 6px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     .nusa-chat-form {
+      flex: 0 0 auto;
       margin: 8px clamp(10px, 2vw, 18px) 0;
     }
 
     .nusa-chat-note {
+      flex: 0 0 auto;
       margin: 10px clamp(16px, 4vw, 44px) 18px;
       color: #5e756a;
       font-size: .82rem;
@@ -267,11 +282,11 @@
     .nusa-plugin-rail,
     .nusa-right-sidebar {
       position: sticky;
-      top: clamp(14px, 2.2vw, 28px);
+      top: var(--nusa-shell-top);
       display: flex;
       flex-direction: column;
       gap: 14px;
-      max-height: calc(100svh - clamp(28px, 4.4vw, 56px));
+      max-height: calc(100svh - var(--nusa-shell-gap));
       padding: 16px;
       overflow: auto;
       border: 1px solid rgba(22, 163, 74, .13);
@@ -429,7 +444,13 @@
         width: 100%;
       }
 
+      .nusa-chat-main {
+        position: static;
+        top: auto;
+      }
+
       .nusa-chat-panel {
+        height: auto;
         min-height: calc(100svh - 20px);
         border-radius: 24px;
       }
