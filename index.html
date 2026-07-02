@@ -10,12 +10,62 @@
 <body class="nusa-chat-page">
   <main id="main" class="nusa-home-chat" aria-labelledby="nusa-chat-title">
     <div class="nusa-chat-shell">
-      <div class="nusa-chat-intro">
-        <div class="nusa-chat-brand" aria-label="VitaNusa AI">VitaNusa AI</div>
-        <h1 id="nusa-chat-title">Assalamualaikum, saya Nusa AI.<br>Apa yang ingin kamu pahami hari ini?</h1>
-      </div>
+      <aside class="nusa-plugin-rail" aria-label="Plugin VitaNusa AI">
+        <a class="nusa-brand-link" href="index.html" aria-label="VitaNusa AI">
+          <span class="nusa-brand-mark">VN</span>
+          <span><strong>VitaNusa AI</strong><small>Asisten edukasi amanah</small></span>
+        </a>
+
+        <nav class="nusa-plugin-list" aria-label="Daftar plugin VitaNusa">
+          <a class="nusa-plugin is-active" href="index.html">
+            <span class="nusa-plugin-icon" aria-hidden="true">AI</span>
+            <span><strong>Nusa Chat</strong><small>Tanya edukasi amanah</small></span>
+          </a>
+          <a class="nusa-plugin" href="vitacheck.html">
+            <span class="nusa-plugin-icon" aria-hidden="true">VC</span>
+            <span><strong>VitaCheck</strong><small>Refleksi kebiasaan</small></span>
+          </a>
+          <a class="nusa-plugin" href="vitagame.html/">
+            <span class="nusa-plugin-icon" aria-hidden="true">VG</span>
+            <span><strong>VitaGame</strong><small>Game klaim sehat</small></span>
+          </a>
+          <a class="nusa-plugin" href="komik/">
+            <span class="nusa-plugin-icon" aria-hidden="true">KS</span>
+            <span><strong>Komik</strong><small>Cerita visual edukatif</small></span>
+          </a>
+          <span class="nusa-plugin is-muted" aria-disabled="true">
+            <span class="nusa-plugin-icon" aria-hidden="true">NV</span>
+            <span><strong>Novel</strong><small>Segera hadir</small></span>
+          </span>
+          <a class="nusa-plugin" href="articles/index.html">
+            <span class="nusa-plugin-icon" aria-hidden="true">AR</span>
+            <span><strong>Artikel</strong><small>Bacaan edukatif</small></span>
+          </a>
+          <a class="nusa-plugin" href="products/index.html">
+            <span class="nusa-plugin-icon" aria-hidden="true">PA</span>
+            <span><strong>Produk Amanah</strong><small>Katalog reseller</small></span>
+          </a>
+          <a class="nusa-plugin" href="prinsip-amanah.html">
+            <span class="nusa-plugin-icon" aria-hidden="true">AM</span>
+            <span><strong>Prinsip Amanah</strong><small>Batas klaim</small></span>
+          </a>
+        </nav>
+      </aside>
 
       <div class="nusa-chat-panel" data-nusa-chat aria-label="Chat Nusa AI">
+        <header class="nusa-chat-intro">
+          <div class="nusa-chat-brand" aria-label="VitaNusa AI">Nusa AI</div>
+          <h1 id="nusa-chat-title">Apa yang ingin kamu pahami hari ini?</h1>
+          <p>Pilih plugin di samping, atau langsung tanya Nusa AI dengan bahasa sederhana.</p>
+        </header>
+
+        <div class="nusa-mobile-plugins" aria-label="Plugin VitaNusa mobile">
+          <a href="vitacheck.html">VitaCheck</a>
+          <a href="vitagame.html/">VitaGame</a>
+          <a href="komik/">Komik</a>
+          <a href="articles/index.html">Artikel</a>
+        </div>
+
         <div class="nusa-chat-window" data-nusa-chat-log role="log" aria-live="polite" aria-relevant="additions" hidden></div>
 
         <form class="nusa-chat-form" data-nusa-chat-form>
