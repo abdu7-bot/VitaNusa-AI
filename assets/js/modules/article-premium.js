@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './nusa-ui-shell.js?v=20260703-global-shell-final-v1';
+import { initNusaUiShell } from './nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
 
 initNusaUiShell();
 

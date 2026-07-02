@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260703-sidebar-top-v1';
+import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
 import { initNusaChat } from './modules/nusa-chat.js?v=20260701-nusa-knowledge-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
