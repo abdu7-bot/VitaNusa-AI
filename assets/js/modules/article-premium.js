@@ -1,3 +1,7 @@
+import { initNusaUiShell } from './nusa-ui-shell.js?v=20260702-unified-shell-v1';
+
+initNusaUiShell();
+
 const progressBar = document.querySelector("[data-reading-progress]");
 const copyButtons = document.querySelectorAll("[data-copy-link]");
 const shareButtons = document.querySelectorAll("[data-share-link]");
