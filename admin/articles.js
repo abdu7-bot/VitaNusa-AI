@@ -474,11 +474,11 @@ async function handleListAction(event) {
 function getPayloadFromForm() {
   const form = getForm();
   const formData = new FormData(form);
-  const status = String(formData.get('status') || 'draft');
+  const status = String(formData.get('status') || 'published');
   return withMetadataDefaults({
     title: String(formData.get('title') || '').trim(),
     slug: normalizeSlug(formData.get('slug')),
-    status: safeValue(VALID_STATUSES, status, 'draft'),
+    status: safeValue(VALID_STATUSES, status, 'published'),
     category: String(formData.get('category') || '').trim(),
     summary: String(formData.get('summary') || '').trim(),
     contentHtml: String(formData.get('contentHtml') || '').trim(),
@@ -518,25 +518,22 @@ function validateArticle(payload, currentId = null) {
   if (!VALID_CONTENT_DEPTHS.has(payload.contentDepth)) errors.push('Content Depth tidak valid.');
   if (!VALID_PRIMARY_ACTIONS.has(payload.primaryAction)) errors.push('Primary Action tidak valid.');
   if (/<\s*script/i.test(payload.contentHtml)) errors.push('Content HTML tidak boleh mengandung tag script.');
+  if (/<\s*\/?\s*(html|head|body)\b/i.test(payload.contentHtml)) errors.push('Content HTML tidak boleh berisi full document HTML seperti html, head, atau body.');
 
   const duplicate = state.articles.find((article) => article.slug === payload.slug && article.id !== currentId);
   if (duplicate) errors.push('Slug sudah dipakai artikel lain.');
 
-  if (missingDisclaimer) warnings.push('Disclaimer belum ada. Jika artikel dipublish dan lolos validasi risiko, sistem akan menambahkannya otomatis.');
-  if (hasPromotionalRisk) warnings.push('Ditemukan klaim promosi berisiko pada isi utama. Publish ditahan sampai klaim hasil mutlak, hasil cepat, atau manfaat berlebihan dihapus/dikontekstualkan.');
+  if (missingDisclaimer) warnings.push('Disclaimer belum ada. Jika artikel dipublish, sistem akan menambahkannya otomatis.');
+  if (hasPromotionalRisk) warnings.push('Ditemukan klaim promosi berisiko pada isi utama. Review ulang klaim hasil mutlak, hasil cepat, atau manfaat berlebihan sebelum artikel dipakai publik.');
   if (educationalRiskMentions.length) {
     warnings.push(`Frasa risiko hanya muncul dalam konteks edukasi/penolakan klaim: ${educationalRiskMentions.join(', ')}.`);
   }
   if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') warnings.push('Medical sensitive tidak boleh langsung diarahkan ke view-products. Ubah Primary Action ke read-article, seek-professional-help, atau read-prinsip-amanah.');
-  if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Risk level high perlu disclaimer edukasi. Saat publish, disclaimer akan ditambahkan otomatis bila artikel tidak ditahan oleh risiko promosi.');
-  if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Product sensitive mengandung klaim utama berisiko. Publish ditahan agar klaim produk direview ulang.');
+  if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Risk level high perlu disclaimer edukasi. Saat publish, disclaimer akan ditambahkan otomatis.');
+  if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Product sensitive mengandung klaim utama berisiko. Review ulang klaim produk sebelum artikel dipakai publik.');
   if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Islamic sensitive terdengar seperti fatwa final. Ini warning review, bukan force draft otomatis; rujukkan hukum rinci kepada ustadz/ulama kompeten.');
 
-  const forceDraft = payload.status === 'published' && (
-    hasPromotionalRisk
-    || (payload.isMedicalSensitive && payload.primaryAction === 'view-products')
-    || (payload.isProductSensitive && hasPromotionalRisk)
-  );
+  const forceDraft = false;
   return { errors, warnings, riskTerms, missingDisclaimer, forceDraft };
 }
 
@@ -587,13 +584,16 @@ function parseArticleImportText(rawText) {
 
   if (!title) throw new Error('Judul tidak ditemukan.');
   if (!contentHtml) throw new Error('Section HTML ARTIKEL tidak ditemukan.');
+  if (metadata.status && safeValue(VALID_STATUSES, metadata.status, '') !== 'published') {
+    warnings.push('Status import diubah otomatis menjadi published.');
+  }
 
   const imported = {
     title,
     slug: slug || normalizeSlug(title),
     summary,
     contentHtml,
-    status: safeValue(VALID_STATUSES, metadata.status || 'draft', 'draft'),
+    status: 'published',
     category: String(metadata.category || '').trim(),
     tags: String(metadata.tags || '').trim(),
     intentTarget: safeValue(VALID_INTENT_TARGETS, metadata.intentTarget || DEFAULT_METADATA.intentTarget, DEFAULT_METADATA.intentTarget),
@@ -766,7 +766,6 @@ function hasStrongPattern(normalizedText, patterns) {
 }
 function setImportedSensitiveFlag(imported, key, warning) {
   if (imported[key] !== true) imported[key] = true;
-  imported.status = 'draft';
   if (!imported.warnings.includes(warning)) imported.warnings.push(warning);
 }
 function applyImportSensitivityRules(imported) {
@@ -810,7 +809,7 @@ function applyImportedArticleToForm(imported) {
   form.elements.contentDepth.value = imported.contentDepth;
   form.elements.primaryAction.value = imported.primaryAction;
   form.elements.reviewerNote.value = imported.reviewerNote;
-  form.elements.status.value = imported.status || 'draft';
+  form.elements.status.value = imported.status || 'published';
 
   if (form.elements.bannerFile) form.elements.bannerFile.value = '';
   hideBannerPreview();
@@ -858,8 +857,6 @@ function updateArticleFormPreview() {
 
   if (validation.errors.length) {
     summary.append(createValidationText('error', `Error: ${validation.errors.join(' ')}`));
-  } else if (validation.forceDraft) {
-    summary.append(createValidationText('error', 'Publish akan ditahan. Artikel akan disimpan sebagai draft sampai klaim atau arah aksi berisiko diperbaiki.'));
   } else if (payload.status === 'published' && validation.missingDisclaimer) {
     summary.append(createValidationText('warning', 'Saat publish, disclaimer wajib akan ditambahkan otomatis.'));
   } else {
@@ -893,6 +890,7 @@ async function handleSaveArticle(event) {
   const payload = getPayloadFromForm();
   const currentId = state.editingId;
   const existing = state.articles.find((article) => article.id === currentId);
+  if (!currentId) payload.status = 'published';
   const validation = validateArticle(payload, currentId);
   const bannerUploadDisabled = Boolean(state.selectedBannerFile);
 
@@ -901,15 +899,9 @@ async function handleSaveArticle(event) {
     return;
   }
 
-  let forcedDraft = false;
   let autoDisclaimerAdded = false;
 
-  if (validation.forceDraft) {
-    payload.status = 'draft';
-    forcedDraft = true;
-  }
-
-  if (payload.status === 'published' && validation.missingDisclaimer && !forcedDraft) {
+  if (payload.status === 'published' && validation.missingDisclaimer) {
     payload.contentHtml = withRequiredDisclaimer(payload.contentHtml);
     autoDisclaimerAdded = true;
   }
@@ -931,11 +923,6 @@ async function handleSaveArticle(event) {
 
     const bannerMessage = bannerUploadDisabled ? ' Upload banner via Firebase Storage sedang nonaktif; artikel memakai Banner URL manual.' : '';
     const disclaimerMessage = autoDisclaimerAdded ? ' Disclaimer wajib otomatis ditambahkan.' : '';
-
-    if (forcedDraft) {
-      setMessage('warning', `${getValidationMessage(validation)} Artikel disimpan sebagai draft, bukan published. Perbaiki warning utama sebelum publish.${bannerMessage}`);
-      return;
-    }
 
     if (validation.warnings.length) {
       setMessage('warning', `${validation.warnings.join(' ')} Artikel tersimpan sebagai ${payload.status}.${disclaimerMessage}${bannerMessage}`);
@@ -1107,7 +1094,7 @@ function resetForm() {
   state.selectedBannerFile = null;
 
   form.reset();
-  form.elements.status.value = 'draft';
+  form.elements.status.value = 'published';
   form.elements.intentTarget.value = DEFAULT_METADATA.intentTarget;
   form.elements.riskLevel.value = DEFAULT_METADATA.riskLevel;
   form.elements.isMedicalSensitive.checked = DEFAULT_METADATA.isMedicalSensitive;
@@ -1132,11 +1119,6 @@ async function publishArticle(article) {
 
   if (validation.errors.length) {
     setMessage('error', validation.errors.join(' '));
-    return;
-  }
-
-  if (validation.forceDraft) {
-    setMessage('warning', getValidationMessage(validation, 'Artikel tidak dipublish. Perbaiki konten lalu simpan ulang.'));
     return;
   }
 
