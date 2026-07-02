@@ -43,7 +43,6 @@ function injectShellStyles() {
     :root{--vn-shell-green:#14532d;--vn-shell-green-2:#16a34a;--vn-shell-soft:#f0fdf4;--vn-shell-cream:#fbf7ed;--vn-shell-line:rgba(22,163,74,.15);--vn-shell-ink:#143d2c;--vn-shell-muted:#64766b;}
     body.vn-shell-polished:not(.nusa-chat-page){background:radial-gradient(circle at top left,rgba(220,252,231,.8),transparent 32rem),radial-gradient(circle at bottom right,rgba(250,244,226,.85),transparent 30rem),#f6fbf7;color:var(--vn-shell-ink);}
     body.vn-shell-polished:not(.nusa-chat-page){padding-right:min(360px,30vw);}
-    body.vn-shell-polished .site-header{box-shadow:0 10px 30px rgba(20,83,45,.06);}
     body.vn-shell-polished .hero,body.vn-shell-polished .article-hero,body.vn-shell-polished .principle-hero,body.vn-shell-polished .product-hero{background:radial-gradient(circle at 82% 12%,rgba(255,224,164,.26),transparent 28%),linear-gradient(135deg,#0f3d2e,#18734f 58%,#16a34a)!important;}
     body.vn-shell-polished .card,body.vn-shell-polished .article-card,body.vn-shell-polished .article-body,body.vn-shell-polished .trust-panel,body.vn-shell-polished .catalog-card,body.vn-shell-polished details{border-color:var(--vn-shell-line)!important;box-shadow:0 18px 44px rgba(20,83,45,.08)!important;}
     .vn-right-rail{position:fixed;top:16px;right:16px;bottom:16px;z-index:160;width:min(328px,calc(100vw - 32px));display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--vn-shell-line);border-radius:28px;background:#fff;box-shadow:0 24px 70px rgba(20,83,45,.13);overflow:auto;}
@@ -67,12 +66,6 @@ function injectShellStyles() {
     @media(max-width:520px){.vn-right-rail{top:10px;right:10px;bottom:10px;width:min(356px,calc(100vw - 20px));border-radius:24px}.vn-shell-toggle span:last-child{display:none;}}
   `;
   document.head.appendChild(style);
-}
-
-function cleanPlaceholders() {
-  document.querySelectorAll('.topbar-inner span, .contact-list li').forEach((node) => {
-    if (/Instagram:\s*proses|TikTok:\s*proses/i.test(node.textContent || '')) node.hidden = true;
-  });
 }
 
 function normalizeExistingLinks() {
@@ -111,7 +104,6 @@ export function initNusaUiShell() {
   document.documentElement.setAttribute(SHELL_READY_ATTR, 'true');
   document.body.classList.add('vn-shell-polished');
   injectShellStyles();
-  cleanPlaceholders();
   normalizeExistingLinks();
 
   if (document.querySelector('[data-vn-right-rail]')) return;

@@ -110,29 +110,7 @@
 
     .skip-link:focus {
       top: 14px;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .topbar-inner {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 14px 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-      position: relative;
-    }
-
-    .brand {
+    }.brand {
       font-weight: 800;
       color: var(--green-dark);
       letter-spacing: 0.2px;
@@ -142,61 +120,7 @@
 
     .brand:hover {
       text-decoration: none;
-    }
-
-    .nav {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      font-size: 14px;
-    }
-
-    .nav a {
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .nav a:hover {
-      color: var(--green-dark);
-    }
-
-    .nav-toggle {
-      display: none;
-      width: 42px;
-      height: 42px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--white);
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 5px;
-      padding: 0;
-    }
-
-    .nav-toggle span {
-      display: block;
-      width: 20px;
-      height: 2px;
-      background: var(--green-dark);
-      border-radius: 999px;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-
-    .nav-toggle.is-active span:nth-child(1) {
-      transform: translateY(7px) rotate(45deg);
-    }
-
-    .nav-toggle.is-active span:nth-child(2) {
-      opacity: 0;
-    }
-
-    .nav-toggle.is-active span:nth-child(3) {
-      transform: translateY(-7px) rotate(-45deg);
-    }
-
-    .hero {
+    }.hero {
       max-width: 1120px;
       margin: 0 auto;
       padding: 58px 20px 28px;
@@ -507,56 +431,7 @@
       }
     }
 
-    @media (max-width: 768px) {
-      .topbar-inner {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-      }
-
-      .nav-toggle {
-        display: inline-flex;
-      }
-
-      .nav {
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 16px;
-        right: 16px;
-        display: none;
-        flex-direction: column;
-        flex-wrap: nowrap;
-        gap: 4px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.98);
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-        overflow-y: auto;
-        max-height: calc(100vh - 90px);
-      }
-
-      .nav.is-open {
-        display: flex;
-      }
-
-      .nav a {
-        display: block;
-        width: 100%;
-        padding: 11px 12px;
-        border-radius: 12px;
-        color: var(--green-dark);
-        font-size: 15px;
-        font-weight: 700;
-      }
-
-      .nav a:hover {
-        background: var(--green-soft);
-        text-decoration: none;
-      }
-
-      .hero {
+    @media (max-width: 768px) {.hero {
         padding: 36px 16px 20px;
       }
 
@@ -723,37 +598,7 @@
 
 <body id="top">
   <a class="skip-link" href="#konten">Lewati ke isi artikel</a>
-
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="#top" aria-label="VitaNusa AI kembali ke atas">
-        VitaNusa AI
-      </a>
-
-      <button
-        class="nav-toggle"
-        type="button"
-        aria-label="Buka menu navigasi"
-        aria-expanded="false"
-        aria-controls="site-nav"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      <nav id="site-nav" class="nav" aria-label="Navigasi artikel">
-        <a href="#inti">Inti</a>
-        <a href="#testimoni">Testimoni</a>
-        <a href="#cek-klaim">Cek Klaim</a>
-        <a href="#bendera-merah">Bendera Merah</a>
-        <a href="#islam">Prinsip Islam</a>
-        <a href="#rujukan">Rujukan</a>
-      </nav>
-    </div>
-  </header>
-
-  <main id="konten">
+<main id="konten">
     <div class="hero">
       <div class="hero-card">
         <span class="label">Artikel Edukasi Jangka Panjang</span>
@@ -1330,52 +1175,6 @@
     </p>
   </footer>
 
-  <script>
-    const navToggle = document.querySelector(".nav-toggle");
-    const navMenu = document.querySelector("#site-nav");
-
-    if (navToggle && navMenu) {
-      navToggle.addEventListener("click", function () {
-        const isOpen = navMenu.classList.toggle("is-open");
-
-        navToggle.classList.toggle("is-active", isOpen);
-        navToggle.setAttribute("aria-expanded", String(isOpen));
-        navToggle.setAttribute(
-          "aria-label",
-          isOpen ? "Tutup menu navigasi" : "Buka menu navigasi"
-        );
-      });
-
-      navMenu.querySelectorAll("a").forEach(function (link) {
-        link.addEventListener("click", function () {
-          navMenu.classList.remove("is-open");
-          navToggle.classList.remove("is-active");
-          navToggle.setAttribute("aria-expanded", "false");
-          navToggle.setAttribute("aria-label", "Buka menu navigasi");
-        });
-      });
-
-      document.addEventListener("click", function (event) {
-        const clickedInsideMenu = navMenu.contains(event.target);
-        const clickedToggle = navToggle.contains(event.target);
-
-        if (!clickedInsideMenu && !clickedToggle) {
-          navMenu.classList.remove("is-open");
-          navToggle.classList.remove("is-active");
-          navToggle.setAttribute("aria-expanded", "false");
-          navToggle.setAttribute("aria-label", "Buka menu navigasi");
-        }
-      });
-
-      window.addEventListener("resize", function () {
-        if (window.innerWidth > 768) {
-          navMenu.classList.remove("is-open");
-          navToggle.classList.remove("is-active");
-          navToggle.setAttribute("aria-expanded", "false");
-          navToggle.setAttribute("aria-label", "Buka menu navigasi");
-        }
-      });
-    }
-  </script>
+  <script type="module">import{initNusaUiShell}from'../assets/js/modules/nusa-ui-shell.js?v=20260703-global-shell-final-v1';initNusaUiShell();</script>
 </body>
 </html>

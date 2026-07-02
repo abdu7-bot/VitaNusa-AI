@@ -89,85 +89,6 @@ img {
   box-shadow: var(--shadow);
 }
 
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--border);
-}
-
-.navbar {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.brand-logo {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  padding: 9px 14px;
-  border-radius: 999px;
-  font-size: 0.95rem;
-  font-weight: 760;
-  transition: 0.2s ease;
-}
-
-.nav-links a:hover,
-.nav-links a:focus-visible,
-.nav-links a.active {
-  color: var(--primary-dark);
-  background: var(--bg-soft);
-  outline: 0;
-}
-
-.menu-toggle {
-  display: none;
-  border: 0;
-  background: var(--bg-soft);
-  color: var(--primary-dark);
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.hero-section,
-.main-container,
-.cta-section {
   max-width: 1120px;
   margin: 0 auto;
   padding-inline: 20px;
@@ -791,35 +712,7 @@ img {
 }
 
 @media (max-width: 760px) {
-  .menu-toggle {
-    display: grid;
-    place-items: center;
-  }
-
-  .nav-links {
-    position: absolute;
-    left: 20px;
-    right: 20px;
-    top: 72px;
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 14px;
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-  }
-
-  .nav-links.show {
-    display: flex;
-  }
-
-  .nav-links a {
-    width: 100%;
-  }
-
-  .hero-section {
+`r`n  .hero-section {
     padding-top: 48px;
   }
 

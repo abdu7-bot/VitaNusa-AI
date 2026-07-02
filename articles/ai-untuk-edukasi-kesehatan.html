@@ -12,8 +12,8 @@
 <meta property="og:locale" content="id_ID">
 <meta property="og:image" content="Images/banner-artikel-1.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="../style.css?v=20260618-article-premium-3">
-<link rel="stylesheet" href="../assets/css/vitanusa-upgrade.css?v=20260618-article-premium-3">
+<link rel="stylesheet" href="../style.css?v=20260703-global-shell-final-v1">
+<link rel="stylesheet" href="../assets/css/vitanusa-upgrade.css?v=20260703-global-shell-final-v1">
 <style>
 body.premium-article{background:#f6fbf7;overflow-x:hidden}
 .reading-progress{position:fixed;top:0;left:0;width:100%;height:4px;background:#dbe8df;z-index:9999}
@@ -47,7 +47,7 @@ body.premium-article{background:#f6fbf7;overflow-x:hidden}
 .back-top{display:inline-flex;margin-top:1rem;font-weight:800}
 @media(max-width:920px){.article-shell{grid-template-columns:1fr}.article-toc{position:static}.related-grid{grid-template-columns:1fr}}
 @media(max-width:680px){.article-actions{flex-direction:column}.article-actions .btn,.article-actions .premium-btn{width:100%}.article-banner img{border-radius:18px}.article-body{border-radius:22px}.article-toc{border-radius:18px}}
-@media print{.site-header,.reading-progress,.article-actions,.article-toc,.related-articles,.float{display:none!important}.article-shell{display:block;padding:0}.article-body{box-shadow:none;border:0;padding:0}.article-banner{margin:12px 0}.article-hero{background:#fff!important;color:#111!important;padding:0!important}}
+@media print{.reading-progress,.article-actions,.article-toc,.related-articles,.float{display:none!important}.article-shell{display:block;padding:0}.article-body{box-shadow:none;border:0;padding:0}.article-banner{margin:12px 0}.article-hero{background:#fff!important;color:#111!important;padding:0!important}}
 </style>
 <script type="application/ld+json">{
   "@context": "https://schema.org",
@@ -72,34 +72,6 @@ body.premium-article{background:#f6fbf7;overflow-x:hidden}
 <body class="article-page premium-article">
 <div class="reading-progress"><span data-reading-progress></span></div>
 <a class="skip" href="#main">Lewati ke konten</a>
-  <header class="site-header">
-    <div class="topbar">
-      <div class="wrap topbar-inner">
-        <span>WhatsApp: <a href="https://wa.me/6288708862581">088708862581</a></span>
-        <span>Email: <a href="mailto:kopiscent99@gmail.com">kopiscent99@gmail.com</a></span>
-        <span>Instagram: proses</span>
-        <span>TikTok: proses</span>
-      </div>
-    </div>
-    <div class="navbar">
-      <a class="brand" href="../index.html#home" aria-label="VitaNusa AI Beranda">
-        <img class="brand-logo" src="../images/logo-vitanusa-Ai.png" alt="Logo VitaNusa AI">
-        <span><strong>VitaNusa AI</strong><small>Sahabat edukasi sehat</small></span>
-      </a>
-      <button class="menu-toggle" type="button" aria-controls="mainNav" aria-expanded="false">
-        <span>Menu</span>
-      </button>
-      <nav class="main-nav" id="mainNav" aria-label="Navigasi utama">
-        <a href="../index.html#home">Beranda</a>
-        <a href="../index.html#vitacheck">VitaCheck</a>
-        <a href="index.html">Artikel</a>
-        <a href="../documents/index.html">Dokumen</a>
-        <a href="../komik.html">VitaStory</a>
-        <a href="../vitagame.html/">VitaGame</a>
-        <a class="cta" href="../index.html#kontak">Kontak</a>
-      </nav>
-    </div>
-  </header>
 <main id="main">
 <article>
 <section class="article-hero">
@@ -143,21 +115,5 @@ body.premium-article{background:#f6fbf7;overflow-x:hidden}
       <p>© 2026 VitaNusa AI.</p>
     </div>
   </footer>
-  <script>
-    const menuToggle = document.querySelector('.menu-toggle');
-    const mainNav = document.getElementById('mainNav');
-    if (menuToggle && mainNav) {
-      menuToggle.addEventListener('click', () => {
-        const isOpen = mainNav.classList.toggle('open');
-        menuToggle.setAttribute('aria-expanded', String(isOpen));
-      });
-      mainNav.querySelectorAll('a').forEach((link) => {
-        link.addEventListener('click', () => {
-          mainNav.classList.remove('open');
-          menuToggle.setAttribute('aria-expanded', 'false');
-        });
-      });
-    }
-  </script>
-  <script type="module" src="../assets/js/modules/article-premium.js"></script>
+<script type="module" src="../assets/js/modules/article-premium.js?v=20260703-global-shell-final-v1"></script>
 </body></html>

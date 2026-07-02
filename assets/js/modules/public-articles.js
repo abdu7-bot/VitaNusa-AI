@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './nusa-ui-shell.js?v=20260702-unified-shell-v1';
+import { initNusaUiShell } from './nusa-ui-shell.js?v=20260703-global-shell-final-v1';
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
 import { getFirestore, collection, getDocs, query, where, limit } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
