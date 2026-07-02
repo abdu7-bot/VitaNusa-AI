@@ -1,7 +1,9 @@
+import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260702-unified-shell-v1';
 import { initNusaChat } from './modules/nusa-chat.js?v=20260701-nusa-knowledge-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
 
 const modules = [
+  ['VitaNusa UI Shell', initNusaUiShell],
   ['Nusa Chat', initNusaChat],
   ['VitaCheck', initVitaCheck],
 ];
