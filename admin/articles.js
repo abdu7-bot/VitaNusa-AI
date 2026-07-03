@@ -531,10 +531,9 @@ function validateArticle(payload, currentId = null) {
   if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') warnings.push('Medical sensitive tidak boleh langsung diarahkan ke view-products. Ubah Primary Action ke read-article, seek-professional-help, atau read-prinsip-amanah.');
   if (payload.riskLevel === 'high' && missingDisclaimer) warnings.push('Risk level high perlu disclaimer edukasi. Saat publish, disclaimer akan ditambahkan otomatis.');
   if (payload.isProductSensitive && hasPromotionalRisk) warnings.push('Product sensitive mengandung klaim utama berisiko. Review ulang klaim produk sebelum artikel dipakai publik.');
-  if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Islamic sensitive terdengar seperti fatwa final. Ini warning review, bukan force draft otomatis; rujukkan hukum rinci kepada ustadz/ulama kompeten.');
+  if (payload.isIslamicSensitive && hasFatwaFinalCue) warnings.push('Islamic sensitive terdengar seperti fatwa final. Ini warning review, bukan perubahan status otomatis; rujukkan hukum rinci kepada ustadz/ulama kompeten.');
 
-  const forceDraft = false;
-  return { errors, warnings, riskTerms, missingDisclaimer, forceDraft };
+  return { errors, warnings, riskTerms, missingDisclaimer };
 }
 
 function initArticleImport() {
@@ -946,7 +945,7 @@ function initDisclaimerHelper() {
   const helper = document.createElement('div');
   helper.className = 'article-disclaimer-helper';
   helper.dataset.articleDisclaimerHelper = '';
-  helper.innerHTML = `<div class="article-disclaimer-copy"><strong>Disclaimer wajib</strong><p>${REQUIRED_DISCLAIMER}</p><small>Untuk artikel published, disclaimer ini wajib ada. Jika artikel lolos validasi, sistem bisa menambahkannya otomatis; jika ada klaim promosi berisiko, artikel tetap ditahan sebagai draft.</small></div><p class="article-disclaimer-status" data-article-disclaimer-status></p><div class="article-disclaimer-actions"><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-add-disclaimer>Tambahkan Disclaimer</button><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-copy-disclaimer>Salin disclaimer wajib</button></div>`;
+  helper.innerHTML = `<div class="article-disclaimer-copy"><strong>Disclaimer wajib</strong><p>${REQUIRED_DISCLAIMER}</p><small>Untuk artikel published, disclaimer ini wajib ada. Jika artikel lolos validasi, sistem bisa menambahkannya otomatis; jika ada klaim promosi berisiko, sistem memberi warning tanpa mengubah status otomatis.</small></div><p class="article-disclaimer-status" data-article-disclaimer-status></p><div class="article-disclaimer-actions"><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-add-disclaimer>Tambahkan Disclaimer</button><button class="admin-button admin-button-light article-disclaimer-button" type="button" data-article-copy-disclaimer>Salin disclaimer wajib</button></div>`;
 
   const helpText = contentInput.closest('label')?.nextElementSibling;
   if (helpText?.classList.contains('article-help')) helpText.after(helper);
@@ -964,7 +963,7 @@ function updateDisclaimerStatus() {
   const hasDisclaimer = hasRequiredDisclaimer(form.elements.contentHtml?.value || '');
   status.classList.toggle('is-ok', hasDisclaimer);
   status.classList.toggle('is-missing', !hasDisclaimer);
-  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer belum ada. Artikel published akan mendapat disclaimer otomatis bila tidak ditahan oleh validasi klaim promosi atau aksi sensitif.';
+  status.textContent = hasDisclaimer ? 'Disclaimer wajib sudah ada di Content HTML.' : 'Disclaimer belum ada. Artikel published akan mendapat disclaimer otomatis jika lolos validasi dasar; warning klaim promosi atau aksi sensitif tidak mengubah status otomatis.';
 }
 function appendRequiredDisclaimer() {
   const form = getForm();
@@ -1125,7 +1124,8 @@ async function publishArticle(article) {
   const publishContentHtml = validation.missingDisclaimer ? withRequiredDisclaimer(payload.contentHtml) : payload.contentHtml;
 
   try {
-    const updatePayload = { ...withMetadataDefaults(payload), status: 'published', contentHtml: publishContentHtml, updatedAt: serverTimestamp() };
+    const { id: _removedId, ...articlePayload } = withMetadataDefaults(payload);
+    const updatePayload = { ...articlePayload, status: 'published', contentHtml: publishContentHtml, updatedAt: serverTimestamp() };
     if (safeArticle.status !== 'published') updatePayload.publishedAt = serverTimestamp();
 
     await updateDoc(doc(db, 'articles', safeArticle.id), updatePayload);

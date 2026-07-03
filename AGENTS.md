@@ -9,7 +9,7 @@ VitaNusa AI adalah website edukasi kesehatan, refleksi Islami, VitaCheck, artike
 - Konten kesehatan bersifat edukasi umum, bukan pengganti tenaga profesional.
 - Konten Islami bersifat refleksi, bukan fatwa dan bukan tafsir final.
 - Konten produk hanya untuk informasi reseller, bukan klaim medis.
-- Artikel sensitif harus tetap draft sampai direview pihak yang kompeten.
+- Artikel sensitif tetap diberi warning, sensitive flags, reviewerNote, dan Catatan Amanah; sistem tidak memaksa draft otomatis.
 
 ## Area yang Dilindungi
 Jangan mengubah bagian berikut kecuali diminta eksplisit:
@@ -33,10 +33,11 @@ Jangan mengubah bagian berikut kecuali diminta eksplisit:
 - Jelaskan setiap file yang diubah dan alasan perubahannya.
 
 ## Aturan Artikel Admin
-- Artikel baru default ke status draft.
+- Artikel baru atau import dari admin default ke status published.
 - Pertahankan metadata artikel: intentTarget, riskLevel, sensitive flags, relatedArticles, contentDepth, primaryAction, reviewerNote.
 - Related Articles wajib memakai slug, bukan judul.
 - Artikel draft dan archived tidak boleh tampil di publik.
+- Artikel sensitif tetap perlu warning/reviewerNote dan review amanah, tetapi tidak dipaksa draft oleh sistem.
 - Jangan menghapus Catatan Amanah.
 - Jika artikel memakai referensi, taruh link di section article-references.
 

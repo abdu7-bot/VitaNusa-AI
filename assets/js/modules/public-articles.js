@@ -15,7 +15,7 @@ if (listRoot) loadPublishedArticles();
 if (detailRoot) loadArticleDetail();
 
 async function loadPublishedArticles() {
-  setStatus('loading', 'Memuat artikel published dari Firestore...');
+  setStatus('loading', 'Memuat artikel terbaru...');
   try {
     const publishedQuery = query(collection(db, 'articles'), where('status', '==', 'published'));
     const snapshot = await getDocs(publishedQuery);
@@ -31,7 +31,7 @@ async function loadPublishedArticles() {
     dispatchRenderEvent({ count: articles.length });
   } catch (error) {
     console.error('Gagal memuat artikel published dari Firestore:', error);
-    setStatus('warning', 'Firestore gagal dimuat. Artikel statis dan fallback tetap tersedia. Coba refresh halaman jika koneksi sudah stabil.');
+    setStatus('warning', 'Artikel dinamis belum bisa dimuat. Artikel pilihan tetap tersedia. Coba refresh halaman jika koneksi sudah stabil.');
     dispatchRenderEvent({ count: 0, error: true });
   }
 }
@@ -49,7 +49,7 @@ async function loadArticleDetail() {
     renderArticleDetail(article);
   } catch (error) {
     console.error('Gagal memuat detail artikel dari Firestore:', error);
-    renderDetailMessage('Artikel gagal dimuat. Periksa koneksi atau Firestore rules, lalu coba lagi.');
+    renderDetailMessage('Artikel gagal dimuat. Periksa koneksi, lalu coba lagi.');
   }
 }
 
