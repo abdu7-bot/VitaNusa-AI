@@ -1,0 +1,472 @@
+:root {
+  --vn-green-900: #0f3d2e;
+  --vn-green-800: #14532d;
+  --vn-green-700: #18734f;
+  --vn-green-500: #16a34a;
+  --vn-green-100: #eef8f1;
+  --vn-green-50: #f0fdf4;
+  --vn-cream: #fbf7ed;
+  --vn-gold: #ffe0a4;
+  --vn-gold-soft: #fff7df;
+  --vn-ink: #143d2c;
+  --vn-text: #15251e;
+  --vn-muted: #64766b;
+  --vn-line: rgba(22, 163, 74, .16);
+  --vn-surface: #ffffff;
+  --vn-shadow: 0 18px 44px rgba(20, 83, 45, .09);
+  --vn-shadow-strong: 0 26px 70px rgba(20, 83, 45, .14);
+  --vn-radius-lg: 28px;
+  --vn-radius-md: 20px;
+  --vn-radius-sm: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body.vn-page,
+body.public-page,
+body.article-page,
+body.product-page,
+body.principle-page,
+body.contact-page,
+body.faq-page,
+body.document-page,
+body.comic-page,
+body.vitacheck-page,
+body.vitagame-page {
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(220, 252, 231, .82), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(250, 244, 226, .88), transparent 30rem),
+    #f6fbf7;
+  color: var(--vn-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body.vn-page img {
+  max-width: 100%;
+}
+
+.skip,
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: .75rem;
+  z-index: 10001;
+  border-radius: 999px;
+  background: var(--vn-gold);
+  color: #09251e;
+  padding: .65rem 1rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.skip:focus,
+.skip-link:focus {
+  left: .75rem;
+}
+
+.vn-container,
+.wrap,
+.main-container,
+.hero-content,
+.cta-box {
+  width: min(92%, 1120px);
+  margin-inline: auto;
+}
+
+.vn-page-hero,
+.article-hero,
+.product-hero,
+.constitution-hero,
+.comic-hero,
+.game-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(44px, 7vw, 76px) 0 clamp(34px, 5vw, 58px);
+  background:
+    radial-gradient(circle at 82% 12%, rgba(255, 224, 164, .28), transparent 28%),
+    linear-gradient(135deg, var(--vn-green-900), var(--vn-green-700) 58%, var(--vn-green-500));
+  color: #ffffff;
+}
+
+.vn-page-hero .vn-container,
+.vn-page-hero .wrap,
+.product-hero .wrap,
+.constitution-hero .wrap,
+.comic-hero .wrap,
+.game-hero {
+  display: grid;
+  gap: clamp(14px, 2vw, 22px);
+}
+
+.vn-eyebrow,
+.eyebrow,
+.game-kicker {
+  margin: 0 0 .55rem;
+  color: var(--vn-green-700);
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.vn-page-hero .vn-eyebrow,
+.vn-page-hero .eyebrow,
+.product-hero .eyebrow,
+.constitution-hero .eyebrow,
+.comic-hero .eyebrow,
+.game-hero .game-kicker {
+  color: var(--vn-gold);
+}
+
+.vn-page-hero h1,
+.product-hero h1,
+.constitution-hero h1,
+.comic-hero h1,
+.hero-content h1 {
+  max-width: 860px;
+  margin: 0;
+  color: inherit;
+  font-size: clamp(2.15rem, 6.4vw, 4.7rem);
+  line-height: 1.03;
+  letter-spacing: 0;
+}
+
+.vn-page-hero p,
+.product-hero p,
+.constitution-hero p,
+.comic-hero p {
+  max-width: 780px;
+  margin: 0;
+  color: rgba(242, 255, 247, .92);
+  font-size: clamp(1rem, 1.8vw, 1.16rem);
+  line-height: 1.65;
+}
+
+.vn-section,
+.product-section,
+.constitution-main,
+.comic-list,
+.game-shell,
+.sec,
+.main-container {
+  padding-block: clamp(42px, 6vw, 66px);
+  scroll-margin-top: 140px;
+}
+
+.vn-section-muted,
+.product-section.muted,
+.sec.muted {
+  background: rgba(238, 248, 241, .72);
+}
+
+.vn-section-heading,
+.section-heading {
+  max-width: 780px;
+  margin: 0 0 24px;
+}
+
+.vn-section-heading h2,
+.section-heading h2,
+.product-section h2,
+.constitution-main h2,
+.faq-page h1,
+.contact-page h1,
+.vitacheck-page h1 {
+  color: var(--vn-green-900);
+  font-size: clamp(1.7rem, 4vw, 2.65rem);
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.vn-section-heading p,
+.section-heading p,
+.section-copy {
+  color: var(--vn-muted);
+}
+
+.vn-grid,
+.vn-grid-2,
+.vn-grid-3,
+.trust-grid,
+.catalog-grid,
+.principle-cards,
+.flow-grid,
+.safe-flow,
+.document-grid,
+.comic-grid,
+.game-board,
+.check-grid,
+.contact-grid {
+  display: grid;
+  gap: clamp(14px, 2vw, 20px);
+}
+
+.vn-grid-2,
+.catalog-grid,
+.contact-grid,
+.check-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vn-grid-3,
+.trust-grid,
+.principle-cards,
+.document-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vn-card,
+.card,
+.trust-panel,
+.info-card,
+.catalog-card,
+.flow-card,
+.principle-card,
+.panel,
+.faq-card,
+.section-menu,
+.document-card,
+.comic-card,
+.game-stage,
+.game-panel,
+.article-card,
+.article-detail-header,
+.article-detail-body,
+details {
+  border: 1px solid var(--vn-line);
+  border-radius: var(--vn-radius-lg);
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--vn-shadow);
+}
+
+.vn-card,
+.card,
+.trust-panel,
+.info-card,
+.catalog-card,
+.flow-card,
+.principle-card,
+.panel,
+.faq-card,
+.section-menu,
+.game-panel,
+details {
+  padding: clamp(16px, 3vw, 22px);
+}
+
+.vn-note,
+.vn-disclaimer,
+.note,
+.amanah-note,
+.game-note,
+.disclaimer-panel,
+.cta-box {
+  border: 1px solid rgba(194, 154, 59, .26);
+  border-radius: var(--vn-radius-md);
+  background: linear-gradient(135deg, var(--vn-gold-soft), #ffffff);
+  color: #4f3c20;
+}
+
+.vn-actions,
+.actions,
+.hero-actions,
+.product-actions,
+.actions-minimal,
+.game-actions,
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.vn-btn,
+.vn-btn-primary,
+.vn-btn-secondary,
+.vn-btn-soft,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-tertiary,
+.game-button,
+.game-link,
+.read-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+}
+
+.vn-btn-primary,
+.btn.primary,
+.btn-primary,
+.game-button-primary {
+  border-color: var(--vn-green-700);
+  background: var(--vn-green-700);
+  color: #ffffff !important;
+}
+
+.vn-btn-secondary,
+.btn.outline,
+.btn-secondary,
+.game-link,
+.game-button {
+  border: 1px solid var(--vn-line);
+  background: #ffffff;
+  color: var(--vn-green-800) !important;
+}
+
+.vn-btn-soft,
+.btn.wa,
+.wa,
+.btn-tertiary,
+.game-button-light {
+  border-color: rgba(194, 154, 59, .32);
+  background: var(--vn-gold);
+  color: #09251e !important;
+}
+
+.vn-badge-row,
+.badge-row,
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vn-badge,
+.badge,
+.article-badge,
+.product-category,
+.document-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: var(--vn-green-100);
+  color: var(--vn-green-900);
+  font-size: .82rem;
+  font-weight: 900;
+}
+
+.vn-footer,
+footer,
+.site-footer {
+  border-top: 1px solid var(--vn-line);
+  background: #09251e;
+  color: #ffffff;
+  padding: 30px 0;
+}
+
+.vn-footer a,
+footer a,
+.site-footer a {
+  color: var(--vn-gold);
+}
+
+.contact-page .contact-grid,
+.faq-page .faq-shell,
+.vitacheck-page .vitacheck-shell {
+  align-items: start;
+}
+
+.contact-page .contact-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.faq-page details {
+  margin: 0 0 12px;
+}
+
+.documents-page .site-header,
+.document-page .site-header {
+  display: none;
+}
+
+body.vn-shell-polished:not(.nusa-chat-page) .vn-container,
+body.vn-shell-polished:not(.nusa-chat-page) .wrap,
+body.vn-shell-polished:not(.nusa-chat-page) .main-container,
+body.vn-shell-polished:not(.nusa-chat-page) .hero-content,
+body.vn-shell-polished:not(.nusa-chat-page) .cta-box {
+  max-width: min(1120px, 92vw);
+}
+
+@media (max-width: 980px) {
+  .vn-grid-2,
+  .vn-grid-3,
+  .trust-grid,
+  .catalog-grid,
+  .principle-cards,
+  .flow-grid,
+  .safe-flow,
+  .document-grid,
+  .game-board,
+  .contact-grid,
+  .check-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .vn-container,
+  .wrap,
+  .main-container,
+  .hero-content,
+  .cta-box {
+    width: min(92%, 430px);
+  }
+
+  .vn-page-hero,
+  .article-hero,
+  .product-hero,
+  .constitution-hero,
+  .comic-hero {
+    padding-block: 38px 30px;
+  }
+
+  .vn-actions,
+  .actions,
+  .hero-actions,
+  .product-actions,
+  .actions-minimal,
+  .game-actions,
+  .document-actions,
+  .vn-badge-row,
+  .badge-row,
+  .hero-badges {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vn-btn,
+  .vn-btn-primary,
+  .vn-btn-secondary,
+  .vn-btn-soft,
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-tertiary,
+  .game-button,
+  .game-link {
+    width: 100%;
+  }
+}

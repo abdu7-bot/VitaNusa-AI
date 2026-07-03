@@ -8,8 +8,10 @@
   <meta name="description" content="Rak Buku Digital VitaNusa AI berisi PDF edukatif, artikel pendamping, dan arsip edukasi tentang kesehatan, teknologi, amanah informasi, dan literasi konsumen." />
 
   <link rel="stylesheet" href="documents-style.css" />
+  <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260703-public-design-v1" />
 </head>
-<body>
+<body class="vn-page document-page">
+  <a class="skip" href="#main">Lewati ke konten</a>
 
   <header class="site-header">
     <nav class="navbar" aria-label="Navigasi dokumen">
@@ -41,17 +43,17 @@
     </nav>
   </header>
 
-  <section class="hero-section">
-    <div class="hero-content">
+  <section class="hero-section vn-page-hero">
+    <div class="hero-content vn-container">
       <div class="hero-copy">
-        <p class="eyebrow">PDF • Ebook • Arsip Edukasi</p>
+        <p class="eyebrow vn-eyebrow">PDF • Ebook • Arsip Edukasi</p>
         <h1>Rak Buku Digital VitaNusa AI</h1>
         <p>
           Kumpulan PDF edukatif, artikel pendamping, dan arsip pembelajaran VitaNusa AI.
           Baca dengan tenang, pahami dengan ilmu, dan gunakan informasi secara amanah.
         </p>
 
-        <div class="hero-actions">
+        <div class="hero-actions vn-actions">
           <a href="#documentList" class="btn-primary">Lihat Rak Buku</a>
           <a href="../articles/index.html" class="btn-secondary">Baca Artikel</a>
         </div>
@@ -68,9 +70,9 @@
     </div>
   </section>
 
-  <main class="main-container">
+  <main id="main" class="main-container vn-section">
 
-    <section class="section-heading">
+    <section class="section-heading vn-section-heading">
       <p class="eyebrow">Perpustakaan Kecil</p>
       <h2>Dokumen yang tersedia</h2>
       <p>
@@ -79,16 +81,16 @@
       </p>
     </section>
 
-    <section class="library-stats" aria-label="Statistik rak buku digital">
-      <div class="stat-card">
+    <section class="library-stats vn-grid vn-grid-3" aria-label="Statistik rak buku digital">
+      <div class="stat-card vn-card">
         <strong>3</strong>
         <span>Dokumen tersedia</span>
       </div>
-      <div class="stat-card">
+      <div class="stat-card vn-card">
         <strong>3</strong>
         <span>PDF edukatif</span>
       </div>
-      <div class="stat-card">
+      <div class="stat-card vn-card">
         <strong>3</strong>
         <span>Artikel pendamping</span>
       </div>
@@ -125,7 +127,7 @@
 
       <div class="shelf-rail" aria-hidden="true"></div>
 
-      <section class="document-grid" id="documentList">
+      <section class="document-grid vn-grid vn-grid-3" id="documentList">
 
         <article
           class="document-card"
@@ -315,10 +317,14 @@
     </div>
   </section>
 
-  <footer class="site-footer">
+  <footer class="site-footer vn-footer">
     <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian.</p>
   </footer>
 
   <script src="documents-main.js"></script>
+  <script type="module">
+    import { initNusaUiShell } from '../assets/js/modules/nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
+    initNusaUiShell();
+  </script>
 </body>
 </html>

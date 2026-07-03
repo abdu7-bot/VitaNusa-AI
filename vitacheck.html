@@ -7,17 +7,23 @@
   <meta name="description" content="VitaCheck membantu refleksi kebiasaan sehat secara edukatif.">
   <link rel="stylesheet" href="style.css?v=20260703-sidebar-solid-v2">
   <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260624-nusa-app-shell-refactor">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
 </head>
-<body>
+<body class="vn-page vitacheck-page">
+  <a class="skip" href="#main">Lewati ke konten</a>
   <main id="main">
-    <section class="sec">
-      <div class="wrap">
-        <p class="eyebrow">VitaNusa AI</p>
-        <h1>VitaCheck V2</h1>
+    <section class="vn-page-hero" aria-labelledby="vitacheckTitle">
+      <div class="wrap vn-container">
+        <p class="eyebrow vn-eyebrow">VitaNusa AI</p>
+        <h1 id="vitacheckTitle">VitaCheck V2</h1>
         <p>Asisten refleksi kebiasaan sehat harian. VitaCheck bersifat edukatif dan reflektif, bukan pengganti konsultasi tenaga kesehatan profesional.</p>
-        <p><a class="btn outline" href="index.html">Kembali ke Nusa AI</a></p>
+        <div class="actions vn-actions"><a class="btn outline vn-btn-secondary" href="index.html">Kembali ke Nusa AI</a></div>
+      </div>
+    </section>
 
-        <div class="grid check-grid vitacheck-v2">
+    <section class="sec vn-section">
+      <div class="wrap vn-container">
+        <div class="grid check-grid vitacheck-v2 vitacheck-shell">
           <form id="form" class="card vitacheck-card" data-vitacheck-form novalidate>
             <p class="note">Jika JavaScript belum aktif, halaman ini tetap bisa dibaca. Aktifkan JavaScript untuk memakai VitaCheck V2.</p>
           </form>
