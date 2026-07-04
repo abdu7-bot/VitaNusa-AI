@@ -1,3 +1,5 @@
+import { firebaseConfig } from '../../../admin/firebase-config.js';
+
 const QUESTIONS = [
   {
     id: 'tidur',
@@ -112,6 +114,9 @@ const STORAGE_KEY = 'vitanusa-vitacheck-v2-result';
 const MAX_SCORE = QUESTIONS.length * 2;
 const EDUCATION_DISCLAIMER = 'VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis, bukan pengganti dokter, apoteker, ahli gizi, psikolog, atau tenaga kesehatan profesional.';
 const RED_FLAG_COPY = 'Catatan penting: Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas harian, jangan hanya mengandalkan tips umum. Konsultasikan kepada tenaga kesehatan yang berwenang.';
+const FIRESTORE_ARTICLE_LIMIT = 80;
+let firestoreArticleCache = null;
+let firebaseModulesPromise = null;
 
 const RESULT_COPY = {
   strong: {
@@ -398,6 +403,101 @@ function getRecommendedArticles(summary) {
   return uniqueArticles.slice(0, 3);
 }
 
+async function loadFirebaseModules() {
+  if (!firebaseModulesPromise) {
+    firebaseModulesPromise = Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js')
+    ]).then(([appModule, firestoreModule]) => ({
+      initializeApp: appModule.initializeApp,
+      getApp: appModule.getApp,
+      getApps: appModule.getApps,
+      getFirestore: firestoreModule.getFirestore,
+      collection: firestoreModule.collection,
+      getDocs: firestoreModule.getDocs,
+      query: firestoreModule.query,
+      where: firestoreModule.where,
+      limit: firestoreModule.limit
+    }));
+  }
+  return firebaseModulesPromise;
+}
+
+async function getDb() {
+  const { initializeApp, getApp, getApps, getFirestore } = await loadFirebaseModules();
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  return getFirestore(app);
+}
+
+function normalizeText(value) {
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function getList(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
+async function loadPublishedFirestoreArticles() {
+  if (firestoreArticleCache) return firestoreArticleCache;
+  const { collection, getDocs, query, where, limit } = await loadFirebaseModules();
+  const db = await getDb();
+  const publishedQuery = query(collection(db, 'articles'), where('status', '==', 'published'), limit(FIRESTORE_ARTICLE_LIMIT));
+  const snapshot = await getDocs(publishedQuery);
+  firestoreArticleCache = snapshot.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .filter((article) => article.status === 'published' && article.title && article.slug);
+  return firestoreArticleCache;
+}
+
+function getVitaCheckSignals(summary) {
+  const attention = [...(summary.attention || []), ...(summary.focus || [])].join(' ');
+  const normalized = normalizeText(attention);
+  const signals = new Set(['vitacheck', 'kebiasaan sehat']);
+  if (/tidur|lelah|energi|begadang/.test(normalized)) ['tidur', 'energi harian'].forEach((item) => signals.add(item));
+  if (/air|minum/.test(normalized)) ['air', 'kebiasaan sehat'].forEach((item) => signals.add(item));
+  if (/makan|pola makan|serat|gizi/.test(normalized)) ['pola makan', 'pencernaan'].forEach((item) => signals.add(item));
+  if (/gerak|aktivitas|jalan kaki|olahraga/.test(normalized)) ['gerak', 'kebiasaan sehat'].forEach((item) => signals.add(item));
+  if (/cerna|pencernaan|perut/.test(normalized)) signals.add('pencernaan');
+  if (summary.hasLowProductLiteracy) ['literasi produk', 'testimoni', 'klaim produk'].forEach((item) => signals.add(item));
+  return [...signals];
+}
+
+function scoreVitaCheckArticle(article, signals) {
+  const haystack = normalizeText([
+    article.title,
+    article.slug,
+    article.category,
+    article.summary,
+    article.answerSnippet,
+    ...getList(article.tags),
+    ...getList(article.problemTags),
+    ...getList(article.userQuestions)
+  ].join(' '));
+  return signals.reduce((score, signal) => score + (haystack.includes(normalizeText(signal)) ? 1 : 0), 0);
+}
+
+async function getFirestoreRecommendedArticles(summary) {
+  try {
+    const signals = getVitaCheckSignals(summary);
+    const articles = await loadPublishedFirestoreArticles();
+    return articles
+      .map((article) => ({ article, score: scoreVitaCheckArticle(article, signals) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ article }) => ({
+        title: article.title,
+        href: `articles/detail.html?slug=${encodeURIComponent(article.slug)}`,
+        note: article.answerSnippet || article.summary || 'Artikel terkait hasil VitaCheck.'
+      }));
+  } catch (error) {
+    console.warn('Rekomendasi artikel Firestore untuk VitaCheck belum tersedia:', error);
+    return [];
+  }
+}
+
 function renderArticles(container, articles) {
   container.replaceChildren(
     ...articles.map((article) => {
@@ -429,6 +529,15 @@ function renderResult(output, payload, { animate = true } = {}) {
   renderArticles(output.articles, articles);
 
   if (output.redFlag) output.redFlag.hidden = !summary.hasRedFlag;
+}
+
+async function refreshFirestoreRecommendations(output, payload) {
+  const summary = payload.summary || getAnswerSummary(payload.answers || []);
+  const articles = await getFirestoreRecommendedArticles(summary);
+  if (!articles.length) return;
+  payload.articles = articles;
+  renderArticles(output.articles, articles);
+  saveResult(payload);
 }
 
 function buildPayload(answers) {
@@ -534,6 +643,7 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
     const payload = buildPayload(answers);
     renderResult(output, payload, { animate: true });
     saveResult(payload);
+    refreshFirestoreRecommendations(output, payload);
     updateSavedNote(form, `Hasil terbaru tersimpan: skor ${payload.score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`);
   };
 

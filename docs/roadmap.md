@@ -31,10 +31,25 @@ Fokus:
 - FAQ kesehatan umum
 - Catatan amanah produk
 - Halaman kontak
+- Global sidebar sebagai navigasi publik utama
+- Metadata artikel cerdas untuk Nusa AI
 
 Target:
 
 Konten mudah dikelola dan pengguna lebih mudah menemukan informasi yang mereka butuhkan.
+
+Status implementasi terbaru:
+
+- Partial: admin artikel Firestore, import satu blok, artikel published publik, search/filter artikel, FAQ, produk amanah, dan global sidebar sudah ada.
+- Partial: Nusa AI memakai artikel Firestore published sebagai sumber rekomendasi dan membaca `userQuestions`, `problemTags`, `answerSnippet`, `doNotUseFor`, `whenToSeekHelp`, dan `sources`.
+- Planned: modul CRUD produk, FAQ dinamis, media manager penuh, user login publik, payment/subscription nyata, dan dashboard tim.
+
+Kebijakan artikel admin:
+
+- Semua artikel admin disimpan sebagai `published`.
+- Warning bukan draft.
+- Konten sensitif tetap published jika validasi teknis lolos.
+- Validasi teknis yang memblokir hanya title/slug/summary/content kosong, slug duplikat/format rusak, `<script>`, atau full document HTML.
 
 ## Tahap 3 — Fitur Pengguna
 

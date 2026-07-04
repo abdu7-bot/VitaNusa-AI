@@ -1,6 +1,6 @@
-import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
-import { initNusaChat } from './modules/nusa-chat.js?v=20260701-nusa-knowledge-v1';
-import { initVitaCheck } from './modules/vitacheck.js?v=20260625-chat-only-final';
+import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+import { initNusaChat } from './modules/nusa-chat.js?v=20260704-vitanusa-master-map-v1';
+import { initVitaCheck } from './modules/vitacheck.js?v=20260704-vitanusa-master-map-v1';
 
 const modules = [
   ['VitaNusa UI Shell', initNusaUiShell],

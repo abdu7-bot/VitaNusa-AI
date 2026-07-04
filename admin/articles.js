@@ -410,7 +410,6 @@ function renderArticles() {
     actions.className = 'article-row-actions';
     actions.append(createActionButton('Edit', 'edit', article.id));
     if (article.status !== 'published') actions.append(createActionButton('Publish', 'publish', article.id));
-    if (article.status !== 'archived') actions.append(createActionButton('Archive', 'archive', article.id));
     actionCell.append(actions);
 
     row.append(titleCell, statusCell, categoryCell, updatedCell, actionCell);
@@ -618,7 +617,28 @@ function parseArticleImportText(rawText) {
   const summary = cleanImportSection(sections.summary);
   const contentHtml = cleanImportSection(sections.contentHtml);
   const reviewNote = cleanImportSection(sections.reviewNote);
-  const metadata = parseImportMetadata(cleanImportSection(sections.metadata));
+  const parsedMetadata = parseImportMetadata(cleanImportSection(sections.metadata));
+  const directMetadata = oneBlockSections ? {
+    category: oneBlockSections.category,
+    tags: oneBlockSections.tags,
+    intentTarget: oneBlockSections.intentTarget,
+    riskLevel: oneBlockSections.riskLevel,
+    isMedicalSensitive: oneBlockSections.isMedicalSensitive,
+    isProductSensitive: oneBlockSections.isProductSensitive,
+    isIslamicSensitive: oneBlockSections.isIslamicSensitive,
+    relatedArticles: oneBlockSections.relatedArticles,
+    userQuestions: oneBlockSections.userQuestions,
+    answerSnippet: oneBlockSections.answerSnippet,
+    problemTags: oneBlockSections.problemTags,
+    audience: oneBlockSections.audience,
+    doNotUseFor: oneBlockSections.doNotUseFor,
+    whenToSeekHelp: oneBlockSections.whenToSeekHelp,
+    sources: oneBlockSections.sources,
+    contentDepth: oneBlockSections.contentDepth,
+    primaryAction: oneBlockSections.primaryAction,
+    reviewerNote: oneBlockSections.reviewerNote
+  } : {};
+  const metadata = { ...directMetadata, ...parsedMetadata };
   const explicitFlags = {
     isMedicalSensitive: Object.prototype.hasOwnProperty.call(metadata, 'isMedicalSensitive'),
     isProductSensitive: Object.prototype.hasOwnProperty.call(metadata, 'isProductSensitive'),

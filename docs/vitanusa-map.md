@@ -25,18 +25,14 @@ Menjadi platform edukasi kesehatan berbasis AI yang membantu masyarakat lebih bi
 
 ### 4.1 Beranda
 
-Beranda adalah pintu utama VitaNusa AI.
+Beranda adalah pintu utama VitaNusa AI. Implementasi saat ini memakai pendekatan **chat-only**: pengguna langsung bertemu Nusa Chat, bukan landing page besar.
 
 Isi utama:
 
-- Hero section
-- Penjelasan singkat VitaNusa AI
-- Tombol mulai VitaCheck
-- Produk pilihan
-- Artikel terbaru
-- Video terbaru
-- Cerita atau VitaStory terbaru
-- Tombol WhatsApp
+- Nusa Chat edukatif
+- Prompt cepat untuk VitaCheck, artikel, klaim produk, dan Prinsip Amanah
+- Disclaimer bahwa AI bukan diagnosis, resep, fatwa final, atau konsultasi profesional
+- Global sidebar sebagai navigasi utama publik
 
 Tujuan halaman:
 
@@ -83,6 +79,19 @@ Kategori:
 - Kapan harus ke dokter
 - Literasi produk
 - Testimoni dan klaim produk
+- Refleksi Islami
+
+Artikel admin menggunakan metadata cerdas agar Nusa AI memahami konteks artikel:
+
+- `userQuestions`
+- `answerSnippet`
+- `problemTags`
+- `audience`
+- `doNotUseFor`
+- `whenToSeekHelp`
+- `sources`
+
+Semua artikel admin disimpan sebagai `published`. Warning, risk high, atau sensitive flags tidak boleh membuat artikel menjadi draft otomatis. Jika konten sensitif, artikel tetap published selama validasi teknis lolos, lalu diberi warning, sensitive flags, disclaimer, reviewer note, dan arahan aksi amanah.
 
 Tujuan:
 
@@ -127,6 +136,8 @@ Prinsip produk:
 3. Tidak memakai testimoni sebagai bukti utama.
 4. Menjelaskan produk sebagai opsi pendukung, bukan solusi mutlak.
 5. Mengarahkan pengguna untuk membaca komposisi dan aturan pakai.
+
+Alur aman publik: VitaCheck -> Artikel -> Prinsip Amanah -> Produk.
 
 ### 4.6 Video AI
 

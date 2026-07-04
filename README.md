@@ -1,6 +1,6 @@
 # VitaNusa-AI
 
-**VitaNusa AI** adalah platform edukasi kesehatan berbasis AI yang membantu pengguna memahami kebiasaan sehat, membaca artikel edukatif, melakukan VitaCheck, menilai klaim produk secara bijak, dan mengenal produk kesehatan dengan pendekatan amanah.
+**VitaNusa AI** adalah platform edukasi kesehatan berbasis AI yang membantu pengguna memahami kebiasaan sehat, membaca artikel edukatif, melakukan VitaCheck, menilai klaim produk secara bijak, mengenal katalog reseller, dan berdialog dengan Nusa AI dalam batas amanah.
 
 VitaNusa AI bukan dokter, bukan alat diagnosis, dan bukan pengganti tenaga medis. Platform ini berfokus pada edukasi, refleksi kebiasaan, literasi kesehatan, serta kehati-hatian dalam menilai informasi dan klaim produk.
 
@@ -8,7 +8,7 @@ VitaNusa AI bukan dokter, bukan alat diagnosis, dan bukan pengganti tenaga medis
 
 | Area | Fungsi |
 |---|---|
-| **Beranda** | Pengenalan VitaNusa AI, CTA VitaCheck, artikel, produk pilihan, dan kontak |
+| **Beranda** | Nusa Chat sebagai pintu utama chat-only untuk edukasi amanah |
 | **VitaCheck** | Cek kebiasaan sehat sederhana berbasis pertanyaan |
 | **Edukasi** | Artikel kesehatan dasar, mitos vs fakta, pola hidup, dan kapan harus ke dokter |
 | **VitaStory** | Cerita, komik, audio story, dan refleksi hidup bertema kesehatan dan hikmah |
@@ -17,6 +17,25 @@ VitaNusa AI bukan dokter, bukan alat diagnosis, dan bukan pengganti tenaga medis
 | **Blog** | Artikel, refleksi, dan catatan perjalanan edukasi |
 | **FAQ** | Disclaimer, privasi, pertanyaan umum, dan batasan penggunaan |
 | **Kontak** | WhatsApp, email, dan kanal komunikasi resmi |
+
+## Arsitektur Konten Cerdas
+
+Artikel admin disimpan sebagai `published` secara default dan saat save. Sistem tidak memakai draft otomatis karena konten sensitif, risk high, atau warning reviewer. Jika artikel sensitif, sistem tetap menyimpan published selama validasi teknis lolos, lalu menambahkan warning, sensitive flags, disclaimer, dan reviewer note.
+
+Metadata artikel yang dipakai Nusa AI:
+
+- `userQuestions`
+- `answerSnippet`
+- `problemTags`
+- `audience`
+- `doNotUseFor`
+- `whenToSeekHelp`
+- `sources`
+- metadata amanah seperti `intentTarget`, `riskLevel`, sensitive flags, `relatedArticles`, `contentDepth`, `primaryAction`, dan `reviewerNote`
+
+Validasi teknis yang boleh memblokir simpan artikel: title kosong, slug kosong/format rusak/duplikat, summary kosong, contentHtml kosong, tag `<script>`, atau full document HTML seperti `<html>`, `<head>`, dan `<body>`.
+
+Alur publik utama: **Nusa Chat -> VitaCheck -> Artikel -> Prinsip Amanah -> Produk**. Global sidebar dari `assets/js/modules/nusa-ui-shell.js` menjadi navigasi utama publik.
 
 ## Prinsip Utama
 

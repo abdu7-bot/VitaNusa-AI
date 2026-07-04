@@ -47,6 +47,33 @@
     return map;
   }
 
+  function readBlockField(rawText, label) {
+    const labels = [
+      label,
+      label.replace(/\s+/g, ''),
+      label.replace(/\s+/g, ' ')
+    ].map((item) => item.toLowerCase());
+    const lines = String(rawText || '').replace(/\r\n?/g, '\n').split('\n');
+    const startPattern = new RegExp(`^(${labels.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*[:：]\\s*(.*)$`, 'i');
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const match = lines[index].trim().match(startPattern);
+      if (!match) continue;
+      const collected = [];
+      if (match[2]) collected.push(match[2]);
+      let cursor = index + 1;
+      while (cursor < lines.length) {
+        const next = lines[cursor];
+        if (/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s_-]{1,60}\s*[:：]/.test(next.trim())) break;
+        collected.push(next);
+        cursor += 1;
+      }
+      return collected.join('\n').trim();
+    }
+
+    return '';
+  }
+
   function extractAfterHeader(rawText, labels) {
     const lines = String(rawText || '').replace(/\r\n?/g, '\n').split('\n');
     const labelSet = new Set(labels.map((label) => label.toLowerCase()));
@@ -93,7 +120,7 @@
     return stripTags(contentHtml).slice(0, 320);
   }
 
-  function inferMetadata(contentHtml, fields) {
+  function inferMetadata(contentHtml, fields, rawText) {
     const plain = stripTags(contentHtml).toLowerCase();
     const islamic = /(allah|nabi|hadits|hadis|quran|qur'an|al-qur|qs\.|tafsir|fatwa|syahwat|maksiat|zina)/i.test(plain);
     const medical = /(diagnosis|obat|dosis|terapi|keluhan|tenaga kesehatan|medis)/i.test(plain);
@@ -108,6 +135,13 @@
       isProductSensitive: product,
       isIslamicSensitive: islamic,
       relatedArticles: fields.relatedarticles || fields.artikelterkait || '',
+      userQuestions: fields.userquestions || readBlockField(rawText, 'User Questions') || '',
+      answerSnippet: fields.answersnippet || fields.answer || readBlockField(rawText, 'Answer Snippet') || '',
+      problemTags: fields.problemtags || readBlockField(rawText, 'Problem Tags') || '',
+      audience: fields.audience || '',
+      doNotUseFor: fields.donotusefor || readBlockField(rawText, 'Do Not Use For') || '',
+      whenToSeekHelp: fields.whentoseekhelp || readBlockField(rawText, 'When To Seek Help') || '',
+      sources: fields.sources || fields.sumber || readBlockField(rawText, 'Sources') || '',
       contentDepth: fields.contentdepth || 'basic',
       primaryAction: fields.primaryaction || 'read-article',
       reviewerNote: fields.reviewernote || fields.catatanreviewer || ''
@@ -124,12 +158,13 @@
     if (!title) throw new Error('Judul tidak ditemukan. Pastikan ada Title: atau <h1>Judul</h1>.');
     if (!contentHtml || !/<[a-z][\s\S]*>/i.test(contentHtml)) throw new Error('Content HTML tidak ditemukan. Pastikan ada Content: atau tag <article>.');
 
-    const metadata = inferMetadata(contentHtml, fields);
+    const metadata = inferMetadata(contentHtml, fields, source);
+    const summary = inferSummary(contentHtml, fields);
     return {
       title: stripTags(title),
       slug: normalizeSlug(fields.slug || title),
       category: metadata.category,
-      summary: inferSummary(contentHtml, fields),
+      summary,
       contentHtml,
       tags: metadata.tags,
       intentTarget: metadata.intentTarget,
@@ -138,6 +173,13 @@
       isProductSensitive: metadata.isProductSensitive,
       isIslamicSensitive: metadata.isIslamicSensitive,
       relatedArticles: metadata.relatedArticles,
+      userQuestions: metadata.userQuestions || '',
+      answerSnippet: metadata.answerSnippet || summary,
+      problemTags: metadata.problemTags || '',
+      audience: metadata.audience || '',
+      doNotUseFor: metadata.doNotUseFor || '',
+      whenToSeekHelp: metadata.whenToSeekHelp || '',
+      sources: metadata.sources || '',
       contentDepth: metadata.contentDepth,
       primaryAction: metadata.primaryAction,
       reviewerNote: metadata.reviewerNote,
@@ -166,6 +208,13 @@
     setValue(form, 'intentTarget', article.intentTarget);
     setValue(form, 'riskLevel', article.riskLevel);
     setValue(form, 'relatedArticles', article.relatedArticles);
+    setValue(form, 'userQuestions', article.userQuestions);
+    setValue(form, 'answerSnippet', article.answerSnippet || article.summary);
+    setValue(form, 'problemTags', article.problemTags);
+    setValue(form, 'audience', article.audience);
+    setValue(form, 'doNotUseFor', article.doNotUseFor);
+    setValue(form, 'whenToSeekHelp', article.whenToSeekHelp);
+    setValue(form, 'sources', article.sources);
     setValue(form, 'contentDepth', article.contentDepth);
     setValue(form, 'primaryAction', article.primaryAction);
     setValue(form, 'reviewerNote', article.reviewerNote);

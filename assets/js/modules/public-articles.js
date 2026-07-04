@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
+import { initNusaUiShell } from './nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
 import { getFirestore, collection, getDocs, query, where, limit } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';

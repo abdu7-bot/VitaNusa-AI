@@ -1,4 +1,4 @@
-import { initNusaUiShell } from './nusa-ui-shell.js?v=20260703-sidebar-solid-v2';
+import { initNusaUiShell } from './nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
 
 initNusaUiShell();
 

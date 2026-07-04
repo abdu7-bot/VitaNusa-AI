@@ -1,21 +1,19 @@
 # Firebase Admin Architecture Plan - VitaNusa AI
 
-This is a planning document only. It does not add Firebase code, does not deploy anything, and does not modify the public website.
+This document is now both a planning document and an implementation alignment note. Firebase files and an admin dashboard already exist in the repository; future work must keep the amanah rules below.
 
 ## 1. Current State Summary
 
-VitaNusa AI is currently a static website.
+VitaNusa AI started as a static website and now uses a hybrid model.
 
 - Public pages are static HTML, CSS, and JavaScript.
 - Articles are stored as HTML files in `articles/`.
+- New/admin articles can be stored in Cloud Firestore and read publicly only when `status == "published"`.
 - Comics are stored as static folders with panel images in `komik/`.
 - Media, images, and PDFs are stored in the repository.
-- No `firebase.json` exists yet.
-- No `.firebaserc` exists yet.
-- No `firestore.rules` exists yet.
-- No `firestore.indexes.json` exists yet.
-- No Firebase SDK is used yet.
-- No `admin/` dashboard exists yet.
+- `firebase.json`, `.firebaserc`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`, and `admin/` exist.
+- Admin article CRUD and Nusa Knowledge CRUD are active for active admins.
+- Product, FAQ, comics, media manager, and site settings CRUD are still partial/planned.
 
 ## 2. Target Architecture
 
@@ -83,6 +81,22 @@ Recommended fields:
   pdfUrl: "Storage or static URL",
   readTime: "10-12 menit",
   tags: ["tag"],
+  intentTarget: "article-general",
+  riskLevel: "low | medium | high",
+  isMedicalSensitive: false,
+  isProductSensitive: false,
+  isIslamicSensitive: false,
+  relatedArticles: ["slug-artikel"],
+  contentDepth: "basic | intermediate | deep",
+  primaryAction: "read-article",
+  reviewerNote: "Catatan amanah",
+  userQuestions: ["Pertanyaan user"],
+  answerSnippet: "Jawaban pendek untuk Nusa AI",
+  problemTags: ["tag masalah"],
+  audience: "Target pembaca",
+  doNotUseFor: ["diagnosis", "fatwa khusus"],
+  whenToSeekHelp: "Arahan bantuan manusia",
+  sources: ["URL atau rujukan"],
   createdAt: Timestamp,
   updatedAt: Timestamp,
   publishedAt: Timestamp
@@ -241,14 +255,16 @@ Required article admin fields:
 - updatedAt
 - publishedAt
 
-Validation rules:
+Validation rules and publishing policy:
 
 - `title` is required.
 - `slug` is required and unique.
-- `status` must be `draft`, `published`, or `archived`.
-- `summary` must not contain exaggerated health claims.
+- Admin article save forces `status: "published"`.
+- Import/reset/edit save also forces `published`.
+- Warnings, sensitive flags, and high risk do not create drafts automatically.
+- Sensitive content must receive warning, flags, disclaimer, reviewer note, and safer `primaryAction` where needed.
 - `contentHtml` should be sanitized or restricted to safe markup.
-- Article 3 should not be migrated first because it is long and sensitive.
+- Technical blockers only: empty title/slug/summary/content, duplicate or malformed slug, `<script>`, and full document HTML (`html`, `head`, `body`).
 
 ## 7. Comic Admin Schema
 
@@ -352,9 +368,13 @@ Add Firebase Auth login, admin check, and logout.
 
 Build article create, edit, draft, publish, archive flow.
 
+Current implementation note: article CRUD is oriented to published content only. Draft/archive can remain historical data states, but the admin article save flow must force `published`.
+
 ### Phase 5: Public Article List from Firestore with Fallback
 
 Let public article index read Firestore while keeping static fallback.
+
+Current implementation note: public article list and article detail read only Firestore articles with `status == "published"` and keep static fallback content.
 
 ### Phase 6: Comic CRUD
 

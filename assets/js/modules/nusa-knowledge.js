@@ -10,7 +10,7 @@ import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
-const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260703-smart-admin-published-v1';
+const FIRESTORE_ARTICLE_MODULE_URL = './nusa-firestore-articles.js?v=20260704-vitanusa-master-map-v1';
 const GITHUB_ARTICLE_MODULE_URL = './github-article-source.js?v=20260630-github-source-v1';
 const FIRESTORE_ARTICLE_TIMEOUT_MS = 3500;
 const GITHUB_ARTICLE_TIMEOUT_MS = 2500;

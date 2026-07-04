@@ -82,6 +82,25 @@ Artikel VitaNusa AI harus:
 - Mengarahkan ke dokter untuk gejala serius
 - Tidak membuat klaim medis berlebihan
 
+Kebijakan admin artikel:
+
+- Semua artikel yang dibuat/disimpan dari admin berstatus `published`.
+- Sistem tidak membuat draft otomatis karena konten medical sensitive, product sensitive, Islamic sensitive, risk high, atau parser ragu.
+- Warning bukan alasan menahan publish.
+- Jika ada keraguan konten, status tetap published selama validasi teknis lolos, lalu artikel diberi warning, sensitive flags, disclaimer, reviewer note, dan `primaryAction` yang lebih aman seperti `read-prinsip-amanah` atau `seek-professional-help`.
+- Error teknis yang boleh memblokir simpan hanya title kosong, slug kosong/duplikat/format rusak, summary kosong, contentHtml kosong, tag `<script>`, atau full document HTML.
+
+Metadata cerdas artikel:
+
+- `userQuestions` untuk pertanyaan yang dapat dijawab artikel.
+- `answerSnippet` untuk jawaban pendek Nusa AI.
+- `problemTags` untuk sinyal masalah/topik.
+- `doNotUseFor` untuk batas penggunaan artikel.
+- `whenToSeekHelp` untuk arahan bantuan manusia.
+- `sources` untuk rujukan atau referensi.
+
+Nusa AI boleh memakai `answerSnippet` dan metadata untuk mengarahkan ke artikel, tetapi tetap tidak menjadi dokter, ustadz final, atau sales produk.
+
 Tema yang cocok:
 
 - Kebiasaan tidur
@@ -112,6 +131,8 @@ Hasil VitaCheck sebaiknya berisi:
 - Fokus perbaikan
 - Rekomendasi artikel
 - Peringatan tanda bahaya
+
+VitaCheck menjadi jalur masuk edukasi: hasil refleksi diarahkan ke artikel published yang cocok dengan kategori, tags, atau problemTags. Jika artikel dinamis tidak tersedia, fallback statis tetap dipakai.
 
 ## 7. Tanda Bahaya yang Harus Diarahkan ke Medis
 
