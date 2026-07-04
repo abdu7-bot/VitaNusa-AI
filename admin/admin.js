@@ -1,26 +1,51 @@
 (() => {
+  const appShell = document.querySelector('.admin-app');
   const sidebar = document.getElementById('adminSidebar');
   const menuToggle = document.querySelector('.admin-menu-toggle');
+  const sidebarClose = document.querySelector('[data-admin-sidebar-close]');
+  const sidebarOverlay = document.querySelector('[data-admin-sidebar-overlay]');
+  const sidebarCollapse = document.querySelector('[data-admin-sidebar-collapse]');
   const navLinks = Array.from(document.querySelectorAll('[data-admin-section]'));
   const panels = Array.from(document.querySelectorAll('[data-admin-panel]'));
   const placeholders = document.querySelectorAll('.admin-placeholder');
   const sectionOpeners = document.querySelectorAll('[data-open-admin-section]');
+  const mobileQuery = window.matchMedia('(max-width: 920px)');
+
+  const setSidebarOpen = (open) => {
+    if (!sidebar || !menuToggle) return;
+    sidebar.classList.toggle('is-open', open);
+    document.body.classList.toggle('admin-sidebar-open', open);
+    menuToggle.setAttribute('aria-expanded', String(open));
+    sidebar.setAttribute('aria-hidden', String(mobileQuery.matches && !open));
+    if (sidebarOverlay) {
+      sidebarOverlay.hidden = !open;
+    }
+  };
 
   const closeSidebar = () => {
-    if (!sidebar || !menuToggle) return;
-    sidebar.classList.remove('is-open');
-    menuToggle.setAttribute('aria-expanded', 'false');
+    setSidebarOpen(false);
   };
 
   if (sidebar && menuToggle) {
     menuToggle.addEventListener('click', () => {
-      const isOpen = sidebar.classList.toggle('is-open');
-      menuToggle.setAttribute('aria-expanded', String(isOpen));
+      setSidebarOpen(!sidebar.classList.contains('is-open'));
     });
   }
 
-  const openSection = (target) => {
-    const activeLink = navLinks.find((item) => item.dataset.adminSection === target);
+  sidebarClose?.addEventListener('click', closeSidebar);
+  sidebarOverlay?.addEventListener('click', closeSidebar);
+
+  sidebarCollapse?.addEventListener('click', () => {
+    const collapsed = appShell?.classList.toggle('is-sidebar-collapsed') || false;
+    sidebarCollapse.setAttribute('aria-pressed', String(collapsed));
+    sidebarCollapse.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  });
+
+  const openSection = (target, trigger = null) => {
+    const activeLink = trigger?.matches?.('[data-admin-section]')
+      ? trigger
+      : navLinks.find((item) => item.dataset.adminSection === target && !item.classList.contains('admin-nav-child'))
+        || navLinks.find((item) => item.dataset.adminSection === target);
     const activePanel = panels.find((panel) => panel.dataset.adminPanel === target);
     if (!activePanel) return false;
 
@@ -31,19 +56,25 @@
       panel.classList.toggle('is-active', isActive);
     });
 
+    if (trigger?.dataset.contentFilterShortcut) {
+      window.dispatchEvent(new CustomEvent('vitanusa:admin-content-filter', {
+        detail: { category: trigger.dataset.contentFilterShortcut }
+      }));
+    }
+
     closeSidebar();
     return true;
   };
 
   navLinks.forEach((link) => {
     link.addEventListener('click', () => {
-      openSection(link.dataset.adminSection);
+      openSection(link.dataset.adminSection, link);
     });
   });
 
   sectionOpeners.forEach((button) => {
     button.addEventListener('click', () => {
-      openSection(button.dataset.openAdminSection);
+      openSection(button.dataset.openAdminSection, button);
     });
   });
 
@@ -61,6 +92,20 @@
   window.addEventListener('vitanusa:admin-open-panel', (event) => {
     openSection(event.detail?.panel);
   });
+
+  const syncSidebarState = () => {
+    if (!sidebar) return;
+    if (!mobileQuery.matches) {
+      closeSidebar();
+      sidebar.setAttribute('aria-hidden', 'false');
+      return;
+    }
+    sidebar.setAttribute('aria-hidden', String(!sidebar.classList.contains('is-open')));
+  };
+
+  mobileQuery.addEventListener?.('change', syncSidebarState);
+  window.addEventListener('resize', syncSidebarState);
+  syncSidebarState();
 
   window.addEventListener('vitanusa:admin-ready', (event) => {
     const user = event.detail?.user || {};

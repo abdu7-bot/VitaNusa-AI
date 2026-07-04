@@ -42,31 +42,58 @@
 
   <div class="admin-app admin-protected" data-protected-content hidden>
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Navigasi admin">
-      <a class="admin-brand" href="index.html" aria-label="VitaNusa AI Admin Dashboard">
-        <span class="admin-brand-mark">VN</span>
-        <span><strong>VitaNusa AI Admin</strong><small>Firebase Auth aktif</small></span>
-      </a>
-      <nav class="admin-nav" aria-label="Menu admin">
-        <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard">Dashboard</button>
-        <button class="admin-nav-link" type="button" data-admin-section="content">Pustaka Konten</button>
-        <button class="admin-nav-link" type="button" data-admin-section="articles">Artikel</button>
-        <button class="admin-nav-link" type="button" data-admin-section="knowledge">Knowledge Q&amp;A</button>
-        <button class="admin-nav-link" type="button" data-admin-section="comics">VitaStory / Cerita</button>
-        <button class="admin-nav-link" type="button" data-admin-section="media">Video / Media</button>
-        <button class="admin-nav-link" type="button" data-admin-section="products">Produk</button>
-        <button class="admin-nav-link" type="button" data-admin-section="faq">FAQ</button>
-        <button class="admin-nav-link" type="button" data-admin-section="prompt-import">Prompt Import</button>
-        <button class="admin-nav-link" type="button" data-admin-section="settings">Pengaturan Aplikasi</button>
-        <button class="admin-nav-link" type="button" data-admin-section="profile">Profil Pengguna</button>
-        <button class="admin-nav-link" type="button" data-logout-button>Logout</button>
+      <div class="admin-sidebar-head">
+        <a class="admin-brand" href="index.html" aria-label="VitaNusa AI Admin Dashboard">
+          <span class="admin-brand-mark">VN</span>
+          <span class="admin-brand-copy"><strong>VitaNusa AI</strong><small>Admin Panel</small></span>
+        </a>
+        <button class="admin-sidebar-close" type="button" data-admin-sidebar-close aria-label="Tutup menu admin">x</button>
+      </div>
+
+      <nav class="admin-nav" aria-label="Menu admin global">
+        <div class="admin-nav-group">
+          <p class="admin-nav-group-label">Utama</p>
+          <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard" title="Dashboard"><span class="admin-nav-icon" aria-hidden="true">DB</span><span class="admin-nav-text">Dashboard</span></button>
+        </div>
+
+        <div class="admin-nav-group">
+          <p class="admin-nav-group-label">Import Konten</p>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="knowledge" title="Import Knowledge"><span class="admin-nav-icon" aria-hidden="true">IK</span><span class="admin-nav-text">Import Knowledge</span></button>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="articles" title="Import Artikel"><span class="admin-nav-icon" aria-hidden="true">IA</span><span class="admin-nav-text">Import Artikel</span></button>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="prompt-import" title="Import Prompt"><span class="admin-nav-icon" aria-hidden="true">IP</span><span class="admin-nav-text">Import Prompt</span></button>
+        </div>
+
+        <div class="admin-nav-group">
+          <p class="admin-nav-group-label">Kelola Konten</p>
+          <button class="admin-nav-link" type="button" data-admin-section="content" title="Pustaka Konten"><span class="admin-nav-icon" aria-hidden="true">PK</span><span class="admin-nav-text">Pustaka Konten</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="articles" title="Artikel"><span class="admin-nav-icon" aria-hidden="true">AR</span><span class="admin-nav-text">Artikel</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="knowledge" title="Knowledge Q&A"><span class="admin-nav-icon" aria-hidden="true">QA</span><span class="admin-nav-text">Knowledge Q&amp;A</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="products" title="Produk"><span class="admin-nav-icon" aria-hidden="true">PR</span><span class="admin-nav-text">Produk</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="media" title="Video AI"><span class="admin-nav-icon" aria-hidden="true">VI</span><span class="admin-nav-text">Video AI</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="comics" title="VitaStory"><span class="admin-nav-icon" aria-hidden="true">VS</span><span class="admin-nav-text">VitaStory</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="faq" title="FAQ"><span class="admin-nav-icon" aria-hidden="true">FQ</span><span class="admin-nav-text">FAQ</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="content" data-content-filter-shortcut="draft" title="Draft / Arsip"><span class="admin-nav-icon" aria-hidden="true">DR</span><span class="admin-nav-text">Draft / Arsip</span></button>
+        </div>
+
+        <div class="admin-nav-group">
+          <p class="admin-nav-group-label">Pengaturan</p>
+          <button class="admin-nav-link" type="button" data-admin-section="settings" title="Pengaturan Aplikasi"><span class="admin-nav-icon" aria-hidden="true">ST</span><span class="admin-nav-text">Pengaturan Aplikasi</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="profile" title="Profil Pengguna"><span class="admin-nav-icon" aria-hidden="true">PF</span><span class="admin-nav-text">Profil Pengguna</span></button>
+        </div>
       </nav>
-      <a class="admin-public-link" href="../index.html">Kembali ke Website Publik</a>
+
+      <div class="admin-sidebar-footer">
+        <button class="admin-sidebar-collapse" type="button" data-admin-sidebar-collapse aria-pressed="false" title="Collapse sidebar"><span aria-hidden="true">&lt;</span><span class="admin-nav-text">Collapse</span></button>
+        <button class="admin-nav-link admin-logout-link" type="button" data-logout-button title="Logout"><span class="admin-nav-icon" aria-hidden="true">LO</span><span class="admin-nav-text">Logout</span></button>
+        <a class="admin-public-link" href="../index.html"><span class="admin-nav-icon" aria-hidden="true">WB</span><span class="admin-nav-text">Website Publik</span></a>
+      </div>
     </aside>
+    <button class="admin-sidebar-overlay" type="button" data-admin-sidebar-overlay aria-label="Tutup menu admin" hidden></button>
 
     <div class="admin-main-shell">
       <header class="admin-topbar">
-        <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false">Menu</button>
-        <div><p class="admin-kicker">Phase 6</p><h1>VitaNusa AI Admin</h1><p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p></div>
+        <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Buka menu admin"><span aria-hidden="true">|||</span><span>Menu</span></button>
+        <div><p class="admin-kicker">Admin Panel</p><h1>VitaNusa AI Admin</h1><p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p></div>
         <button class="admin-button admin-button-light" type="button" data-logout-button>Logout</button>
       </header>
 

@@ -26,6 +26,7 @@ function initContentLibrary() {
   document.querySelector('[data-content-status-filter]')?.addEventListener('change', handleFilterChange);
   document.querySelector('[data-content-refresh]')?.addEventListener('click', loadContentLibrary);
   document.querySelector('[data-content-library-list]')?.addEventListener('click', handleLibraryAction);
+  window.addEventListener('vitanusa:admin-content-filter', handleContentFilterShortcut);
 
   loadContentLibrary();
 }
@@ -311,6 +312,17 @@ function handleFilterChange(event) {
   if (target?.matches?.('[data-content-search]')) state.filters.search = target.value || '';
   if (target?.matches?.('[data-content-category-filter]')) state.filters.category = target.value || '';
   if (target?.matches?.('[data-content-status-filter]')) state.filters.status = target.value || '';
+  renderLibrary();
+}
+
+function handleContentFilterShortcut(event) {
+  const category = event.detail?.category || '';
+  const categorySelect = document.querySelector('[data-content-category-filter]');
+  const statusSelect = document.querySelector('[data-content-status-filter]');
+  if (categorySelect) categorySelect.value = category;
+  if (statusSelect) statusSelect.value = '';
+  state.filters.category = category;
+  state.filters.status = '';
   renderLibrary();
 }
 
