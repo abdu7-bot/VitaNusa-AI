@@ -75,6 +75,59 @@
   word-break: normal !important;
 }
 
+/* Keep sensitive flags compact. The base article form can make these cards too tall on Android. */
+.knowledge-admin .article-checkbox-grid,
+.admin-panel[data-admin-panel="knowledge"] .article-checkbox-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.knowledge-admin .article-checkbox-label,
+.admin-panel[data-admin-panel="knowledge"] .article-checkbox-label {
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-content: start !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 46px !important;
+  height: auto !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.knowledge-admin .article-checkbox-label input,
+.admin-panel[data-admin-panel="knowledge"] .article-checkbox-label input {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  margin: 0 !important;
+  justify-self: center !important;
+}
+
+.knowledge-admin .article-checkbox-label span,
+.admin-panel[data-admin-panel="knowledge"] .article-checkbox-label span {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+}
+
 .knowledge-admin textarea[name="alternateQuestions"],
 .knowledge-admin textarea[name="shortAnswer"],
 .knowledge-admin textarea[name="answerHtml"],
@@ -135,6 +188,12 @@
   .knowledge-admin .article-form,
   .admin-panel[data-admin-panel="knowledge"] .article-form {
     gap: 14px !important;
+  }
+
+  .knowledge-admin .article-checkbox-label,
+  .admin-panel[data-admin-panel="knowledge"] .article-checkbox-label {
+    min-height: 44px !important;
+    padding: 9px 10px !important;
   }
 
   .knowledge-admin .article-table,
