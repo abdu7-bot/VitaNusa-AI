@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Akun Pengguna | VitaNusa AI</title>
+  <meta name="description" content="Placeholder akun pengguna VitaNusa AI yang masih dalam pengembangan.">
+  <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
+  <style>
+    .account-shell {
+      padding-block: clamp(42px, 7vw, 76px);
+    }
+
+    .account-card {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+      max-width: 760px;
+      margin-inline: auto;
+      border: 1px solid var(--vn-line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: var(--vn-shadow);
+      padding: clamp(18px, 4vw, 28px);
+    }
+
+    .account-avatar {
+      display: grid;
+      width: 108px;
+      height: 108px;
+      place-items: center;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--vn-green-900), var(--vn-green-500));
+      color: #ffffff;
+      font-size: 2rem;
+      font-weight: 900;
+    }
+
+    .account-fields {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .placeholder-status {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid rgba(194, 154, 59, .32);
+      border-radius: 999px;
+      background: var(--vn-gold-soft);
+      color: #5d4210;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .account-field {
+      display: grid;
+      gap: 4px;
+      border: 1px solid var(--vn-line);
+      border-radius: 16px;
+      background: #fbfefc;
+      padding: 12px;
+    }
+
+    .account-field span {
+      color: var(--vn-muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .account-field strong {
+      color: var(--vn-green-900);
+      overflow-wrap: anywhere;
+    }
+
+    .account-note {
+      margin: 0;
+      color: var(--vn-muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 680px) {
+      .account-card {
+        grid-template-columns: 1fr;
+      }
+
+      .account-avatar {
+        width: 86px;
+        height: 86px;
+        border-radius: 20px;
+        font-size: 1.55rem;
+      }
+    }
+  </style>
+</head>
+<body class="vn-page account-page">
+  <a class="skip" href="#main">Lewati ke konten</a>
+  <main id="main">
+    <section class="vn-page-hero" aria-labelledby="accountTitle">
+      <div class="wrap vn-container">
+        <p class="eyebrow vn-eyebrow">VitaNusa AI</p>
+        <h1 id="accountTitle">Akun Pengguna</h1>
+        <p>Halaman akun publik disiapkan sebagai placeholder aman. Fitur login dan profil publik belum diaktifkan penuh.</p>
+        <div class="actions vn-actions">
+          <a class="btn primary" href="index.html">Kembali ke Vita AI</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="account-shell vn-section">
+      <div class="wrap vn-container">
+        <article class="account-card">
+          <div class="account-avatar" aria-hidden="true">AK</div>
+          <div class="account-fields">
+            <span class="placeholder-status">Dalam pengembangan</span>
+            <div class="account-field"><span>Nama pengguna</span><strong>Pengguna VitaNusa</strong></div>
+            <div class="account-field"><span>Role pengguna</span><strong>Pengunjung</strong></div>
+            <div class="account-field"><span>Email</span><strong>Belum tersedia</strong></div>
+            <p class="account-note">Fitur akun publik akan dikembangkan bertahap. Saat ini halaman ini hanya menampilkan placeholder dan tidak menyimpan data pengguna.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initNusaUiShell } from './assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+    initNusaUiShell();
+  </script>
+</body>
+</html>

@@ -92,6 +92,38 @@
       font-weight: 700;
     }
 
+    .nusa-chat-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .nusa-chat-reset {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid rgba(22, 163, 74, .16);
+      border-radius: 999px;
+      background: #ffffff;
+      color: #14532d;
+      cursor: pointer;
+      font: inherit;
+      font-size: .84rem;
+      font-weight: 850;
+      line-height: 1.1;
+      padding: 8px 12px;
+      box-shadow: 0 8px 18px rgba(20, 83, 45, .06);
+    }
+
+    .nusa-chat-reset:hover,
+    .nusa-chat-reset:focus-visible {
+      border-color: rgba(22, 163, 74, .36);
+      background: #ecfdf5;
+      outline: none;
+    }
+
     .nusa-chat-start {
       display: grid;
       gap: 10px;
@@ -213,6 +245,16 @@
         display: none;
       }
 
+      .nusa-chat-tools {
+        margin-left: auto;
+      }
+
+      .nusa-chat-reset {
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: .78rem;
+      }
+
       .nusa-chat-start {
         padding: 12px 14px 8px;
       }
@@ -294,7 +336,10 @@
         <div class="nusa-chat-panel" data-nusa-chat aria-label="Chat Nusa AI">
           <div class="nusa-chat-topbar">
             <div class="nusa-chat-brand" aria-label="VitaNusa AI">Nusa AI</div>
-            <span class="nusa-chat-status">Edukasi amanah</span>
+            <div class="nusa-chat-tools">
+              <span class="nusa-chat-status">Edukasi amanah</span>
+              <button class="nusa-chat-reset" type="button" data-nusa-chat-reset aria-label="Mulai chat baru dan bersihkan percakapan">Chat Baru</button>
+            </div>
           </div>
 
           <header class="nusa-chat-start">

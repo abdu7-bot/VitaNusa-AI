@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pengaturan Aplikasi | VitaNusa AI</title>
+  <meta name="description" content="Placeholder pengaturan aplikasi VitaNusa AI yang masih dalam pengembangan.">
+  <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
+  <style>
+    .settings-shell {
+      padding-block: clamp(42px, 7vw, 76px);
+    }
+
+    .settings-card {
+      display: grid;
+      gap: 14px;
+      max-width: 760px;
+      margin-inline: auto;
+      border: 1px solid var(--vn-line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: var(--vn-shadow);
+      padding: clamp(18px, 4vw, 28px);
+    }
+
+    .placeholder-status {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid rgba(194, 154, 59, .32);
+      border-radius: 999px;
+      background: var(--vn-gold-soft);
+      color: #5d4210;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .settings-field {
+      display: grid;
+      gap: 6px;
+      border: 1px solid var(--vn-line);
+      border-radius: 16px;
+      background: #fbfefc;
+      padding: 12px;
+    }
+
+    .settings-field span {
+      color: var(--vn-muted);
+      font-size: .78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .settings-field strong {
+      color: var(--vn-green-900);
+      overflow-wrap: anywhere;
+    }
+
+    .settings-note {
+      margin: 0;
+      color: var(--vn-muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 760px) {
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="vn-page settings-page">
+  <a class="skip" href="#main">Lewati ke konten</a>
+  <main id="main">
+    <section class="vn-page-hero" aria-labelledby="settingsTitle">
+      <div class="wrap vn-container">
+        <p class="eyebrow vn-eyebrow">VitaNusa AI</p>
+        <h1 id="settingsTitle">Pengaturan Aplikasi</h1>
+        <p>Preferensi publik disiapkan bertahap. Belum ada pengaturan yang disimpan atau diterapkan secara permanen.</p>
+        <div class="actions vn-actions">
+          <a class="btn primary" href="index.html">Kembali ke Vita AI</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-shell vn-section">
+      <div class="wrap vn-container">
+        <article class="settings-card">
+          <span class="placeholder-status">Dalam pengembangan</span>
+          <div class="settings-grid">
+            <div class="settings-field"><span>Tema tampilan</span><strong>Hijau wellness</strong></div>
+            <div class="settings-field"><span>Bahasa</span><strong>Indonesia</strong></div>
+            <div class="settings-field"><span>Notifikasi</span><strong>Belum aktif</strong></div>
+          </div>
+          <p class="settings-note">Fitur pengaturan publik akan dikembangkan bertahap. Saat ini pilihan di halaman ini hanya placeholder dan belum mengubah preferensi aplikasi.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initNusaUiShell } from './assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+    initNusaUiShell();
+  </script>
+</body>
+</html>

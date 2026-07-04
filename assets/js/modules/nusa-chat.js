@@ -69,24 +69,45 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   const log = root.querySelector('[data-nusa-chat-log]');
   const form = root.querySelector('[data-nusa-chat-form]');
   const input = root.querySelector('[data-nusa-chat-input]');
+  const resetButton = root.querySelector('[data-nusa-chat-reset]');
 
   if (!log || !form || !input) return null;
 
+  const state = { requestId: 0 };
+
   log.replaceChildren();
   log.hidden = true;
+
+  function resetChat({ focus = true } = {}) {
+    state.requestId += 1;
+    log.replaceChildren();
+    log.hidden = true;
+    input.value = '';
+    if (focus) {
+      try {
+        input.focus({ preventScroll: true });
+      } catch {
+        input.focus();
+      }
+    }
+  }
 
   function handleQuestion(value) {
     const question = value.trim();
     if (!question) return;
 
+    const requestId = ++state.requestId;
     appendMessage(log, 'user', question);
     input.value = '';
 
     setTimeout(async () => {
+      if (requestId !== state.requestId) return;
       try {
         const reply = await getNusaReply(question);
+        if (requestId !== state.requestId) return;
         renderReply(log, reply || SAFE_FALLBACK_REPLY);
       } catch (error) {
+        if (requestId !== state.requestId) return;
         console.warn('Nusa reply failed:', error);
         renderReply(log, SAFE_FALLBACK_REPLY);
       }
@@ -96,6 +117,10 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     handleQuestion(input.value);
+  });
+
+  resetButton?.addEventListener('click', () => {
+    resetChat();
   });
 
   root.addEventListener('click', (event) => {
@@ -111,6 +136,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
 
   return {
     ask: handleQuestion,
+    reset: resetChat,
   };
 }
 function updateNusaSession(session, question, reply) {

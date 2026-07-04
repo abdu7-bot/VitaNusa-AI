@@ -8,14 +8,25 @@ const FEATURES = [
   ['Artikel', 'Bacaan edukatif', 'articles/index.html', 'AR'],
   ['Produk Amanah', 'Katalog reseller', 'products/index.html', 'PA'],
   ['Prinsip Amanah', 'Batas klaim', 'prinsip-amanah.html', 'AM'],
-  ['Kontak', 'WhatsApp & email', 'contact.html', 'WA']
+  ['Kontak', 'WhatsApp & email', 'contact.html', 'WA'],
+  ['Akun', 'Profil & akses pengguna', 'account.html', 'AK'],
+  ['Pengaturan', 'Preferensi aplikasi', 'settings.html', 'PG']
 ];
 
 function getRelativePrefix() {
-  const path = window.location.pathname;
-  if (/\/articles\/[^/]+\.html$/i.test(path)) return '../';
-  if (/\/(articles|products|documents|komik|vitagame\.html)\//i.test(path)) return '../';
-  return '';
+  const path = window.location.pathname.replace(/\\/g, '/');
+  const nestedRoots = ['articles', 'products', 'documents', 'komik', 'vitagame.html'];
+  const segments = path.split('/').filter(Boolean);
+  const rootIndex = segments.findIndex((segment) => nestedRoots.includes(segment));
+
+  if (rootIndex === -1) return '';
+
+  const childSegments = segments.slice(rootIndex + 1);
+  const lastSegment = childSegments[childSegments.length - 1] || '';
+  const endsWithFile = /\.[a-z0-9]+$/i.test(lastSegment);
+  const depth = 1 + Math.max(0, childSegments.length - (endsWithFile ? 1 : 0));
+
+  return '../'.repeat(depth);
 }
 
 function normalizeHref(href, prefix) {
@@ -32,6 +43,8 @@ function getCurrentKey() {
   if (path.endsWith('/vitacheck.html')) return 'VitaCheck';
   if (path.endsWith('/prinsip-amanah.html')) return 'Prinsip Amanah';
   if (path.endsWith('/contact.html')) return 'Kontak';
+  if (path.endsWith('/account.html') || path.endsWith('/akun.html')) return 'Akun';
+  if (path.endsWith('/settings.html') || path.endsWith('/pengaturan.html')) return 'Pengaturan';
   return 'Nusa Chat';
 }
 

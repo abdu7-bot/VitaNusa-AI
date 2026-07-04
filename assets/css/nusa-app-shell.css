@@ -261,7 +261,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
   .nusa-chat-topbar {
     flex: 0 0 auto !important;
-    padding: 12px 14px 0 !important;
+    padding: 12px 96px 0 14px !important;
   }
 
   .nusa-chat-start {
@@ -360,5 +360,9 @@ button { -webkit-tap-highlight-color: transparent; }
 
   .nusa-chat-note {
     display: none !important;
+  }
+
+  .nusa-chat-topbar {
+    padding-right: 88px !important;
   }
 }

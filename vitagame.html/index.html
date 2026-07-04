@@ -9,53 +9,54 @@
   <link rel="stylesheet" href="../assets/css/vitanusa-upgrade.css?v=20260704-vitanusa-master-map-v1">
   <style>
     :root {
-      --game-green-900: #0f3d2e;
-      --game-green-700: #1f7a55;
-      --game-green-100: #e7f6ed;
-      --game-gold: #c29a3b;
-      --game-ink: #17251e;
-      --game-muted: #65746c;
-      --game-line: #dbe8df;
-      --game-red: #9f2f2f;
-      --game-red-soft: #fff0ec;
-      --game-yellow-soft: #fff7df;
-      --game-surface: #ffffff;
-      --game-shadow: 0 18px 42px rgba(16, 61, 46, .12);
+      --vitagame-green-900: #0f3d2e;
+      --vitagame-green-700: #1f7a55;
+      --vitagame-green-100: #e7f6ed;
+      --vitagame-gold: #c29a3b;
+      --vitagame-ink: #17251e;
+      --vitagame-muted: #65746c;
+      --vitagame-line: #dbe8df;
+      --vitagame-red: #9f2f2f;
+      --vitagame-red-soft: #fff0ec;
+      --vitagame-yellow-soft: #fff7df;
+      --vitagame-surface: #ffffff;
+      --vitagame-shadow: 0 18px 42px rgba(16, 61, 46, .12);
     }
 
     body.vitagame-page {
       background: #f5fbf7;
-      color: var(--game-ink);
+      color: var(--vitagame-ink);
     }
 
-    .game-shell {
+    .vitagame-shell {
       min-height: calc(100svh - 210px);
       padding: clamp(24px, 5vw, 48px) 0 64px;
+      overflow-x: hidden;
       background:
         linear-gradient(180deg, #f5fbf7 0%, #ffffff 100%);
     }
 
-    .game-board {
+    .vitagame-board {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 320px;
       gap: 18px;
       align-items: start;
     }
 
-    .game-stage,
-    .game-panel {
-      border: 1px solid var(--game-line);
-      background: var(--game-surface);
-      box-shadow: var(--game-shadow);
+    .vitagame-stage,
+    .vitagame-panel {
+      border: 1px solid var(--vitagame-line);
+      background: var(--vitagame-surface);
+      box-shadow: var(--vitagame-shadow);
     }
 
-    .game-stage {
+    .vitagame-stage {
       min-width: 0;
       border-radius: 22px;
       overflow: hidden;
     }
 
-    .game-hero {
+    .vitagame-hero {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 160px;
       gap: 18px;
@@ -65,20 +66,20 @@
       color: #ffffff;
     }
 
-    .game-hero h1 {
+    .vitagame-hero h1 {
       margin: 0 0 8px;
       color: #ffffff;
       font-size: clamp(1.55rem, 4vw, 2.6rem);
       line-height: 1.1;
     }
 
-    .game-hero p {
+    .vitagame-hero p {
       max-width: 66ch;
       margin: 0;
       color: #edf8f2;
     }
 
-    .game-mark {
+    .vitagame-mark {
       display: grid;
       place-items: center;
       aspect-ratio: 1;
@@ -87,100 +88,101 @@
       background: rgba(255, 255, 255, .12);
     }
 
-    .game-mark img {
+    .vitagame-mark img {
       width: min(112px, 70%);
       height: auto;
       filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .18));
     }
 
-    .game-play {
+    .vitagame-play {
       display: grid;
       gap: 18px;
       padding: clamp(16px, 3vw, 24px);
     }
 
-    .game-status {
+    .vitagame-status {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
 
-    .game-stat {
-      border: 1px solid var(--game-line);
+    .vitagame-stat {
+      border: 1px solid var(--vitagame-line);
       border-radius: 14px;
       padding: 10px;
       background: #f8fbfa;
     }
 
-    .game-stat span {
+    .vitagame-stat span {
       display: block;
-      color: var(--game-muted);
+      color: var(--vitagame-muted);
       font-size: .76rem;
       font-weight: 800;
       text-transform: uppercase;
     }
 
-    .game-stat strong {
+    .vitagame-stat strong {
       display: block;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
       font-size: 1.25rem;
       line-height: 1.15;
     }
 
-    .game-progress {
+    .vitagame-progress {
       height: 10px;
       overflow: hidden;
       border-radius: 999px;
       background: #e9f0ec;
     }
 
-    .game-progress span {
+    .vitagame-progress span {
       display: block;
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--game-green-700), #29a86f);
+      background: linear-gradient(90deg, var(--vitagame-green-700), #29a86f);
       transition: width .28s ease;
     }
 
-    .game-card {
+    .vitagame-card {
       display: grid;
       gap: 14px;
-      min-height: 270px;
-      border: 1px solid var(--game-line);
+      min-height: 240px;
+      border: 1px solid var(--vitagame-line);
       border-radius: 18px;
       padding: clamp(16px, 3vw, 24px);
       background: #ffffff;
     }
 
-    .game-kicker {
+    .vitagame-kicker {
       margin: 0;
-      color: var(--game-green-700);
+      color: var(--vitagame-green-700);
       font-size: .78rem;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: .05em;
     }
 
-    .game-question {
+    .vitagame-question {
       margin: 0;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
       font-size: clamp(1.25rem, 3vw, 1.8rem);
       line-height: 1.24;
+      overflow-wrap: anywhere;
     }
 
-    .game-options {
+    .vitagame-options {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
 
-    .game-option {
+    .vitagame-option {
       min-height: 58px;
-      border: 1px solid var(--game-line);
+      border: 1px solid var(--vitagame-line);
       border-radius: 14px;
       background: #fbfefc;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
       cursor: pointer;
       font: inherit;
       font-weight: 900;
@@ -188,72 +190,72 @@
       text-align: center;
     }
 
-    .game-option:hover,
-    .game-option:focus-visible {
-      border-color: var(--game-green-700);
-      background: var(--game-green-100);
+    .vitagame-option:hover,
+    .vitagame-option:focus-visible {
+      border-color: var(--vitagame-green-700);
+      background: var(--vitagame-green-100);
       outline: none;
     }
 
-    .game-option.is-correct {
+    .vitagame-option.is-correct {
       border-color: #45a86d;
       background: #e7f8ed;
       color: #14532d;
     }
 
-    .game-option.is-wrong {
+    .vitagame-option.is-wrong {
       border-color: #e3aaa0;
-      background: var(--game-red-soft);
-      color: var(--game-red);
+      background: var(--vitagame-red-soft);
+      color: var(--vitagame-red);
     }
 
-    .game-option:disabled {
+    .vitagame-option:disabled {
       cursor: default;
       opacity: .9;
     }
 
-    .game-feedback {
+    .vitagame-feedback {
       min-height: 72px;
-      border: 1px solid var(--game-line);
+      border: 1px solid var(--vitagame-line);
       border-radius: 16px;
       padding: 12px 14px;
       background: #f8fbfa;
-      color: var(--game-ink);
+      color: var(--vitagame-ink);
       line-height: 1.55;
     }
 
-    .game-feedback strong {
+    .vitagame-feedback strong {
       display: block;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
     }
 
-    .game-feedback.is-warning {
+    .vitagame-feedback.is-warning {
       border-color: #ead59e;
-      background: var(--game-yellow-soft);
+      background: var(--vitagame-yellow-soft);
     }
 
-    .game-feedback.is-danger {
+    .vitagame-feedback.is-danger {
       border-color: #e3aaa0;
-      background: var(--game-red-soft);
+      background: var(--vitagame-red-soft);
     }
 
-    .game-actions {
+    .vitagame-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
     }
 
-    .game-button,
-    .game-link {
+    .vitagame-button,
+    .vitagame-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       min-height: 44px;
-      border: 1px solid var(--game-line);
+      border: 1px solid var(--vitagame-line);
       border-radius: 999px;
       background: #ffffff;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
       cursor: pointer;
       font: inherit;
       font-weight: 900;
@@ -261,22 +263,22 @@
       text-decoration: none;
     }
 
-    .game-button-primary {
-      border-color: var(--game-green-700);
-      background: var(--game-green-700);
+    .vitagame-button-primary {
+      border-color: var(--vitagame-green-700);
+      background: var(--vitagame-green-700);
       color: #ffffff;
     }
 
-    .game-button-light {
+    .vitagame-button-light {
       background: #fffaf0;
     }
 
-    .game-button:disabled {
+    .vitagame-button:disabled {
       cursor: default;
       opacity: .6;
     }
 
-    .game-panel {
+    .vitagame-panel {
       display: grid;
       gap: 14px;
       border-radius: 18px;
@@ -285,19 +287,19 @@
       top: 16px;
     }
 
-    .game-panel h2,
-    .game-panel h3 {
+    .vitagame-panel h2,
+    .vitagame-panel h3 {
       margin: 0;
-      color: var(--game-green-900);
+      color: var(--vitagame-green-900);
       line-height: 1.2;
     }
 
-    .game-panel p {
+    .vitagame-panel p {
       margin: 0;
-      color: var(--game-muted);
+      color: var(--vitagame-muted);
     }
 
-    .game-rules {
+    .vitagame-rules {
       display: grid;
       gap: 8px;
       padding: 0;
@@ -305,16 +307,16 @@
       list-style: none;
     }
 
-    .game-rules li {
-      border: 1px solid var(--game-line);
+    .vitagame-rules li {
+      border: 1px solid var(--vitagame-line);
       border-radius: 12px;
       background: #f8fbfa;
       padding: 10px 12px;
-      color: var(--game-ink);
+      color: var(--vitagame-ink);
       font-weight: 700;
     }
 
-    .game-result {
+    .vitagame-result {
       display: none;
       gap: 12px;
       border: 1px solid #b8dcc7;
@@ -323,46 +325,72 @@
       padding: 14px;
     }
 
-    .game-result.is-visible {
+    .vitagame-result.is-visible {
       display: grid;
     }
 
-    .game-result strong {
-      color: var(--game-green-900);
+    .vitagame-result strong {
+      color: var(--vitagame-green-900);
       font-size: 1.2rem;
     }
 
-    .game-note {
+    .vitagame-note {
       border: 1px solid #ead59e;
       border-radius: 16px;
-      background: var(--game-yellow-soft);
+      background: var(--vitagame-yellow-soft);
       color: #5d4210;
       padding: 12px 14px;
       font-weight: 700;
     }
 
     @media (max-width: 900px) {
-      .game-board {
+      .vitagame-board {
         grid-template-columns: 1fr;
       }
 
-      .game-panel {
+      .vitagame-panel {
         position: static;
       }
     }
 
-    @media (max-width: 640px) {
-      .game-hero {
-        grid-template-columns: 1fr;
+    @media (max-width: 760px) {
+      .vitagame-status {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .game-mark {
+      .vitagame-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .vitagame-button,
+      .vitagame-link {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .vitagame-hero {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      .vitagame-mark {
         display: none;
       }
 
-      .game-status,
-      .game-options {
+      .vitagame-options {
         grid-template-columns: 1fr;
+      }
+
+      .vitagame-play {
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .vitagame-card,
+      .vitagame-panel {
+        border-radius: 16px;
       }
     }
   </style>
@@ -370,70 +398,70 @@
 </head>
 <body class="vn-page vitagame-page">
   <a class="skip" href="#main">Lewati ke konten</a>
-<main id="main" class="game-shell">
+<main id="main" class="vitagame-shell">
     <div class="wrap vn-container">
-      <div class="game-board vn-grid">
-        <section class="game-stage vn-card" aria-labelledby="gameTitle">
-          <div class="game-hero vn-page-hero">
+      <div class="vitagame-board">
+        <section class="vitagame-stage" aria-labelledby="gameTitle">
+          <div class="vitagame-hero">
             <div>
-              <p class="game-kicker">VitaGame</p>
+              <p class="vitagame-kicker">VitaGame</p>
               <h1 id="gameTitle">Mitos vs Fakta: Klaim Sehat</h1>
               <p>Main cepat 10 kartu. Pilih apakah pernyataannya termasuk Fakta, Perlu Dicek, atau Klaim Berlebihan.</p>
             </div>
-            <div class="game-mark" aria-hidden="true">
+            <div class="vitagame-mark" aria-hidden="true">
               <img src="../images/logo-vitanusa-Ai.png" alt="">
             </div>
           </div>
 
-          <div class="game-play" data-game-root>
-            <div class="game-status" aria-label="Status permainan">
-              <div class="game-stat"><span>Skor</span><strong data-score>0</strong></div>
-              <div class="game-stat"><span>Kartu</span><strong data-round>1/10</strong></div>
-              <div class="game-stat"><span>Streak</span><strong data-streak>0</strong></div>
-              <div class="game-stat"><span>Benar</span><strong data-correct>0</strong></div>
+          <div class="vitagame-play" data-vitagame-root>
+            <div class="vitagame-status" aria-label="Status permainan">
+              <div class="vitagame-stat"><span>Skor</span><strong data-score>0</strong></div>
+              <div class="vitagame-stat"><span>Kartu</span><strong data-round>1/10</strong></div>
+              <div class="vitagame-stat"><span>Streak</span><strong data-streak>0</strong></div>
+              <div class="vitagame-stat"><span>Benar</span><strong data-correct>0</strong></div>
             </div>
 
-            <div class="game-progress" aria-hidden="true"><span data-progress></span></div>
+            <div class="vitagame-progress" aria-hidden="true"><span data-progress></span></div>
 
-            <article class="game-card" aria-live="polite">
-              <p class="game-kicker" data-category>Klaim Produk</p>
-              <h2 class="game-question" data-question>Tekan Mulai Game untuk bermain.</h2>
-              <div class="game-options" role="group" aria-label="Pilihan jawaban">
-                <button class="game-option" type="button" data-answer="fact">Fakta</button>
-                <button class="game-option" type="button" data-answer="check">Perlu Dicek</button>
-                <button class="game-option" type="button" data-answer="claim">Klaim Berlebihan</button>
+            <article class="vitagame-card" aria-live="polite">
+              <p class="vitagame-kicker" data-category>Klaim Produk</p>
+              <h2 class="vitagame-question" data-question>Tekan Mulai Game untuk bermain.</h2>
+              <div class="vitagame-options" role="group" aria-label="Pilihan jawaban">
+                <button class="vitagame-option" type="button" data-answer="fact">Fakta</button>
+                <button class="vitagame-option" type="button" data-answer="check">Perlu Dicek</button>
+                <button class="vitagame-option" type="button" data-answer="claim">Klaim Berlebihan</button>
               </div>
-              <div class="game-feedback" data-feedback>
+              <div class="vitagame-feedback" data-feedback>
                 <strong>Siap main?</strong>
                 Jawab dengan tenang. Tujuan game ini bukan menakuti, tetapi melatih tabayyun saat membaca klaim kesehatan.
               </div>
-              <div class="game-actions">
-                <button class="game-button game-button-primary" type="button" data-start>Mulai Game</button>
-                <button class="game-button game-button-light" type="button" data-next disabled>Kartu Berikutnya</button>
-                <button class="game-button" type="button" data-reset>Ulangi</button>
+              <div class="vitagame-actions">
+                <button class="vitagame-button vitagame-button-primary" type="button" data-start>Mulai Game</button>
+                <button class="vitagame-button vitagame-button-light" type="button" data-next disabled>Kartu Berikutnya</button>
+                <button class="vitagame-button" type="button" data-reset>Ulangi</button>
               </div>
             </article>
           </div>
         </section>
 
-        <aside class="game-panel vn-card" aria-label="Panduan VitaGame">
+        <aside class="vitagame-panel" aria-label="Panduan VitaGame">
           <h2>Mode Amanah</h2>
           <p>Game ini melatih cara membaca klaim, bukan memberi diagnosis atau rekomendasi produk.</p>
-          <ul class="game-rules">
+          <ul class="vitagame-rules">
             <li><strong>Fakta:</strong> edukasi umum yang aman dan tidak berlebihan.</li>
             <li><strong>Perlu Dicek:</strong> butuh label resmi, sumber tepercaya, atau tenaga profesional.</li>
             <li><strong>Klaim Berlebihan:</strong> janji mutlak seperti pasti sembuh atau 100% aman.</li>
           </ul>
-          <div class="game-result" data-result>
+          <div class="vitagame-result" data-result>
             <strong data-result-title>Hasil permainan</strong>
             <p data-result-copy>-</p>
           </div>
-          <div class="game-actions">
-            <a class="game-link" href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
-            <a class="game-link" href="../vitacheck.html">Mulai VitaCheck</a>
-            <a class="game-link" href="../articles/index.html">Baca Artikel</a>
+          <div class="vitagame-actions">
+            <a class="vitagame-link" href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
+            <a class="vitagame-link" href="../vitacheck.html">Mulai VitaCheck</a>
+            <a class="vitagame-link" href="../articles/index.html">Baca Artikel</a>
           </div>
-          <div class="game-note vn-note">VitaGame bersifat edukatif. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.</div>
+          <div class="vitagame-note">VitaGame bersifat edukatif. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.</div>
         </aside>
       </div>
     </div>
@@ -529,7 +557,7 @@
         claim: 'Klaim Berlebihan'
       };
 
-      const root = document.querySelector('[data-game-root]');
+      const root = document.querySelector('[data-vitagame-root]');
       if (!root) return;
 
       const state = {
@@ -583,7 +611,7 @@
         state.answered = false;
         nodes.category.textContent = card.category;
         nodes.question.textContent = card.question;
-        nodes.feedback.className = 'game-feedback';
+        nodes.feedback.className = 'vitagame-feedback';
         nodes.feedback.innerHTML = '<strong>Pilih jawabanmu.</strong> Baca pernyataannya, lalu tentukan kategorinya.';
         nodes.next.disabled = true;
         nodes.options.forEach((button) => {
@@ -620,7 +648,7 @@
           if (value === card.answer) button.classList.add('is-correct');
           if (value === choice && !isCorrect) button.classList.add('is-wrong');
         });
-        nodes.feedback.className = `game-feedback ${isCorrect ? '' : 'is-warning'}`;
+        nodes.feedback.className = `vitagame-feedback ${isCorrect ? '' : 'is-warning'}`;
         nodes.feedback.innerHTML = `<strong>${isCorrect ? 'Tepat.' : 'Belum tepat.'} Jawaban: ${answerLabels[card.answer]}.</strong>${card.explain}`;
         nodes.next.disabled = false;
         updateStats();
@@ -644,7 +672,7 @@
         nodes.start.textContent = 'Main Lagi';
         state.started = false;
         const title = getResultTitle();
-        nodes.feedback.className = 'game-feedback';
+        nodes.feedback.className = 'vitagame-feedback';
         nodes.feedback.innerHTML = `<strong>${title}</strong> Skor akhir kamu ${state.score}. Baca ulang penjelasan dan lanjutkan dengan Prinsip Amanah bila ingin lebih paham.`;
         nodes.resultTitle.textContent = title;
         nodes.resultCopy.textContent = `Kamu menjawab ${state.correct} dari ${state.deck.length} kartu dengan benar. Skor: ${state.score}.`;
@@ -672,7 +700,7 @@
         nodes.progress.style.width = '0%';
         nodes.category.textContent = 'Klaim Produk';
         nodes.question.textContent = 'Tekan Mulai Game untuk bermain.';
-        nodes.feedback.className = 'game-feedback';
+        nodes.feedback.className = 'vitagame-feedback';
         nodes.feedback.innerHTML = '<strong>Siap main?</strong> Jawab dengan tenang. Tujuan game ini bukan menakuti, tetapi melatih tabayyun saat membaca klaim kesehatan.';
         nodes.options.forEach((button) => {
           button.disabled = false;
