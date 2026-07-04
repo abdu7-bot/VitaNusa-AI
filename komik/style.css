@@ -151,7 +151,7 @@ body {
   }
 }
 
-@media (min-width: 601px) and (max-width: 900ppx) {
+@media (min-width: 601px) and (max-width: 900px) {
   .comic-card {
     grid-template-columns: 1fr;
   }

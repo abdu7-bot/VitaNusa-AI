@@ -103,7 +103,7 @@ function injectKnowledgeImportBlock() {
       <p>Paste Q&amp;A lengkap dari ChatGPT, lalu parse untuk mengisi form. Default diset published agar bisa dibaca Nusa AI publik.</p>
     </div>
     <label class="article-import-label">Output Knowledge ChatGPT
-      <textarea name="knowledgeImportText" data-knowledge-import-text rows="10" placeholder="Paste format Knowledge di sini...\n\nQuestion:\nApa itu VitaNusa AI?\n\nAlternate Questions:\nvitanusa ai itu apa\napa fungsi vitanusa ai\n\nShort Answer:\nVitaNusa AI adalah platform edukasi...\n\nAnswer HTML:\n<p>Jawaban edukatif...</p>\n\nKeywords:\nvitanusa, edukasi kesehatan\n\nCategory:\nTentang VitaNusa\n\nStatus:\npublished"></textarea>
+      <textarea name="knowledgeImportText" data-knowledge-import-text rows="10" placeholder="Paste format Knowledge di sini...\n\nQuestion:\nApa itu VitaNusa AI?\n\nAlternate Questions:\nvitanusa ai itu apa\napa fungsi vitanusa ai\n\nShort Answer:\nVitaNusa AI adalah platform edukasi...\n\nAnswer HTML:\n&lt;p&gt;Jawaban edukatif...&lt;/p&gt;\n\nKeywords:\nvitanusa, edukasi kesehatan\n\nCategory:\nTentang VitaNusa\n\nStatus:\npublished"></textarea>
     </label>
     <div class="article-import-actions">
       <button class="admin-button admin-button-primary" type="button" data-knowledge-import-parse>Parse ke Form</button>
