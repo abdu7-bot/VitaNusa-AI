@@ -34,7 +34,7 @@ export async function findMatchingFirestoreArticles(queryText, options = {}){
   if (!shouldSearchFirestore(normalizedQuery, options)) return [];
   try {
     const articles = await loadPublishedFirestoreArticles();
-    return articles.map((article)=>({ article, score: scoreArticle(article, normalizedQuery, options) })).filter((entry)=>entry.score >= MIN_MATCH_SCORE).sort(sortScoredArticles).slice(0, MAX_MATCHED_ARTICLES).map((entry)=>entry.article);
+    return articles.map((article)=>({ article, score: scoreArticle(article, normalizedQuery, options) })).filter((entry)=>entry.score >= MIN_MATCH_SCORE).sort(sortScoredArticles).slice(0, MAX_MATCHED_ARTICLES).map((entry)=>shouldSeekHumanHelp(entry.article, normalizedQuery) ? { ...entry.article, nusaSeekHelp: true } : entry.article);
   } catch (error) { console.warn('Firestore article search failed:', error); return []; }
 }
 export function normalizeSearchText(value){ return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' dan ').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -53,8 +53,14 @@ export function scoreArticle(article, queryText, options = {}){
   const normalizedQuery = normalizeSearchText(queryText);
   const queryTokens = getExpandedTokens(normalizedQuery);
   if (!queryTokens.length) return 0;
-  const title = normalizeSearchText(article.title), summary = normalizeSearchText(getArticleSummary(article)), category = normalizeSearchText(article.category), slug = normalizeSearchText(article.slug), intentTarget = normalizeSearchText(article.intentTarget), riskLevel = normalizeSearchText(article.riskLevel || 'low'), tags = getTags(article.tags).map(normalizeSearchText).filter(Boolean), relatedArticles = getTags(article.relatedArticles).map(normalizeSearchText).filter(Boolean), contentText = normalizeSearchText(stripHtml(article.contentHtml)), detectedIntentTargets = getDetectedIntentTargets(normalizedQuery, options.intentId);
+  if (matchesLooseList(normalizedQuery, article.doNotUseFor)) return 0;
+  const title = normalizeSearchText(article.title), summary = normalizeSearchText(getArticleSummary(article)), category = normalizeSearchText(article.category), slug = normalizeSearchText(article.slug), intentTarget = normalizeSearchText(article.intentTarget), riskLevel = normalizeSearchText(article.riskLevel || 'low'), tags = getTags(article.tags).map(normalizeSearchText).filter(Boolean), relatedArticles = getTags(article.relatedArticles).map(normalizeSearchText).filter(Boolean), userQuestions = getTags(article.userQuestions).map(normalizeSearchText).filter(Boolean), problemTags = getTags(article.problemTags).map(normalizeSearchText).filter(Boolean), answerSnippet = normalizeSearchText(article.answerSnippet), audience = normalizeSearchText(article.audience), sources = getTags(article.sources).map(normalizeSearchText).filter(Boolean), contentText = normalizeSearchText(stripHtml(article.contentHtml)), detectedIntentTargets = getDetectedIntentTargets(normalizedQuery, options.intentId);
   let score = 0;
+  for (const question of userQuestions) { if (question && (normalizedQuery === question || normalizedQuery.includes(question) || question.includes(normalizedQuery))) { score += 18; continue; } score += countTokenOverlap(queryTokens, getExpandedTokens(question)) * 7; }
+  for (const problemTag of problemTags) { if (problemTag && (normalizedQuery.includes(problemTag) || problemTag.includes(normalizedQuery))) { score += 10; continue; } score += countTokenOverlap(queryTokens, getExpandedTokens(problemTag)) * 6; }
+  score += Math.min(countTokenOverlap(queryTokens, getExpandedTokens(answerSnippet)) * 3, 12);
+  score += Math.min(countTokenOverlap(queryTokens, getExpandedTokens(audience)) * 2, 5);
+  score += Math.min(countTokenOverlap(queryTokens, sources.flatMap(getExpandedTokens)) * 1, 4);
   if (title && (normalizedQuery.includes(title) || title.includes(normalizedQuery))) score += 8;
   score += countTokenOverlap(queryTokens, getExpandedTokens(title)) * 4;
   if (intentTarget && detectedIntentTargets.includes(intentTarget)) score += 6;
@@ -67,13 +73,14 @@ export function scoreArticle(article, queryText, options = {}){
   score += countTokenOverlap(queryTokens, getExpandedTokens(slug)) * 2;
   score += Math.min(countTokenOverlap(queryTokens, relatedArticles.flatMap(getExpandedTokens)) * 1, 3);
   score += getSensitiveMetadataBonus(article, detectedIntentTargets, normalizedQuery);
-  score += getContextBonus(queryTokens, [title, summary, category, slug, intentTarget, tags.join(' '), riskLevel]);
+  score += getContextBonus(queryTokens, [title, summary, category, slug, intentTarget, tags.join(' '), problemTags.join(' '), answerSnippet, audience, sources.join(' '), riskLevel]);
   return score;
 }
 export function createFirestoreArticleAction(article){
   if (!isEligiblePublishedArticle(article)) return null;
+  if (article.nusaSeekHelp) return { label: 'Hubungi Bantuan Manusia', href: getConsultationHref(article), snippet: normalizeWhitespace(article.whenToSeekHelp) };
   if (requiresMedicalConsultAction(article)) return { label: CONSULT_LABEL, href: getConsultationHref(article) };
-  return { label: `Baca Artikel: ${truncateTitle(article.title, DEFAULT_TITLE_LIMIT)}`, href: `articles/detail.html?slug=${encodeURIComponent(String(article.slug).trim())}` };
+  return { label: `Baca Artikel: ${truncateTitle(article.title, DEFAULT_TITLE_LIMIT)}`, href: `articles/detail.html?slug=${encodeURIComponent(String(article.slug).trim())}`, snippet: normalizeWhitespace(article.answerSnippet) };
 }
 function shouldSearchFirestore(normalizedQuery, options){ const tokens = getMeaningfulTokens(normalizedQuery); if (options.allowShortQuery) return normalizedQuery.length >= 3 && tokens.length >= 1; return normalizedQuery.length >= 8 && tokens.length >= 2; }
 function isEligiblePublishedArticle(article){ return Boolean(article && article.status === 'published' && String(article.title || '').trim() && String(article.slug || '').trim() && !isBlockedIslamicProductArticle(article)); }
@@ -83,6 +90,8 @@ function hasExplicitDisclaimer(article){ const metadata = article?.metadata && t
 function getConsultationHref(article){ return article?.consultationUrl || article?.consultUrl || CONSULT_HREF; }
 function getArticleSummary(article){ return article?.summary || article?.excerpt || article?.description || ''; }
 function getTags(tags){ if (Array.isArray(tags)) return tags.map((tag)=>String(tag || '').trim()).filter(Boolean); if (typeof tags === 'string') return tags.split(',').map((tag)=>tag.trim()).filter(Boolean); return []; }
+function matchesLooseList(normalizedQuery, values){ return getTags(values).some((value)=>{ const normalizedValue = normalizeSearchText(value); return normalizedValue && (normalizedQuery.includes(normalizedValue) || countTokenOverlap(getExpandedTokens(normalizedQuery), getExpandedTokens(normalizedValue)) >= 2); }); }
+function shouldSeekHumanHelp(article, normalizedQuery){ const note = normalizeWhitespace(article?.whenToSeekHelp); if (!note) return false; return /sulit dikendalikan|tidak bisa berhenti|mengganggu|berat|darurat|memburuk|ahli|tenaga kesehatan|kesehatan mental|keluarga|pekerjaan|ibadah/.test(normalizedQuery); }
 function getMeaningfulTokens(text){ return [...new Set(String(text || '').split(' ').map((token)=>token.trim()).filter((token)=>token.length > 2 && !STOP_WORDS.has(token)))]; }
 function getExpandedTokens(text){ const tokens = getMeaningfulTokens(text); const expanded = new Set(tokens); tokens.forEach((token)=>(TOKEN_SYNONYMS[token] || []).forEach((synonym)=>expanded.add(synonym))); return [...expanded]; }
 function countTokenOverlap(queryTokens, targetTokens){ if (!queryTokens.length || !targetTokens.length) return 0; const targetSet = new Set(targetTokens); return queryTokens.reduce((count, token)=>count + (targetSet.has(token) ? 1 : 0), 0); }

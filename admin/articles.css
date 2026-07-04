@@ -278,6 +278,12 @@
   font-size: 0.92rem;
 }
 
+.article-form select:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+  background: #eef4ef;
+}
+
 .article-help {
   color: var(--admin-muted);
   font-size: 0.88rem;

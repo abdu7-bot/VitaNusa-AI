@@ -61,6 +61,7 @@ function createArticleCard(article) {
   card.dataset.description = getArticleSummary(article);
   card.dataset.category = buildSearchCategory(article);
   card.dataset.tags = getTagText(article.tags);
+  card.dataset.nusaMetadata = [getTagText(article.userQuestions), article.answerSnippet, getTagText(article.problemTags), article.audience, getTagText(article.sources)].filter(Boolean).join(' ').toLowerCase();
 
   const badge = el('div', 'article-badge green', article.category || 'Artikel');
   const content = el('div', 'article-content');

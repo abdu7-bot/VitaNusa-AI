@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
   <link rel="stylesheet" href="admin.css?v=20260626-admin-v5">
-  <link rel="stylesheet" href="articles.css?v=20260627-import-prompt-v1">
+  <link rel="stylesheet" href="articles.css?v=20260703-smart-admin-published-v1">
 </head>
 <body class="admin-page admin-dashboard-page" data-admin-auth-page="dashboard">
   <section class="admin-auth-gate" aria-label="Status autentikasi admin">
@@ -85,7 +85,7 @@
         </section>
 
         <section class="admin-panel" data-admin-panel="articles" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Artikel</h2><p>Kelola artikel Firestore sebagai draft, published, atau archived. Konten berisiko akan diberi warning, sensitive flags, dan Catatan Amanah, tetapi artikel admin default published.</p></div>
+          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Artikel</h2><p>Kelola artikel Firestore sebagai published. Konten berisiko tetap published, lalu diberi warning, sensitive flags, disclaimer, dan Catatan Amanah.</p></div>
           <div class="article-admin" data-article-app>
             <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button" data-article-new>Tambah Artikel</button><button class="admin-button admin-button-light" type="button" data-article-refresh>Refresh Daftar</button></div>
             <div class="article-message" data-article-message hidden></div>
@@ -102,7 +102,7 @@
                   <div class="article-import-block" aria-labelledby="articleImportTitle">
                     <div class="article-import-heading">
                       <h4 id="articleImportTitle">Import Artikel dari Prompt</h4>
-                      <p>Paste artikel lengkap dari ChatGPT, lalu parse untuk mengisi form. Tetap review ulang sebelum simpan.</p>
+                      <p>Paste artikel lengkap dari ChatGPT, lalu parse untuk mengisi form. Status diset published; tetap review ulang sebelum simpan.</p>
                     </div>
                     <label class="article-import-label">Output Artikel ChatGPT
                       <textarea name="articleImportText" data-article-import-text rows="10" placeholder="Paste output artikel ChatGPT lengkap di sini..."></textarea>
@@ -132,20 +132,28 @@
 
                   <div class="article-metadata-block">
                     <h4>Content Library Metadata V1</h4>
-                    <p class="article-help">Metadata membantu Nusa AI memilih bacaan yang relevan tanpa berubah menjadi dokter, ustadz, mufti, atau sales produk.</p>
+                    <p class="article-help">Metadata ini membantu Nusa AI menjawab lebih relevan, tetapi tidak mengubah status publish. Semua artikel tetap published.</p>
                     <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
                     <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
                     <div class="article-checkbox-grid" aria-label="Sensitive flags"><label class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive" type="checkbox"><span>Product sensitive</span></label><label class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic sensitive</span></label></div>
                     <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off" placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
                     <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Sistem akan membersihkan menjadi array slug.</p>
+                    <label>User Questions<textarea name="userQuestions" rows="4" placeholder="Satu pertanyaan per baris atau pisahkan dengan koma"></textarea></label>
+                    <label>Answer Snippet<textarea name="answerSnippet" rows="4" placeholder="Jawaban pendek yang bisa dipakai Nusa AI"></textarea></label>
+                    <label>Problem Tags<textarea name="problemTags" rows="3" placeholder="syahwat, konten haram, hasad, sombong"></textarea></label>
+                    <label>Audience<input name="audience" type="text" autocomplete="off" placeholder="Muslim umum, pemuda, pemimpin"></label>
+                    <label>Do Not Use For<textarea name="doNotUseFor" rows="3" placeholder="fatwa khusus, diagnosis, kasus pribadi berat"></textarea></label>
+                    <label>When To Seek Help<textarea name="whenToSeekHelp" rows="4" placeholder="Kapan user perlu diarahkan ke bantuan ahli"></textarea></label>
+                    <label>Sources<textarea name="sources" rows="4" placeholder="QS. An-Nur: 30&#10;HR. Bukhari dan Muslim"></textarea></label>
                     <label>Content Depth<select name="contentDepth"><option value="basic">basic</option><option value="intermediate">intermediate</option><option value="deep">deep</option></select></label>
                     <label>Primary Action<select name="primaryAction"><option value="read-article">read-article</option><option value="start-vitacheck">start-vitacheck</option><option value="read-prinsip-amanah">read-prinsip-amanah</option><option value="contact-admin">contact-admin</option><option value="seek-professional-help">seek-professional-help</option><option value="view-products">view-products</option></select></label>
-                    <p class="article-help">Untuk riskLevel high atau medical sensitive, jangan arahkan langsung ke view-products.</p>
+                    <p class="article-help">Semua artikel admin disimpan sebagai published. Sistem tidak memakai draft otomatis. Jika konten sensitif, artikel tetap published tetapi diberi warning, sensitive flags, disclaimer, dan reviewer note.</p>
                     <label>Reviewer Note<textarea name="reviewerNote" rows="3" placeholder="Catatan editor/admin"></textarea></label>
                     <div class="article-metadata-preview" data-article-metadata-preview aria-live="polite"></div>
                   </div>
 
-                  <label>Status<select name="status" required><option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option></select></label>
+                  <label>Status<select name="status" required disabled><option value="published" selected>published</option><option value="draft">draft</option><option value="archived">archived</option></select></label>
+                  <p class="article-help">Semua artikel admin wajib published. Draft dan archived tidak dipakai untuk alur simpan artikel saat ini.</p>
                   <div class="article-form-actions"><button class="admin-button admin-button-primary" type="submit">Simpan Artikel</button><button class="admin-button admin-button-light" type="button" data-article-reset>Bersihkan Form</button></div>
                 </form>
               </section>
@@ -200,7 +208,8 @@
 
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
-  <script type="module" src="articles.js?v=20260628-import-parser-v2-sensitive-negation"></script>
+  <script type="module" src="articles-import-one-block.js?v=20260703-smart-admin-published-v1"></script>
+  <script type="module" src="articles.js?v=20260703-smart-admin-published-v1"></script>
   <script type="module" src="knowledge.js?v=20260701-knowledge-admin-v1"></script>
 </body>
 </html>
