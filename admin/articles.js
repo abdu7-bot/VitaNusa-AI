@@ -1,5 +1,5 @@
 import { db } from './firebase-auth.js';
-import { collection, addDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
 
 const articleApp = document.querySelector('[data-article-app]');
 const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
@@ -184,7 +184,7 @@ const PRODUCT_STRONG_PATTERNS = [
   /\bdeto\s+pro\b/i
 ];
 const DEFAULT_METADATA = Object.freeze({ intentTarget: 'article-general', riskLevel: 'low', isMedicalSensitive: false, isProductSensitive: false, isIslamicSensitive: false, relatedArticles: [], userQuestions: [], answerSnippet: '', problemTags: [], audience: '', doNotUseFor: [], whenToSeekHelp: '', sources: [], contentDepth: 'basic', primaryAction: 'read-article', reviewerNote: '' });
-const state = { initialized: false, articles: [], editingId: null, slugTouched: false, selectedBannerFile: null, previewObjectUrl: null };
+const state = { initialized: false, articles: [], editingId: null, slugTouched: false, selectedBannerFile: null, previewObjectUrl: null, filters: { search: '', category: '', status: '' }, previewTimer: null };
 
 if (articleApp) {
   window.addEventListener('vitanusa:admin-ready', initArticleCrud);
@@ -207,6 +207,9 @@ function initArticleCrud() {
   document.querySelector('[data-article-refresh]')?.addEventListener('click', () => loadArticles());
   document.querySelector('[data-article-reset]')?.addEventListener('click', () => resetForm());
   document.querySelector('[data-article-list]')?.addEventListener('click', handleListAction);
+  document.querySelector('[data-article-search]')?.addEventListener('input', handleArticleFilterChange);
+  document.querySelector('[data-article-category-filter]')?.addEventListener('change', handleArticleFilterChange);
+  document.querySelector('[data-article-status-filter]')?.addEventListener('change', handleArticleFilterChange);
   document.querySelector('[data-banner-clear]')?.addEventListener('click', clearBannerSelection);
   form?.addEventListener('submit', handleSaveArticle);
   contentInput?.addEventListener('input', updateDisclaimerStatus);
@@ -221,6 +224,7 @@ function initArticleCrud() {
 
   resetForm();
   loadArticles();
+  exposeArticleAdminApi();
 }
 
 function getForm() { return document.querySelector('[data-article-form]'); }
@@ -231,6 +235,7 @@ function getPreviewImage() { return document.querySelector('[data-banner-preview
 function getImportTextarea() { return document.querySelector('[data-article-import-text]'); }
 function getImportStatusBox() { return document.querySelector('[data-article-import-status]'); }
 function getMetadataPreviewBox() { return document.querySelector('[data-article-metadata-preview]'); }
+function getArticleCategoryFilter() { return document.querySelector('[data-article-category-filter]'); }
 function setMessage(kind, message) {
   const box = document.querySelector('[data-article-message]');
   if (!box) return;
@@ -318,6 +323,9 @@ function parseLooseList(value) {
 function parseTags(value) { return String(value || '').split(',').map((tag) => tag.trim()).filter(Boolean); }
 function arrayToInput(value) { return Array.isArray(value) ? value.join(', ') : ''; }
 function arrayToTextarea(value) { return Array.isArray(value) ? value.join('\n') : String(value || ''); }
+function normalizeFilterText(value) {
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
 function getTimestampValue(value) {
   if (!value) return 0;
   if (typeof value.toMillis === 'function') return value.toMillis();
@@ -337,6 +345,8 @@ function safeBool(value) { return value === true; }
 function withMetadataDefaults(article = {}) {
   return {
     ...article,
+    contentType: article.contentType || 'article',
+    libraryCategory: article.libraryCategory || 'Artikel',
     intentTarget: safeValue(VALID_INTENT_TARGETS, article.intentTarget, DEFAULT_METADATA.intentTarget),
     riskLevel: safeValue(VALID_RISK_LEVELS, article.riskLevel, DEFAULT_METADATA.riskLevel),
     isMedicalSensitive: safeBool(article.isMedicalSensitive),
@@ -356,12 +366,25 @@ function withMetadataDefaults(article = {}) {
   };
 }
 
+function exposeArticleAdminApi() {
+  window.vitaNusaArticleAdmin = {
+    refresh: loadArticles,
+    focusArticle(id) {
+      const article = state.articles.find((item) => item.id === id);
+      if (!article) return false;
+      fillForm(article);
+      return true;
+    }
+  };
+}
+
 async function loadArticles() {
   const body = getListBody();
   if (body) body.replaceChildren(createEmptyRow('Memuat artikel...'));
   try {
     const snapshot = await getDocs(collection(db, 'articles'));
     state.articles = snapshot.docs.map((item) => withMetadataDefaults({ id: item.id, ...item.data() })).sort((a, b) => getTimestampValue(b.updatedAt) - getTimestampValue(a.updatedAt));
+    updateArticleCategoryFilterOptions();
     renderArticles();
     clearMessage();
   } catch (error) {
@@ -374,15 +397,21 @@ async function loadArticles() {
 function renderArticles() {
   const body = getListBody();
   if (!body) return;
+  const articles = getFilteredArticles();
   if (!state.articles.length) {
     body.replaceChildren(createEmptyRow('Belum ada artikel di Firestore.'));
     return;
   }
-  const rows = state.articles.map((article) => {
+  if (!articles.length) {
+    body.replaceChildren(createEmptyRow('Tidak ada artikel yang cocok dengan filter.'));
+    return;
+  }
+  const rows = articles.map((article) => {
     const row = document.createElement('tr');
     const titleCell = document.createElement('td');
     const statusCell = document.createElement('td');
     const categoryCell = document.createElement('td');
+    const createdCell = document.createElement('td');
     const updatedCell = document.createElement('td');
     const actionCell = document.createElement('td');
 
@@ -390,6 +419,7 @@ function renderArticles() {
     titleCell.dataset.label = 'Artikel';
     statusCell.dataset.label = 'Status';
     categoryCell.dataset.label = 'Kategori';
+    createdCell.dataset.label = 'Dibuat';
     updatedCell.dataset.label = 'Update';
     actionCell.dataset.label = 'Aksi';
 
@@ -404,15 +434,18 @@ function renderArticles() {
 
     statusCell.append(createStatusBadge(article.status));
     categoryCell.textContent = article.category || '-';
+    createdCell.textContent = formatDate(article.createdAt);
     updatedCell.textContent = formatDate(article.updatedAt || article.createdAt);
 
     const actions = document.createElement('div');
     actions.className = 'article-row-actions';
     actions.append(createActionButton('Edit', 'edit', article.id));
     if (article.status !== 'published') actions.append(createActionButton('Publish', 'publish', article.id));
+    if (article.status !== 'archived') actions.append(createActionButton('Arsip', 'archive', article.id));
+    actions.append(createActionButton('Hapus', 'delete', article.id, 'danger'));
     actionCell.append(actions);
 
-    row.append(titleCell, statusCell, categoryCell, updatedCell, actionCell);
+    row.append(titleCell, statusCell, categoryCell, createdCell, updatedCell, actionCell);
     return row;
   });
   body.replaceChildren(...rows);
@@ -420,7 +453,7 @@ function renderArticles() {
 function createEmptyRow(message) {
   const row = document.createElement('tr');
   const cell = document.createElement('td');
-  cell.colSpan = 5;
+  cell.colSpan = 6;
   cell.className = 'article-meta-muted';
   cell.textContent = message;
   row.append(cell);
@@ -477,10 +510,11 @@ function createIndicatorGroup(items) {
   items.forEach((item) => group.append(createIndicatorChip(item.label, item.tone)));
   return group;
 }
-function createActionButton(label, action, id) {
+function createActionButton(label, action, id, tone = '') {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'admin-button article-action-button';
+  if (tone === 'danger') button.classList.add('is-danger');
   button.dataset.articleAction = action;
   button.dataset.articleId = id;
   button.textContent = label;
@@ -499,7 +533,65 @@ async function handleListAction(event) {
     await publishArticle(article);
     return;
   }
-  if (button.dataset.articleAction === 'archive') await archiveArticle(article);
+  if (button.dataset.articleAction === 'archive') {
+    await archiveArticle(article);
+    return;
+  }
+  if (button.dataset.articleAction === 'delete') await deleteArticle(article);
+}
+
+function handleArticleFilterChange(event) {
+  const target = event.target;
+  if (target?.matches?.('[data-article-search]')) state.filters.search = target.value || '';
+  if (target?.matches?.('[data-article-category-filter]')) state.filters.category = target.value || '';
+  if (target?.matches?.('[data-article-status-filter]')) state.filters.status = target.value || '';
+  renderArticles();
+}
+
+function getFilteredArticles() {
+  const search = normalizeFilterText(state.filters.search);
+  const category = state.filters.category;
+  const status = state.filters.status;
+
+  return state.articles.filter((article) => {
+    const matchesCategory = !category || normalizeFilterText(article.category) === category;
+    const matchesStatus = !status || safeValue(VALID_STATUSES, article.status, 'draft') === status;
+    if (!matchesCategory || !matchesStatus) return false;
+    if (!search) return true;
+
+    const haystack = normalizeFilterText([
+      article.title,
+      article.slug,
+      article.category,
+      article.summary,
+      article.contentHtml,
+      arrayToInput(article.tags),
+      article.intentTarget,
+      article.riskLevel,
+      article.answerSnippet,
+      arrayToInput(article.problemTags)
+    ].join(' '));
+    return haystack.includes(search);
+  });
+}
+
+function updateArticleCategoryFilterOptions() {
+  const select = getArticleCategoryFilter();
+  if (!select) return;
+  const currentValue = select.value;
+  const categories = [...new Set(state.articles.map((article) => String(article.category || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'id'));
+
+  select.replaceChildren(createOption('', 'Semua kategori'), ...categories.map((category) => createOption(normalizeFilterText(category), category)));
+  select.value = categories.some((category) => normalizeFilterText(category) === currentValue) ? currentValue : '';
+  state.filters.category = select.value;
+}
+
+function createOption(value, label) {
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = label;
+  return option;
 }
 
 function getPayloadFromForm() {
@@ -507,6 +599,8 @@ function getPayloadFromForm() {
   const formData = new FormData(form);
   const status = 'published';
   return withMetadataDefaults({
+    contentType: 'article',
+    libraryCategory: 'Artikel',
     title: String(formData.get('title') || '').trim(),
     slug: normalizeSlug(formData.get('slug')),
     status: safeValue(VALID_STATUSES, status, 'published'),
@@ -900,7 +994,7 @@ function applyImportedArticleToForm(imported) {
   if (form.elements.bannerFile) form.elements.bannerFile.value = '';
   hideBannerPreview();
   updateDisclaimerStatus();
-  updateArticleFormPreview();
+  flushArticleFormPreviewUpdate();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -928,7 +1022,23 @@ function getValidationMessage(validation, fallback = '') {
 }
 
 function handleFormPreviewUpdate(event) {
+  if (isImportInput(event?.target)) return;
   if (event?.target?.name === 'contentHtml') updateDisclaimerStatus();
+  scheduleArticleFormPreviewUpdate();
+}
+
+function isImportInput(target) {
+  return Boolean(target?.matches?.('[data-article-import-text], [name="articleImportText"]'));
+}
+
+function scheduleArticleFormPreviewUpdate() {
+  window.clearTimeout(state.previewTimer);
+  state.previewTimer = window.setTimeout(updateArticleFormPreview, 120);
+}
+
+function flushArticleFormPreviewUpdate() {
+  window.clearTimeout(state.previewTimer);
+  state.previewTimer = null;
   updateArticleFormPreview();
 }
 function updateArticleFormPreview() {
@@ -1175,7 +1285,7 @@ function fillForm(article) {
   else hideBannerPreview();
 
   updateDisclaimerStatus();
-  updateArticleFormPreview();
+  flushArticleFormPreviewUpdate();
   document.querySelector('[data-article-form-title]').textContent = 'Edit Artikel';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1210,7 +1320,7 @@ function resetForm() {
 
   hideBannerPreview();
   updateDisclaimerStatus();
-  updateArticleFormPreview();
+  flushArticleFormPreviewUpdate();
   document.querySelector('[data-article-form-title]').textContent = 'Tambah Artikel';
 }
 async function publishArticle(article) {
@@ -1256,5 +1366,19 @@ async function archiveArticle(article) {
     setMessage('success', 'Artikel berhasil di-archive.');
   } catch (error) {
     setMessage('error', error.message || 'Gagal archive artikel.');
+  }
+}
+
+async function deleteArticle(article) {
+  const confirmed = window.confirm(`Hapus permanen artikel "${article.title || article.slug}" dari Firestore? Tindakan ini tidak bisa dibatalkan.`);
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, 'articles', article.id));
+    await loadArticles();
+    resetForm();
+    setMessage('success', 'Artikel berhasil dihapus dari Firestore.');
+  } catch (error) {
+    setMessage('error', error.message || 'Gagal menghapus artikel.');
   }
 }

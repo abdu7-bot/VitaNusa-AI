@@ -1,5 +1,5 @@
 import { db } from './firebase-auth.js';
-import { collection, addDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
 
 const knowledgeApp = document.querySelector('[data-knowledge-app]');
 const VALID_STATUSES = new Set(['draft', 'published', 'archived']);
@@ -64,7 +64,7 @@ const KNOWLEDGE_IMPORT_LABELS = new Map(Object.entries({
   sensitifislami: 'isIslamicSensitive',
   islami: 'isIslamicSensitive'
 }));
-const state = { initialized: false, knowledge: [], editingId: null };
+const state = { initialized: false, knowledge: [], editingId: null, filters: { search: '', category: '', status: '' } };
 
 if (knowledgeApp) {
   window.addEventListener('vitanusa:admin-ready', initKnowledgeCrud);
@@ -82,9 +82,13 @@ function initKnowledgeCrud() {
   document.querySelector('[data-knowledge-analyze]')?.addEventListener('click', analyzeKnowledgeAmanah);
   document.querySelector('[data-knowledge-import-parse]')?.addEventListener('click', handleKnowledgeImportParse);
   document.querySelector('[data-knowledge-import-clear]')?.addEventListener('click', clearKnowledgeImport);
+  document.querySelector('[data-knowledge-search]')?.addEventListener('input', handleKnowledgeFilterChange);
+  document.querySelector('[data-knowledge-category-filter]')?.addEventListener('change', handleKnowledgeFilterChange);
+  document.querySelector('[data-knowledge-status-filter]')?.addEventListener('change', handleKnowledgeFilterChange);
   getListBody()?.addEventListener('click', handleKnowledgeListAction);
   resetKnowledgeForm();
   loadKnowledge();
+  exposeKnowledgeAdminApi();
 }
 
 function injectKnowledgeImportBlock() {
@@ -114,12 +118,13 @@ async function loadKnowledge() {
   setMessage('success', 'Memuat daftar Q&A...');
   try {
     const snapshot = await getDocs(collection(db, 'nusaKnowledge'));
-    state.knowledge = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    state.knowledge = snapshot.docs.map((item) => withKnowledgeDefaults({ id: item.id, ...item.data() }));
     state.knowledge.sort((a, b) => {
       const aTime = a.updatedAt?.toMillis?.() || 0;
       const bTime = b.updatedAt?.toMillis?.() || 0;
       return bTime - aTime;
     });
+    updateKnowledgeCategoryFilterOptions();
     renderKnowledge();
     setMessage('success', `Daftar Q&A dimuat: ${state.knowledge.length} item.`);
   } catch (error) {
@@ -131,10 +136,15 @@ function renderKnowledge() {
   const body = getListBody();
   if (!body) return;
   if (!state.knowledge.length) {
-    body.innerHTML = '<tr><td colspan="6"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A atau pakai Import Knowledge dari Prompt untuk membuat pustaka pertama. Item baru default published agar dibaca Nusa AI.</span></td></tr>';
+    body.innerHTML = '<tr><td colspan="7"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A atau pakai Import Knowledge dari Prompt untuk membuat pustaka pertama. Item baru default published agar dibaca Nusa AI.</span></td></tr>';
     return;
   }
-  body.replaceChildren(...state.knowledge.map(createKnowledgeRow));
+  const items = getFilteredKnowledge();
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="7"><strong>Tidak ada Q&amp;A yang cocok dengan filter.</strong></td></tr>';
+    return;
+  }
+  body.replaceChildren(...items.map(createKnowledgeRow));
 }
 
 function createKnowledgeRow(item) {
@@ -145,27 +155,114 @@ function createKnowledgeRow(item) {
     <td></td>
     <td><span class="article-status"></span></td>
     <td class="article-meta-muted"></td>
+    <td class="article-meta-muted"></td>
     <td><div class="article-row-actions"></div></td>
   `;
+  Array.from(row.children).forEach((cell, index) => {
+    cell.dataset.label = ['Pertanyaan', 'Kategori', 'Intent / Risk', 'Status', 'Dibuat', 'Update', 'Aksi'][index] || '';
+  });
   row.querySelector('strong').textContent = item.question || '(tanpa pertanyaan)';
-  row.querySelector('small').textContent = item.category || '-';
-  row.children[1].textContent = item.intentTarget || '-';
-  row.children[2].textContent = item.riskLevel || '-';
+  row.querySelector('small').textContent = item.shortAnswer || '-';
+  row.children[1].textContent = item.category || '-';
+  row.children[2].textContent = `${item.intentTarget || '-'} / ${item.riskLevel || '-'}`;
   const status = row.querySelector('.article-status');
   status.textContent = item.status || 'draft';
   status.classList.add(`article-status-${item.status || 'draft'}`);
-  row.children[4].textContent = formatDate(item.updatedAt);
+  row.children[4].textContent = formatDate(item.createdAt);
+  row.children[5].textContent = formatDate(item.updatedAt || item.createdAt);
   const actions = row.querySelector('.article-row-actions');
   actions.append(createActionButton('Edit', 'edit', item.id));
   if (item.status !== 'published') actions.append(createActionButton('Publish', 'publish', item.id));
   if (item.status !== 'archived') actions.append(createActionButton('Archive', 'archive', item.id));
+  actions.append(createActionButton('Hapus', 'delete', item.id, 'danger'));
   return row;
+}
+
+function withKnowledgeDefaults(item = {}) {
+  return {
+    ...item,
+    contentType: item.contentType || 'knowledge',
+    libraryCategory: item.libraryCategory || 'Knowledge Q&A',
+    status: VALID_STATUSES.has(item.status) ? item.status : 'draft',
+    category: cleanText(item.category || 'Knowledge Nusa AI')
+  };
+}
+
+function exposeKnowledgeAdminApi() {
+  window.vitaNusaKnowledgeAdmin = {
+    refresh: loadKnowledge,
+    focusKnowledge(id) {
+      const item = state.knowledge.find((entry) => entry.id === id);
+      if (!item) return false;
+      fillKnowledgeForm(item);
+      return true;
+    }
+  };
+}
+
+function handleKnowledgeFilterChange(event) {
+  const target = event.target;
+  if (target?.matches?.('[data-knowledge-search]')) state.filters.search = target.value || '';
+  if (target?.matches?.('[data-knowledge-category-filter]')) state.filters.category = target.value || '';
+  if (target?.matches?.('[data-knowledge-status-filter]')) state.filters.status = target.value || '';
+  renderKnowledge();
+}
+
+function getFilteredKnowledge() {
+  const search = normalizeFilterText(state.filters.search);
+  const category = state.filters.category;
+  const status = state.filters.status;
+
+  return state.knowledge.filter((item) => {
+    const matchesCategory = !category || normalizeFilterText(item.category) === category;
+    const matchesStatus = !status || item.status === status;
+    if (!matchesCategory || !matchesStatus) return false;
+    if (!search) return true;
+
+    const haystack = normalizeFilterText([
+      item.question,
+      item.shortAnswer,
+      item.answerHtml,
+      item.category,
+      item.intentTarget,
+      item.riskLevel,
+      (item.keywords || []).join(' '),
+      (item.alternateQuestions || []).join(' '),
+      (item.relatedArticles || []).join(' ')
+    ].join(' '));
+    return haystack.includes(search);
+  });
+}
+
+function updateKnowledgeCategoryFilterOptions() {
+  const select = document.querySelector('[data-knowledge-category-filter]');
+  if (!select) return;
+  const currentValue = select.value;
+  const categories = [...new Set(state.knowledge.map((item) => cleanText(item.category)).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'id'));
+
+  select.replaceChildren(createOption('', 'Semua kategori'), ...categories.map((category) => createOption(normalizeFilterText(category), category)));
+  select.value = categories.some((category) => normalizeFilterText(category) === currentValue) ? currentValue : '';
+  state.filters.category = select.value;
+}
+
+function normalizeFilterText(value) {
+  return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function createOption(value, label) {
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = label;
+  return option;
 }
 
 function getKnowledgePayloadFromForm() {
   const form = getForm();
   const values = Object.fromEntries(new FormData(form).entries());
   return {
+    contentType: 'knowledge',
+    libraryCategory: 'Knowledge Q&A',
     question: cleanText(values.question),
     alternateQuestions: splitList(values.alternateQuestions),
     shortAnswer: cleanText(values.shortAnswer),
@@ -252,6 +349,7 @@ function handleKnowledgeListAction(event) {
   if (button.dataset.knowledgeAction === 'edit') fillKnowledgeForm(item);
   if (button.dataset.knowledgeAction === 'publish') publishKnowledge(item);
   if (button.dataset.knowledgeAction === 'archive') archiveKnowledge(item);
+  if (button.dataset.knowledgeAction === 'delete') deleteKnowledge(item);
 }
 
 async function publishKnowledge(item) {
@@ -275,6 +373,9 @@ async function publishKnowledge(item) {
 }
 
 async function archiveKnowledge(item) {
+  const confirmed = window.confirm(`Archive Q&A "${item.question || item.id}"? Item tidak akan dihapus.`);
+  if (!confirmed) return;
+
   try {
     await updateDoc(doc(db, 'nusaKnowledge', item.id), {
       status: 'archived',
@@ -285,6 +386,20 @@ async function archiveKnowledge(item) {
     loadKnowledge();
   } catch (error) {
     setMessage('error', error.message || 'Gagal archive Q&A.');
+  }
+}
+
+async function deleteKnowledge(item) {
+  const confirmed = window.confirm(`Hapus permanen Q&A "${item.question || item.id}" dari Firestore? Tindakan ini tidak bisa dibatalkan.`);
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, 'nusaKnowledge', item.id));
+    setMessage('success', 'Q&A berhasil dihapus dari Firestore.');
+    resetKnowledgeForm();
+    loadKnowledge();
+  } catch (error) {
+    setMessage('error', error.message || 'Gagal menghapus Q&A.');
   }
 }
 
@@ -606,9 +721,10 @@ function formatDate(value) {
   const date = value?.toDate?.();
   return date ? date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 }
-function createActionButton(label, action, id) {
+function createActionButton(label, action, id, tone = '') {
   const button = document.createElement('button');
   button.className = 'admin-button admin-button-light article-action-button';
+  if (tone === 'danger') button.classList.add('is-danger');
   button.type = 'button';
   button.dataset.knowledgeAction = action;
   button.dataset.knowledgeId = id;

@@ -240,16 +240,35 @@
     event.stopPropagation();
     event.stopImmediatePropagation();
 
-    try {
-      const rawText = document.querySelector(SELECTORS.textarea)?.value || '';
-      applyToForm(parseOneBlock(rawText));
-    } catch (error) {
-      setStatus('error', error.message || 'Format import tidak terbaca.');
-    }
+    button.disabled = true;
+    setStatus('warning', 'Memproses prompt import. Teks sudah masuk, parsing berjalan setelah UI siap...');
+
+    window.setTimeout(() => {
+      try {
+        const rawText = document.querySelector(SELECTORS.textarea)?.value || '';
+        applyToForm(parseOneBlock(rawText));
+      } catch (error) {
+        setStatus('error', error.message || 'Format import tidak terbaca.');
+      } finally {
+        button.disabled = false;
+      }
+    }, 0);
+  }
+
+  function handleImportPaste(event) {
+    const textarea = event.target?.closest?.(SELECTORS.textarea);
+    if (!textarea) return;
+
+    window.setTimeout(() => {
+      const length = textarea.value.length;
+      if (length < 1200) return;
+      setStatus('success', `Prompt sepanjang ${length.toLocaleString('id-ID')} karakter sudah masuk. Klik Parse ke Form saat siap review.`);
+    }, 0);
   }
 
   // expose parser for compatibility with other admin scripts/tests
   window.vitaNusaParseOneBlockArticleImport = parseOneBlock;
 
   document.addEventListener('click', handleParseClick, true);
+  document.addEventListener('paste', handleImportPaste, true);
 })();

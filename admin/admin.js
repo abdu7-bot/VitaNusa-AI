@@ -4,6 +4,7 @@
   const navLinks = Array.from(document.querySelectorAll('[data-admin-section]'));
   const panels = Array.from(document.querySelectorAll('[data-admin-panel]'));
   const placeholders = document.querySelectorAll('.admin-placeholder');
+  const sectionOpeners = document.querySelectorAll('[data-open-admin-section]');
 
   const closeSidebar = () => {
     if (!sidebar || !menuToggle) return;
@@ -18,18 +19,31 @@
     });
   }
 
+  const openSection = (target) => {
+    const activeLink = navLinks.find((item) => item.dataset.adminSection === target);
+    const activePanel = panels.find((panel) => panel.dataset.adminPanel === target);
+    if (!activePanel) return false;
+
+    navLinks.forEach((item) => item.classList.toggle('is-active', item === activeLink));
+    panels.forEach((panel) => {
+      const isActive = panel.dataset.adminPanel === target;
+      panel.hidden = !isActive;
+      panel.classList.toggle('is-active', isActive);
+    });
+
+    closeSidebar();
+    return true;
+  };
+
   navLinks.forEach((link) => {
     link.addEventListener('click', () => {
-      const target = link.dataset.adminSection;
+      openSection(link.dataset.adminSection);
+    });
+  });
 
-      navLinks.forEach((item) => item.classList.toggle('is-active', item === link));
-      panels.forEach((panel) => {
-        const isActive = panel.dataset.adminPanel === target;
-        panel.hidden = !isActive;
-        panel.classList.toggle('is-active', isActive);
-      });
-
-      closeSidebar();
+  sectionOpeners.forEach((button) => {
+    button.addEventListener('click', () => {
+      openSection(button.dataset.openAdminSection);
     });
   });
 
@@ -42,5 +56,26 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeSidebar();
+  });
+
+  window.addEventListener('vitanusa:admin-open-panel', (event) => {
+    openSection(event.detail?.panel);
+  });
+
+  window.addEventListener('vitanusa:admin-ready', (event) => {
+    const user = event.detail?.user || {};
+    const admin = event.detail?.admin || {};
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Admin VitaNusa';
+    const role = admin.role || admin.type || 'Admin';
+
+    document.querySelectorAll('[data-profile-name]').forEach((target) => {
+      target.value = displayName;
+    });
+    document.querySelectorAll('[data-profile-role]').forEach((target) => {
+      target.value = role;
+    });
+    document.querySelectorAll('[data-profile-avatar]').forEach((target) => {
+      target.textContent = displayName.trim().slice(0, 2).toUpperCase() || 'VN';
+    });
   });
 })();

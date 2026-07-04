@@ -108,6 +108,40 @@
   color: var(--admin-green-900);
 }
 
+.article-list-header {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.article-list-header h3 {
+  margin-bottom: 4px;
+}
+
+.article-filter-grid {
+  grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) minmax(130px, 0.8fr);
+}
+
+.article-filter-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--admin-green-900);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.article-filter-grid input,
+.article-filter-grid select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--admin-ink);
+  font: inherit;
+  padding: 9px 11px;
+}
+
 .article-table-wrap {
   flex: 1;
   min-height: 0;
@@ -120,7 +154,11 @@
 .article-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 860px;
+}
+
+.admin-library-table {
+  min-width: 920px;
 }
 
 .article-table th,
@@ -233,6 +271,19 @@
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 0.88rem;
+}
+
+.article-action-button.is-danger {
+  border-color: #e6b3a8;
+  background: #fff0ec;
+  color: #8d2d25;
+}
+
+.article-action-button.is-danger:hover,
+.article-action-button.is-danger:focus-visible {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger);
+  color: #ffffff;
 }
 
 .article-form {
@@ -548,7 +599,8 @@
   .article-form-actions,
   .article-row-actions,
   .article-disclaimer-actions,
-  .article-import-actions {
+  .article-import-actions,
+  .article-filter-grid {
     align-items: stretch;
     flex-direction: column;
   }
@@ -557,7 +609,8 @@
   .article-form-actions .admin-button,
   .article-row-actions .admin-button,
   .article-disclaimer-actions .admin-button,
-  .article-import-actions .admin-button {
+  .article-import-actions .admin-button,
+  .article-filter-grid .admin-button {
     width: 100%;
   }
 

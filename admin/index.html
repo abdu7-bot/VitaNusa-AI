@@ -48,13 +48,16 @@
       </a>
       <nav class="admin-nav" aria-label="Menu admin">
         <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard">Dashboard</button>
+        <button class="admin-nav-link" type="button" data-admin-section="content">Pustaka Konten</button>
         <button class="admin-nav-link" type="button" data-admin-section="articles">Artikel</button>
-        <button class="admin-nav-link" type="button" data-admin-section="knowledge">Knowledge</button>
-        <button class="admin-nav-link" type="button" data-admin-section="comics">Komik</button>
-        <button class="admin-nav-link" type="button" data-admin-section="media">Media</button>
+        <button class="admin-nav-link" type="button" data-admin-section="knowledge">Knowledge Q&amp;A</button>
+        <button class="admin-nav-link" type="button" data-admin-section="comics">VitaStory / Cerita</button>
+        <button class="admin-nav-link" type="button" data-admin-section="media">Video / Media</button>
         <button class="admin-nav-link" type="button" data-admin-section="products">Produk</button>
         <button class="admin-nav-link" type="button" data-admin-section="faq">FAQ</button>
-        <button class="admin-nav-link" type="button" data-admin-section="settings">Pengaturan</button>
+        <button class="admin-nav-link" type="button" data-admin-section="prompt-import">Prompt Import</button>
+        <button class="admin-nav-link" type="button" data-admin-section="settings">Pengaturan Aplikasi</button>
+        <button class="admin-nav-link" type="button" data-admin-section="profile">Profil Pengguna</button>
         <button class="admin-nav-link" type="button" data-logout-button>Logout</button>
       </nav>
       <a class="admin-public-link" href="../index.html">Kembali ke Website Publik</a>
@@ -77,11 +80,70 @@
           <div class="admin-section-heading"><p class="admin-kicker">Ringkasan</p><h2 id="dashboardTitle">Dashboard</h2><p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p></div>
           <div class="admin-card-grid">
             <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong><p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Komik</span><strong>0</strong><p>Panel komik belum terhubung.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Media / File</span><strong>GitHub</strong><p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Pustaka Konten</span><strong>Filter</strong><p>Artikel dan Knowledge Q&amp;A bisa dicari berdasarkan kategori, status, dan judul/konten.</p></article>
+            <article class="admin-card"><span class="admin-card-label">VitaStory / Cerita</span><strong>Rencana</strong><p>Panel cerita dan komik masih placeholder dalam pengembangan.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Video / Media</span><strong>GitHub</strong><p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p></article>
             <article class="admin-card"><span class="admin-card-label">Produk</span><strong>0</strong><p>Katalog produk belum terhubung.</p></article>
             <article class="admin-card"><span class="admin-card-label">FAQ</span><strong>0</strong><p>FAQ dinamis belum aktif.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Pengaturan</span><strong>Draft</strong><p>Site settings belum terhubung.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Pengaturan &amp; Profil</span><strong>UI</strong><p>Placeholder rapi tersedia dan ditandai sebagai dalam pengembangan.</p></article>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="content" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Pustaka</p>
+            <h2>Pustaka Konten</h2>
+            <p>Ringkasan konten admin berdasarkan kategori. Data aktif diambil dari Firestore articles dan nusaKnowledge tanpa mengubah struktur data lama.</p>
+          </div>
+
+          <div class="admin-content-library" data-content-library-app>
+            <div class="admin-library-categories" data-content-category-cards aria-label="Kategori konten">
+              <article class="admin-library-card"><span>Artikel</span><strong data-content-count="article">0</strong><small>Firestore articles</small></article>
+              <article class="admin-library-card"><span>Knowledge Q&amp;A</span><strong data-content-count="knowledge">0</strong><small>Firestore nusaKnowledge</small></article>
+              <article class="admin-library-card"><span>Produk</span><strong>0</strong><small>Dalam pengembangan</small></article>
+              <article class="admin-library-card"><span>Video</span><strong>0</strong><small>Dalam pengembangan</small></article>
+              <article class="admin-library-card"><span>VitaStory / Cerita</span><strong>0</strong><small>Dalam pengembangan</small></article>
+              <article class="admin-library-card"><span>FAQ</span><strong>0</strong><small>Dalam pengembangan</small></article>
+              <article class="admin-library-card"><span>Prompt Import</span><strong>UI</strong><small>Artikel &amp; Knowledge</small></article>
+              <article class="admin-library-card"><span>Draft / Belum Terbit</span><strong data-content-count="draft">0</strong><small>Belum published</small></article>
+            </div>
+
+            <div class="admin-library-controls" aria-label="Filter pustaka konten">
+              <label>Cari Konten
+                <input type="search" data-content-search placeholder="Cari judul, pertanyaan, kategori, atau isi..." autocomplete="off">
+              </label>
+              <label>Kategori
+                <select data-content-category-filter>
+                  <option value="">Semua kategori</option>
+                  <option value="article">Artikel</option>
+                  <option value="knowledge">Knowledge Q&amp;A</option>
+                  <option value="product">Produk</option>
+                  <option value="video">Video</option>
+                  <option value="story">VitaStory / Cerita</option>
+                  <option value="faq">FAQ</option>
+                  <option value="prompt-import">Prompt Import</option>
+                  <option value="draft">Draft / Belum Terbit</option>
+                </select>
+              </label>
+              <label>Status
+                <select data-content-status-filter>
+                  <option value="">Semua status</option>
+                  <option value="published">Publish</option>
+                  <option value="draft">Draft</option>
+                  <option value="archived">Arsip</option>
+                  <option value="development">Dalam pengembangan</option>
+                </select>
+              </label>
+              <button class="admin-button admin-button-light" type="button" data-content-refresh>Refresh</button>
+            </div>
+
+            <div class="article-message" data-content-message hidden></div>
+            <div class="article-table-wrap">
+              <table class="article-table admin-library-table">
+                <thead><tr><th>Kategori</th><th>Konten</th><th>Status</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead>
+                <tbody data-content-library-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -92,8 +154,18 @@
             <div class="article-message" data-article-message hidden></div>
             <div class="article-layout">
               <section class="article-list-card" aria-labelledby="articleListTitle">
-                <h3 id="articleListTitle">Daftar Artikel</h3>
-                <div class="article-table-wrap"><table class="article-table"><thead><tr><th>Artikel</th><th>Status</th><th>Kategori</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-article-list><tr><td colspan="5">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
+                <div class="article-list-header">
+                  <div>
+                    <h3 id="articleListTitle">Daftar Artikel</h3>
+                    <p class="article-help">Filter artikel berdasarkan kategori internal, status, dan teks judul/konten.</p>
+                  </div>
+                  <div class="article-filter-grid" aria-label="Filter daftar artikel">
+                    <label>Cari<input type="search" data-article-search placeholder="Cari artikel..." autocomplete="off"></label>
+                    <label>Kategori<select data-article-category-filter><option value="">Semua kategori</option></select></label>
+                    <label>Status<select data-article-status-filter><option value="">Semua status</option><option value="published">Publish</option><option value="draft">Draft</option><option value="archived">Arsip</option></select></label>
+                  </div>
+                </div>
+                <div class="article-table-wrap"><table class="article-table"><thead><tr><th>Artikel</th><th>Status</th><th>Kategori</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-article-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
               </section>
               <section class="article-form-card" aria-labelledby="articleFormTitle">
                 <h3 id="articleFormTitle" data-article-form-title>Tambah Artikel</h3>
@@ -169,8 +241,18 @@
             <div class="article-message" data-knowledge-message hidden></div>
             <div class="article-layout">
               <section class="article-list-card" aria-labelledby="knowledgeListTitle">
-                <h3 id="knowledgeListTitle">Daftar Q&amp;A</h3>
-                <div class="article-table-wrap"><table class="article-table knowledge-table"><thead><tr><th>Pertanyaan</th><th>Intent</th><th>Risk</th><th>Status</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-knowledge-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
+                <div class="article-list-header">
+                  <div>
+                    <h3 id="knowledgeListTitle">Daftar Q&amp;A</h3>
+                    <p class="article-help">Filter Knowledge berdasarkan kategori, status, dan teks pertanyaan/jawaban.</p>
+                  </div>
+                  <div class="article-filter-grid" aria-label="Filter daftar Q&A">
+                    <label>Cari<input type="search" data-knowledge-search placeholder="Cari Q&A..." autocomplete="off"></label>
+                    <label>Kategori<select data-knowledge-category-filter><option value="">Semua kategori</option></select></label>
+                    <label>Status<select data-knowledge-status-filter><option value="">Semua status</option><option value="published">Publish</option><option value="draft">Draft</option><option value="archived">Arsip</option></select></label>
+                  </div>
+                </div>
+                <div class="article-table-wrap"><table class="article-table knowledge-table"><thead><tr><th>Pertanyaan</th><th>Kategori</th><th>Intent / Risk</th><th>Status</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-knowledge-list><tr><td colspan="7">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
               </section>
               <section class="article-form-card" aria-labelledby="knowledgeFormTitle">
                 <h3 id="knowledgeFormTitle" data-knowledge-form-title>Tambah Q&amp;A</h3>
@@ -198,17 +280,61 @@
           </div>
         </section>
 
-        <section class="admin-panel" data-admin-panel="comics" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Komik</h2><p>Placeholder untuk metadata komik dan panel. Total panel harus divalidasi sebelum publish.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Comic CRUD belum aktif pada Phase 6.">Kelola Komik</button></section>
-        <section class="admin-panel" data-admin-panel="media" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Media / Files</h2><p>Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Upload Storage belum menjadi alur utama. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button></section>
+        <section class="admin-panel" data-admin-panel="comics" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>VitaStory / Cerita</h2><p>Placeholder untuk metadata cerita, komik, dan panel. Total panel harus divalidasi sebelum publish.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="VitaStory / Cerita CRUD belum aktif pada Phase 6.">Kelola VitaStory</button></section>
+        <section class="admin-panel" data-admin-panel="media" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Video / Media</h2><p>Placeholder untuk video edukasi dan media. Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Video / Media library belum aktif. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button></section>
         <section class="admin-panel" data-admin-panel="products" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Produk</h2><p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button></section>
         <section class="admin-panel" data-admin-panel="faq" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>FAQ</h2><p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button></section>
-        <section class="admin-panel" data-admin-panel="settings" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Site Settings</h2><p>Placeholder untuk pengaturan publik seperti tagline, disclaimer, dan status media sosial.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Site settings belum aktif pada Phase 6.">Simpan Pengaturan</button></section>
+        <section class="admin-panel" data-admin-panel="prompt-import" hidden>
+          <div class="admin-section-heading"><p class="admin-kicker">Import</p><h2>Prompt Import</h2><p>Shortcut menuju import prompt artikel dan Knowledge. Fitur penyimpanan riwayat prompt masih dalam pengembangan.</p></div>
+          <div class="admin-placeholder-grid">
+            <article class="admin-placeholder-card">
+              <span class="admin-status-pill is-development">Dalam pengembangan</span>
+              <h3>Import Artikel</h3>
+              <p>Paste output artikel lengkap, lalu parse ke form artikel. Status artikel tetap mengikuti kebijakan admin: published.</p>
+              <button class="admin-button admin-button-primary" type="button" data-open-admin-section="articles">Buka Import Artikel</button>
+            </article>
+            <article class="admin-placeholder-card">
+              <span class="admin-status-pill is-development">Dalam pengembangan</span>
+              <h3>Import Knowledge Q&amp;A</h3>
+              <p>Paste format Q&amp;A untuk pustaka Nusa AI. Riwayat prompt belum disimpan sebagai koleksi terpisah.</p>
+              <button class="admin-button admin-button-primary" type="button" data-open-admin-section="knowledge">Buka Import Knowledge</button>
+            </article>
+          </div>
+        </section>
+        <section class="admin-panel" data-admin-panel="settings" hidden>
+          <div class="admin-section-heading"><p class="admin-kicker">Pengaturan</p><h2>Pengaturan Aplikasi</h2><p>Placeholder pengaturan dasar aplikasi. Fitur ini belum menyimpan perubahan ke database.</p></div>
+          <div class="admin-settings-grid">
+            <article class="admin-settings-card">
+              <span class="admin-status-pill is-development">Dalam pengembangan</span>
+              <label>Nama aplikasi<input type="text" value="VitaNusa AI" disabled></label>
+              <label>Tema tampilan<input type="text" value="Hijau health / wellness" disabled></label>
+              <label>Bahasa<input type="text" value="Indonesia" disabled></label>
+              <label>Status fitur<input type="text" value="Dalam pengembangan" disabled></label>
+              <p class="admin-note">Fitur pengaturan akan dikembangkan bertahap.</p>
+              <button class="admin-button admin-button-light" type="button" disabled>Simpan Pengaturan</button>
+            </article>
+          </div>
+        </section>
+        <section class="admin-panel" data-admin-panel="profile" hidden>
+          <div class="admin-section-heading"><p class="admin-kicker">Akun</p><h2>Profil Pengguna</h2><p>Placeholder profil admin yang mengambil identitas dasar dari sesi Firebase Auth.</p></div>
+          <div class="admin-profile-card">
+            <div class="admin-avatar-placeholder" data-profile-avatar aria-hidden="true">VN</div>
+            <div class="admin-profile-fields">
+              <span class="admin-status-pill is-development">Dalam pengembangan</span>
+              <label>Nama pengguna<input type="text" value="Admin VitaNusa" data-profile-name disabled></label>
+              <label>Role pengguna<input type="text" value="Admin" data-profile-role disabled></label>
+              <label>Email<input type="email" value="-" data-auth-email data-profile-email disabled></label>
+              <p class="admin-note">Fitur profil pengguna akan dikembangkan bertahap.</p>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
 
   <script src="admin.js?v=20260626-admin-v5"></script>
   <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
+  <script type="module" src="content-library.js?v=20260705-admin-content-library-v1"></script>
   <script type="module" src="articles-import-one-block.js?v=20260704-vitanusa-master-map-v1"></script>
   <script type="module" src="articles.js?v=20260704-vitanusa-master-map-v1"></script>
   <script type="module" src="knowledge.js?v=20260704-knowledge-import-v1"></script>

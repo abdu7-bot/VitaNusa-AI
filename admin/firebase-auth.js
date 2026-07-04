@@ -51,6 +51,11 @@ function announceAdminReady(user, adminData) {
 
 function setText(targets, value) {
   targets.forEach((target) => {
+    if ("value" in target && target.matches("input, textarea, select")) {
+      target.value = value || "-";
+      return;
+    }
+
     target.textContent = value || "-";
   });
 }
