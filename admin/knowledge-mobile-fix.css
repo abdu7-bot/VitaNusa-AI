@@ -1,0 +1,144 @@
+/* Mobile-first hardening for Admin Knowledge layout. */
+.knowledge-admin,
+.knowledge-admin * {
+  box-sizing: border-box;
+}
+
+.knowledge-admin .article-layout,
+.admin-panel[data-admin-panel="knowledge"] .article-layout {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+}
+
+.knowledge-admin .article-form-card,
+.knowledge-admin .article-list-card,
+.admin-panel[data-admin-panel="knowledge"] .article-form-card,
+.admin-panel[data-admin-panel="knowledge"] .article-list-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  position: static !important;
+  transform: none !important;
+}
+
+.knowledge-admin .article-form-card,
+.admin-panel[data-admin-panel="knowledge"] .article-form-card {
+  order: 0 !important;
+}
+
+.knowledge-admin .article-list-card,
+.admin-panel[data-admin-panel="knowledge"] .article-list-card {
+  order: 1 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.knowledge-admin .article-table-wrap,
+.admin-panel[data-admin-panel="knowledge"] .article-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.knowledge-admin .article-form,
+.knowledge-admin .knowledge-form,
+.admin-panel[data-admin-panel="knowledge"] .article-form,
+.admin-panel[data-admin-panel="knowledge"] .knowledge-form {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  display: grid !important;
+}
+
+.knowledge-admin .article-form label,
+.admin-panel[data-admin-panel="knowledge"] .article-form label {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.knowledge-admin .article-form input,
+.knowledge-admin .article-form select,
+.knowledge-admin .article-form textarea,
+.admin-panel[data-admin-panel="knowledge"] .article-form input,
+.admin-panel[data-admin-panel="knowledge"] .article-form select,
+.admin-panel[data-admin-panel="knowledge"] .article-form textarea {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.knowledge-admin textarea[name="alternateQuestions"],
+.knowledge-admin textarea[name="shortAnswer"],
+.knowledge-admin textarea[name="answerHtml"],
+.admin-panel[data-admin-panel="knowledge"] textarea[name="alternateQuestions"],
+.admin-panel[data-admin-panel="knowledge"] textarea[name="shortAnswer"],
+.admin-panel[data-admin-panel="knowledge"] textarea[name="answerHtml"] {
+  min-height: 150px !important;
+}
+
+.knowledge-admin textarea[name="answerHtml"],
+.admin-panel[data-admin-panel="knowledge"] textarea[name="answerHtml"] {
+  min-height: 230px !important;
+  font-family: Consolas, Monaco, monospace;
+}
+
+@media (max-width: 1320px) {
+  .knowledge-admin .article-layout,
+  .admin-panel[data-admin-panel="knowledge"] .article-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-panel[data-admin-panel="knowledge"] {
+    padding: 12px !important;
+  }
+
+  .knowledge-admin .article-layout,
+  .admin-panel[data-admin-panel="knowledge"] .article-layout {
+    gap: 14px !important;
+  }
+
+  .knowledge-admin .article-toolbar,
+  .admin-panel[data-admin-panel="knowledge"] .article-toolbar,
+  .knowledge-admin .article-form-actions,
+  .admin-panel[data-admin-panel="knowledge"] .article-form-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .knowledge-admin .article-toolbar .admin-button,
+  .admin-panel[data-admin-panel="knowledge"] .article-toolbar .admin-button,
+  .knowledge-admin .article-form-actions .admin-button,
+  .admin-panel[data-admin-panel="knowledge"] .article-form-actions .admin-button {
+    width: 100% !important;
+  }
+
+  .knowledge-admin .article-form-card,
+  .knowledge-admin .article-list-card,
+  .admin-panel[data-admin-panel="knowledge"] .article-form-card,
+  .admin-panel[data-admin-panel="knowledge"] .article-list-card {
+    border-radius: 16px !important;
+    padding: 14px !important;
+  }
+
+  .knowledge-admin .article-form,
+  .admin-panel[data-admin-panel="knowledge"] .article-form {
+    gap: 14px !important;
+  }
+
+  .knowledge-admin .article-table,
+  .admin-panel[data-admin-panel="knowledge"] .article-table {
+    min-width: 0 !important;
+  }
+}
