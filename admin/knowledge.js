@@ -13,6 +13,57 @@ const ISLAMIC_TERMS = ['al-quran', 'quran', 'q.s.', 'hadits', 'hadis', 'tafsir',
 const RISK_CLAIM_TERMS = ['pasti sembuh', '100% aman', 'obat segala penyakit', 'sembuh total', 'hasil instan', 'tanpa efek samping', 'menyembuhkan diabetes', 'menyembuhkan kanker', 'menyembuhkan penyakit kronis'];
 const EDUCATIONAL_CONTEXT_TERMS = ['jangan percaya', 'hindari', 'waspada', 'hati-hati', 'bukan bukti', 'bukan diagnosis', 'bukan terapi', 'bukan obat', 'bukan pengganti dokter', 'klaim berlebihan', 'klaim palsu', 'contoh klaim yang harus dihindari', 'menilai klaim'];
 const FATWA_FINAL_TERMS = ['fatwa final', 'pasti halal', 'pasti haram', 'wajib secara mutlak', 'haram secara mutlak', 'hukum final'];
+const KNOWLEDGE_IMPORT_LABELS = new Map(Object.entries({
+  question: 'question',
+  pertanyaan: 'question',
+  q: 'question',
+  alternatequestions: 'alternateQuestions',
+  alternatequestion: 'alternateQuestions',
+  pertanyaanalternatif: 'alternateQuestions',
+  variasipertanyaan: 'alternateQuestions',
+  shortanswer: 'shortAnswer',
+  jawabanpendek: 'shortAnswer',
+  jawabansingkat: 'shortAnswer',
+  ringkasanjawaban: 'shortAnswer',
+  answerhtml: 'answerHtml',
+  jawabanhtml: 'answerHtml',
+  answer: 'answerHtml',
+  jawaban: 'answerHtml',
+  content: 'answerHtml',
+  konten: 'answerHtml',
+  keywords: 'keywords',
+  keyword: 'keywords',
+  katakunci: 'keywords',
+  category: 'category',
+  kategori: 'category',
+  intenttarget: 'intentTarget',
+  intent: 'intentTarget',
+  risklevel: 'riskLevel',
+  risk: 'riskLevel',
+  levelsensitif: 'riskLevel',
+  primaryaction: 'primaryAction',
+  action: 'primaryAction',
+  aksiutama: 'primaryAction',
+  relatedarticles: 'relatedArticles',
+  artikelterkait: 'relatedArticles',
+  priority: 'priority',
+  prioritas: 'priority',
+  status: 'status',
+  reviewersnote: 'reviewerNote',
+  reviewernote: 'reviewerNote',
+  catatanreviewer: 'reviewerNote',
+  catatanadmin: 'reviewerNote',
+  medicalsensitive: 'isMedicalSensitive',
+  sensitivedokter: 'isMedicalSensitive',
+  medis: 'isMedicalSensitive',
+  productsensitive: 'isProductSensitive',
+  sensitiveproduk: 'isProductSensitive',
+  produk: 'isProductSensitive',
+  islamicsensitive: 'isIslamicSensitive',
+  sensitiveislamic: 'isIslamicSensitive',
+  sensitifislami: 'isIslamicSensitive',
+  islami: 'isIslamicSensitive'
+}));
 const state = { initialized: false, knowledge: [], editingId: null };
 
 if (knowledgeApp) {
@@ -23,14 +74,40 @@ if (knowledgeApp) {
 function initKnowledgeCrud() {
   if (state.initialized) return;
   state.initialized = true;
+  injectKnowledgeImportBlock();
   getForm()?.addEventListener('submit', handleSaveKnowledge);
   document.querySelector('[data-knowledge-new]')?.addEventListener('click', resetKnowledgeForm);
   document.querySelector('[data-knowledge-refresh]')?.addEventListener('click', loadKnowledge);
   document.querySelector('[data-knowledge-reset]')?.addEventListener('click', resetKnowledgeForm);
   document.querySelector('[data-knowledge-analyze]')?.addEventListener('click', analyzeKnowledgeAmanah);
+  document.querySelector('[data-knowledge-import-parse]')?.addEventListener('click', handleKnowledgeImportParse);
+  document.querySelector('[data-knowledge-import-clear]')?.addEventListener('click', clearKnowledgeImport);
   getListBody()?.addEventListener('click', handleKnowledgeListAction);
   resetKnowledgeForm();
   loadKnowledge();
+}
+
+function injectKnowledgeImportBlock() {
+  const form = getForm();
+  if (!form || document.querySelector('[data-knowledge-import-block]')) return;
+  const block = document.createElement('div');
+  block.className = 'article-import-block knowledge-import-block';
+  block.dataset.knowledgeImportBlock = '';
+  block.innerHTML = `
+    <div class="article-import-heading">
+      <h4>Import Knowledge dari Prompt</h4>
+      <p>Paste Q&amp;A lengkap dari ChatGPT, lalu parse untuk mengisi form. Default diset published agar bisa dibaca Nusa AI publik.</p>
+    </div>
+    <label class="article-import-label">Output Knowledge ChatGPT
+      <textarea name="knowledgeImportText" data-knowledge-import-text rows="10" placeholder="Paste format Knowledge di sini...\n\nQuestion:\nApa itu VitaNusa AI?\n\nAlternate Questions:\nvitanusa ai itu apa\napa fungsi vitanusa ai\n\nShort Answer:\nVitaNusa AI adalah platform edukasi...\n\nAnswer HTML:\n<p>Jawaban edukatif...</p>\n\nKeywords:\nvitanusa, edukasi kesehatan\n\nCategory:\nTentang VitaNusa\n\nStatus:\npublished"></textarea>
+    </label>
+    <div class="article-import-actions">
+      <button class="admin-button admin-button-primary" type="button" data-knowledge-import-parse>Parse ke Form</button>
+      <button class="admin-button admin-button-light" type="button" data-knowledge-import-clear>Bersihkan Import</button>
+    </div>
+    <div class="article-import-status" data-knowledge-import-status role="status" aria-live="polite" hidden></div>
+  `;
+  form.insertBefore(block, form.firstElementChild || null);
 }
 
 async function loadKnowledge() {
@@ -54,7 +131,7 @@ function renderKnowledge() {
   const body = getListBody();
   if (!body) return;
   if (!state.knowledge.length) {
-    body.innerHTML = '<tr><td colspan="6"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A untuk membuat pustaka pertama. Item baru sebaiknya disimpan sebagai draft, dianalisis, lalu direview manual sebelum publish.</span></td></tr>';
+    body.innerHTML = '<tr><td colspan="6"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A atau pakai Import Knowledge dari Prompt untuk membuat pustaka pertama. Item baru default published agar dibaca Nusa AI.</span></td></tr>';
     return;
   }
   body.replaceChildren(...state.knowledge.map(createKnowledgeRow));
@@ -103,7 +180,7 @@ function getKnowledgePayloadFromForm() {
     primaryAction: values.primaryAction || 'answer-only',
     relatedArticles: splitList(values.relatedArticles),
     priority: Number(values.priority || 0),
-    status: values.status || 'draft',
+    status: values.status || 'published',
     reviewerNote: cleanText(values.reviewerNote)
   };
 }
@@ -121,13 +198,13 @@ function validateKnowledgePayload(payload, { publishing = false } = {}) {
   if (!VALID_PRIMARY_ACTIONS.has(payload.primaryAction)) errors.push('Primary action tidak valid.');
   if (!Number.isFinite(payload.priority)) errors.push('Priority harus angka.');
   if (/<\s*script\b/i.test(payload.answerHtml)) errors.push('Answer HTML tidak boleh mengandung script.');
-  if (payload.riskLevel === 'high') warnings.push('Risk level high: tahan sebagai draft sampai reviewer kompeten menyetujui.');
+  if (payload.riskLevel === 'high') warnings.push('Risk level high: tetap review manual. Jika sensitif, tambahkan reviewer note dan arahkan ke bantuan ahli/prinsip amanah.');
   if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') errors.push('Medical sensitive tidak boleh diarahkan ke view-products.');
   const text = normalize(`${payload.question} ${payload.shortAnswer} ${payload.answerHtml}`);
   const riskyClaims = findMainRiskClaims(text);
   if (payload.isProductSensitive && riskyClaims.length) errors.push(`Klaim produk berbahaya terdeteksi: ${riskyClaims.join(', ')}.`);
   if (payload.isIslamicSensitive && includesAny(text, FATWA_FINAL_TERMS)) warnings.push('Konten Islami terdengar seperti fatwa final. Review ulang batas refleksi.');
-  if (publishing && payload.riskLevel === 'high') errors.push('Q&A high risk tidak dipublish otomatis. Simpan sebagai draft untuk review kompeten.');
+  if (publishing && payload.riskLevel === 'high') warnings.push('Q&A high risk disimpan sebagai published hanya jika admin sadar dan reviewer note sudah jelas.');
   return { errors, warnings };
 }
 
@@ -151,14 +228,14 @@ async function handleSaveKnowledge(event) {
   try {
     if (id) {
       await updateDoc(doc(db, 'nusaKnowledge', id), nowPayload);
-      setMessage(warnings.length ? 'warning' : 'success', `Q&A diperbarui. ${warnings.join(' ')}`.trim());
+      setMessage(warnings.length ? 'warning' : 'success', `Q&A diperbarui sebagai ${payload.status}. ${warnings.join(' ')}`.trim());
     } else {
       await addDoc(collection(db, 'nusaKnowledge'), {
         ...nowPayload,
-        status: payload.status || 'draft',
+        status: payload.status || 'published',
         createdAt: serverTimestamp()
       });
-      setMessage(warnings.length ? 'warning' : 'success', `Q&A disimpan. ${warnings.join(' ')}`.trim());
+      setMessage(warnings.length ? 'warning' : 'success', `Q&A disimpan sebagai ${payload.status || 'published'}. ${warnings.join(' ')}`.trim());
     }
     resetKnowledgeForm();
     loadKnowledge();
@@ -229,7 +306,7 @@ function fillKnowledgeForm(item) {
   form.elements.primaryAction.value = VALID_PRIMARY_ACTIONS.has(item.primaryAction) ? item.primaryAction : 'answer-only';
   form.elements.relatedArticles.value = (item.relatedArticles || []).join(', ');
   form.elements.priority.value = Number(item.priority || 0);
-  form.elements.status.value = VALID_STATUSES.has(item.status) ? item.status : 'draft';
+  form.elements.status.value = VALID_STATUSES.has(item.status) ? item.status : 'published';
   form.elements.reviewerNote.value = item.reviewerNote || '';
   document.querySelector('[data-knowledge-form-title]').textContent = 'Edit Q&A';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -245,9 +322,213 @@ function resetKnowledgeForm() {
     form.elements.riskLevel.value = 'low';
     form.elements.primaryAction.value = 'answer-only';
     form.elements.priority.value = '0';
-    form.elements.status.value = 'draft';
+    form.elements.status.value = 'published';
   }
   document.querySelector('[data-knowledge-form-title]').textContent = 'Tambah Q&A';
+}
+
+function handleKnowledgeImportParse() {
+  try {
+    const rawText = document.querySelector('[data-knowledge-import-text]')?.value || '';
+    const item = parseKnowledgeImport(rawText);
+    applyKnowledgeImportToForm(item);
+    setKnowledgeImportStatus('success', 'Knowledge berhasil diparse ke form. Status default published agar bisa dibaca Nusa AI. Tetap review isi sebelum simpan.');
+  } catch (error) {
+    setKnowledgeImportStatus('error', error.message || 'Format knowledge tidak terbaca.');
+  }
+}
+
+function clearKnowledgeImport() {
+  const textarea = document.querySelector('[data-knowledge-import-text]');
+  if (textarea) textarea.value = '';
+  setKnowledgeImportStatus('success', 'Import Knowledge dibersihkan.');
+}
+
+function parseKnowledgeImport(rawText) {
+  const source = String(rawText || '').trim();
+  if (!source) throw new Error('Import Knowledge masih kosong.');
+  const fields = getKnowledgeImportFields(source);
+  const htmlCandidate = fields.answerHtml || fields.answer || fields.content || '';
+  const fallbackQuestion = getFirstMeaningfulLine(source);
+  const answerHtml = normalizeAnswerHtml(htmlCandidate || source.replace(fallbackQuestion, '').trim());
+  const plainAnswer = cleanText(stripTags(answerHtml));
+  const question = cleanText(fields.question || fallbackQuestion);
+  const shortAnswer = cleanText(fields.shortAnswer || plainAnswer.slice(0, 360));
+  if (!question) throw new Error('Question tidak ditemukan. Tambahkan Question: atau tulis pertanyaan di baris pertama.');
+  if (!shortAnswer) throw new Error('Short Answer tidak ditemukan. Tambahkan Short Answer: atau Answer HTML:.');
+  if (!answerHtml) throw new Error('Answer HTML tidak ditemukan. Tambahkan Answer HTML: atau jawaban paragraf.');
+
+  const combinedText = normalize(`${question} ${shortAnswer} ${answerHtml} ${fields.keywords || ''} ${fields.category || ''}`);
+  const isMedical = parseBoolean(fields.isMedicalSensitive, includesAny(combinedText, HEALTH_TERMS));
+  const isProduct = parseBoolean(fields.isProductSensitive, includesAny(combinedText, PRODUCT_TERMS));
+  const isIslamic = parseBoolean(fields.isIslamicSensitive, includesAny(combinedText, ISLAMIC_TERMS));
+  const riskyClaims = findMainRiskClaims(combinedText);
+  const riskLevel = normalizeRiskLevel(fields.riskLevel || (riskyClaims.length ? 'high' : isMedical || isProduct || isIslamic ? 'medium' : 'low'));
+  const intentTarget = normalizeIntentTarget(fields.intentTarget || inferIntentTarget({ isMedical, isProduct, isIslamic, combinedText }));
+  const primaryAction = normalizePrimaryAction(fields.primaryAction || inferPrimaryAction({ isMedical, isProduct, riskLevel }));
+  const reviewerNote = cleanText(fields.reviewerNote || createImportReviewerNote({ isMedical, isProduct, isIslamic, riskyClaims, riskLevel }));
+
+  return {
+    question,
+    alternateQuestions: splitList(fields.alternateQuestions),
+    shortAnswer,
+    answerHtml,
+    keywords: splitList(fields.keywords || buildKeywordFallback(question, shortAnswer)),
+    category: cleanText(fields.category || inferCategory({ isMedical, isProduct, isIslamic })),
+    intentTarget,
+    riskLevel,
+    isMedicalSensitive: isMedical,
+    isProductSensitive: isProduct,
+    isIslamicSensitive: isIslamic,
+    primaryAction,
+    relatedArticles: splitList(fields.relatedArticles),
+    priority: Number(fields.priority || 0),
+    status: normalizeStatus(fields.status || 'published'),
+    reviewerNote
+  };
+}
+
+function applyKnowledgeImportToForm(item) {
+  resetKnowledgeForm();
+  const form = getForm();
+  form.elements.question.value = item.question;
+  form.elements.alternateQuestions.value = item.alternateQuestions.join('\n');
+  form.elements.shortAnswer.value = item.shortAnswer;
+  form.elements.answerHtml.value = item.answerHtml;
+  form.elements.keywords.value = item.keywords.join(', ');
+  form.elements.category.value = item.category;
+  form.elements.intentTarget.value = item.intentTarget;
+  form.elements.riskLevel.value = item.riskLevel;
+  form.elements.isMedicalSensitive.checked = item.isMedicalSensitive;
+  form.elements.isProductSensitive.checked = item.isProductSensitive;
+  form.elements.isIslamicSensitive.checked = item.isIslamicSensitive;
+  form.elements.primaryAction.value = item.primaryAction;
+  form.elements.relatedArticles.value = item.relatedArticles.join(', ');
+  form.elements.priority.value = Number(item.priority || 0);
+  form.elements.status.value = item.status;
+  form.elements.reviewerNote.value = item.reviewerNote;
+  form.dispatchEvent(new Event('input', { bubbles: true }));
+  form.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function getKnowledgeImportFields(rawText) {
+  const fields = {};
+  let currentKey = '';
+  let currentValue = [];
+  const flush = () => {
+    if (!currentKey) return;
+    fields[currentKey] = currentValue.join('\n').trim();
+  };
+  for (const line of String(rawText || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const match = line.match(/^\s*([A-Za-zÀ-ÿ0-9 _-]{1,44})\s*[:：]\s*(.*)$/);
+    const key = match ? normalizeImportLabel(match[1]) : '';
+    if (key && KNOWLEDGE_IMPORT_LABELS.has(key)) {
+      flush();
+      currentKey = KNOWLEDGE_IMPORT_LABELS.get(key);
+      currentValue = [match[2] || ''];
+      continue;
+    }
+    if (currentKey) currentValue.push(line);
+  }
+  flush();
+  return fields;
+}
+
+function normalizeImportLabel(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function getFirstMeaningfulLine(value) {
+  return String(value || '').split(/\r?\n/).map((line) => line.replace(/^[-*#\d.)\s]+/, '').trim()).find(Boolean) || '';
+}
+
+function normalizeAnswerHtml(value) {
+  const source = String(value || '').trim();
+  if (!source) return '';
+  if (/<[a-z][\s\S]*>/i.test(source)) return source;
+  return source.split(/\n{2,}/).map(cleanText).filter(Boolean).map((item) => `<p>${escapeHtml(item)}</p>`).join('\n');
+}
+
+function stripTags(value) {
+  const div = document.createElement('div');
+  div.innerHTML = String(value || '');
+  return div.textContent || '';
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function parseBoolean(value, fallback = false) {
+  const text = normalize(value);
+  if (!text) return fallback;
+  if (['true', 'ya', 'yes', 'y', '1', 'aktif', 'checked', 'sensitif', 'sensitive'].includes(text)) return true;
+  if (['false', 'tidak', 'no', 'n', '0', 'nonaktif', 'off'].includes(text)) return false;
+  return fallback;
+}
+
+function normalizeStatus(value) {
+  const status = normalize(value || 'published');
+  return VALID_STATUSES.has(status) ? status : 'published';
+}
+
+function normalizeRiskLevel(value) {
+  const level = normalize(value || 'low');
+  return VALID_RISK_LEVELS.has(level) ? level : 'low';
+}
+
+function normalizeIntentTarget(value) {
+  const intent = normalize(value || 'article-general');
+  return VALID_INTENT_TARGETS.has(intent) ? intent : 'article-general';
+}
+
+function normalizePrimaryAction(value) {
+  const action = normalize(value || 'answer-only');
+  return VALID_PRIMARY_ACTIONS.has(action) ? action : 'answer-only';
+}
+
+function inferIntentTarget({ isMedical, isProduct, isIslamic, combinedText }) {
+  if (isProduct) return 'product-safety';
+  if (isMedical && includesAny(combinedText, SERIOUS_DISEASE_TERMS)) return 'serious-complaint-education';
+  if (isMedical) return 'general-health';
+  if (isIslamic) return 'islamic-reflection';
+  return 'article-general';
+}
+
+function inferPrimaryAction({ isMedical, isProduct, riskLevel }) {
+  if (isMedical && riskLevel !== 'low') return 'seek-professional-help';
+  if (isProduct) return 'read-prinsip-amanah';
+  return 'answer-only';
+}
+
+function inferCategory({ isMedical, isProduct, isIslamic }) {
+  if (isProduct) return 'Amanah Produk';
+  if (isMedical) return 'Edukasi Kesehatan';
+  if (isIslamic) return 'Refleksi Islami';
+  return 'Knowledge Nusa AI';
+}
+
+function buildKeywordFallback(question, answer) {
+  return `${question} ${answer}`.split(/\s+/).map((item) => item.toLowerCase().replace(/[^a-z0-9à-ÿ-]/g, '')).filter((item) => item.length > 4).slice(0, 8).join(', ');
+}
+
+function createImportReviewerNote({ isMedical, isProduct, isIslamic, riskyClaims, riskLevel }) {
+  const notes = [];
+  if (isMedical) notes.push('Import terdeteksi medical sensitive: jawaban harus edukatif, bukan diagnosis/dosis/terapi.');
+  if (isProduct) notes.push('Import terdeteksi product sensitive: jangan jadikan produk sebagai klaim kesembuhan.');
+  if (isIslamic) notes.push('Import terdeteksi Islamic sensitive: refleksi edukatif, bukan fatwa final.');
+  if (riskLevel === 'high') notes.push('Risk high: tetap review manual sebelum dipromosikan luas.');
+  if (riskyClaims.length) notes.push(`Klaim berisiko: ${riskyClaims.join(', ')}.`);
+  return notes.join(' ');
+}
+
+function setKnowledgeImportStatus(kind, message) {
+  const box = document.querySelector('[data-knowledge-import-status]');
+  if (!box) return;
+  box.hidden = false;
+  box.classList.remove('is-success', 'is-warning', 'is-error');
+  box.classList.add(`is-${kind}`);
+  box.textContent = message;
 }
 
 function analyzeKnowledgeAmanah() {
