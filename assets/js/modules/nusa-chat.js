@@ -103,7 +103,14 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     setTimeout(async () => {
       if (requestId !== state.requestId) return;
       try {
-        const reply = await getNusaReply(question);
+        let reply;
+
+        try {
+          reply = await getNusaBackendReply(question);
+        } catch (backendError) {
+          console.warn('Backend belum bisa dipakai, pakai jawaban lokal:', backendError);
+          reply = await getNusaReply(question);
+        }
         if (requestId !== state.requestId) return;
         renderReply(log, reply || SAFE_FALLBACK_REPLY);
       } catch (error) {
@@ -165,4 +172,26 @@ function updateNusaSession(session, question, reply) {
   ) {
     session.productEducationSeen = true;
   }
+}
+const NUSA_BACKEND_ASK_URL = 'http://127.0.0.1:8000/ask';
+
+async function getNusaBackendReply(question) {
+  const response = await fetch(NUSA_BACKEND_ASK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ question }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  return {
+    text: data.answer || 'Maaf, backend belum memberikan jawaban.',
+    actions: [],
+  };
 }
