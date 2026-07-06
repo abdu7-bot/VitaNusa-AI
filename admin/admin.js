@@ -11,6 +11,84 @@
   const sectionOpeners = document.querySelectorAll('[data-open-admin-section]');
   const mobileQuery = window.matchMedia('(max-width: 920px)');
 
+  const injectKnowledgeCompactListStyles = () => {
+    if (document.getElementById('knowledgeCompactListStyles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'knowledgeCompactListStyles';
+    style.textContent = `
+      .knowledge-admin .knowledge-table .article-title-cell {
+        max-width: 560px !important;
+      }
+
+      .knowledge-admin .knowledge-table .article-title-cell strong,
+      .knowledge-admin .knowledge-table .article-title-cell small {
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        white-space: normal !important;
+        word-break: normal !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      .knowledge-admin .knowledge-table .article-title-cell strong {
+        -webkit-line-clamp: 3 !important;
+        line-clamp: 3 !important;
+        max-height: 4.2em !important;
+      }
+
+      .knowledge-admin .knowledge-table .article-title-cell small {
+        -webkit-line-clamp: 3 !important;
+        line-clamp: 3 !important;
+        max-height: 4.8em !important;
+        margin-top: 6px !important;
+      }
+
+      @media (max-width: 700px) {
+        .knowledge-admin .knowledge-table tbody tr {
+          margin-bottom: 12px !important;
+          padding: 12px !important;
+        }
+
+        .knowledge-admin .knowledge-table td {
+          padding-top: 6px !important;
+          padding-bottom: 6px !important;
+        }
+
+        .knowledge-admin .knowledge-table td[data-label="Intent / Risk"],
+        .knowledge-admin .knowledge-table td[data-label="Dibuat"],
+        .knowledge-admin .knowledge-table td[data-label="Update"] {
+          display: none !important;
+        }
+
+        .knowledge-admin .knowledge-table .article-title-cell strong {
+          -webkit-line-clamp: 3 !important;
+          line-clamp: 3 !important;
+          font-size: 1rem !important;
+          line-height: 1.35 !important;
+          max-height: 4.1em !important;
+        }
+
+        .knowledge-admin .knowledge-table .article-title-cell small {
+          -webkit-line-clamp: 3 !important;
+          line-clamp: 3 !important;
+          font-size: .9rem !important;
+          line-height: 1.45 !important;
+          max-height: 4.4em !important;
+        }
+
+        .knowledge-admin .knowledge-table .article-row-actions {
+          gap: 6px !important;
+        }
+
+        .knowledge-admin .knowledge-table .article-action-button {
+          min-height: 36px !important;
+          padding: 8px 10px !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  };
 
   const restoreKnowledgeImportPasteScroll = (event) => {
     const textarea = event.target instanceof HTMLTextAreaElement ? event.target : null;
@@ -43,6 +121,7 @@
     });
   };
 
+  injectKnowledgeCompactListStyles();
   document.addEventListener('paste', restoreKnowledgeImportPasteScroll, true);
 
   const setSidebarOpen = (open) => {
