@@ -3,7 +3,7 @@
   const sidebar = document.getElementById('adminSidebar');
   const menuToggle = document.querySelector('.admin-menu-toggle');
   const sidebarClose = document.querySelector('[data-admin-sidebar-close]');
-  const sidebarOverlay = document.querySelectoR('[data-admin-sidebar-overlay]');
+  const sidebarOverlay = document.querySelector('[data-admin-sidebar-overlay]');
   const sidebarCollapse = document.querySelector('[data-admin-sidebar-collapse]');
   const navLinks = Array.from(document.querySelectorAll('[data-admin-section]'));
   const panels = Array.from(document.querySelectorAll('[data-admin-panel]'));
