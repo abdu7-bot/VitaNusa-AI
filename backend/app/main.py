@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
+from .intent_router import detect_intent
+from .responses import DISCLAIMER, build_answer
+from .schemas import AskRequest, AskResponse
 
 app = FastAPI(
     title="VitaNusa AI Brain",
@@ -22,18 +25,6 @@ app.add_middleware(
 )
 
 
-class AskRequest(BaseModel):
-    question: str
-
-
-DISCLAIMER = (
-    "VitaNusa AI bukan dokter, bukan tenaga medis, dan bukan alat diagnosis. "
-    "Informasi ini hanya edukasi umum. Untuk keluhan yang berat, memburuk, "
-    "atau memiliki tanda bahaya, segera hubungi dokter, fasilitas kesehatan, "
-    "atau layanan darurat setempat."
-)
-
-
 @app.get("/")
 def home():
     return {
@@ -42,8 +33,8 @@ def home():
     }
 
 
-@app.post("/ask")
-def ask_ai(request: AskRequest):
+@app.post("/ask", response_model=AskResponse)
+def ask_ai(request: AskRequest) -> AskResponse:
     question = request.question.strip()
 
     if not question:
@@ -52,16 +43,13 @@ def ask_ai(request: AskRequest):
             detail="Pertanyaan tidak boleh kosong."
         )
 
-    return {
-        "question": question,
-        "answer": (
-            "Terima kasih sudah bertanya. Saya akan menjawab dengan prinsip "
-            "edukasi amanah: memahami keluhan secara umum, menghindari klaim "
-            "diagnosis, tidak menjanjikan kesembuhan, dan mendorong ikhtiar "
-            "yang aman. Bila ada tanda bahaya seperti nyeri dada, sesak napas, "
-            "penurunan kesadaran, perdarahan berat, kelemahan mendadak, demam "
-            "tinggi yang menetap, dehidrasi, atau gejala yang cepat memburuk, "
-            "segera cari pertolongan medis."
-        ),
-        "disclaimer": DISCLAIMER
-    }
+    intent_result = detect_intent(question)
+
+    return AskResponse(
+        question=question,
+        intent=intent_result["intent"],
+        answer=build_answer(intent_result["intent"]),
+        disclaimer=DISCLAIMER,
+        safetyLevel=intent_result["safetyLevel"],
+        recommendedAction=intent_result["recommendedAction"],
+    )
