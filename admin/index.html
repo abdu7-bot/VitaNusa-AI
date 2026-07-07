@@ -1,15 +1,18 @@
 <!doctype html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Dashboard admin VitaNusa AI untuk mengelola konten edukasi, knowledge, dan artikel dengan prinsip amanah.">
+  <meta name="description"
+    content="Dashboard admin VitaNusa AI untuk mengelola konten edukasi, knowledge, dan artikel dengan prinsip amanah.">
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
   <link rel="stylesheet" href="admin.css?v=20260626-admin-v5">
   <link rel="stylesheet" href="articles.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="knowledge-mobile-fix.css?v=20260704-knowledge-mobile-v1">
 </head>
+
 <body class="admin-page admin-dashboard-page" data-admin-auth-page="dashboard">
   <section class="admin-auth-gate" aria-label="Status autentikasi admin">
     <div class="admin-auth-status is-loading" data-auth-status role="status" aria-live="polite">
@@ -48,72 +51,124 @@
           <span class="admin-brand-mark">VN</span>
           <span class="admin-brand-copy"><strong>VitaNusa AI</strong><small>Admin Panel</small></span>
         </a>
-        <button class="admin-sidebar-close" type="button" data-admin-sidebar-close aria-label="Tutup menu admin">x</button>
+        <button class="admin-sidebar-close" type="button" data-admin-sidebar-close
+          aria-label="Tutup menu admin">x</button>
       </div>
 
       <nav class="admin-nav" aria-label="Menu admin global">
         <div class="admin-nav-group">
           <p class="admin-nav-group-label">Utama</p>
-          <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard" title="Dashboard"><span class="admin-nav-icon" aria-hidden="true">DB</span><span class="admin-nav-text">Dashboard</span></button>
+          <button class="admin-nav-link is-active" type="button" data-admin-section="dashboard" title="Dashboard"><span
+              class="admin-nav-icon" aria-hidden="true">DB</span><span class="admin-nav-text">Dashboard</span></button>
         </div>
 
         <div class="admin-nav-group">
           <p class="admin-nav-group-label">Import Konten</p>
-          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="knowledge" title="Import Knowledge"><span class="admin-nav-icon" aria-hidden="true">IK</span><span class="admin-nav-text">Import Knowledge</span></button>
-          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="articles" title="Import Artikel"><span class="admin-nav-icon" aria-hidden="true">IA</span><span class="admin-nav-text">Import Artikel</span></button>
-          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="prompt-import" title="Import Prompt"><span class="admin-nav-icon" aria-hidden="true">IP</span><span class="admin-nav-text">Import Prompt</span></button>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="knowledge"
+            title="Import Knowledge"><span class="admin-nav-icon" aria-hidden="true">IK</span><span
+              class="admin-nav-text">Import Knowledge</span></button>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="articles"
+            title="Import Artikel"><span class="admin-nav-icon" aria-hidden="true">IA</span><span
+              class="admin-nav-text">Import Artikel</span></button>
+          <button class="admin-nav-link admin-nav-child" type="button" data-admin-section="prompt-import"
+            title="Import Prompt"><span class="admin-nav-icon" aria-hidden="true">IP</span><span
+              class="admin-nav-text">Import Prompt</span></button>
         </div>
 
         <div class="admin-nav-group">
           <p class="admin-nav-group-label">Kelola Konten</p>
-          <button class="admin-nav-link" type="button" data-admin-section="content" title="Pustaka Konten"><span class="admin-nav-icon" aria-hidden="true">PK</span><span class="admin-nav-text">Pustaka Konten</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="articles" title="Artikel"><span class="admin-nav-icon" aria-hidden="true">AR</span><span class="admin-nav-text">Artikel</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="knowledge" title="Knowledge Q&A"><span class="admin-nav-icon" aria-hidden="true">QA</span><span class="admin-nav-text">Knowledge Q&amp;A</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="products" title="Produk"><span class="admin-nav-icon" aria-hidden="true">PR</span><span class="admin-nav-text">Produk</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="media" title="Video AI"><span class="admin-nav-icon" aria-hidden="true">VI</span><span class="admin-nav-text">Video AI</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="comics" title="VitaStory"><span class="admin-nav-icon" aria-hidden="true">VS</span><span class="admin-nav-text">VitaStory</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="faq" title="FAQ"><span class="admin-nav-icon" aria-hidden="true">FQ</span><span class="admin-nav-text">FAQ</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="content" data-content-filter-shortcut="draft" title="Draft / Arsip"><span class="admin-nav-icon" aria-hidden="true">DR</span><span class="admin-nav-text">Draft / Arsip</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="content" title="Pustaka Konten"><span
+              class="admin-nav-icon" aria-hidden="true">PK</span><span class="admin-nav-text">Pustaka
+              Konten</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="articles" title="Artikel"><span
+              class="admin-nav-icon" aria-hidden="true">AR</span><span class="admin-nav-text">Artikel</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="knowledge" title="Knowledge Q&A"><span
+              class="admin-nav-icon" aria-hidden="true">QA</span><span class="admin-nav-text">Knowledge
+              Q&amp;A</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="products" title="Produk"><span
+              class="admin-nav-icon" aria-hidden="true">PR</span><span class="admin-nav-text">Produk</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="media" title="Video AI"><span
+              class="admin-nav-icon" aria-hidden="true">VI</span><span class="admin-nav-text">Video AI</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="comics" title="VitaStory"><span
+              class="admin-nav-icon" aria-hidden="true">VS</span><span class="admin-nav-text">VitaStory</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="faq" title="FAQ"><span class="admin-nav-icon"
+              aria-hidden="true">FQ</span><span class="admin-nav-text">FAQ</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="content" data-content-filter-shortcut="draft"
+            title="Draft / Arsip"><span class="admin-nav-icon" aria-hidden="true">DR</span><span
+              class="admin-nav-text">Draft / Arsip</span></button>
         </div>
 
         <div class="admin-nav-group">
           <p class="admin-nav-group-label">Pengaturan</p>
-          <button class="admin-nav-link" type="button" data-admin-section="settings" title="Pengaturan Aplikasi"><span class="admin-nav-icon" aria-hidden="true">ST</span><span class="admin-nav-text">Pengaturan Aplikasi</span></button>
-          <button class="admin-nav-link" type="button" data-admin-section="profile" title="Profil Pengguna"><span class="admin-nav-icon" aria-hidden="true">PF</span><span class="admin-nav-text">Profil Pengguna</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="settings" title="Pengaturan Aplikasi"><span
+              class="admin-nav-icon" aria-hidden="true">ST</span><span class="admin-nav-text">Pengaturan
+              Aplikasi</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="profile" title="Profil Pengguna"><span
+              class="admin-nav-icon" aria-hidden="true">PF</span><span class="admin-nav-text">Profil
+              Pengguna</span></button>
         </div>
       </nav>
 
       <div class="admin-sidebar-footer">
-        <button class="admin-sidebar-collapse" type="button" data-admin-sidebar-collapse aria-pressed="false" title="Collapse sidebar"><span aria-hidden="true">&lt;</span><span class="admin-nav-text">Collapse</span></button>
-        <button class="admin-nav-link admin-logout-link" type="button" data-logout-button title="Logout"><span class="admin-nav-icon" aria-hidden="true">LO</span><span class="admin-nav-text">Logout</span></button>
-        <a class="admin-public-link" href="../index.html"><span class="admin-nav-icon" aria-hidden="true">WB</span><span class="admin-nav-text">Website Publik</span></a>
+        <button class="admin-sidebar-collapse" type="button" data-admin-sidebar-collapse aria-pressed="false"
+          title="Collapse sidebar"><span aria-hidden="true">&lt;</span><span
+            class="admin-nav-text">Collapse</span></button>
+        <button class="admin-nav-link admin-logout-link" type="button" data-logout-button title="Logout"><span
+            class="admin-nav-icon" aria-hidden="true">LO</span><span class="admin-nav-text">Logout</span></button>
+        <a class="admin-public-link" href="../index.html"><span class="admin-nav-icon" aria-hidden="true">WB</span><span
+            class="admin-nav-text">Website Publik</span></a>
       </div>
     </aside>
-    <button class="admin-sidebar-overlay" type="button" data-admin-sidebar-overlay aria-label="Tutup menu admin" hidden></button>
+    <button class="admin-sidebar-overlay" type="button" data-admin-sidebar-overlay aria-label="Tutup menu admin"
+      hidden></button>
 
     <div class="admin-main-shell">
       <header class="admin-topbar">
-        <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Buka menu admin"><span aria-hidden="true">|||</span><span>Menu</span></button>
-        <div><p class="admin-kicker">Admin Panel</p><h1>VitaNusa AI Admin</h1><p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p></div>
+        <button class="admin-menu-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false"
+          aria-label="Buka menu admin"><span aria-hidden="true">|||</span><span>Menu</span></button>
+        <div>
+          <p class="admin-kicker">Admin Panel</p>
+          <h1>VitaNusa AI Admin</h1>
+          <p class="admin-user-pill">Login sebagai <strong data-auth-email>-</strong></p>
+        </div>
         <button class="admin-button admin-button-light" type="button" data-logout-button>Logout</button>
       </header>
 
       <main class="admin-main" id="main">
         <section class="admin-status-banner" aria-label="Status phase">
           <strong>Phase 6: Article CRUD aktif untuk admin aktif. Komik CRUD belum aktif.</strong>
-          <span>Banner artikel statis utama disimpan di GitHub. Isi Banner URL dengan path gambar GitHub seperti ../assets/img/artikel/banner-artikel-admin-1.webp.</span>
+          <span>Banner artikel statis utama disimpan di GitHub. Isi Banner URL dengan path gambar GitHub seperti
+            ../assets/img/artikel/banner-artikel-admin-1.webp.</span>
         </section>
 
         <section class="admin-panel is-active" data-admin-panel="dashboard" aria-labelledby="dashboardTitle">
-          <div class="admin-section-heading"><p class="admin-kicker">Ringkasan</p><h2 id="dashboardTitle">Dashboard</h2><p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p></div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Ringkasan</p>
+            <h2 id="dashboardTitle">Dashboard</h2>
+            <p>Kerangka awal untuk memantau konten edukasi VitaNusa AI saat modul CRUD sudah siap.</p>
+          </div>
           <div class="admin-card-grid">
-            <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong><p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Pustaka Konten</span><strong>Filter</strong><p>Artikel dan Knowledge Q&amp;A bisa dicari berdasarkan kategori, status, dan judul/konten.</p></article>
-            <article class="admin-card"><span class="admin-card-label">VitaStory / Cerita</span><strong>Rencana</strong><p>Panel cerita dan komik masih placeholder dalam pengembangan.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Video / Media</span><strong>GitHub</strong><p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Produk</span><strong>0</strong><p>Katalog produk belum terhubung.</p></article>
-            <article class="admin-card"><span class="admin-card-label">FAQ</span><strong>0</strong><p>FAQ dinamis belum aktif.</p></article>
-            <article class="admin-card"><span class="admin-card-label">Pengaturan &amp; Profil</span><strong>UI</strong><p>Placeholder rapi tersedia dan ditandai sebagai dalam pengembangan.</p></article>
+            <article class="admin-card"><span class="admin-card-label">Artikel</span><strong>CRUD</strong>
+              <p>Tambah, edit, publish, dan archive artikel sudah aktif. Banner URL diisi manual.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">Pustaka Konten</span><strong>Filter</strong>
+              <p>Artikel dan Knowledge Q&amp;A bisa dicari berdasarkan kategori, status, dan judul/konten.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">VitaStory / Cerita</span><strong>Rencana</strong>
+              <p>Panel cerita dan komik masih placeholder dalam pengembangan.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">Video / Media</span><strong>GitHub</strong>
+              <p>Banner artikel statis utama disimpan di GitHub, lalu path diisi ke Banner URL.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">Produk</span><strong>0</strong>
+              <p>Katalog produk belum terhubung.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">FAQ</span><strong>0</strong>
+              <p>FAQ dinamis belum aktif.</p>
+            </article>
+            <article class="admin-card"><span class="admin-card-label">Pengaturan &amp; Profil</span><strong>UI</strong>
+              <p>Placeholder rapi tersedia dan ditandai sebagai dalam pengembangan.</p>
+            </article>
           </div>
         </section>
 
@@ -121,24 +176,34 @@
           <div class="admin-section-heading">
             <p class="admin-kicker">Pustaka</p>
             <h2>Pustaka Konten</h2>
-            <p>Ringkasan konten admin berdasarkan kategori. Data aktif diambil dari Firestore articles dan nusaKnowledge tanpa mengubah struktur data lama.</p>
+            <p>Ringkasan konten admin berdasarkan kategori. Data aktif diambil dari Firestore articles dan nusaKnowledge
+              tanpa mengubah struktur data lama.</p>
           </div>
 
           <div class="admin-content-library" data-content-library-app>
             <div class="admin-library-categories" data-content-category-cards aria-label="Kategori konten">
-              <article class="admin-library-card"><span>Artikel</span><strong data-content-count="article">0</strong><small>Firestore articles</small></article>
-              <article class="admin-library-card"><span>Knowledge Q&amp;A</span><strong data-content-count="knowledge">0</strong><small>Firestore nusaKnowledge</small></article>
-              <article class="admin-library-card"><span>Produk</span><strong>0</strong><small>Dalam pengembangan</small></article>
-              <article class="admin-library-card"><span>Video</span><strong>0</strong><small>Dalam pengembangan</small></article>
-              <article class="admin-library-card"><span>VitaStory / Cerita</span><strong>0</strong><small>Dalam pengembangan</small></article>
-              <article class="admin-library-card"><span>FAQ</span><strong>0</strong><small>Dalam pengembangan</small></article>
-              <article class="admin-library-card"><span>Prompt Import</span><strong>UI</strong><small>Artikel &amp; Knowledge</small></article>
-              <article class="admin-library-card"><span>Draft / Belum Terbit</span><strong data-content-count="draft">0</strong><small>Belum published</small></article>
+              <article class="admin-library-card"><span>Artikel</span><strong
+                  data-content-count="article">0</strong><small>Firestore articles</small></article>
+              <article class="admin-library-card"><span>Knowledge Q&amp;A</span><strong
+                  data-content-count="knowledge">0</strong><small>Firestore nusaKnowledge</small></article>
+              <article class="admin-library-card"><span>Produk</span><strong>0</strong><small>Dalam pengembangan</small>
+              </article>
+              <article class="admin-library-card"><span>Video</span><strong>0</strong><small>Dalam pengembangan</small>
+              </article>
+              <article class="admin-library-card"><span>VitaStory / Cerita</span><strong>0</strong><small>Dalam
+                  pengembangan</small></article>
+              <article class="admin-library-card"><span>FAQ</span><strong>0</strong><small>Dalam pengembangan</small>
+              </article>
+              <article class="admin-library-card"><span>Prompt Import</span><strong>UI</strong><small>Artikel &amp;
+                  Knowledge</small></article>
+              <article class="admin-library-card"><span>Draft / Belum Terbit</span><strong
+                  data-content-count="draft">0</strong><small>Belum published</small></article>
             </div>
 
             <div class="admin-library-controls" aria-label="Filter pustaka konten">
               <label>Cari Konten
-                <input type="search" data-content-search placeholder="Cari judul, pertanyaan, kategori, atau isi..." autocomplete="off">
+                <input type="search" data-content-search placeholder="Cari judul, pertanyaan, kategori, atau isi..."
+                  autocomplete="off">
               </label>
               <label>Kategori
                 <select data-content-category-filter>
@@ -168,32 +233,79 @@
             <div class="article-message" data-content-message hidden></div>
             <div class="article-table-wrap">
               <table class="article-table admin-library-table">
-                <thead><tr><th>Kategori</th><th>Konten</th><th>Status</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead>
-                <tbody data-content-library-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody>
+                <thead>
+                  <tr>
+                    <th>Kategori</th>
+                    <th>Konten</th>
+                    <th>Status</th>
+                    <th>Dibuat</th>
+                    <th>Update</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody data-content-library-list>
+                  <tr>
+                    <td colspan="6">Menunggu verifikasi admin aktif...</td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           </div>
         </section>
 
         <section class="admin-panel" data-admin-panel="articles" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Artikel</h2><p>Kelola artikel Firestore sebagai published. Konten berisiko tetap published, lalu diberi warning, sensitive flags, disclaimer, dan Catatan Amanah.</p></div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Artikel</h2>
+            <p>Kelola artikel Firestore sebagai published. Konten berisiko tetap published, lalu diberi warning,
+              sensitive flags, disclaimer, dan Catatan Amanah.</p>
+          </div>
           <div class="article-admin" data-article-app>
-            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button" data-article-new>Tambah Artikel</button><button class="admin-button admin-button-light" type="button" data-article-refresh>Refresh Daftar</button></div>
+            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button"
+                data-article-new>Tambah Artikel</button><button class="admin-button admin-button-light" type="button"
+                data-article-refresh>Refresh Daftar</button></div>
             <div class="article-message" data-article-message hidden></div>
             <div class="article-layout">
               <section class="article-list-card" aria-labelledby="articleListTitle">
                 <div class="article-list-header">
                   <div>
                     <h3 id="articleListTitle">Daftar Artikel</h3>
-                    <p class="article-help">Filter artikel berdasarkan kategori internal, status, dan teks judul/konten.</p>
+                    <p class="article-help">Filter artikel berdasarkan kategori internal, status, dan teks judul/konten.
+                    </p>
                   </div>
                   <div class="article-filter-grid" aria-label="Filter daftar artikel">
-                    <label>Cari<input type="search" data-article-search placeholder="Cari artikel..." autocomplete="off"></label>
-                    <label>Kategori<select data-article-category-filter><option value="">Semua kategori</option></select></label>
-                    <label>Status<select data-article-status-filter><option value="">Semua status</option><option value="published">Publish</option><option value="draft">Draft</option><option value="archived">Arsip</option></select></label>
+                    <label>Cari<input type="search" data-article-search placeholder="Cari artikel..."
+                        autocomplete="off"></label>
+                    <label>Kategori<select data-article-category-filter>
+                        <option value="">Semua kategori</option>
+                      </select></label>
+                    <label>Status<select data-article-status-filter>
+                        <option value="">Semua status</option>
+                        <option value="published">Publish</option>
+                        <option value="draft">Draft</option>
+                        <option value="archived">Arsip</option>
+                      </select></label>
                   </div>
                 </div>
-                <div class="article-table-wrap"><table class="article-table"><thead><tr><th>Artikel</th><th>Status</th><th>Kategori</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-article-list><tr><td colspan="6">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
+                <div class="article-table-wrap">
+                  <table class="article-table">
+                    <thead>
+                      <tr>
+                        <th>Artikel</th>
+                        <th>Status</th>
+                        <th>Kategori</th>
+                        <th>Dibuat</th>
+                        <th>Update</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody data-article-list>
+                      <tr>
+                        <td colspan="6">Menunggu verifikasi admin aktif...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </section>
               <section class="article-form-card" aria-labelledby="articleFormTitle">
                 <h3 id="articleFormTitle" data-article-form-title>Tambah Artikel</h3>
@@ -203,59 +315,128 @@
                   <div class="article-import-block" aria-labelledby="articleImportTitle">
                     <div class="article-import-heading">
                       <h4 id="articleImportTitle">Import Artikel dari Prompt</h4>
-                      <p>Paste artikel lengkap dari ChatGPT, lalu parse untuk mengisi form. Status diset published; tetap review ulang sebelum simpan.</p>
+                      <p>Paste artikel lengkap dari ChatGPT, lalu parse untuk mengisi form. Status diset published;
+                        tetap review ulang sebelum simpan.</p>
                     </div>
                     <label class="article-import-label">Output Artikel ChatGPT
-                      <textarea name="articleImportText" data-article-import-text rows="10" placeholder="Paste output artikel ChatGPT lengkap di sini..."></textarea>
+                      <textarea name="articleImportText" data-article-import-text rows="10"
+                        placeholder="Paste output artikel ChatGPT lengkap di sini..."></textarea>
                     </label>
                     <div class="article-import-actions">
-                      <button class="admin-button admin-button-primary" type="button" data-article-import-parse>Parse ke Form</button>
-                      <button class="admin-button admin-button-light" type="button" data-article-import-clear>Bersihkan Import</button>
+                      <button class="admin-button admin-button-primary" type="button" data-article-import-parse>Parse ke
+                        Form</button>
+                      <button class="admin-button admin-button-light" type="button" data-article-import-clear>Bersihkan
+                        Import</button>
                     </div>
-                    <div class="article-import-status" data-article-import-status role="status" aria-live="polite" hidden></div>
+                    <div class="article-import-status" data-article-import-status role="status" aria-live="polite"
+                      hidden></div>
                   </div>
 
                   <label>Title<input name="title" type="text" required autocomplete="off"></label>
-                  <label>Slug<input name="slug" type="text" required autocomplete="off" placeholder="contoh-artikel-edukasi"></label>
-                  <label>Category<input name="category" type="text" autocomplete="off" placeholder="Edukasi Kesehatan"></label>
+                  <label>Slug<input name="slug" type="text" required autocomplete="off"
+                      placeholder="contoh-artikel-edukasi"></label>
+                  <label>Category<input name="category" type="text" autocomplete="off"
+                      placeholder="Edukasi Kesehatan"></label>
                   <label>Summary<textarea name="summary" required rows="4"></textarea></label>
                   <label>Content HTML<textarea name="contentHtml" rows="10"></textarea></label>
-                  <p class="article-help">Pertahankan disclaimer: Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.</p>
-                  <label>Banner URL<input name="bannerUrl" type="url" autocomplete="off" placeholder="../assets/img/artikel/banner-artikel-admin-1.webp"></label>
-                  <p class="article-help">Isi manual dengan path gambar GitHub, contoh: ../assets/img/artikel/banner-artikel-admin-1.webp.</p>
-                  <label class="article-upload-label" hidden>Upload Banner Artikel<input name="bannerFile" type="file" accept="image/jpeg,image/png,image/webp" data-banner-file disabled></label>
-                  <p class="article-help">Upload banner via Firebase Storage dinonaktifkan sementara. Upload gambar ke GitHub lalu isi Banner URL/path secara manual.</p>
-                  <div class="article-banner-preview" data-banner-preview hidden><img data-banner-preview-image alt="Preview banner artikel"><button class="admin-button admin-button-light" type="button" data-banner-clear>Hapus pilihan gambar</button></div>
-                  <label>PDF URL<input name="pdfUrl" type="url" autocomplete="off" placeholder="https://... atau documents/file.pdf"></label>
-                  <label>Read Time<input name="readTime" type="text" autocomplete="off" placeholder="6 menit baca"></label>
-                  <label>Tags<input name="tags" type="text" autocomplete="off" placeholder="edukasi, kesehatan, amanah"></label>
+                  <p class="article-help">Pertahankan disclaimer: Konten ini bersifat edukasi dan refleksi, bukan
+                    diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.</p>
+                  <label>Banner URL<input name="bannerUrl" type="url" autocomplete="off"
+                      placeholder="../assets/img/artikel/banner-artikel-admin-1.webp"></label>
+                  <p class="article-help">Isi manual dengan path gambar GitHub, contoh:
+                    ../assets/img/artikel/banner-artikel-admin-1.webp.</p>
+                  <label class="article-upload-label" hidden>Upload Banner Artikel<input name="bannerFile" type="file"
+                      accept="image/jpeg,image/png,image/webp" data-banner-file disabled></label>
+                  <p class="article-help">Upload banner via Firebase Storage dinonaktifkan sementara. Upload gambar ke
+                    GitHub lalu isi Banner URL/path secara manual.</p>
+                  <div class="article-banner-preview" data-banner-preview hidden><img data-banner-preview-image
+                      alt="Preview banner artikel"><button class="admin-button admin-button-light" type="button"
+                      data-banner-clear>Hapus pilihan gambar</button></div>
+                  <label>PDF URL<input name="pdfUrl" type="url" autocomplete="off"
+                      placeholder="https://... atau documents/file.pdf"></label>
+                  <label>Read Time<input name="readTime" type="text" autocomplete="off"
+                      placeholder="6 menit baca"></label>
+                  <label>Tags<input name="tags" type="text" autocomplete="off"
+                      placeholder="edukasi, kesehatan, amanah"></label>
                   <p class="article-help">Pisahkan tag dengan koma. Tag akan disimpan sebagai array.</p>
 
                   <div class="article-metadata-block">
                     <h4>Content Library Metadata V1</h4>
-                    <p class="article-help">Metadata ini membantu Nusa AI menjawab lebih relevan, tetapi tidak mengubah status publish. Semua artikel tetap published.</p>
-                    <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
-                    <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
-                    <div class="article-checkbox-grid" aria-label="Sensitive flags"><label class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive" type="checkbox"><span>Product sensitive</span></label><label class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic sensitive</span></label></div>
-                    <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off" placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
-                    <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Sistem akan membersihkan menjadi array slug.</p>
-                    <label>User Questions<textarea name="userQuestions" rows="4" placeholder="Satu pertanyaan per baris atau pisahkan dengan koma"></textarea></label>
-                    <label>Answer Snippet<textarea name="answerSnippet" rows="4" placeholder="Jawaban pendek yang bisa dipakai Nusa AI"></textarea></label>
-                    <label>Problem Tags<textarea name="problemTags" rows="3" placeholder="syahwat, konten haram, hasad, sombong"></textarea></label>
-                    <label>Audience<input name="audience" type="text" autocomplete="off" placeholder="Muslim umum, pemuda, pemimpin"></label>
-                    <label>Do Not Use For<textarea name="doNotUseFor" rows="3" placeholder="fatwa khusus, diagnosis, kasus pribadi berat"></textarea></label>
-                    <label>When To Seek Help<textarea name="whenToSeekHelp" rows="4" placeholder="Kapan user perlu diarahkan ke bantuan ahli"></textarea></label>
-                    <label>Sources<textarea name="sources" rows="4" placeholder="QS. An-Nur: 30&#10;HR. Bukhari dan Muslim"></textarea></label>
-                    <label>Content Depth<select name="contentDepth"><option value="basic">basic</option><option value="intermediate">intermediate</option><option value="deep">deep</option></select></label>
-                    <label>Primary Action<select name="primaryAction"><option value="read-article">read-article</option><option value="start-vitacheck">start-vitacheck</option><option value="read-prinsip-amanah">read-prinsip-amanah</option><option value="contact-admin">contact-admin</option><option value="seek-professional-help">seek-professional-help</option><option value="view-products">view-products</option></select></label>
-                    <p class="article-help">Semua artikel admin disimpan sebagai published. Sistem tidak memakai draft otomatis. Jika konten sensitif, artikel tetap published tetapi diberi warning, sensitive flags, disclaimer, dan reviewer note.</p>
-                    <label>Reviewer Note<textarea name="reviewerNote" rows="3" placeholder="Catatan editor/admin"></textarea></label>
+                    <p class="article-help">Metadata ini membantu Nusa AI menjawab lebih relevan, tetapi tidak mengubah
+                      status publish. Semua artikel tetap published.</p>
+                    <label>Intent Target<select name="intentTarget">
+                        <option value="article-general">article-general</option>
+                        <option value="general-health">general-health</option>
+                        <option value="habit">habit</option>
+                        <option value="vitacheck">vitacheck</option>
+                        <option value="testimonial">testimonial</option>
+                        <option value="product-claim">product-claim</option>
+                        <option value="product-safety">product-safety</option>
+                        <option value="product-general">product-general</option>
+                        <option value="serious-complaint-education">serious-complaint-education</option>
+                        <option value="islamic-reflection">islamic-reflection</option>
+                        <option value="amanah">amanah</option>
+                      </select></label>
+                    <label>Risk Level<select name="riskLevel">
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                      </select></label>
+                    <div class="article-checkbox-grid" aria-label="Sensitive flags"><label
+                        class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical
+                          sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive"
+                          type="checkbox"><span>Product sensitive</span></label><label
+                        class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic
+                          sensitive</span></label></div>
+                    <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off"
+                        placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
+                    <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Sistem akan membersihkan
+                      menjadi array slug.</p>
+                    <label>User Questions<textarea name="userQuestions" rows="4"
+                        placeholder="Satu pertanyaan per baris atau pisahkan dengan koma"></textarea></label>
+                    <label>Answer Snippet<textarea name="answerSnippet" rows="4"
+                        placeholder="Jawaban pendek yang bisa dipakai Nusa AI"></textarea></label>
+                    <label>Problem Tags<textarea name="problemTags" rows="3"
+                        placeholder="syahwat, konten haram, hasad, sombong"></textarea></label>
+                    <label>Audience<input name="audience" type="text" autocomplete="off"
+                        placeholder="Muslim umum, pemuda, pemimpin"></label>
+                    <label>Do Not Use For<textarea name="doNotUseFor" rows="3"
+                        placeholder="fatwa khusus, diagnosis, kasus pribadi berat"></textarea></label>
+                    <label>When To Seek Help<textarea name="whenToSeekHelp" rows="4"
+                        placeholder="Kapan user perlu diarahkan ke bantuan ahli"></textarea></label>
+                    <label>Sources<textarea name="sources" rows="4"
+                        placeholder="QS. An-Nur: 30&#10;HR. Bukhari dan Muslim"></textarea></label>
+                    <label>Content Depth<select name="contentDepth">
+                        <option value="basic">basic</option>
+                        <option value="intermediate">intermediate</option>
+                        <option value="deep">deep</option>
+                      </select></label>
+                    <label>Primary Action<select name="primaryAction">
+                        <option value="read-article">read-article</option>
+                        <option value="start-vitacheck">start-vitacheck</option>
+                        <option value="read-prinsip-amanah">read-prinsip-amanah</option>
+                        <option value="contact-admin">contact-admin</option>
+                        <option value="seek-professional-help">seek-professional-help</option>
+                        <option value="view-products">view-products</option>
+                      </select></label>
+                    <p class="article-help">Semua artikel admin disimpan sebagai published. Sistem tidak memakai draft
+                      otomatis. Jika konten sensitif, artikel tetap published tetapi diberi warning, sensitive flags,
+                      disclaimer, dan reviewer note.</p>
+                    <label>Reviewer Note<textarea name="reviewerNote" rows="3"
+                        placeholder="Catatan editor/admin"></textarea></label>
                     <div class="article-metadata-preview" data-article-metadata-preview aria-live="polite"></div>
                   </div>
 
-                  <label>Status<select name="status" required disabled><option value="published" selected>published</option><option value="draft">draft</option><option value="archived">archived</option></select></label>
-                  <p class="article-help">Semua artikel admin wajib published. Draft dan archived tidak dipakai untuk alur simpan artikel saat ini.</p>
-                  <div class="article-form-actions"><button class="admin-button admin-button-primary" type="submit">Simpan Artikel</button><button class="admin-button admin-button-light" type="button" data-article-reset>Bersihkan Form</button></div>
+                  <label>Status<select name="status" required disabled>
+                      <option value="published" selected>published</option>
+                      <option value="draft">draft</option>
+                      <option value="archived">archived</option>
+                    </select></label>
+                  <p class="article-help">Semua artikel admin wajib published. Draft dan archived tidak dipakai untuk
+                    alur simpan artikel saat ini.</p>
+                  <div class="article-form-actions"><button class="admin-button admin-button-primary"
+                      type="submit">Simpan Artikel</button><button class="admin-button admin-button-light" type="button"
+                      data-article-reset>Bersihkan Form</button></div>
                 </form>
               </section>
             </div>
@@ -263,74 +444,195 @@
         </section>
 
         <section class="admin-panel" data-admin-panel="knowledge" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Knowledge / Q&amp;A Nusa AI</h2><p>Kelola pustaka pertanyaan dan jawaban yang akan dipakai Nusa AI. Jawaban tetap harus edukatif, amanah, dan bukan pengganti ahli.</p></div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Knowledge / Q&amp;A Nusa AI</h2>
+            <p>Kelola pustaka pertanyaan dan jawaban yang akan dipakai Nusa AI. Jawaban tetap harus edukatif, amanah,
+              dan bukan pengganti ahli.</p>
+          </div>
           <div class="article-admin knowledge-admin" data-knowledge-app>
-            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button" data-knowledge-new>Tambah Q&amp;A</button><button class="admin-button admin-button-light" type="button" data-knowledge-refresh>Refresh Daftar</button></div>
+            <div class="article-toolbar"><button class="admin-button admin-button-primary" type="button"
+                data-knowledge-new>Tambah Q&amp;A</button><button class="admin-button admin-button-light" type="button"
+                data-knowledge-refresh>Refresh Daftar</button></div>
             <div class="article-message" data-knowledge-message hidden></div>
             <div class="article-layout">
               <section class="article-list-card" aria-labelledby="knowledgeListTitle">
                 <div class="article-list-header">
                   <div>
                     <h3 id="knowledgeListTitle">Daftar Q&amp;A</h3>
-                    <p class="article-help">Filter Knowledge berdasarkan kategori, status, dan teks pertanyaan/jawaban.</p>
+                    <p class="article-help">Filter Knowledge berdasarkan kategori, status, dan teks pertanyaan/jawaban.
+                    </p>
                   </div>
                   <div class="article-filter-grid" aria-label="Filter daftar Q&A">
-                    <label>Cari<input type="search" data-knowledge-search placeholder="Cari Q&A..." autocomplete="off"></label>
-                    <label>Kategori<select data-knowledge-category-filter><option value="">Semua kategori</option></select></label>
-                    <label>Status<select data-knowledge-status-filter><option value="">Semua status</option><option value="published">Publish</option><option value="draft">Draft</option><option value="archived">Arsip</option></select></label>
+                    <label>Cari<input type="search" data-knowledge-search placeholder="Cari Q&A..."
+                        autocomplete="off"></label>
+                    <label>Kategori<select data-knowledge-category-filter>
+                        <option value="">Semua kategori</option>
+                      </select></label>
+                    <label>Status<select data-knowledge-status-filter>
+                        <option value="">Semua status</option>
+                        <option value="published">Publish</option>
+                        <option value="draft">Draft</option>
+                        <option value="archived">Arsip</option>
+                      </select></label>
                   </div>
                 </div>
-                <div class="article-table-wrap"><table class="article-table knowledge-table"><thead><tr><th>Pertanyaan</th><th>Kategori</th><th>Intent / Risk</th><th>Status</th><th>Dibuat</th><th>Update</th><th>Aksi</th></tr></thead><tbody data-knowledge-list><tr><td colspan="7">Menunggu verifikasi admin aktif...</td></tr></tbody></table></div>
+                <div class="article-table-wrap">
+                  <table class="article-table knowledge-table">
+                    <thead>
+                      <tr>
+                        <th>Pertanyaan</th>
+                        <th>Kategori</th>
+                        <th>Intent / Risk</th>
+                        <th>Status</th>
+                        <th>Dibuat</th>
+                        <th>Update</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody data-knowledge-list>
+                      <tr>
+                        <td colspan="7">Menunggu verifikasi admin aktif...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </section>
               <section class="article-form-card" aria-labelledby="knowledgeFormTitle">
                 <h3 id="knowledgeFormTitle" data-knowledge-form-title>Tambah Q&amp;A</h3>
                 <form class="article-form knowledge-form" data-knowledge-form>
                   <input type="hidden" name="knowledgeId">
                   <label>Question<input name="question" type="text" required autocomplete="off"></label>
-                  <label>Alternate Questions<textarea name="alternateQuestions" rows="3" placeholder="Pisahkan dengan koma atau baris baru"></textarea></label>
+                  <label>Alternate Questions<textarea name="alternateQuestions" rows="3"
+                      placeholder="Pisahkan dengan koma atau baris baru"></textarea></label>
                   <label>Short Answer<textarea name="shortAnswer" required rows="4"></textarea></label>
-                  <label>Answer HTML<textarea name="answerHtml" required rows="8" placeholder="&lt;p&gt;Jawaban edukatif...&lt;/p&gt;"></textarea></label>
-                  <label>Keywords<input name="keywords" type="text" autocomplete="off" placeholder="testimoni, bukti, klaim produk"></label>
-                  <label>Category<input name="category" type="text" autocomplete="off" placeholder="Amanah Produk"></label>
-                  <label>Intent Target<select name="intentTarget"><option value="article-general">article-general</option><option value="general-health">general-health</option><option value="habit">habit</option><option value="vitacheck">vitacheck</option><option value="testimonial">testimonial</option><option value="product-claim">product-claim</option><option value="product-safety">product-safety</option><option value="product-general">product-general</option><option value="serious-complaint-education">serious-complaint-education</option><option value="islamic-reflection">islamic-reflection</option><option value="amanah">amanah</option></select></label>
-                  <label>Risk Level<select name="riskLevel"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
-                  <div class="article-checkbox-grid" aria-label="Sensitive flags"><label class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive" type="checkbox"><span>Product sensitive</span></label><label class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic sensitive</span></label></div>
-                  <label>Primary Action<select name="primaryAction"><option value="answer-only">answer-only</option><option value="read-article">read-article</option><option value="start-vitacheck">start-vitacheck</option><option value="read-prinsip-amanah">read-prinsip-amanah</option><option value="contact-admin">contact-admin</option><option value="seek-professional-help">seek-professional-help</option><option value="view-products">view-products</option></select></label>
-                  <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off" placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
-                  <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Draft dan archived tidak akan dibaca publik.</p>
+                  <label>Answer HTML<textarea name="answerHtml" required rows="8"
+                      placeholder="&lt;p&gt;Jawaban edukatif...&lt;/p&gt;"></textarea></label>
+                  <label>Keywords<input name="keywords" type="text" autocomplete="off"
+                      placeholder="testimoni, bukti, klaim produk"></label>
+                  <label>Category<input name="category" type="text" autocomplete="off"
+                      placeholder="Amanah Produk"></label>
+                  <label>Intent Target<select name="intentTarget">
+                      <option value="article-general">article-general</option>
+                      <option value="general-health">general-health</option>
+                      <option value="habit">habit</option>
+                      <option value="vitacheck">vitacheck</option>
+                      <option value="testimonial">testimonial</option>
+                      <option value="product-claim">product-claim</option>
+                      <option value="product-safety">product-safety</option>
+                      <option value="product-general">product-general</option>
+                      <option value="serious-complaint-education">serious-complaint-education</option>
+                      <option value="islamic-reflection">islamic-reflection</option>
+                      <option value="amanah">amanah</option>
+                    </select></label>
+                  <label>Risk Level<select name="riskLevel">
+                      <option value="low">low</option>
+                      <option value="medium">medium</option>
+                      <option value="high">high</option>
+                    </select></label>
+                  <div class="article-checkbox-grid" aria-label="Sensitive flags"><label
+                      class="article-checkbox-label"><input name="isMedicalSensitive" type="checkbox"><span>Medical
+                        sensitive</span></label><label class="article-checkbox-label"><input name="isProductSensitive"
+                        type="checkbox"><span>Product sensitive</span></label><label
+                      class="article-checkbox-label"><input name="isIslamicSensitive" type="checkbox"><span>Islamic
+                        sensitive</span></label></div>
+                  <label>Primary Action<select name="primaryAction">
+                      <option value="answer-only">answer-only</option>
+                      <option value="read-article">read-article</option>
+                      <option value="start-vitacheck">start-vitacheck</option>
+                      <option value="read-prinsip-amanah">read-prinsip-amanah</option>
+                      <option value="contact-admin">contact-admin</option>
+                      <option value="seek-professional-help">seek-professional-help</option>
+                      <option value="view-products">view-products</option>
+                    </select></label>
+                  <label>Related Articles<input name="relatedArticles" type="text" autocomplete="off"
+                      placeholder="produk-bukan-jalan-pintas, testimoni-bukan-bukti"></label>
+                  <p class="article-help">Isi slug artikel terkait, pisahkan dengan koma. Draft dan archived tidak akan
+                    dibaca publik.</p>
                   <label>Priority<input name="priority" type="number" step="1" value="0"></label>
-                  <label>Status<select name="status" required><option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option></select></label>
-                  <label>Reviewer Note<textarea name="reviewerNote" rows="3" placeholder="Catatan internal admin, tidak tampil di publik"></textarea></label>
-                  <div class="article-form-actions"><button class="admin-button admin-button-light knowledge-analyze-button" type="button" data-knowledge-analyze>Analisis Amanah</button><button class="admin-button admin-button-primary" type="submit">Simpan Q&amp;A</button><button class="admin-button admin-button-light" type="button" data-knowledge-reset>Bersihkan Form</button></div>
+                  <label>Status<select name="status" required>
+                      <option value="draft">draft</option>
+                      <option value="published">published</option>
+                      <option value="archived">archived</option>
+                    </select></label>
+                  <label>Reviewer Note<textarea name="reviewerNote" rows="3"
+                      placeholder="Catatan internal admin, tidak tampil di publik"></textarea></label>
+                  <div class="article-form-actions"><button
+                      class="admin-button admin-button-light knowledge-analyze-button" type="button"
+                      data-knowledge-analyze>Analisis Amanah</button><button class="admin-button admin-button-primary"
+                      type="submit">Simpan Q&amp;A</button><button class="admin-button admin-button-light" type="button"
+                      data-knowledge-reset>Bersihkan Form</button></div>
                 </form>
               </section>
             </div>
           </div>
         </section>
 
-        <section class="admin-panel" data-admin-panel="comics" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>VitaStory / Cerita</h2><p>Placeholder untuk metadata cerita, komik, dan panel. Total panel harus divalidasi sebelum publish.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="VitaStory / Cerita CRUD belum aktif pada Phase 6.">Kelola VitaStory</button></section>
-        <section class="admin-panel" data-admin-panel="media" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Video / Media</h2><p>Placeholder untuk video edukasi dan media. Banner artikel statis utama disimpan di GitHub. Media library penuh dan upload Storage belum tersedia.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Video / Media library belum aktif. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload File</button></section>
-        <section class="admin-panel" data-admin-panel="products" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>Produk</h2><p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button></section>
-        <section class="admin-panel" data-admin-panel="faq" hidden><div class="admin-section-heading"><p class="admin-kicker">Modul</p><h2>FAQ</h2><p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p></div><button class="admin-button admin-placeholder" type="button" data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button></section>
+        <section class="admin-panel" data-admin-panel="comics" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>VitaStory / Cerita</h2>
+            <p>Placeholder untuk metadata cerita, komik, dan panel. Total panel harus divalidasi sebelum publish.</p>
+          </div><button class="admin-button admin-placeholder" type="button"
+            data-placeholder="VitaStory / Cerita CRUD belum aktif pada Phase 6.">Kelola VitaStory</button>
+        </section>
+        <section class="admin-panel" data-admin-panel="media" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Video / Media</h2>
+            <p>Placeholder untuk video edukasi dan media. Banner artikel statis utama disimpan di GitHub. Media library
+              penuh dan upload Storage belum tersedia.</p>
+          </div><button class="admin-button admin-placeholder" type="button"
+            data-placeholder="Video / Media library belum aktif. Upload gambar ke GitHub lalu isi Banner URL/path manual.">Upload
+            File</button>
+        </section>
+        <section class="admin-panel" data-admin-panel="products" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>Produk</h2>
+            <p>Placeholder katalog produk. Klaim produk harus tetap edukatif dan berdasarkan data terverifikasi.</p>
+          </div><button class="admin-button admin-placeholder" type="button"
+            data-placeholder="Product CRUD belum aktif pada Phase 6.">Tambah Produk</button>
+        </section>
+        <section class="admin-panel" data-admin-panel="faq" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Modul</p>
+            <h2>FAQ</h2>
+            <p>Placeholder untuk pertanyaan yang sering ditanyakan dengan status draft atau published.</p>
+          </div><button class="admin-button admin-placeholder" type="button"
+            data-placeholder="FAQ CRUD belum aktif pada Phase 6.">Tambah FAQ</button>
+        </section>
         <section class="admin-panel" data-admin-panel="prompt-import" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Import</p><h2>Prompt Import</h2><p>Import artikel dan Knowledge sudah aktif melalui form masing-masing. Penyimpanan riwayat prompt masih dalam pengembangan.</p>
-          <div class="admin-placeholder-grid">
-            <article class="admin-placeholder-card">
-              <span class="admin-status-pill is-development">shortcut aktif</span>
-              <h3>Import Artikel</h3>
-              <p>Paste output artikel lengkap, lalu parse ke form artikel. Status artikel tetap mengikuti kebijakan admin: published.</p>
-              <button class="admin-button admin-button-primary" type="button" data-open-admin-section="articles">Buka Import Artikel</button>
-            </article>
-            <article class="admin-placeholder-card">
-              <span class="admin-status-pill is-development">shortcut aktif</span>
-              <h3>Import Knowledge Q&amp;A</h3>
-              <p>Paste format Q&amp;A untuk pustaka Nusa AI. Riwayat prompt belum disimpan sebagai koleksi terpisah.</p>
-              <button class="admin-button admin-button-primary" type="button" data-open-admin-section="knowledge">Buka Import Knowledge</button>
-            </article>
-          </div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Import</p>
+            <h2>Prompt Import</h2>
+            <p>Import artikel dan Knowledge sudah aktif melalui form masing-masing. Penyimpanan riwayat prompt masih
+              dalam pengembangan.</p>
+            <div class="admin-placeholder-grid">
+              <article class="admin-placeholder-card">
+                <span class="admin-status-pill is-development">shortcut aktif</span>
+                <h3>Import Artikel</h3>
+                <p>Paste output artikel lengkap, lalu parse ke form artikel. Status artikel tetap mengikuti kebijakan
+                  admin: published.</p>
+                <button class="admin-button admin-button-primary" type="button" data-open-admin-section="articles">Buka
+                  Import Artikel</button>
+              </article>
+              <article class="admin-placeholder-card">
+                <span class="admin-status-pill is-development">shortcut aktif</span>
+                <h3>Import Knowledge Q&amp;A</h3>
+                <p>Paste format Q&amp;A untuk pustaka Nusa AI. Riwayat prompt belum disimpan sebagai koleksi terpisah.
+                </p>
+                <button class="admin-button admin-button-primary" type="button" data-open-admin-section="knowledge">Buka
+                  Import Knowledge</button>
+              </article>
+            </div>
         </section>
         <section class="admin-panel" data-admin-panel="settings" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Pengaturan</p><h2>Pengaturan Aplikasi</h2><p>Placeholder pengaturan dasar aplikasi. Fitur ini belum menyimpan perubahan ke database.</p></div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Pengaturan</p>
+            <h2>Pengaturan Aplikasi</h2>
+            <p>Placeholder pengaturan dasar aplikasi. Fitur ini belum menyimpan perubahan ke database.</p>
+          </div>
           <div class="admin-settings-grid">
             <article class="admin-settings-card">
               <span class="admin-status-pill is-development">Dalam pengembangan</span>
@@ -344,7 +646,11 @@
           </div>
         </section>
         <section class="admin-panel" data-admin-panel="profile" hidden>
-          <div class="admin-section-heading"><p class="admin-kicker">Akun</p><h2>Profil Pengguna</h2><p>Placeholder profil admin yang mengambil identitas dasar dari sesi Firebase Auth.</p></div>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Akun</p>
+            <h2>Profil Pengguna</h2>
+            <p>Placeholder profil admin yang mengambil identitas dasar dari sesi Firebase Auth.</p>
+          </div>
           <div class="admin-profile-card">
             <div class="admin-avatar-placeholder" data-profile-avatar aria-hidden="true">VN</div>
             <div class="admin-profile-fields">
@@ -367,4 +673,5 @@
   <script type="module" src="articles.js?v=20260704-vitanusa-master-map-v1"></script>
   <script type="module" src="knowledge.js?v=20260704-knowledge-import-v1"></script>
 </body>
+
 </html>
