@@ -10,10 +10,80 @@
   const placeholders = document.querySelectorAll('.admin-placeholder');
   const sectionOpeners = document.querySelectorAll('[data-open-admin-section]');
   const mobileQuery = window.matchMedia('(max-width: 920px)');
+  const pasteRestoreState = new WeakMap();
+
+  const isKnowledgeImportTextarea = (target) =>
+    target instanceof HTMLTextAreaElement && target.matches('[data-knowledge-import-text]');
+
+  const scheduleScrollRestore = (textarea, snapshot) => {
+    if (!textarea || !snapshot) return;
+    const restore = () => {
+      textarea.scrollTop = snapshot.textareaScrollTop;
+      textarea.scrollLeft = snapshot.textareaScrollLeft;
+      window.scrollTo(snapshot.pageScrollX, snapshot.pageScrollY);
+    };
+
+    restore();
+    queueMicrotask(restore);
+    requestAnimationFrame(() => {
+      restore();
+      setTimeout(restore, 0);
+      setTimeout(restore, 80);
+      setTimeout(restore, 180);
+    });
+  };
+
+  const getScrollSnapshot = (textarea) => ({
+    pageScrollX: window.scrollX,
+    pageScrollY: window.scrollY,
+    textareaScrollTop: textarea.scrollTop,
+    textareaScrollLeft: textarea.scrollLeft
+  });
+
+  const handleKnowledgeImportBeforeInput = (event) => {
+    const textarea = event.target;
+    if (!isKnowledgeImportTextarea(textarea)) return;
+    if (event.inputType && event.inputType !== 'insertFromPaste') return;
+
+    const snapshot = getScrollSnapshot(textarea);
+    pasteRestoreState.set(textarea, snapshot);
+    scheduleScrollRestore(textarea, snapshot);
+  };
+
+  const handleKnowledgeImportPaste = (event) => {
+    const textarea = event.target;
+    if (!isKnowledgeImportTextarea(textarea)) return;
+
+    const snapshot = getScrollSnapshot(textarea);
+    pasteRestoreState.set(textarea, snapshot);
+
+    const pastedText = event.clipboardData?.getData('text/plain') || '';
+    if (!pastedText) {
+      scheduleScrollRestore(textarea, snapshot);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart ?? textarea.value.length;
+    const selectionEnd = textarea.selectionEnd ?? selectionStart;
+
+    event.preventDefault();
+    textarea.setRangeText(pastedText, selectionStart, selectionEnd, 'end');
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    scheduleScrollRestore(textarea, snapshot);
+  };
+
+  const handleKnowledgeImportInput = (event) => {
+    const textarea = event.target;
+    if (!isKnowledgeImportTextarea(textarea)) return;
+    const snapshot = pasteRestoreState.get(textarea);
+    if (!snapshot) return;
+
+    scheduleScrollRestore(textarea, snapshot);
+    setTimeout(() => pasteRestoreState.delete(textarea), 260);
+  };
 
   const injectKnowledgeCompactListStyles = () => {
     if (document.getElementById('knowledgeCompactListStyles')) return;
-
     const style = document.createElement('style');
     style.id = 'knowledgeCompactListStyles';
     style.textContent = `
@@ -90,39 +160,10 @@
     document.head.appendChild(style);
   };
 
-  const restoreKnowledgeImportPasteScroll = (event) => {
-    const textarea = event.target instanceof HTMLTextAreaElement ? event.target : null;
-    if (!textarea?.matches('[data-knowledge-import-text]')) return;
-
-    const pastedText = event.clipboardData?.getData('text/plain');
-    if (!pastedText) return;
-
-    const pageScrollX = window.scrollX;
-    const pageScrollY = window.scrollY;
-    const textareaScrollTop = textarea.scrollTop;
-    const textareaScrollLeft = textarea.scrollLeft;
-    const selectionStart = textarea.selectionStart ?? textarea.value.length;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-
-    event.preventDefault();
-    textarea.setRangeText(pastedText, selectionStart, selectionEnd, 'end');
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-    const restoreScroll = () => {
-      textarea.scrollTop = textareaScrollTop;
-      textarea.scrollLeft = textareaScrollLeft;
-      window.scrollTo(pageScrollX, pageScrollY);
-    };
-
-    restoreScroll();
-    requestAnimationFrame(() => {
-      restoreScroll();
-      setTimeout(restoreScroll, 0);
-    });
-  };
-
+  document.addEventListener('beforeinput', handleKnowledgeImportBeforeInput, true);
+  document.addEventListener('paste', handleKnowledgeImportPaste, true);
+  document.addEventListener('input', handleKnowledgeImportInput, true);
   injectKnowledgeCompactListStyles();
-  document.addEventListener('paste', restoreKnowledgeImportPasteScroll, true);
 
   const setSidebarOpen = (open) => {
     if (!sidebar || !menuToggle) return;
@@ -130,14 +171,10 @@
     document.body.classList.toggle('admin-sidebar-open', open);
     menuToggle.setAttribute('aria-expanded', String(open));
     sidebar.setAttribute('aria-hidden', String(mobileQuery.matches && !open));
-    if (sidebarOverlay) {
-      sidebarOverlay.hidden = !open;
-    }
+    if (sidebarOverlay) sidebarOverlay.hidden = !open;
   };
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
+  const closeSidebar = () => setSidebarOpen(false);
 
   if (sidebar && menuToggle) {
     menuToggle.addEventListener('click', () => {
