@@ -11,6 +11,10 @@ const SAFE_FALLBACK_REPLY = Object.freeze({
   actions: [],
 });
 
+// Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL atau meta
+// <meta name="vitanusa-backend-ask-url" content="https://nama-backend.onrender.com/ask">
+const DEFAULT_LOCAL_BACKEND = 'http://127.0.0.1:8000/ask';
+
 function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
 }
@@ -60,6 +64,53 @@ function appendMessage(log, role, text, actions = [], html = '') {
 
 function renderReply(log, reply) {
   appendMessage(log, 'assistant', reply.text, getContextActions(reply), reply.html || '');
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getBackendAskUrl() {
+  const windowUrl = window.VITANUSA_BACKEND_ASK_URL;
+  if (typeof windowUrl === 'string' && windowUrl.trim()) {
+    return windowUrl.trim();
+  }
+
+  const metaUrl = document
+    .querySelector('meta[name="vitanusa-backend-ask-url"]')
+    ?.getAttribute('content');
+  if (metaUrl?.trim()) {
+    return metaUrl.trim();
+  }
+
+  const envUrl = import.meta?.env?.VITE_NUSA_BACKEND_ASK_URL;
+  if (typeof envUrl === 'string' && envUrl.trim()) {
+    return envUrl.trim();
+  }
+
+  return DEFAULT_LOCAL_BACKEND;
+}
+
+function buildBackendReflectionHtml(data) {
+  const reflection = data?.quranicReflection;
+  if (!reflection?.text) return '';
+
+  const note = reflection.note
+    ? `<small>${escapeHtml(reflection.note)}</small>`
+    : '';
+
+  return `
+    <section class="nusa-knowledge-section">
+      <strong>Refleksi Qur'ani</strong>
+      <p>${escapeHtml(reflection.text)}</p>
+      ${note}
+    </section>
+  `;
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -173,15 +224,17 @@ function updateNusaSession(session, question, reply) {
     session.productEducationSeen = true;
   }
 }
-const NUSA_BACKEND_ASK_URL = 'http://127.0.0.1:8000/ask';
 
 async function getNusaBackendReply(question) {
-  const response = await fetch(NUSA_BACKEND_ASK_URL, {
+  const response = await fetch(getBackendAskUrl(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({
+      question,
+      includeQuranicReflection: false,
+    }),
   });
 
   if (!response.ok) {
@@ -191,7 +244,9 @@ async function getNusaBackendReply(question) {
   const data = await response.json();
 
   return {
+    id: `backend-${data.intent || 'answer'}`,
     text: data.answer || 'Maaf, backend belum memberikan jawaban.',
-    actions: [],
+    html: buildBackendReflectionHtml(data),
+    actions: Array.isArray(data.actions) ? data.actions : [],
   };
 }

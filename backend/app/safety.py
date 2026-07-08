@@ -3,139 +3,111 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SafetyResult:
-    category: str
     safetyLevel: str
     recommendedAction: str | None = None
 
 
-SERIOUS_COMPLAINT_KEYWORDS = (
-    "sesak napas",
-    "susah napas",
-    "napas berat",
+EMERGENCY_KEYWORDS = (
+    "nyeri dada berat",
     "dada terasa berat",
     "nyeri dada",
-    "dada sakit",
+    "sesak berat",
+    "sesak napas berat",
+    "sesak nafas berat",
+    "sulit bernapas",
+    "sulit bernafas",
     "pingsan",
     "kejang",
-    "tidak sadar",
-    "penurunan kesadaran",
+    "lemah separuh tubuh",
+    "perdarahan hebat",
     "perdarahan berat",
-    "muntah darah",
-    "bab berdarah",
-    "lemah mendadak",
-    "lumpuh mendadak",
-    "bicara pelo",
-    "wajah mencong",
+    "alergi berat",
+    "bengkak wajah",
+    "bibir bengkak",
+    "ingin bunuh diri",
+    "bunuh diri",
+    "menyakiti diri",
 )
 
-DIAGNOSIS_KEYWORDS = (
-    "saya sakit apa",
-    "penyakit apa",
-    "diagnosis",
-    "diagnosa",
-    "apakah saya kena",
-    "apakah saya menderita",
-    "ini gejala apa",
-)
-
-PRODUCT_KEYWORDS = (
-    "produk",
-    "suplemen",
-    "herbal",
-    "obat",
-)
-
-HEALING_CLAIM_KEYWORDS = (
-    "menyembuhkan",
-    "sembuh total",
-    "menyembuhkan semua penyakit",
-    "obat untuk semua",
-    "jaminan sembuh",
+HIGH_RISK_KEYWORDS = (
+    "penyakit kronis",
+    "diabetes",
+    "kanker",
+    "hipertensi",
+    "stroke",
+    "jantung",
+    "ginjal",
+    "asma",
+    "anak kecil",
+    "bayi",
+    "balita",
+    "ibu hamil",
+    "hamil",
+    "menyusui",
+    "lansia",
+    "alergi",
+    "obat dokter",
+    "obat resep",
+    "resep dokter",
+    "dosis",
+    "antibiotik",
+    "insulin",
+    "menghentikan obat",
+    "berhenti obat",
+    "menyembuhkan diabetes",
+    "menyembuhkan kanker",
+    "obat segala penyakit",
     "pasti sembuh",
+    "sembuh total",
 )
 
-PERSONAL_RECOMMENDATION_KEYWORDS = (
-    "produk apa yang cocok",
-    "produk yang cocok",
-    "rekomendasi produk",
-    "saya cocok minum apa",
-    "untuk keluhan saya",
-    "untuk sakit saya",
-)
+MEDIUM_RISK_INTENTS = {
+    "health_general",
+    "product_claim",
+}
 
-FATWA_KEYWORDS = (
-    "fatwa",
-    "halal atau haram secara final",
-    "haram secara final",
-    "halal secara final",
-    "hukum final",
-    "boleh atau haram",
-)
-
-GENERAL_HEALTH_KEYWORDS = (
-    "hidup sehat",
-    "pola makan",
-    "olahraga",
-    "tidur",
-    "stres",
-    "kesehatan",
-    "sehat",
-    "mual",
-    "sakit kepala",
-)
+LOW_RISK_INTENTS = {
+    "identity",
+    "vitacheck",
+    "article_search",
+    "quranic_reflection",
+    "contact_admin",
+    "fallback",
+}
 
 
-def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+def contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
-def check_safety(question: str) -> SafetyResult:
+def classify_risk(question: str, intent: str) -> SafetyResult:
     text = question.lower()
 
-    if _contains_any(text, SERIOUS_COMPLAINT_KEYWORDS):
+    if contains_any(text, EMERGENCY_KEYWORDS) or intent == "danger_sign":
         return SafetyResult(
-            category="serious_complaint",
+            safetyLevel="emergency",
+            recommendedAction="Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat.",
+        )
+
+    if contains_any(text, HIGH_RISK_KEYWORDS):
+        return SafetyResult(
             safetyLevel="high",
-            recommendedAction="Segera hubungi tenaga kesehatan atau layanan darurat setempat.",
+            recommendedAction="Konsultasikan dengan dokter, apoteker, ahli gizi, atau tenaga kesehatan yang berwenang sebelum mengambil keputusan.",
         )
 
-    if _contains_any(text, DIAGNOSIS_KEYWORDS):
+    if intent in MEDIUM_RISK_INTENTS:
         return SafetyResult(
-            category="diagnosis_request",
             safetyLevel="medium",
-            recommendedAction="Gunakan informasi sebagai edukasi umum dan periksa ke tenaga kesehatan bila gejala menetap atau memburuk.",
+            recommendedAction="Gunakan informasi ini sebagai edukasi umum dan cari bantuan tenaga kesehatan bila keluhan menetap, memburuk, atau terasa mengkhawatirkan.",
         )
 
-    if _contains_any(text, PRODUCT_KEYWORDS) and _contains_any(text, HEALING_CLAIM_KEYWORDS):
+    if intent in LOW_RISK_INTENTS:
         return SafetyResult(
-            category="product_healing_claim",
-            safetyLevel="medium",
-            recommendedAction="Posisikan produk hanya sebagai informasi reseller, bukan obat atau jaminan kesembuhan.",
-        )
-
-    if _contains_any(text, PRODUCT_KEYWORDS) and _contains_any(text, PERSONAL_RECOMMENDATION_KEYWORDS):
-        return SafetyResult(
-            category="product_personal_recommendation",
-            safetyLevel="medium",
-            recommendedAction="Diskusikan keluhan pribadi dengan tenaga kesehatan sebelum memilih produk.",
-        )
-
-    if _contains_any(text, FATWA_KEYWORDS):
-        return SafetyResult(
-            category="fatwa_request",
-            safetyLevel="medium",
-            recommendedAction="Tanyakan kepada ustadz, ulama, atau otoritas yang kompeten untuk keputusan hukum agama.",
-        )
-
-    if _contains_any(text, GENERAL_HEALTH_KEYWORDS):
-        return SafetyResult(
-            category="general_health",
             safetyLevel="low",
-            recommendedAction="Mulai dari kebiasaan kecil yang aman dan konsisten.",
+            recommendedAction="Gunakan sebagai edukasi awal dan pilih langkah kecil yang aman.",
         )
 
     return SafetyResult(
-        category="general",
         safetyLevel="low",
-        recommendedAction=None,
+        recommendedAction="Gunakan sebagai edukasi awal.",
     )
