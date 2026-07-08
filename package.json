@@ -1,0 +1,16 @@
+{
+  "name": "vitanusa-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VitaNusa AI frontend workflow for static website and Nusa AI integration.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "npm run build"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}
