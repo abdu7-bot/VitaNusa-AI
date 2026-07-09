@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vitanusa-ai-pwa-v6';
+const CACHE_NAME = 'vitanusa-ai-pwa-v7';
 const BASE_PATH = '/VitaNusa-AI';
 
 const APP_SHELL = [
@@ -6,8 +6,8 @@ const APP_SHELL = [
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/manifest.webmanifest`,
   `${BASE_PATH}/assets/css/nusa-app-shell.css?v=20260709-pwa-chat-balance-v3`,
-  `${BASE_PATH}/assets/css/vitanusa-public.css`,
-  `${BASE_PATH}/assets/js/main.js?v=20260709-pwa-chat-balance-v3`,
+  `${BASE_PATH}/assets/css/vitanusa-public.css?v=20260703-public-design-v1`,
+  `${BASE_PATH}/assets/js/main.js?v=20260709-pwa-chat-refine-v1`,
   `${BASE_PATH}/images/icon-192.png`,
   `${BASE_PATH}/images/icon-512.png`
 ];
