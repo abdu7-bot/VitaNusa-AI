@@ -29,6 +29,22 @@ function getContextActions(reply) {
   return reply.actions || [];
 }
 
+function scrollLogToBottom(log) {
+  if (!log) return;
+
+  window.requestAnimationFrame(() => {
+    log.scrollTop = log.scrollHeight;
+  });
+}
+
+function focusInputWithoutPageScroll(input) {
+  try {
+    input.focus({ preventScroll: true });
+  } catch {
+    input.focus();
+  }
+}
+
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
@@ -65,11 +81,12 @@ function appendMessage(log, role, text, actions = [], html = '') {
   message.append(bubble);
   log.append(message);
   log.hidden = false;
-  log.scrollTop = log.scrollHeight;
+  scrollLogToBottom(log);
 }
 
 function renderReply(log, reply) {
   appendMessage(log, 'assistant', reply.text, getContextActions(reply), reply.html || '');
+  scrollLogToBottom(log);
 }
 
 function escapeHtml(value) {
@@ -193,11 +210,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     log.hidden = true;
     input.value = '';
     if (focus) {
-      try {
-        input.focus({ preventScroll: true });
-      } catch {
-        input.focus();
-      }
+      focusInputWithoutPageScroll(input);
     }
   }
 
@@ -208,6 +221,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     const requestId = ++state.requestId;
     appendMessage(log, 'user', question);
     input.value = '';
+    scrollLogToBottom(log);
 
     setTimeout(async () => {
       if (requestId !== state.requestId) return;
@@ -248,7 +262,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     if (!button || !root.contains(button)) return;
 
     handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
-    input.focus();
+    focusInputWithoutPageScroll(input);
   });
 
   return {
