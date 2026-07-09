@@ -37,6 +37,14 @@ function scrollLogToBottom(log) {
   });
 }
 
+function focusInputWithoutPageScroll(input) {
+  try {
+    input.focus({ preventScroll: true });
+  } catch {
+    input.focus();
+  }
+}
+
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
@@ -202,11 +210,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     log.hidden = true;
     input.value = '';
     if (focus) {
-      try {
-        input.focus({ preventScroll: true });
-      } catch {
-        input.focus();
-      }
+      focusInputWithoutPageScroll(input);
     }
   }
 
@@ -258,7 +262,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     if (!button || !root.contains(button)) return;
 
     handleQuestion(button.dataset.nusaPrompt || button.textContent || '');
-    input.focus({ preventScroll: true });
+    focusInputWithoutPageScroll(input);
   });
 
   return {
