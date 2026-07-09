@@ -8,6 +8,18 @@ const modules = [
   ['VitaCheck', initVitaCheck],
 ];
 
+function registerVitaNusaServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/VitaNusa-AI/service-worker.js')
+      .catch((error) => {
+        console.warn('Service worker VitaNusa gagal aktif:', error);
+      });
+  });
+}
+
 function bootVitaNusa() {
   document.documentElement.classList.add('js-ready');
 
@@ -18,6 +30,8 @@ function bootVitaNusa() {
       console.warn('VitaNusa module failed:', name, error);
     }
   }
+
+  registerVitaNusaServiceWorker();
 }
 
 if (document.readyState === 'loading') {
