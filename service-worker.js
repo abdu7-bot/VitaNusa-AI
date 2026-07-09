@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vitanusa-ai-pwa-v8';
+const CACHE_NAME = 'vitanusa-ai-pwa-v9';
 const BASE_PATH = '/VitaNusa-AI';
 
 const APP_SHELL = [
@@ -9,6 +9,7 @@ const APP_SHELL = [
   `${BASE_PATH}/assets/css/vitanusa-public.css?v=20260703-public-design-v1`,
   `${BASE_PATH}/assets/js/main.js?v=20260709-pwa-chat-refine-v1`,
   `${BASE_PATH}/vitagame.html`,
+  `${BASE_PATH}/404.html`,
   `${BASE_PATH}/images/icon-192.png`,
   `${BASE_PATH}/images/icon-512.png`
 ];
