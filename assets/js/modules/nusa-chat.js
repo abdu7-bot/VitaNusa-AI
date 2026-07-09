@@ -11,9 +11,15 @@ const SAFE_FALLBACK_REPLY = Object.freeze({
   actions: [],
 });
 
-// Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL atau meta
-// <meta name="vitanusa-backend-ask-url" content="https://nama-backend.onrender.com/ask">
-const DEFAULT_LOCAL_BACKEND = 'http://127.0.0.1:8000/ask';
+// Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL, meta,
+// atau .env Vite: VITE_NUSA_BACKEND_ASK_URL=https://nama-backend.onrender.com/ask
+const DEFAULT_LOCAL_BACKENDS = Object.freeze([
+  'http://127.0.0.1:8000/ask',
+  'http://localhost:8000/ask',
+]);
+
+const ACTIVE_BACKEND_STORAGE_KEY = 'VITANUSA_ACTIVE_BACKEND_ASK_URL';
+const BACKEND_TIMEOUT_MS = 7000;
 
 function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
@@ -75,25 +81,68 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function getBackendAskUrl() {
-  const windowUrl = window.VITANUSA_BACKEND_ASK_URL;
-  if (typeof windowUrl === 'string' && windowUrl.trim()) {
-    return windowUrl.trim();
+function normalizeAskUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const withoutTrailingSlash = raw.replace(/\/+$/, '');
+  if (withoutTrailingSlash.endsWith('/ask')) return withoutTrailingSlash;
+
+  return `${withoutTrailingSlash}/ask`;
+}
+
+function pushUniqueUrl(list, value) {
+  const normalized = normalizeAskUrl(value);
+  if (normalized && !list.includes(normalized)) {
+    list.push(normalized);
   }
+}
+
+function getBackendAskUrls() {
+  const urls = [];
+
+  pushUniqueUrl(urls, window.VITANUSA_BACKEND_ASK_URL);
 
   const metaUrl = document
     .querySelector('meta[name="vitanusa-backend-ask-url"]')
     ?.getAttribute('content');
-  if (metaUrl?.trim()) {
-    return metaUrl.trim();
+  pushUniqueUrl(urls, metaUrl);
+
+  const envUrl = import.meta.env?.VITE_NUSA_BACKEND_ASK_URL;
+  pushUniqueUrl(urls, envUrl);
+
+  try {
+    pushUniqueUrl(urls, window.sessionStorage?.getItem(ACTIVE_BACKEND_STORAGE_KEY));
+  } catch {
+    // sessionStorage bisa tidak tersedia pada mode privasi tertentu.
   }
 
-  const envUrl = import.meta?.env?.VITE_NUSA_BACKEND_ASK_URL;
-  if (typeof envUrl === 'string' && envUrl.trim()) {
-    return envUrl.trim();
-  }
+  DEFAULT_LOCAL_BACKENDS.forEach((url) => pushUniqueUrl(urls, url));
 
-  return DEFAULT_LOCAL_BACKEND;
+  return urls;
+}
+
+function rememberActiveBackendUrl(url) {
+  try {
+    window.sessionStorage?.setItem(ACTIVE_BACKEND_STORAGE_KEY, url);
+  } catch {
+    // Abaikan bila browser membatasi sessionStorage.
+  }
+}
+
+async function fetchJsonWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), BACKEND_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 function buildBackendReflectionHtml(data) {
@@ -111,6 +160,15 @@ function buildBackendReflectionHtml(data) {
       ${note}
     </section>
   `;
+}
+
+function mapBackendAnswer(data) {
+  return {
+    id: `backend-${data.intent || 'answer'}`,
+    text: data.answer || 'Maaf, backend belum memberikan jawaban.',
+    html: buildBackendReflectionHtml(data),
+    actions: Array.isArray(data.actions) ? data.actions : [],
+  };
 }
 
 export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
@@ -162,6 +220,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
           console.warn('Backend belum bisa dipakai, pakai jawaban lokal:', backendError);
           reply = await getNusaReply(question);
         }
+
         if (requestId !== state.requestId) return;
         renderReply(log, reply || SAFE_FALLBACK_REPLY);
       } catch (error) {
@@ -197,6 +256,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     reset: resetChat,
   };
 }
+
 function updateNusaSession(session, question, reply) {
   session.turnCount += 1;
   session.lastUserMessage = question;
@@ -226,27 +286,34 @@ function updateNusaSession(session, question, reply) {
 }
 
 async function getNusaBackendReply(question) {
-  const response = await fetch(getBackendAskUrl(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      question,
-      includeQuranicReflection: false,
-    }),
-  });
+  const urls = getBackendAskUrls();
+  let lastError = null;
 
-  if (!response.ok) {
-    throw new Error(`Backend error: ${response.status}`);
+  for (const url of urls) {
+    try {
+      const response = await fetchJsonWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          includeQuranicReflection: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend error ${response.status} dari ${url}`);
+      }
+
+      const data = await response.json();
+      rememberActiveBackendUrl(url);
+      return mapBackendAnswer(data);
+    } catch (error) {
+      lastError = error;
+      console.warn('Backend candidate gagal:', url, error);
+    }
   }
 
-  const data = await response.json();
-
-  return {
-    id: `backend-${data.intent || 'answer'}`,
-    text: data.answer || 'Maaf, backend belum memberikan jawaban.',
-    html: buildBackendReflectionHtml(data),
-    actions: Array.isArray(data.actions) ? data.actions : [],
-  };
+  throw lastError || new Error('Tidak ada URL backend yang bisa dipakai.');
 }
