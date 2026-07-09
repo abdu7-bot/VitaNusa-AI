@@ -7,7 +7,7 @@
   <meta name="description" content="Main VitaGame Mitos vs Fakta untuk belajar menilai klaim kesehatan secara amanah.">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-upgrade.css?v=20260704-vitanusa-master-map-v1">
-  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260709-vitagame-unify-v1">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260709-vitagame-unify-v2">
   <style>
     .vitagame-hero .vn-container {
       grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
@@ -46,8 +46,8 @@
 
     .vitagame-play {
       display: grid;
-      gap: 18px;
-      padding: clamp(16px, 3vw, 24px);
+      gap: 16px;
+      padding: clamp(14px, 3vw, 24px);
     }
 
     .vitagame-status {
@@ -97,14 +97,14 @@
     .vitagame-card {
       display: grid;
       gap: 14px;
-      min-height: 240px;
+      min-height: 0;
       padding: clamp(16px, 3vw, 24px);
     }
 
     .vitagame-question {
       margin: 0;
       color: var(--vn-green-900);
-      font-size: clamp(1.25rem, 3vw, 1.8rem);
+      font-size: clamp(1.18rem, 3vw, 1.72rem);
       line-height: 1.24;
       overflow-wrap: anywhere;
     }
@@ -116,7 +116,7 @@
     }
 
     .vitagame-option {
-      min-height: 58px;
+      min-height: 54px;
       border: 1px solid var(--vn-line);
       border-radius: 16px;
       background: #fbfefc;
@@ -149,11 +149,11 @@
 
     .vitagame-option:disabled {
       cursor: default;
-      opacity: .9;
+      opacity: .54;
     }
 
     .vitagame-feedback {
-      min-height: 72px;
+      min-height: 64px;
       border: 1px solid var(--vn-line);
       border-radius: 18px;
       padding: 12px 14px;
@@ -179,6 +179,18 @@
 
     .vitagame-actions {
       align-items: center;
+    }
+
+    .vitagame-card-actions {
+      order: 3;
+    }
+
+    .vitagame-options {
+      order: 4;
+    }
+
+    .vitagame-feedback {
+      order: 5;
     }
 
     .vitagame-button,
@@ -296,14 +308,36 @@
       }
 
       .vitagame-button,
-      .vitagame-link {
+      .vitagame-link,
+      .vitagame-hero .btn {
         width: 100%;
       }
     }
 
     @media (max-width: 640px) {
+      .vitagame-hero {
+        padding-block: 30px 24px;
+      }
+
+      .vitagame-hero h1 {
+        font-size: clamp(1.8rem, 9vw, 2.55rem);
+        line-height: 1.08;
+      }
+
+      .vitagame-hero p {
+        font-size: 1rem;
+      }
+
+      .vitagame-hero .vn-actions {
+        display: none;
+      }
+
       .vitagame-mark {
         display: none;
+      }
+
+      .vitagame-section {
+        padding-block: 20px 46px;
       }
 
       .vitagame-options {
@@ -311,8 +345,22 @@
       }
 
       .vitagame-play {
-        gap: 14px;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .vitagame-stat {
+        padding: 9px;
+      }
+
+      .vitagame-card {
+        gap: 12px;
         padding: 14px;
+        border-radius: 20px;
+      }
+
+      .vitagame-option {
+        min-height: 48px;
       }
     }
   </style>
@@ -356,6 +404,11 @@
               <article class="vitagame-card vn-card" aria-live="polite">
                 <p class="eyebrow vn-eyebrow" data-category>Klaim Produk</p>
                 <h2 class="vitagame-question" data-question>Tekan Mulai Game untuk bermain.</h2>
+                <div class="vitagame-actions vitagame-card-actions vn-actions">
+                  <button class="vitagame-button vitagame-button-primary" type="button" data-start>Mulai Game</button>
+                  <button class="vitagame-button vitagame-button-light" type="button" data-next disabled>Kartu Berikutnya</button>
+                  <button class="vitagame-button" type="button" data-reset>Ulangi</button>
+                </div>
                 <div class="vitagame-options" role="group" aria-label="Pilihan jawaban">
                   <button class="vitagame-option" type="button" data-answer="fact">Fakta</button>
                   <button class="vitagame-option" type="button" data-answer="check">Perlu Dicek</button>
@@ -363,12 +416,7 @@
                 </div>
                 <div class="vitagame-feedback" data-feedback>
                   <strong>Siap main?</strong>
-                  Jawab dengan tenang. Tujuan game ini bukan menakuti, tetapi melatih tabayyun saat membaca klaim kesehatan.
-                </div>
-                <div class="vitagame-actions vn-actions">
-                  <button class="vitagame-button vitagame-button-primary" type="button" data-start>Mulai Game</button>
-                  <button class="vitagame-button vitagame-button-light" type="button" data-next disabled>Kartu Berikutnya</button>
-                  <button class="vitagame-button" type="button" data-reset>Ulangi</button>
+                  Tekan Mulai Game dulu. Setelah kartu muncul, baru pilih jawaban yang paling amanah.
                 </div>
               </article>
             </div>
@@ -632,9 +680,9 @@
         nodes.category.textContent = 'Klaim Produk';
         nodes.question.textContent = 'Tekan Mulai Game untuk bermain.';
         nodes.feedback.className = 'vitagame-feedback';
-        nodes.feedback.innerHTML = '<strong>Siap main?</strong> Jawab dengan tenang. Tujuan game ini bukan menakuti, tetapi melatih tabayyun saat membaca klaim kesehatan.';
+        nodes.feedback.innerHTML = '<strong>Siap main?</strong> Tekan Mulai Game dulu. Setelah kartu muncul, baru pilih jawaban yang paling amanah.';
         nodes.options.forEach((button) => {
-          button.disabled = false;
+          button.disabled = true;
           button.classList.remove('is-correct', 'is-wrong');
         });
         nodes.next.disabled = true;
@@ -652,6 +700,9 @@
       resetGame();
     })();
   </script>
-  <script type="module" src="assets/js/main.js?v=20260709-vitagame-unify-v1"></script>
+  <script type="module">
+    import { initNusaUiShell } from './assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+    initNusaUiShell();
+  </script>
 </body>
 </html>
