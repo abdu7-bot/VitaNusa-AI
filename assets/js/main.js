@@ -1,5 +1,5 @@
 import { initNusaUiShell } from './modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
-import { initNusaChat } from './modules/nusa-chat.js?v=20260704-vitanusa-master-map-v1';
+import { initNusaChat } from './modules/nusa-chat.js?v=20260709-keyboard-chat-v1';
 import { initChatViewportController } from './modules/chat-viewport.js?v=20260709-keyboard-chat-v1';
 import { initVitaCheck } from './modules/vitacheck.js?v=20260704-vitanusa-master-map-v1';
 
