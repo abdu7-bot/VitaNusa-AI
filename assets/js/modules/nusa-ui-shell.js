@@ -3,7 +3,7 @@ const SHELL_READY_ATTR = 'data-vn-ui-shell-ready';
 const FEATURES = [
   ['Nusa Chat', 'Tanya edukasi amanah', 'index.html', 'AI'],
   ['VitaCheck', 'Refleksi kebiasaan', 'vitacheck.html', 'VC'],
-  ['VitaGame', 'Game klaim sehat', 'vitagame.html/', 'VG'],
+  ['VitaGame', 'Game klaim sehat', 'vitagame.html', 'VG'],
   ['Komik', 'Cerita visual edukatif', 'komik/', 'KS'],
   ['Artikel', 'Bacaan edukatif', 'articles/index.html', 'AR'],
   ['Produk Amanah', 'Katalog reseller', 'products/index.html', 'PA'],
@@ -15,7 +15,7 @@ const FEATURES = [
 
 function getRelativePrefix() {
   const path = window.location.pathname.replace(/\\/g, '/');
-  const nestedRoots = ['articles', 'products', 'documents', 'komik', 'vitagame.html'];
+  const nestedRoots = ['articles', 'products', 'documents', 'komik'];
   const segments = path.split('/').filter(Boolean);
   const rootIndex = segments.findIndex((segment) => nestedRoots.includes(segment));
 
@@ -185,11 +185,11 @@ function injectShellStyles() {
 }
 
 function normalizeExistingLinks() {
-  document.querySelectorAll('a[href="vitagame.html"]').forEach((link) => {
-    link.setAttribute('href', 'vitagame.html/');
+  document.querySelectorAll('a[href="vitagame.html/"]').forEach((link) => {
+    link.setAttribute('href', 'vitagame.html');
   });
-  document.querySelectorAll('a[href="../vitagame.html"]').forEach((link) => {
-    link.setAttribute('href', '../vitagame.html/');
+  document.querySelectorAll('a[href="../vitagame.html/"]').forEach((link) => {
+    link.setAttribute('href', '../vitagame.html');
   });
 }
 
