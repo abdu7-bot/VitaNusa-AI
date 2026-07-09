@@ -8,6 +8,8 @@
   --nusa-ink: #10251b;
   --nusa-muted: #64766b;
   --nusa-viewport-height: 100dvh;
+  --nusa-visual-offset-top: 0px;
+  --nusa-keyboard-bottom: 0px;
   --nusa-safe-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
@@ -226,6 +228,15 @@ button { -webkit-tap-highlight-color: transparent; }
     height: var(--nusa-viewport-height, 100dvh) !important;
     min-height: var(--nusa-viewport-height, 100dvh) !important;
     overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+
+  html.nusa-chat-viewport-managed,
+  html.nusa-chat-viewport-managed body.nusa-chat-page {
+    position: fixed !important;
+    inset: 0 !important;
+    max-height: var(--nusa-viewport-height, 100dvh) !important;
+    touch-action: manipulation !important;
   }
 
   .nusa-home-chat {
@@ -233,6 +244,12 @@ button { -webkit-tap-highlight-color: transparent; }
     min-height: 0 !important;
     padding: 10px 10px var(--nusa-safe-bottom) !important;
     overflow: hidden !important;
+  }
+
+  html.nusa-keyboard-active .nusa-home-chat {
+    height: var(--nusa-viewport-height, 100dvh) !important;
+    padding-bottom: 8px !important;
+    transform: translateY(var(--nusa-visual-offset-top, 0px)) !important;
   }
 
   .nusa-home-chat::before {
@@ -247,6 +264,10 @@ button { -webkit-tap-highlight-color: transparent; }
     min-height: 0 !important;
     margin-inline: auto !important;
     overflow: hidden !important;
+  }
+
+  html.nusa-keyboard-active .nusa-app-layout {
+    height: calc(var(--nusa-viewport-height, 100dvh) - 14px) !important;
   }
 
   .nusa-chat-main {
@@ -265,6 +286,10 @@ button { -webkit-tap-highlight-color: transparent; }
     border-radius: 26px !important;
   }
 
+  html.nusa-keyboard-active .nusa-chat-panel {
+    border-radius: 22px !important;
+  }
+
   .nusa-chat-topbar {
     flex: 0 0 auto !important;
     padding: 12px 96px 0 14px !important;
@@ -276,10 +301,19 @@ button { -webkit-tap-highlight-color: transparent; }
     padding: 14px 16px 6px !important;
   }
 
+  html.nusa-keyboard-active .nusa-chat-start {
+    padding-top: 10px !important;
+    padding-bottom: 4px !important;
+  }
+
   .nusa-chat-start h1 {
     font-size: clamp(1.2rem, 6.4vw, 1.8rem) !important;
     line-height: 1.06 !important;
     letter-spacing: -.04em !important;
+  }
+
+  html.nusa-keyboard-active .nusa-chat-start h1 {
+    font-size: clamp(1.02rem, 5vw, 1.32rem) !important;
   }
 
   .nusa-chat-start p,
@@ -294,6 +328,10 @@ button { -webkit-tap-highlight-color: transparent; }
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 7px !important;
     margin: 6px 10px 8px !important;
+  }
+
+  html.nusa-keyboard-active .nusa-prompt-grid {
+    display: none !important;
   }
 
   .nusa-prompt-card {
@@ -317,9 +355,11 @@ button { -webkit-tap-highlight-color: transparent; }
     margin: 0 10px !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
     padding-inline: 6px !important;
     padding-bottom: 8px !important;
     scroll-behavior: smooth !important;
+    touch-action: pan-y !important;
   }
 
   .nusa-chat-form {
@@ -344,6 +384,10 @@ button { -webkit-tap-highlight-color: transparent; }
     margin: 7px 12px 10px !important;
     font-size: .68rem !important;
     line-height: 1.25 !important;
+  }
+
+  html.nusa-keyboard-active .nusa-chat-note {
+    display: none !important;
   }
 
   .nusa-message {
