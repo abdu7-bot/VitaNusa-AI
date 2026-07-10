@@ -15,6 +15,24 @@
       --market-cream: #fffaf0;
     }
 
+    .marketplace-hero {
+      padding-block: clamp(30px, 4.5vw, 48px) clamp(26px, 4vw, 40px);
+    }
+
+    .marketplace-hero .vn-container {
+      gap: clamp(10px, 1.6vw, 16px);
+    }
+
+    .marketplace-hero h1 {
+      max-width: 780px;
+      font-size: clamp(2rem, 5vw, 3.8rem);
+    }
+
+    .marketplace-hero p {
+      font-size: clamp(.95rem, 1.5vw, 1.08rem);
+      line-height: 1.55;
+    }
+
     .marketplace-hero .badge-row span,
     .marketplace-hero .vn-badge-row span {
       border-color: rgba(255, 255, 255, .32);
@@ -24,6 +42,15 @@
 
     .marketplace-hero .product-actions {
       margin-top: .25rem;
+    }
+
+    .marketplace-hero .vn-badge-row {
+      gap: .45rem;
+    }
+
+    .marketplace-hero .vn-badge-row span {
+      padding: .42rem .68rem;
+      font-size: .75rem;
     }
 
     .product-section.muted,
@@ -39,10 +66,11 @@
 
     .marketplace-toolbar {
       display: grid;
-      gap: 1rem;
-      margin-bottom: clamp(18px, 3vw, 28px);
-      padding: clamp(1rem, 2.4vw, 1.35rem);
+      gap: .78rem;
+      margin-bottom: clamp(16px, 2.4vw, 24px);
+      padding: clamp(.9rem, 2vw, 1.15rem);
       border: 1px solid var(--market-line);
+      border-radius: 22px;
       background:
         radial-gradient(circle at top right, rgba(255, 224, 164, .28), transparent 32%),
         #fff;
@@ -62,13 +90,13 @@
 
     .marketplace-search input {
       width: 100%;
-      min-height: 52px;
+      min-height: 46px;
       border: 1px solid #dbe8df;
-      border-radius: 18px;
+      border-radius: 15px;
       background: #fff;
       color: var(--vn-text, #15251e);
       font: inherit;
-      padding: .95rem 1rem;
+      padding: .78rem .9rem;
       outline: none;
       box-shadow: inset 0 1px 0 rgba(20, 83, 45, .04);
     }
@@ -78,16 +106,45 @@
       box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
     }
 
-    .toolbar-note {
+    .marketplace-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
       margin: 0;
-      color: var(--vn-muted, #64766b);
+      padding: 0;
+      list-style: none;
+    }
+
+    .marketplace-summary li {
+      display: inline-flex;
+      align-items: center;
+      gap: .42rem;
+      min-height: 34px;
+      border: 1px solid #dbe8df;
+      border-radius: 999px;
+      background: #f8fff9;
+      color: var(--vn-green-900, #0f3d2e);
+      font-size: .8rem;
+      font-weight: 800;
+      padding: .42rem .68rem;
+      white-space: nowrap;
+    }
+
+    .marketplace-summary li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+      border-radius: 999px;
+      background: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
     }
 
     .quick-filter-row,
     .filter-chip-list {
       display: flex;
       flex-wrap: wrap;
-      gap: .58rem;
+      gap: .45rem;
       padding: 0;
       margin: 0;
       list-style: none;
@@ -98,16 +155,16 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 38px;
+      min-height: 36px;
       border: 1px solid #dbe8df;
       border-radius: 999px;
       background: #fff;
       color: var(--vn-green-900, #0f3d2e);
       cursor: pointer;
       font: inherit;
-      font-size: .9rem;
+      font-size: .82rem;
       font-weight: 850;
-      padding: .52rem .8rem;
+      padding: .46rem .72rem;
       transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
     }
 
@@ -159,7 +216,7 @@
       align-items: end;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: .8rem;
     }
 
     .marketplace-main-head h2 {
@@ -177,38 +234,41 @@
       border: 1px solid #dbe8df;
       background: #fff;
       color: var(--vn-green-900, #0f3d2e);
-      font-size: .86rem;
+      font-size: .78rem;
       font-weight: 900;
-      padding: .55rem .8rem;
+      padding: .46rem .68rem;
     }
 
     .marketplace-product-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: clamp(16px, 2.2vw, 22px);
+      gap: clamp(12px, 1.8vw, 18px);
     }
 
     .marketplace-product-card {
       display: grid;
-      gap: .92rem;
+      gap: .68rem;
       align-content: start;
-      padding: clamp(1rem, 2vw, 1.25rem);
+      padding: clamp(.85rem, 1.5vw, 1rem);
       border: 1px solid var(--market-line);
+      border-radius: 22px;
       background:
         linear-gradient(180deg, #fff, #fbfffc);
-      box-shadow: 0 18px 44px rgba(20, 83, 45, .09);
+      box-shadow: 0 14px 34px rgba(20, 83, 45, .08);
     }
 
     .product-image-box {
       display: grid;
       place-items: center;
-      min-height: 238px;
-      border-radius: 24px;
+      height: clamp(170px, 18vw, 210px);
+      min-height: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
       background:
         radial-gradient(circle at 75% 15%, rgba(255, 224, 164, .26), transparent 30%),
         linear-gradient(180deg, #fff, #f8fbf8);
       border: 1px solid #e3eee7;
-      padding: 1rem;
+      padding: .65rem;
       overflow: hidden;
     }
 
@@ -216,8 +276,8 @@
       display: block;
       width: auto;
       height: auto;
-      max-width: 100%;
-      max-height: 252px;
+      max-width: 90%;
+      max-height: 178px;
       object-fit: contain;
     }
 
@@ -225,22 +285,33 @@
       justify-self: start;
     }
 
+    .marketplace-product-card .product-category {
+      padding: .3rem .5rem;
+      font-size: .7rem;
+    }
+
     .marketplace-product-card h3 {
       margin: 0;
       color: var(--vn-green-900, #0f3d2e);
-      font-size: clamp(1.24rem, 2vw, 1.55rem);
+      font-size: clamp(1.08rem, 1.7vw, 1.3rem);
+      line-height: 1.25;
     }
 
     .marketplace-product-card p {
+      display: -webkit-box;
       margin: 0;
+      overflow: hidden;
       color: #293a31;
-      line-height: 1.65;
+      font-size: .9rem;
+      line-height: 1.5;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
     }
 
     .product-trust-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: .5rem;
+      gap: .35rem;
     }
 
     .product-trust-badges span,
@@ -253,9 +324,9 @@
       border: 1px solid #dbe8df;
       background: #f8fff9;
       color: var(--vn-green-900, #0f3d2e);
-      font-size: .78rem;
+      font-size: .72rem;
       font-weight: 900;
-      padding: .4rem .62rem;
+      padding: .32rem .5rem;
     }
 
     .product-trust-badges span.warning,
@@ -266,11 +337,20 @@
       color: #6a4a08;
     }
 
-    .product-card-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .58rem;
-      margin-top: .25rem;
+    .marketplace-product-card .product-card-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .45rem;
+      margin-top: auto;
+      padding-top: .08rem;
+    }
+
+    .marketplace-product-card .product-card-actions .btn {
+      width: 100%;
+      min-height: 40px;
+      border-radius: 14px;
+      padding: .55rem .6rem;
+      font-size: .8rem;
     }
 
     .product-card-actions .btn,
@@ -468,7 +548,7 @@
       }
 
       .marketplace-filter {
-        position: static;
+        display: none;
       }
 
       .marketplace-main-head {
@@ -483,23 +563,201 @@
     }
 
     @media (max-width: 680px) {
+      .marketplace-hero {
+        padding-block: 26px 22px;
+      }
+
+      .marketplace-hero .vn-container {
+        gap: 10px;
+      }
+
+      .marketplace-hero h1 {
+        font-size: clamp(1.65rem, 8vw, 2.05rem);
+        line-height: 1.08;
+      }
+
+      .marketplace-hero p {
+        font-size: .88rem;
+        line-height: 1.5;
+      }
+
+      .marketplace-hero .vn-badge-row {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: .4rem;
+        overflow-x: auto;
+        padding: 1px 1px 4px;
+        scrollbar-width: thin;
+      }
+
+      .marketplace-hero .vn-badge-row span {
+        flex: 0 0 auto;
+        padding: .36rem .56rem;
+        font-size: .68rem;
+      }
+
+      .marketplace-hero .product-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .5rem;
+      }
+
+      .marketplace-hero .product-actions .btn {
+        width: 100%;
+        min-height: 40px;
+        padding: .55rem .6rem;
+        font-size: .78rem;
+      }
+
+      .marketplace-section {
+        padding-block: 24px 36px;
+      }
+
+      .marketplace-section > .vn-container {
+        width: min(calc(100% - 20px), 430px);
+      }
+
+      .marketplace-toolbar {
+        gap: .62rem;
+        margin-bottom: 14px;
+        padding: .7rem;
+        border-radius: 18px;
+      }
+
+      .marketplace-search {
+        gap: .35rem;
+      }
+
+      .marketplace-search label {
+        font-size: .76rem;
+      }
+
+      .marketplace-search input {
+        min-height: 44px;
+        border-radius: 13px;
+        padding: .7rem .75rem;
+        font-size: .88rem;
+      }
+
+      .marketplace-summary,
+      .quick-filter-row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 3px;
+        scrollbar-width: thin;
+      }
+
+      .marketplace-summary li,
+      .filter-chip {
+        flex: 0 0 auto;
+      }
+
+      .marketplace-summary li {
+        min-height: 30px;
+        padding: .34rem .54rem;
+        font-size: .7rem;
+      }
+
+      .filter-chip {
+        min-height: 34px;
+        padding: .4rem .62rem;
+        font-size: .74rem;
+      }
+
+      .marketplace-main-head {
+        align-items: center;
+        flex-direction: row;
+        gap: .65rem;
+        margin-bottom: .7rem;
+      }
+
+      .marketplace-main-head h2 {
+        font-size: 1.18rem;
+        line-height: 1.2;
+      }
+
+      .marketplace-main-head p:not(.eyebrow) {
+        display: none;
+      }
+
+      .product-count-pill {
+        padding: .4rem .55rem;
+        font-size: .7rem;
+      }
+
       .marketplace-product-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .marketplace-product-card {
+        gap: .52rem;
+        padding: 10px;
+        border-radius: 18px;
       }
 
       .product-image-box {
-        min-height: 205px;
+        width: 100%;
+        height: auto;
+        min-height: 112px;
+        max-height: none;
+        aspect-ratio: 1 / 1;
+        border-radius: 14px;
+        padding: 6px;
       }
 
-      .product-card-actions,
+      .product-image-box img {
+        max-width: 88%;
+        max-height: 112px;
+      }
+
+      .marketplace-product-card .product-category {
+        padding: .26rem .4rem;
+        font-size: .62rem;
+      }
+
+      .marketplace-product-card h3 {
+        font-size: .98rem;
+        line-height: 1.2;
+      }
+
+      .marketplace-product-card p {
+        font-size: .78rem;
+        line-height: 1.4;
+      }
+
+      .product-trust-badges {
+        gap: .28rem;
+      }
+
+      .product-trust-badges span {
+        padding: .25rem .38rem;
+        font-size: .61rem;
+      }
+
+      .product-trust-badges span:nth-child(n+3) {
+        display: none;
+      }
+
       .product-actions {
         align-items: stretch;
         flex-direction: column;
       }
 
-      .product-card-actions .btn,
       .product-actions .btn {
         width: 100%;
+      }
+
+      .marketplace-product-card .product-card-actions {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .marketplace-product-card .product-card-actions .btn {
+        min-height: 36px;
+        border-radius: 12px;
+        padding: .48rem .4rem;
+        font-size: .73rem;
       }
 
       .detail-row {
@@ -508,7 +766,55 @@
 
       .filter-chip,
       .marketplace-filter-btn {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .marketplace-product-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .marketplace-product-card {
+        grid-template-columns: 104px minmax(0, 1fr);
+        grid-template-areas:
+          "image category"
+          "image title"
+          "image badges"
+          "description description"
+          "actions actions";
+        align-items: start;
+      }
+
+      .marketplace-product-card .product-image-box {
+        grid-area: image;
+        min-height: 104px;
+      }
+
+      .marketplace-product-card .product-image-box img {
+        max-height: 90px;
+      }
+
+      .marketplace-product-card .product-category {
+        grid-area: category;
+      }
+
+      .marketplace-product-card h3 {
+        grid-area: title;
+      }
+
+      .marketplace-product-card .product-trust-badges {
+        grid-area: badges;
+      }
+
+      .marketplace-product-card > p {
+        grid-area: description;
+        -webkit-line-clamp: 2;
+      }
+
+      .marketplace-product-card .product-card-actions {
+        grid-area: actions;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   </style>
@@ -548,9 +854,11 @@
             <input id="productSearch" type="search" placeholder="Cari produk, kategori, atau status amanah..." autocomplete="off">
           </div>
 
-          <p class="toolbar-note vn-note">
-            Gunakan pencarian dan filter amanah sebelum bertanya ke admin. Tidak ada harga, stok, rating, diskon, atau klaim medis yang ditampilkan tanpa data resmi di website.
-          </p>
+          <ul class="marketplace-summary" aria-label="Ringkasan katalog Produk Amanah">
+            <li>2 produk tersedia</li>
+            <li>Info label perlu dicek</li>
+            <li>Tanya admin sebelum membeli</li>
+          </ul>
 
           <div class="quick-filter-row" role="group" aria-label="Filter cepat produk">
             <button class="filter-chip active" type="button" data-product-filter="semua" aria-pressed="true">Semua</button>
@@ -598,7 +906,7 @@
                 data-product-card
                 data-product-name="key propolis"
                 data-product-category="katalog reseller"
-                data-product-status="perlu cek label tanya admin"
+                data-product-status="perlu cek label bukan obat tanya admin"
                 data-product-tags="info label belum lengkap perlu cek label bukan obat tanya admin">
                 <div class="product-image-box">
                   <img src="../images/key-propolis.png" alt="KEY Propolis" loading="lazy">
@@ -608,14 +916,12 @@
                 <h3>KEY Propolis</h3>
 
                 <div class="product-trust-badges" aria-label="Status amanah KEY Propolis">
-                  <span class="warning">Info label belum lengkap</span>
-                  <span>Perlu cek label</span>
+                  <span class="warning">Perlu cek label</span>
                   <span>Bukan obat</span>
                 </div>
 
                 <p>
-                  KEY Propolis ditampilkan sebagai katalog informasi produk. Informasi penggunaan, komposisi,
-                  dan peringatan perlu mengikuti label resmi serta kanal produk terkait.
+                  Katalog informasi reseller. Cek komposisi, aturan pakai, dan peringatan pada label resmi sebelum memutuskan.
                 </p>
 
                 <div class="product-card-actions">
@@ -628,7 +934,7 @@
                 data-product-card
                 data-product-name="langfit deto pro"
                 data-product-category="katalog reseller"
-                data-product-status="perlu cek label tanya admin"
+                data-product-status="perlu cek label bukan obat tanya admin"
                 data-product-tags="info label belum lengkap perlu cek label bukan obat tanya admin">
                 <div class="product-image-box">
                   <img src="../images/langfit-deto-pro.png" alt="Langfit Deto Pro" loading="lazy">
@@ -638,14 +944,12 @@
                 <h3>Langfit Deto Pro</h3>
 
                 <div class="product-trust-badges" aria-label="Status amanah Langfit Deto Pro">
-                  <span class="warning">Info label belum lengkap</span>
-                  <span>Perlu cek label</span>
+                  <span class="warning">Perlu cek label</span>
                   <span>Bukan obat</span>
                 </div>
 
                 <p>
-                  Langfit Deto Pro ditampilkan sebagai katalog informasi produk. Baca label, pahami aturan penggunaan,
-                  dan hindari menilai produk hanya dari testimoni.
+                  Katalog informasi reseller. Baca label dan aturan penggunaan; jangan menilai produk hanya dari testimoni.
                 </p>
 
                 <div class="product-card-actions">
