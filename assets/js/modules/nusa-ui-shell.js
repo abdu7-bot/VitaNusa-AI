@@ -13,25 +13,27 @@ const FEATURES = [
   ['Pengaturan', 'Preferensi aplikasi', 'settings.html', 'PG']
 ];
 
-function getRelativePrefix() {
+function getSiteBasePath() {
   const path = window.location.pathname.replace(/\\/g, '/');
-  const nestedRoots = ['articles', 'products', 'documents', 'komik'];
   const segments = path.split('/').filter(Boolean);
-  const rootIndex = segments.findIndex((segment) => nestedRoots.includes(segment));
+  const repoIndex = segments.findIndex((segment) => segment.toLowerCase() === 'vitanusa-ai');
 
-  if (rootIndex === -1) return '';
+  if (repoIndex !== -1) {
+    return `/${segments.slice(0, repoIndex + 1).join('/')}/`;
+  }
 
-  const childSegments = segments.slice(rootIndex + 1);
-  const lastSegment = childSegments[childSegments.length - 1] || '';
-  const endsWithFile = /\.[a-z0-9]+$/i.test(lastSegment);
-  const depth = 1 + Math.max(0, childSegments.length - (endsWithFile ? 1 : 0));
-
-  return '../'.repeat(depth);
+  return '/';
 }
 
-function normalizeHref(href, prefix) {
+function normalizeHref(href) {
   if (/^https?:|^mailto:|^#/i.test(href)) return href;
-  return `${prefix}${href}`;
+
+  const cleanHref = href
+    .replace(/^\.\//, '')
+    .replace(/^\.\.\//, '')
+    .replace(/^\//, '');
+
+  return `${getSiteBasePath()}${cleanHref}`;
 }
 
 function getCurrentKey() {
@@ -185,15 +187,17 @@ function injectShellStyles() {
 }
 
 function normalizeExistingLinks() {
-  document.querySelectorAll('a[href="vitagame.html/"]').forEach((link) => {
-    link.setAttribute('href', 'vitagame.html');
-  });
-  document.querySelectorAll('a[href="../vitagame.html/"]').forEach((link) => {
-    link.setAttribute('href', '../vitagame.html');
+  document.querySelectorAll('a[href]').forEach((link) => {
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    if (href === 'vitagame.html/' || href === '../vitagame.html/' || href.endsWith('/vitagame.html/') || href.endsWith('/vitagame.html/index.html')) {
+      link.setAttribute('href', normalizeHref('vitagame.html'));
+    }
   });
 }
 
-function buildRail(prefix, currentKey) {
+function buildRail(currentKey) {
   const aside = document.createElement('aside');
   aside.className = 'vn-right-rail';
   aside.setAttribute('data-vn-right-rail', '');
@@ -201,14 +205,14 @@ function buildRail(prefix, currentKey) {
   aside.setAttribute('aria-hidden', 'false');
   aside.innerHTML = `
     <div class="vn-rail-head">
-      <a class="vn-rail-brand" href="${normalizeHref('index.html', prefix)}" aria-label="VitaNusa AI">
+      <a class="vn-rail-brand" href="${normalizeHref('index.html')}" aria-label="VitaNusa AI">
         <span class="vn-rail-mark">VN</span>
         <span><strong>VitaNusa AI</strong><small>Asisten edukasi amanah</small></span>
       </a>
       <button class="vn-rail-close" type="button" data-vn-shell-close aria-label="Tutup menu fitur">×</button>
     </div>
     <nav class="vn-rail-nav" aria-label="Menu fitur VitaNusa">
-      ${FEATURES.map(([title, desc, href, icon]) => `<a class="vn-rail-link${title === currentKey ? ' is-active' : ''}" href="${normalizeHref(href, prefix)}"><span class="vn-rail-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><small>${desc}</small></span></a>`).join('')}
+      ${FEATURES.map(([title, desc, href, icon]) => `<a class="vn-rail-link${title === currentKey ? ' is-active' : ''}" href="${normalizeHref(href)}"><span class="vn-rail-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><small>${desc}</small></span></a>`).join('')}
     </nav>
     <p class="vn-rail-note"><strong>Amanah:</strong> edukasi dulu, produk belakangan. Tidak menggantikan dokter, fatwa ahli, atau keputusan profesional.</p>
   `;
@@ -224,9 +228,8 @@ export function initNusaUiShell() {
 
   if (document.querySelector('[data-vn-right-rail]')) return;
 
-  const prefix = getRelativePrefix();
   const currentKey = getCurrentKey();
-  const rail = buildRail(prefix, currentKey);
+  const rail = buildRail(currentKey);
   const overlay = document.createElement('div');
   overlay.className = 'vn-shell-overlay';
   overlay.hidden = true;
