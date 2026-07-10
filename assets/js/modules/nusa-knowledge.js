@@ -32,7 +32,7 @@ export const NUSA_KEYWORDS = Object.freeze({
   start: ['mulai', 'mulai dari mana', 'dari mana', 'bingung', 'bantu saya', 'arahin saya', 'arahkan saya', 'harus mulai dari mana', 'langkah awal'],
   vitacheckStart: ['mulai vitacheck', 'cara memakai vitacheck', 'cara pakai vitacheck', 'pakai vitacheck', 'hasil vitacheck', 'vita check', 'vitacheck', 'skor kebiasaan'],
   habit: ['kebiasaan', 'kebiasaan sehat', 'pola hidup', 'hidup sehat', 'rutinitas sehat', 'tidur', 'begadang', 'makan', 'pola makan', 'air putih', 'minum air', 'lelah', 'capek', 'energi', 'gerak', 'olahraga', 'pencernaan', 'perut tidak nyaman', 'mual ringan', 'kembung ringan', 'stres ringan', 'stress ringan'],
-  generalHealth: ['menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'cara menjaga kesehatan tubuh', 'menjaga tubuh', 'merawat tubuh', 'tubuh sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'menjaga badan', 'badan sehat', 'mulai hidup sehat dari mana'],
+  generalHealth: ['menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'cara menjaga kesehatan tubuh', 'menjaga tubuh', 'merawat tubuh', 'tubuh sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'menjaga badan', 'badan sehat', 'mulai hidup sehat dari mana', 'keluhan ringan', 'pusing', 'pusing ringan', 'sakit kepala', 'sakit kepala ringan'],
   testimonial: ['testimoni', 'testi', 'bukti', 'bukti nyata', 'klaim', 'klaim produk', 'promosi', 'hasil orang', 'review orang', 'ulasan orang', 'cek klaim', 'cek testimoni', 'percaya testimoni', 'katanya ' + CURE, 'katanya ampuh', 'cerita ' + CURE, 'janji ' + CURE, 'hasil instan'],
   productShortcut: ['produk bukan jalan pintas', 'produk jalan pintas', 'produk solusi cepat', 'produk menggantikan pola hidup', 'produk ini bisa menyem' + 'buhkan', 'produk bisa ' + CURE, 'produk bukan obat', 'produk bukan janji ' + CURE, 'suplemen bukan obat', 'suplemen solusi cepat'],
   product: ['produk', 'info produk', 'tanya produk', 'tanya langfit', 'tanya key propolis', 'key propolis', 'langfit deto pro', 'langfit', 'deto pro', 'propolis', 'katalog', 'katalog produk', 'harga', 'berapa harga', 'beli', 'cara beli', 'reseller', 'stok produk'],
@@ -71,11 +71,45 @@ const KNOWLEDGE_SYNONYM_GROUPS = Object.freeze([
   ['vitacheck', 'vita check', 'cek kebiasaan', 'skor kebiasaan'],
   ['amanah', 'tabayyun', 'hati hati', 'waspada']
 ]);
-const EMERGENCY_TERMS = Object.freeze(['sesak berat', 'nyeri dada', 'pingsan', 'kejang', 'stroke', 'bunuh diri', 'perdarahan hebat', 'demam tinggi pada bayi', 'keracunan']);
+const EMERGENCY_TERMS = Object.freeze([
+  'nyeri dada berat',
+  'nyeri dada',
+  'sesak berat',
+  'sesak napas berat',
+  'sesak nafas berat',
+  'sulit bernapas',
+  'sulit bernafas',
+  'pingsan',
+  'kejang',
+  'lemah separuh tubuh',
+  'stroke',
+  'perdarahan hebat',
+  'perdarahan berat',
+  'alergi berat',
+  'bengkak wajah',
+  'bibir bengkak',
+  'pikiran menyakiti diri',
+  'menyakiti diri',
+  'ingin bunuh diri',
+  'bunuh diri',
+  'demam tinggi pada bayi',
+  'keracunan'
+]);
 const DOSE_DIAGNOSIS_TERMS = Object.freeze(['diagnosis', 'diagnosa', 'dosis', 'resep obat', 'obat apa', 'minum apa', 'harus minum obat']);
 const FINAL_FATWA_TERMS = Object.freeze(['fatwa final', 'pasti halal', 'pasti haram', 'hukum final', 'menurut islam pasti', 'halal menurut islam', 'haram menurut islam']);
 const PRODUCT_CLAIM_TERMS = Object.freeze(['pasti menyembuhkan', 'pasti sembuh', 'menyembuhkan diabetes', 'menyembuhkan kanker', 'obat segala penyakit', 'sembuh total', '100% aman']);
 const BLOCKED_HTML_SELECTOR = 'script, iframe, object, embed, link, meta, style';
+const SAFE_FALLBACK_TEXT = [
+  'Saya belum mempunyai informasi yang cukup untuk menjawab pertanyaan itu secara aman.',
+  '',
+  'Yang bisa dilakukan:',
+  '',
+  '- tulis pertanyaan lebih spesifik',
+  '- berikan konteks umum tanpa data pribadi sensitif',
+  '- pilih topik VitaCheck, artikel, produk amanah, atau kebiasaan sehat',
+  '',
+  'Untuk keluhan berat atau darurat, segera cari bantuan medis.'
+].join('\n');
 let knowledgeLoadPromise = null;
 let knowledgeLoadFailed = false;
 let knowledgeLastFailureAt = 0;
@@ -88,7 +122,7 @@ export const NUSA_RESPONSES = Object.freeze({
   start: 'Kita mulai pelan-pelan. Pilih satu dulu: mau cek kebiasaan lewat VitaCheck, membaca artikel edukasi, memahami klaim produk dengan lebih aman, atau bertanya tentang langkah kecil menjaga kesehatan?',
   vitacheckStart: 'Baik. VitaCheck bisa dipakai sebagai cermin kebiasaan: tidur, minum, makan, gerak, energi, pencernaan, stres ringan, dan literasi produk. Hasilnya bukan diagnosis. Ambil satu fokus kecil saja untuk 7 hari ke depan.',
   habit: 'Bisa. Untuk mulai hidup lebih sehat, jangan ubah semuanya sekaligus. Pilih satu langkah kecil dulu: tidur sedikit lebih teratur, minum air lebih sadar, makan lebih rapi, atau gerak ringan. VitaCheck bisa membantu melihat bagian mana yang paling perlu diperbaiki.',
-  generalHealth: 'Menjaga kesehatan tidak harus ekstrem. Mulai dari dasar: tidur lebih teratur, cukup minum, makan lebih sadar, dan bergerak ringan. Kalau ada keluhan berat, menetap, atau memburuk, lebih aman bertanya kepada tenaga kesehatan. Nusa AI hanya membantu edukasi umum.',
+  generalHealth: 'Saya tidak bisa memastikan penyebab keluhan lewat chat. Untuk keluhan ringan, mulai dari dasar: istirahat cukup, minum air secara wajar, makan ringan sesuai toleransi, dan amati apakah memburuk. Kalau keluhan berat, menetap, atau disertai tanda bahaya, segera hubungi tenaga kesehatan. Nusa AI hanya membantu edukasi umum.',
   article: 'Kamu bisa mulai dari artikel edukasi VitaNusa AI. Pilih bacaan yang paling dekat dengan kebutuhanmu, lalu ambil satu langkah kecil yang realistis.',
   testimonial: 'Testimoni perlu disikapi dengan tenang. Itu bisa menjadi pengalaman pribadi seseorang, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan mudah percaya janji hasil mutlak.',
   amanah: 'Prinsip Amanah adalah pagar VitaNusa AI: edukasi dulu, tidak menentukan kondisi tubuh, tidak membuat klaim berlebihan, dan tidak menjadikan produk sebagai janji hasil.',
@@ -103,7 +137,7 @@ export const NUSA_RESPONSES = Object.freeze({
   fatwa: 'Nusa AI tidak memberi fatwa dan tidak menentukan hukum agama secara final. Untuk hukum agama yang rinci, lebih aman bertanya kepada ustadz atau ulama yang kompeten. Saya hanya membantu refleksi dan edukasi umum dengan batas amanah.',
   faq: 'Kamu bisa membuka FAQ untuk jawaban singkat tentang VitaNusa AI, VitaCheck, artikel, produk, dan batas edukasi.',
   contact: 'Kamu bisa menghubungi admin VitaNusa AI melalui WhatsApp atau email. Untuk keluhan berat atau pertanyaan kondisi tubuh pribadi, admin bukan pengganti tenaga kesehatan.',
-  outOfCapacity: 'Saya belum bisa menjawab itu dengan aman. Coba tulis lebih jelas, atau konsultasikan langsung kepada tenaga kesehatan, ustadz/ulama, atau pihak yang memang berwenang sesuai masalahnya.',
+  outOfCapacity: SAFE_FALLBACK_TEXT,
 });
 
 export const NUSA_INITIAL_REPLY = Object.freeze({
@@ -114,7 +148,7 @@ export const NUSA_INITIAL_REPLY = Object.freeze({
 
 export const NUSA_FALLBACK_RESPONSE = Object.freeze({
   id: 'fallback',
-  text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis lebih sederhana. Misalnya: “aku mau hidup sehat”, “mau mulai VitaCheck”, “testimoni itu bukti gak?”, atau “mau hubungi admin”.',
+  text: SAFE_FALLBACK_TEXT,
   actions: []
 });
 export const NUSA_OUT_OF_CAPACITY_REPLY = Object.freeze({ id: 'out-of-capacity', text: NUSA_RESPONSES.outOfCapacity, actions: [NUSA_ROUTE_BUTTONS.faq, NUSA_ROUTE_BUTTONS.contact] });
@@ -339,7 +373,7 @@ export async function findBestAnswer(userQuestion) {
 }
 export function buildSafeAnswer(userQuestion) {
   const normalized = normalizeText(userQuestion);
-  if (includesAny(normalized, EMERGENCY_TERMS)) return createGuardAnswer('medical-emergency', 'Pertanyaan ini terlihat serius. Nusa AI tidak dapat memberi diagnosis atau penanganan darurat. Segera hubungi tenaga kesehatan profesional atau layanan darurat terdekat.', 'high', 'seek-professional-help');
+  if (includesAny(normalized, EMERGENCY_TERMS)) return createGuardAnswer('medical-emergency', 'Keluhan ini termasuk tanda bahaya. Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat sekarang. Nusa AI tidak dapat menangani keadaan darurat.', 'high', 'seek-professional-help');
   if (includesAny(normalized, DOSE_DIAGNOSIS_TERMS)) return createGuardAnswer('medical-boundary', 'Nusa AI tidak memberikan diagnosis, dosis, atau resep obat. Informasi ini hanya edukasi umum.', 'medium', 'seek-professional-help');
   if (includesAny(normalized, FINAL_FATWA_TERMS)) return createGuardAnswer('fatwa-boundary', 'Nusa AI tidak memberi fatwa final. Untuk hukum rinci, rujuk kepada ustadz/ulama yang kompeten.', 'medium', 'read-article');
   if (includesAny(normalized, PRODUCT_CLAIM_TERMS)) return createGuardAnswer('product-claim-boundary', 'Nusa AI tidak memastikan produk menyembuhkan penyakit. Produk hanya boleh dibahas sebagai informasi umum dan harus dinilai secara amanah.', 'high', 'read-prinsip-amanah');
@@ -356,7 +390,7 @@ function createGuardAnswer(question, text, riskLevel, primaryAction) {
     riskLevel,
     primaryAction,
     relatedArticles: [],
-    safetyNote: 'Jawaban ini adalah guardrail keamanan Nusa AI.'
+    safetyNote: 'Catatan amanah: jawaban ini bersifat edukasi umum dan menjaga batas aman Nusa AI.'
   };
 }
 function sanitizeKnowledgeHtml(html) {

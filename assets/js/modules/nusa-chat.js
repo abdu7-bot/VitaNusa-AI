@@ -6,11 +6,24 @@ const ROUTE_OVERRIDES = Object.freeze({
   '#kontak': 'contact.html',
 });
 
+const SAFE_FALLBACK_TEXT = [
+  'Saya belum mempunyai informasi yang cukup untuk menjawab pertanyaan itu secara aman.',
+  '',
+  'Yang bisa dilakukan:',
+  '',
+  '- tulis pertanyaan lebih spesifik',
+  '- berikan konteks umum tanpa data pribadi sensitif',
+  '- pilih topik VitaCheck, artikel, produk amanah, atau kebiasaan sehat',
+  '',
+  'Untuk keluhan berat atau darurat, segera cari bantuan medis.',
+].join('\n');
+
 const SAFE_FALLBACK_REPLY = Object.freeze({
-  text: 'Saya belum menangkap maksudnya dengan jelas. Coba tulis sedikit lebih spesifik: apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, Prinsip Amanah, atau kontak admin?',
+  text: SAFE_FALLBACK_TEXT,
   actions: [],
 });
 
+<<<<<<< HEAD
 // Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL, meta,
 // atau .env Vite: VITE_NUSA_BACKEND_ASK_URL=https://nama-backend.onrender.com/ask
 const DEFAULT_LOCAL_BACKENDS = Object.freeze([
@@ -20,6 +33,15 @@ const DEFAULT_LOCAL_BACKENDS = Object.freeze([
 
 const ACTIVE_BACKEND_STORAGE_KEY = 'VITANUSA_ACTIVE_BACKEND_ASK_URL';
 const BACKEND_TIMEOUT_MS = 7000;
+=======
+// Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL atau meta
+// <meta name="vitanusa-backend-ask-url" content="https://nama-backend.onrender.com/ask">
+const DEFAULT_LOCAL_BACKEND = 'http://127.0.0.1:8000/ask';
+const BLOCKED_DETAIL_SELECTOR = 'script, iframe, object, embed, link, meta, style';
+const URL_DETAIL_ATTRIBUTES = new Set(['href', 'src', 'srcdoc', 'xlink:href']);
+const UNORDERED_LIST_PATTERN = /^-\s+(.+)$/;
+const ORDERED_LIST_PATTERN = /^\d+\.\s+(.+)$/;
+>>>>>>> 106bf5a (perbaiki eror dan ubah logika vitanusa AI)
 
 function getActionHref(action) {
   return ROUTE_OVERRIDES[action.href] || action.href;
@@ -53,6 +75,117 @@ function createRouteLink(action) {
   return link;
 }
 
+function appendPlainText(container, text) {
+  const paragraph = document.createElement('p');
+  paragraph.textContent = String(text || '');
+  container.append(paragraph);
+}
+
+function appendParagraph(container, lines) {
+  const text = lines.join(' ').trim();
+  if (!text) return;
+
+  const paragraph = document.createElement('p');
+  paragraph.textContent = text;
+  container.append(paragraph);
+}
+
+function appendListItem(list, text) {
+  const item = document.createElement('li');
+  item.textContent = text.trim();
+  list.append(item);
+}
+
+function appendFormattedText(container, text) {
+  const formatted = document.createElement('div');
+  formatted.className = 'nusa-formatted-response';
+
+  const lines = String(text || '').split(/\r?\n/);
+  let paragraphLines = [];
+  let activeList = null;
+  let activeListType = '';
+
+  const flushParagraph = () => {
+    appendParagraph(formatted, paragraphLines);
+    paragraphLines = [];
+  };
+
+  const closeList = () => {
+    activeList = null;
+    activeListType = '';
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushParagraph();
+      closeList();
+      continue;
+    }
+
+    const unorderedMatch = trimmed.match(UNORDERED_LIST_PATTERN);
+    const orderedMatch = trimmed.match(ORDERED_LIST_PATTERN);
+    const listMatch = unorderedMatch || orderedMatch;
+
+    if (listMatch) {
+      const listType = unorderedMatch ? 'ul' : 'ol';
+      flushParagraph();
+
+      if (!activeList || activeListType !== listType) {
+        activeList = document.createElement(listType);
+        activeListType = listType;
+        formatted.append(activeList);
+      }
+
+      appendListItem(activeList, listMatch[1]);
+      continue;
+    }
+
+    closeList();
+    paragraphLines.push(trimmed);
+  }
+
+  flushParagraph();
+
+  if (!formatted.hasChildNodes()) {
+    appendPlainText(formatted, '');
+  }
+
+  container.append(formatted);
+}
+
+function isUnsafeUrlAttribute(name, value) {
+  return URL_DETAIL_ATTRIBUTES.has(name) && value.trim().toLowerCase().startsWith('javascript:');
+}
+
+function sanitizeDetailDocument(doc) {
+  doc.body.querySelectorAll(BLOCKED_DETAIL_SELECTOR).forEach((node) => node.remove());
+  doc.body.querySelectorAll('*').forEach((node) => {
+    [...node.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = String(attr.value || '');
+      if (name.startsWith('on') || isUnsafeUrlAttribute(name, value)) {
+        node.removeAttribute(attr.name);
+      }
+    });
+  });
+}
+
+function appendKnowledgeDetail(container, html) {
+  if (!html) return;
+
+  const detailDoc = new DOMParser().parseFromString(String(html), 'text/html');
+  sanitizeDetailDocument(detailDoc);
+
+  if (!detailDoc.body.childNodes.length) return;
+
+  const detail = document.createElement('div');
+  detail.className = 'nusa-knowledge-detail';
+  detail.append(...detailDoc.body.childNodes);
+  container.append(detail);
+}
+
 function appendMessage(log, role, text, actions = [], html = '') {
   const message = document.createElement('article');
   message.className = `nusa-message ${role}`;
@@ -60,16 +193,13 @@ function appendMessage(log, role, text, actions = [], html = '') {
   const bubble = document.createElement('div');
   bubble.className = 'nusa-bubble';
 
-  const paragraph = document.createElement('p');
-  paragraph.textContent = text;
-  bubble.append(paragraph);
-
-  if (html) {
-    const detail = document.createElement('div');
-    detail.className = 'nusa-knowledge-detail';
-    detail.innerHTML = html;
-    bubble.append(detail);
+  if (role === 'assistant') {
+    appendFormattedText(bubble, text);
+  } else {
+    appendPlainText(bubble, text);
   }
+
+  appendKnowledgeDetail(bubble, html);
 
   if (actions.length) {
     const actionRow = document.createElement('div');
@@ -329,5 +459,16 @@ async function getNusaBackendReply(question) {
     }
   }
 
+<<<<<<< HEAD
   throw lastError || new Error('Tidak ada URL backend yang bisa dipakai.');
+=======
+  const data = await response.json();
+
+  return {
+    id: `backend-${data.intent || 'answer'}`,
+    text: data.answer || SAFE_FALLBACK_TEXT,
+    html: buildBackendReflectionHtml(data),
+    actions: Array.isArray(data.actions) ? data.actions : [],
+  };
+>>>>>>> 106bf5a (perbaiki eror dan ubah logika vitanusa AI)
 }

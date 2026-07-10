@@ -16,6 +16,15 @@ COMMON_HEALTH_DISCLAIMER = (
     "tidak menyuruh menghentikan obat dokter, dan tidak menjanjikan kesembuhan."
 )
 
+SAFE_FALLBACK_ANSWER = (
+    "Saya belum mempunyai informasi yang cukup untuk menjawab pertanyaan itu secara aman.\n\n"
+    "Yang bisa dilakukan:\n\n"
+    "- tulis pertanyaan lebih spesifik\n"
+    "- berikan konteks umum tanpa data pribadi sensitif\n"
+    "- pilih topik VitaCheck, artikel, produk amanah, atau kebiasaan sehat\n\n"
+    "Untuk keluhan berat atau darurat, segera cari bantuan medis."
+)
+
 QURANIC_REFLECTION = {
     "type": "reflection",
     "text": (
@@ -31,87 +40,95 @@ QURANIC_REFLECTION = {
 def build_answer(intent: str, safety_level: str) -> str:
     if intent == "danger_sign" or safety_level == "emergency":
         return (
-            "Saya ikut prihatin. Keluhan seperti ini termasuk tanda bahaya. "
-            "Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat. "
-            "Jangan menunda untuk mencari bantuan langsung. VitaNusa AI tidak dapat menangani keadaan darurat."
+            "Keluhan seperti ini termasuk tanda bahaya.\n\n"
+            "Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat sekarang. "
+            "Jika ada orang di dekatmu, minta ditemani dan jangan menyetir sendiri.\n\n"
+            "Catatan amanah: VitaNusa AI tidak dapat menangani keadaan darurat."
         )
 
     if intent == "identity":
         return (
-            "VitaNusa AI adalah asisten edukasi kesehatan dan wellness yang membantu pengguna "
-            "memahami kebiasaan sehat, membaca artikel edukatif, mencoba VitaCheck, dan mengenal "
-            "prinsip amanah dalam menjaga kesehatan. VitaNusa AI bukan dokter dan tidak menggantikan "
-            "konsultasi tenaga kesehatan. Untuk keluhan serius atau tanda bahaya, pengguna tetap perlu "
-            "mencari bantuan medis."
+            "VitaNusa AI adalah ruang edukasi kesehatan, VitaCheck, artikel, refleksi amanah, "
+            "dan informasi reseller produk secara hati-hati.\n\n"
+            "Poin penting:\n\n"
+            "- membantu memahami kebiasaan sehat\n"
+            "- mengarahkan ke artikel edukasi\n"
+            "- menjaga batas klaim produk dan kesehatan\n\n"
+            "Catatan amanah: VitaNusa AI bukan dokter dan tidak menggantikan tenaga kesehatan."
         )
 
     if intent == "vitacheck":
         return (
-            "VitaCheck adalah alat refleksi kebiasaan sehat, bukan alat diagnosis. "
-            "Kamu bisa memakainya untuk melihat pola tidur, minum, makan, gerak ringan, energi, "
-            "pencernaan, stres ringan, dan literasi produk. Tingkat urgensinya rendah bila hanya untuk "
-            "refleksi kebiasaan. Langkah aman: isi dengan jujur, pilih satu kebiasaan kecil untuk diperbaiki, "
-            "lalu evaluasi lagi beberapa hari kemudian. Jika ada keluhan berat atau menetap, tetap konsultasikan "
-            "ke tenaga kesehatan. Catatan amanah: hasil VitaCheck bukan penentu kondisi tubuh."
+            "VitaCheck adalah alat refleksi kebiasaan sehat, bukan alat diagnosis.\n\n"
+            "Poin penting:\n\n"
+            "- melihat pola tidur, minum, makan, gerak ringan, energi, pencernaan, stres ringan, dan literasi produk\n"
+            "- membantu memilih satu kebiasaan kecil untuk diperbaiki\n"
+            "- hasilnya tidak menentukan kondisi tubuh\n\n"
+            "Yang bisa dilakukan:\n\n"
+            "- isi dengan jujur\n"
+            "- pilih satu fokus kecil untuk beberapa hari\n"
+            "- konsultasikan ke tenaga kesehatan bila keluhan berat, menetap, atau memburuk"
         )
 
     if intent == "article_search":
         return (
-            "Bisa. Artikel VitaNusa AI disiapkan sebagai bacaan edukatif agar pengguna memahami kesehatan, "
-            "kebiasaan harian, VitaCheck, dan literasi produk dengan lebih aman. Tingkat urgensinya rendah "
-            "untuk pencarian bacaan umum. Langkah aman: pilih artikel yang sesuai kebutuhan, baca Catatan Amanah, "
-            "dan jangan memakai artikel sebagai diagnosis pribadi. Jika pertanyaanmu terkait gejala berat, "
-            "memburuk, atau kondisi khusus, sebaiknya cari bantuan tenaga kesehatan."
+            "Bisa. Artikel VitaNusa AI disiapkan sebagai bacaan edukatif tentang kesehatan, kebiasaan harian, "
+            "VitaCheck, dan literasi produk.\n\n"
+            "Yang bisa dilakukan:\n\n"
+            "- pilih artikel yang paling dekat dengan kebutuhanmu\n"
+            "- baca Catatan Amanah di artikel\n"
+            "- jangan memakai artikel sebagai diagnosis pribadi\n\n"
+            "Catatan amanah: bila ada gejala berat, memburuk, atau kondisi khusus, utamakan tenaga kesehatan."
         )
 
     if intent == "health_general":
         return (
-            "Saya mengerti, keluhan seperti ini bisa membuat tidak nyaman. Informasi berikut bersifat edukasi umum, "
-            "bukan diagnosis. Tingkat urgensi biasanya sedang bila keluhan ringan dan tidak disertai tanda bahaya. "
-            "Langkah aman: istirahat cukup, minum air, makan yang ringan dan sesuai toleransi tubuh, amati durasi "
-            "serta pemicunya, dan hindari mencoba obat resep tanpa arahan tenaga kesehatan. Segera periksa ke dokter "
-            "atau fasilitas kesehatan bila keluhan berat, makin memburuk, disertai demam tinggi, muntah terus, "
-            "perdarahan, dehidrasi, sulit bernapas, nyeri dada, pingsan, atau tidak membaik. Edukasi singkat: tubuh "
-            "sering memberi sinyal lewat pola tidur, makan, cairan, stres, dan aktivitas, tetapi penyebab personal "
-            "tetap perlu dinilai oleh tenaga kesehatan bila mengkhawatirkan. "
+            "Saya paham, keluhan seperti ini bisa membuat tidak nyaman. Saya tidak bisa memastikan penyebabnya "
+            "dari chat, jadi gunakan ini sebagai edukasi umum.\n\n"
+            "Yang bisa dilakukan:\n\n"
+            "- istirahat cukup dan minum air secara wajar\n"
+            "- makan ringan sesuai toleransi tubuh\n"
+            "- amati durasi, pemicu, dan apakah keluhan memburuk\n"
+            "- hindari obat resep tanpa arahan tenaga kesehatan\n\n"
+            "Segera cari bantuan medis bila muncul nyeri dada berat, sesak napas berat, pingsan, kejang, "
+            "lemah separuh tubuh, perdarahan hebat, alergi berat, pikiran menyakiti diri, atau keluhan makin berat.\n\n"
             f"{COMMON_HEALTH_DISCLAIMER}"
         )
 
     if intent == "product_claim":
         return (
-            "Terima kasih sudah bertanya dengan hati-hati. Produk herbal atau suplemen tidak dapat dipastikan sebagai "
-            "terapi penyakit, pengganti obat dokter, atau jaminan hasil. Tingkat urgensi menjadi tinggi bila terkait "
-            "penyakit kronis, obat dokter, alergi, ibu hamil, anak kecil, lansia, atau klaim hasil mutlak. Langkah aman: "
-            "verifikasi label, izin edar, komposisi, aturan penggunaan, potensi alergi, dan kemungkinan interaksi dengan "
-            "obat yang sedang digunakan. Untuk kondisi seperti diabetes atau penyakit lain, keputusan perawatan tetap "
-            "perlu mengikuti dokter atau tenaga kesehatan. Edukasi amanah: produk hanya boleh dibahas sebagai informasi "
-            "reseller atau dukungan menjaga kebiasaan sehat, bukan sebagai janji hasil. "
-            f"{COMMON_HEALTH_DISCLAIMER}"
+            "Terima kasih sudah bertanya dengan hati-hati. Produk herbal atau suplemen tidak boleh dipastikan "
+            "menyembuhkan penyakit tertentu, dan bukan pengganti obat atau kontrol dokter.\n\n"
+            "Yang bisa dilakukan:\n\n"
+            "- cek label, komposisi, aturan penggunaan, dan izin edar yang tercantum\n"
+            "- perhatikan potensi alergi atau interaksi dengan obat yang sedang digunakan\n"
+            "- konsultasikan dulu bila punya penyakit kronis, sedang minum obat dokter, hamil, menyusui, lansia, atau untuk anak\n\n"
+            "Catatan amanah: produk hanya boleh dibahas sebagai informasi reseller atau dukungan kebiasaan sehat, "
+            "bukan janji hasil. Jangan menghentikan obat dokter tanpa arahan tenaga kesehatan."
         )
 
     if intent == "quranic_reflection":
         return (
-            "Saya bisa membantu sebagai refleksi umum, bukan tafsir baru dan bukan fatwa. Dalam kesehatan, prinsip amanah "
-            "mendorong kita menjaga kehidupan, mencari informasi yang benar, berikhtiar dengan cara yang aman, dan tetap "
-            "bertawakal setelah berusaha. Tingkat urgensi bergantung pada kondisi kesehatan yang menyertai pertanyaan. "
-            "Jika ada keluhan berat, jangan cukup berhenti pada refleksi; cari bantuan tenaga kesehatan. Catatan amanah: "
-            "VitaNusa AI tidak menilai sebab spiritual kondisi seseorang dan tidak mencocokkan ayat dengan teori medis."
+            "Saya bisa membantu sebagai refleksi umum, bukan tafsir baru dan bukan fatwa.\n\n"
+            "Poin penting:\n\n"
+            "- menjaga kesehatan adalah bagian dari amanah\n"
+            "- ikhtiar bisa berupa mencari informasi yang benar dan langkah hidup sehat\n"
+            "- tawakal tetap berjalan bersama usaha yang aman\n\n"
+            "Catatan amanah: VitaNusa AI tidak menilai sebab spiritual kondisi seseorang dan tidak mencocokkan ayat "
+            "dengan teori medis. Bila ada keluhan berat, cari bantuan tenaga kesehatan."
         )
 
     if intent == "contact_admin":
         return (
-            "Kamu bisa menghubungi admin VitaNusa AI untuk pertanyaan umum seputar website, artikel, VitaCheck, atau katalog "
-            "reseller. Tingkat urgensinya rendah untuk administrasi biasa. Namun untuk keluhan medis pribadi, kondisi berat, "
-            "atau kebutuhan resep/dosis, admin bukan pengganti dokter, apoteker, ahli gizi, atau tenaga kesehatan. Jika ada "
-            "tanda bahaya, utamakan fasilitas kesehatan atau layanan darurat."
+            "Kamu bisa menghubungi admin VitaNusa AI untuk pertanyaan umum seputar website, artikel, VitaCheck, "
+            "atau katalog reseller.\n\n"
+            "Poin penting:\n\n"
+            "- admin membantu urusan informasi umum dan kontak\n"
+            "- admin bukan pengganti dokter, apoteker, ahli gizi, atau tenaga kesehatan\n"
+            "- untuk tanda bahaya, utamakan fasilitas kesehatan atau layanan darurat"
         )
 
-    return (
-        "Terima kasih sudah bertanya. Saya akan menjawab dengan prinsip edukasi amanah: informasi umum, tidak mendiagnosis, "
-        "tidak memberi dosis obat resep, tidak memberi fatwa final, dan tidak menjanjikan hasil produk. Kamu bisa menulis "
-        "lebih spesifik apakah ingin membahas kebiasaan sehat, VitaCheck, artikel edukasi, klaim produk, refleksi amanah, "
-        "atau kontak admin. Jika pertanyaanmu memuat gejala berat atau tanda bahaya, segera cari bantuan tenaga kesehatan."
-    )
+    return SAFE_FALLBACK_ANSWER
 
 
 def build_actions(intent: str) -> list[dict[str, str]]:
