@@ -315,7 +315,6 @@
     }
 
     .product-trust-badges span,
-    .detail-pill,
     .compare-status {
       display: inline-flex;
       align-items: center;
@@ -330,7 +329,6 @@
     }
 
     .product-trust-badges span.warning,
-    .detail-pill.warning,
     .compare-status.warning {
       border-color: #f0d489;
       background: #fff8e8;
@@ -351,6 +349,11 @@
       border-radius: 14px;
       padding: .55rem .6rem;
       font-size: .8rem;
+    }
+
+    .product-detail-trigger {
+      cursor: pointer;
+      font: inherit;
     }
 
     .product-card-actions .btn,
@@ -383,6 +386,183 @@
       display: none;
     }
 
+    .product-modal[hidden] {
+      display: none;
+    }
+
+    .product-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .product-modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 32, 22, .62);
+      backdrop-filter: blur(5px);
+    }
+
+    .product-modal__dialog {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(240px, .85fr) minmax(0, 1.15fr);
+      gap: 24px;
+      width: min(920px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      overscroll-behavior: contain;
+      border: 1px solid rgba(22, 163, 74, .16);
+      border-radius: 28px;
+      outline: none;
+      background: #fff;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .24);
+      padding: 24px;
+    }
+
+    .product-modal__dialog:focus-visible {
+      box-shadow:
+        0 0 0 4px rgba(22, 163, 74, .22),
+        0 30px 80px rgba(0, 0, 0, .24);
+    }
+
+    .product-modal__close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid #dbe8df;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--vn-green-900, #0f3d2e);
+      cursor: pointer;
+      font: inherit;
+      font-size: 1.45rem;
+      font-weight: 700;
+      line-height: 1;
+      box-shadow: 0 8px 22px rgba(20, 83, 45, .12);
+    }
+
+    .product-modal__close:hover,
+    .product-modal__close:focus-visible {
+      border-color: rgba(22, 163, 74, .44);
+      outline: none;
+      background: #eef8f1;
+    }
+
+    .product-modal__media {
+      display: grid;
+      place-items: center;
+      align-self: start;
+      min-width: 0;
+      min-height: 320px;
+      border: 1px solid #e3eee7;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 75% 15%, rgba(255, 224, 164, .28), transparent 30%),
+        #f4fbf7;
+      padding: 16px;
+    }
+
+    .product-modal__media img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 320px;
+      object-fit: contain;
+    }
+
+    .product-modal__content {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      min-width: 0;
+      padding-right: 44px;
+    }
+
+    .product-modal__content .eyebrow,
+    .product-modal__content h2,
+    .product-modal__summary,
+    .product-modal__note {
+      margin: 0;
+    }
+
+    .product-modal__content h2 {
+      color: var(--vn-green-900, #0f3d2e);
+      font-size: clamp(1.55rem, 3vw, 2.25rem);
+      line-height: 1.12;
+    }
+
+    .product-modal__summary {
+      color: #42594d;
+      line-height: 1.6;
+    }
+
+    .product-modal__facts {
+      display: grid;
+      gap: 0;
+      margin: 2px 0 0;
+    }
+
+    .product-modal__facts div {
+      display: grid;
+      grid-template-columns: 148px minmax(0, 1fr);
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(20, 83, 45, .1);
+    }
+
+    .product-modal__facts div:last-child {
+      border-bottom: 0;
+    }
+
+    .product-modal__facts dt {
+      color: var(--vn-green-900, #0f3d2e);
+      font-size: .82rem;
+      font-weight: 900;
+    }
+
+    .product-modal__facts dd {
+      min-width: 0;
+      margin: 0;
+      color: #293a31;
+      overflow-wrap: anywhere;
+    }
+
+    .product-modal__note {
+      padding: .85rem .9rem;
+      color: #4c390c;
+      font-size: .88rem;
+      line-height: 1.55;
+    }
+
+    .product-modal__actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .product-modal__actions .btn {
+      width: 100%;
+      min-height: 42px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    body.product-modal-open {
+      overflow: hidden;
+    }
+
     .amanah-panel {
       display: grid;
       gap: 1rem;
@@ -393,67 +573,27 @@
         #fff;
     }
 
-    .amanah-grid,
-    .detail-grid {
+    .amanah-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: clamp(14px, 2vw, 20px);
     }
 
-    .amanah-mini-card,
-    .product-detail-card {
+    .amanah-mini-card {
       border: 1px solid #dbe8df;
       border-radius: 22px;
       background: #fff;
       padding: 1rem;
     }
 
-    .amanah-mini-card h3,
-    .product-detail-card h3 {
+    .amanah-mini-card h3 {
       margin: 0 0 .5rem;
       color: var(--vn-green-900, #0f3d2e);
     }
 
-    .amanah-mini-card p,
-    .product-detail-card p {
+    .amanah-mini-card p {
       margin: 0;
       color: var(--vn-muted, #64766b);
-      line-height: 1.65;
-    }
-
-    .detail-list {
-      display: grid;
-      gap: .65rem;
-      margin: 1rem 0 0;
-    }
-
-    .detail-row {
-      display: grid;
-      grid-template-columns: minmax(120px, .7fr) minmax(0, 1.3fr);
-      gap: .7rem;
-      padding: .75rem;
-      border-radius: 16px;
-      background: #f8fbf8;
-      border: 1px solid #e3eee7;
-    }
-
-    .detail-row dt {
-      color: var(--vn-green-900, #0f3d2e);
-      font-weight: 900;
-    }
-
-    .detail-row dd {
-      margin: 0;
-      color: #293a31;
-    }
-
-    .detail-warning {
-      margin-top: 1rem;
-      border-left: 4px solid #d8a92b;
-      border-radius: 16px;
-      background: #fff8e8;
-      color: #4c390c;
-      padding: .9rem 1rem;
       line-height: 1.65;
     }
 
@@ -556,9 +696,77 @@
         flex-direction: column;
       }
 
-      .amanah-grid,
-      .detail-grid {
+      .amanah-grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .product-modal {
+        align-items: end;
+        padding: 10px 10px 0;
+      }
+
+      .product-modal__dialog {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        width: 100%;
+        max-height: 90dvh;
+        border-radius: 24px 24px 0 0;
+        padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+      }
+
+      .product-modal__close {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+      }
+
+      .product-modal__media {
+        min-height: 170px;
+        border-radius: 18px;
+        padding: 10px;
+      }
+
+      .product-modal__media img {
+        max-height: 190px;
+      }
+
+      .product-modal__content {
+        gap: 10px;
+        padding-right: 0;
+      }
+
+      .product-modal__content h2 {
+        padding-right: 42px;
+        font-size: 1.55rem;
+      }
+
+      .product-modal__summary {
+        font-size: .9rem;
+        line-height: 1.5;
+      }
+
+      .product-modal__facts div {
+        grid-template-columns: 1fr;
+        gap: 3px;
+        padding: 8px 0;
+      }
+
+      .product-modal__facts dt,
+      .product-modal__facts dd {
+        font-size: .82rem;
+      }
+
+      .product-modal__actions {
+        position: sticky;
+        bottom: calc(-18px - env(safe-area-inset-bottom));
+        margin-inline: -16px;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, .96);
+        box-shadow: 0 -10px 24px rgba(20, 83, 45, .08);
+        backdrop-filter: blur(10px);
       }
     }
 
@@ -760,10 +968,6 @@
         font-size: .73rem;
       }
 
-      .detail-row {
-        grid-template-columns: 1fr;
-      }
-
       .filter-chip,
       .marketplace-filter-btn {
         flex: 0 0 auto;
@@ -771,6 +975,14 @@
     }
 
     @media (max-width: 360px) {
+      .product-modal__media {
+        min-height: 145px;
+      }
+
+      .product-modal__media img {
+        max-height: 155px;
+      }
+
       .marketplace-product-grid {
         grid-template-columns: 1fr;
       }
@@ -925,7 +1137,14 @@
                 </p>
 
                 <div class="product-card-actions">
-                  <a href="#detail-key-propolis" class="btn outline">Lihat Detail</a>
+                  <button
+                    type="button"
+                    class="btn outline product-detail-trigger"
+                    data-open-product-modal="key-propolis"
+                    aria-haspopup="dialog"
+                    aria-controls="productDetailModal"
+                    aria-expanded="false"
+                  >Lihat Detail</button>
                   <a href="https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20KEY%20Propolis.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya." class="btn wa" target="_blank" rel="noopener">Tanya Admin</a>
                 </div>
               </article>
@@ -953,7 +1172,14 @@
                 </p>
 
                 <div class="product-card-actions">
-                  <a href="#detail-langfit-deto-pro" class="btn outline">Lihat Detail</a>
+                  <button
+                    type="button"
+                    class="btn outline product-detail-trigger"
+                    data-open-product-modal="langfit-deto-pro"
+                    aria-haspopup="dialog"
+                    aria-controls="productDetailModal"
+                    aria-expanded="false"
+                  >Lihat Detail</button>
                   <a href="https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20Langfit%20Deto%20Pro.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya." class="btn wa" target="_blank" rel="noopener">Tanya Admin</a>
                 </div>
               </article>
@@ -997,66 +1223,6 @@
               <p>Untuk keluhan berat, hamil/menyusui, minum obat rutin, atau punya kondisi khusus, dahulukan tenaga kesehatan.</p>
             </article>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="product-section muted vn-section vn-section-muted" aria-labelledby="detailTitle">
-      <div class="wrap vn-container">
-        <div class="section-heading vn-section-heading">
-          <p class="eyebrow vn-eyebrow">Detail Ringkas</p>
-          <h2 id="detailTitle">Informasi produk yang tersedia</h2>
-          <p class="section-lead">
-            Detail di bawah sengaja jujur: data yang belum ada di website tidak ditampilkan sebagai fakta.
-          </p>
-        </div>
-
-        <div class="detail-grid">
-          <article id="detail-key-propolis" class="product-detail-card vn-card">
-            <span class="detail-pill warning">Perlu cek label</span>
-            <h3>KEY Propolis</h3>
-            <dl class="detail-list">
-              <div class="detail-row"><dt>Nama produk</dt><dd>KEY Propolis</dd></div>
-              <div class="detail-row"><dt>Kategori</dt><dd>Katalog reseller</dd></div>
-              <div class="detail-row"><dt>Status data</dt><dd>Perlu cek label</dd></div>
-              <div class="detail-row"><dt>Komposisi resmi</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Izin edar</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Halal</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Aturan pakai</dt><dd>Ikuti label resmi atau tanyakan admin</dd></div>
-              <div class="detail-row"><dt>Harga</dt><dd>Tanya admin / tidak ada harga publik</dd></div>
-              <div class="detail-row"><dt>Stok</dt><dd>Tanya admin / tidak ada stok publik</dd></div>
-            </dl>
-            <p class="detail-warning">
-              Peringatan: jika punya kondisi khusus, sedang hamil/menyusui, minum obat rutin,
-              atau memiliki keluhan berat, konsultasikan kepada tenaga kesehatan.
-            </p>
-            <div class="product-card-actions">
-              <a href="https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20KEY%20Propolis.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya." class="btn wa" target="_blank" rel="noopener">Tanya Detail KEY Propolis</a>
-            </div>
-          </article>
-
-          <article id="detail-langfit-deto-pro" class="product-detail-card vn-card">
-            <span class="detail-pill warning">Perlu cek label</span>
-            <h3>Langfit Deto Pro</h3>
-            <dl class="detail-list">
-              <div class="detail-row"><dt>Nama produk</dt><dd>Langfit Deto Pro</dd></div>
-              <div class="detail-row"><dt>Kategori</dt><dd>Katalog reseller</dd></div>
-              <div class="detail-row"><dt>Status data</dt><dd>Perlu cek label</dd></div>
-              <div class="detail-row"><dt>Komposisi resmi</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Izin edar</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Halal</dt><dd>Belum tersedia di data website</dd></div>
-              <div class="detail-row"><dt>Aturan pakai</dt><dd>Ikuti label resmi atau tanyakan admin</dd></div>
-              <div class="detail-row"><dt>Harga</dt><dd>Tanya admin / tidak ada harga publik</dd></div>
-              <div class="detail-row"><dt>Stok</dt><dd>Tanya admin / tidak ada stok publik</dd></div>
-            </dl>
-            <p class="detail-warning">
-              Peringatan: jika punya kondisi khusus, sedang hamil/menyusui, minum obat rutin,
-              atau memiliki keluhan berat, konsultasikan kepada tenaga kesehatan.
-            </p>
-            <div class="product-card-actions">
-              <a href="https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20Langfit%20Deto%20Pro.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya." class="btn wa" target="_blank" rel="noopener">Tanya Detail Langfit Deto Pro</a>
-            </div>
-          </article>
         </div>
       </div>
     </section>
@@ -1177,6 +1343,55 @@
     </section>
   </main>
 
+  <div id="productDetailModal" class="product-modal" data-product-modal hidden>
+    <div class="product-modal__backdrop" data-close-product-modal></div>
+
+    <section
+      class="product-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="productModalTitle"
+      aria-describedby="productModalSummary productModalNote"
+      tabindex="-1"
+    >
+      <button
+        type="button"
+        class="product-modal__close"
+        data-close-product-modal
+        aria-label="Tutup detail produk"
+      >×</button>
+
+      <div class="product-modal__media">
+        <img data-product-modal-image src="" alt="">
+      </div>
+
+      <div class="product-modal__content">
+        <p class="eyebrow vn-eyebrow">Detail Produk Amanah</p>
+        <h2 id="productModalTitle" data-product-modal-title></h2>
+        <p id="productModalSummary" class="product-modal__summary" data-product-modal-summary></p>
+
+        <dl class="product-modal__facts">
+          <div><dt>Nama produk</dt><dd data-product-modal-name></dd></div>
+          <div><dt>Kategori</dt><dd data-product-modal-category></dd></div>
+          <div><dt>Status data</dt><dd data-product-modal-status></dd></div>
+          <div><dt>Komposisi resmi</dt><dd data-product-modal-composition></dd></div>
+          <div><dt>Izin edar</dt><dd data-product-modal-permit></dd></div>
+          <div><dt>Halal</dt><dd data-product-modal-halal></dd></div>
+          <div><dt>Aturan pakai</dt><dd data-product-modal-usage></dd></div>
+          <div><dt>Harga</dt><dd data-product-modal-price></dd></div>
+          <div><dt>Stok</dt><dd data-product-modal-stock></dd></div>
+        </dl>
+
+        <p id="productModalNote" class="product-modal__note vn-note" data-product-modal-note></p>
+
+        <div class="product-modal__actions vn-actions">
+          <a data-product-modal-whatsapp class="btn wa" href="#" target="_blank" rel="noopener">Tanya Admin</a>
+          <button type="button" class="btn outline" data-close-product-modal>Tutup</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <footer class="vn-footer">
     <div class="wrap vn-container">
       <h2>VitaNusa AI</h2>
@@ -1197,9 +1412,141 @@
       const cards = Array.from(document.querySelectorAll('[data-product-card]'));
       const emptyState = document.querySelector('[data-product-empty]');
       const countPill = document.querySelector('[data-product-count]');
+      const modal = document.querySelector('[data-product-modal]');
+      const modalDialog = modal?.querySelector('.product-modal__dialog');
+      const modalImage = modal?.querySelector('[data-product-modal-image]');
+      const modalWhatsapp = modal?.querySelector('[data-product-modal-whatsapp]');
+      const productTriggers = Array.from(document.querySelectorAll('[data-open-product-modal]'));
       let activeFilter = 'semua';
+      let lastProductTrigger = null;
+
+      const productDetails = {
+        'key-propolis': {
+          name: 'KEY Propolis',
+          image: '../images/key-propolis.png',
+          category: 'Katalog reseller',
+          status: 'Perlu cek label',
+          composition: 'Belum tersedia di data website',
+          permit: 'Belum tersedia di data website',
+          halal: 'Belum tersedia di data website',
+          usage: 'Ikuti label resmi atau tanyakan admin',
+          price: 'Tanya admin',
+          stock: 'Tanya admin',
+          summary: 'KEY Propolis ditampilkan sebagai katalog informasi produk. Informasi penggunaan, komposisi, dan peringatan perlu mengikuti label resmi serta kanal produk terkait.',
+          note: 'Produk bukan pengganti konsultasi tenaga kesehatan. Tidak ada jaminan hasil tertentu. Jika memiliki kondisi khusus, sedang hamil/menyusui, minum obat rutin, atau mengalami keluhan berat, konsultasikan kepada tenaga kesehatan.',
+          whatsapp: 'https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20KEY%20Propolis.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya.'
+        },
+        'langfit-deto-pro': {
+          name: 'Langfit Deto Pro',
+          image: '../images/langfit-deto-pro.png',
+          category: 'Katalog reseller',
+          status: 'Perlu cek label',
+          composition: 'Belum tersedia di data website',
+          permit: 'Belum tersedia di data website',
+          halal: 'Belum tersedia di data website',
+          usage: 'Ikuti label resmi atau tanyakan admin',
+          price: 'Tanya admin',
+          stock: 'Tanya admin',
+          summary: 'Langfit Deto Pro ditampilkan sebagai katalog informasi produk. Baca label, pahami aturan penggunaan, dan hindari menilai produk hanya dari testimoni.',
+          note: 'Produk bukan pengganti konsultasi tenaga kesehatan. Tidak ada jaminan hasil tertentu. Jika memiliki kondisi khusus, sedang hamil/menyusui, minum obat rutin, atau mengalami keluhan berat, konsultasikan kepada tenaga kesehatan.',
+          whatsapp: 'https://wa.me/6288708862581?text=Assalamualaikum%20admin%20VitaNusa.%20Saya%20ingin%20bertanya%20tentang%20produk%20Langfit%20Deto%20Pro.%20Mohon%20info%20label%20resmi%2C%20komposisi%2C%20aturan%20pakai%2C%20peringatan%2C%20harga%2C%20dan%20ketersediaannya.'
+        }
+      };
+
+      const modalTextFields = {
+        title: modal?.querySelector('[data-product-modal-title]'),
+        name: modal?.querySelector('[data-product-modal-name]'),
+        category: modal?.querySelector('[data-product-modal-category]'),
+        status: modal?.querySelector('[data-product-modal-status]'),
+        composition: modal?.querySelector('[data-product-modal-composition]'),
+        permit: modal?.querySelector('[data-product-modal-permit]'),
+        halal: modal?.querySelector('[data-product-modal-halal]'),
+        usage: modal?.querySelector('[data-product-modal-usage]'),
+        price: modal?.querySelector('[data-product-modal-price]'),
+        stock: modal?.querySelector('[data-product-modal-stock]'),
+        summary: modal?.querySelector('[data-product-modal-summary]'),
+        note: modal?.querySelector('[data-product-modal-note]')
+      };
 
       const normalize = (value) => (value || '').toString().toLowerCase().trim();
+
+      const focusWithoutScroll = (element) => {
+        if (!element) return;
+
+        try {
+          element.focus({ preventScroll: true });
+        } catch {
+          element.focus();
+        }
+      };
+
+      const renderProductModal = (product) => {
+        const textValues = {
+          ...product,
+          title: product.name
+        };
+
+        Object.entries(modalTextFields).forEach(([key, element]) => {
+          if (element) element.textContent = textValues[key] || '';
+        });
+
+        if (modalImage) {
+          modalImage.src = product.image;
+          modalImage.alt = product.name;
+        }
+
+        if (modalWhatsapp) {
+          modalWhatsapp.href = product.whatsapp;
+          modalWhatsapp.setAttribute(
+            'aria-label',
+            `Tanya admin tentang ${product.name} melalui WhatsApp`
+          );
+        }
+      };
+
+      const openProductModal = (productId, trigger) => {
+        const product = productDetails[productId];
+        if (!product || !modal || !modalDialog) return;
+
+        if (lastProductTrigger && lastProductTrigger !== trigger) {
+          lastProductTrigger.setAttribute('aria-expanded', 'false');
+        }
+
+        lastProductTrigger = trigger;
+        lastProductTrigger?.setAttribute('aria-expanded', 'true');
+        renderProductModal(product);
+
+        modal.hidden = false;
+        modalDialog.scrollTop = 0;
+        document.body.classList.add('product-modal-open');
+
+        window.requestAnimationFrame(() => {
+          focusWithoutScroll(modalDialog);
+        });
+      };
+
+      const closeProductModal = () => {
+        if (!modal || modal.hidden) return;
+
+        modal.hidden = true;
+        document.body.classList.remove('product-modal-open');
+
+        const focusTarget = lastProductTrigger;
+        lastProductTrigger?.setAttribute('aria-expanded', 'false');
+        lastProductTrigger = null;
+
+        window.requestAnimationFrame(() => {
+          focusWithoutScroll(focusTarget);
+        });
+      };
+
+      const getFocusableModalElements = () => {
+        if (!modalDialog) return [];
+
+        return Array.from(modalDialog.querySelectorAll(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter((element) => element.getClientRects().length > 0);
+      };
 
       const setActiveButtons = () => {
         filterButtons.forEach((button) => {
@@ -1246,6 +1593,55 @@
       if (searchInput) {
         searchInput.addEventListener('input', updateProducts);
       }
+
+      productTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+          openProductModal(trigger.dataset.openProductModal, trigger);
+        });
+      });
+
+      modal?.addEventListener('click', (event) => {
+        const closeTarget = event.target instanceof Element
+          ? event.target.closest('[data-close-product-modal]')
+          : null;
+
+        if (closeTarget && modal.contains(closeTarget)) {
+          closeProductModal();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!modal || modal.hidden) return;
+
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeProductModal();
+          return;
+        }
+
+        if (event.key !== 'Tab' || !modalDialog) return;
+
+        const focusableElements = getFocusableModalElements();
+        if (!focusableElements.length) {
+          event.preventDefault();
+          focusWithoutScroll(modalDialog);
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (
+          event.shiftKey &&
+          (document.activeElement === firstElement || document.activeElement === modalDialog)
+        ) {
+          event.preventDefault();
+          focusWithoutScroll(lastElement);
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          focusWithoutScroll(firstElement);
+        }
+      });
 
       updateProducts();
     })();
