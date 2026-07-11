@@ -1,9 +1,11 @@
 const menuToggle = document.getElementById('menuToggle');
 const navLinks = document.getElementById('navLinks');
 const searchInput = document.getElementById('searchInput');
+const clearSearchButton = document.getElementById('clearSearch');
 const filterButtons = [...document.querySelectorAll('.filter-btn')];
 const pathFilterButtons = [...document.querySelectorAll('.path-filter')];
 const emptyState = document.getElementById('emptyState');
+const resultCount = document.getElementById('articleResultCount');
 const articleList = document.getElementById('artikelList');
 
 let currentCategory = 'semua';
@@ -17,7 +19,7 @@ if (menuToggle && navLinks) {
 
 filterButtons.forEach((button) => {
   button.addEventListener('click', () => {
-    setActiveCategory(button.dataset.category || 'semua');
+    setActiveCategory(button.dataset.category || 'semua', button);
     filterArticles();
   });
 });
@@ -25,16 +27,27 @@ filterButtons.forEach((button) => {
 pathFilterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const nextCategory = button.dataset.filterTarget || 'semua';
-    setActiveCategory(nextCategory);
+    const matchingButton = filterButtons.find((filterButton) => (
+      normalizeText(filterButton.dataset.category || 'semua') === normalizeText(nextCategory)
+    ));
+    setActiveCategory(nextCategory, matchingButton);
     filterArticles();
     articleList?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
 
 searchInput?.addEventListener('input', filterArticles);
-window.addEventListener('vitanusa:public-articles-rendered', filterArticles);
+clearSearchButton?.addEventListener('click', () => {
+  if (!searchInput) return;
+  searchInput.value = '';
+  const allButton = filterButtons.find((button) => normalizeText(button.dataset.category || '') === 'semua');
+  setActiveCategory('semua', allButton);
+  searchInput.focus();
+  filterArticles();
+});
+document.addEventListener('vitanusa:public-articles-rendered', filterArticles);
 
-function setActiveCategory(category) {
+function setActiveCategory(category, activeButton = null) {
   currentCategory = normalizeText(category || 'semua');
 
   filterButtons.forEach((button) => {
@@ -42,6 +55,8 @@ function setActiveCategory(category) {
     button.classList.toggle('active', isActive);
     button.setAttribute('aria-pressed', String(isActive));
   });
+
+  activeButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 function getArticleCards() {
@@ -68,11 +83,15 @@ function filterArticles() {
     const isVisible = matchKeyword && matchCategory;
 
     card.hidden = !isVisible;
+    card.setAttribute('aria-hidden', String(!isVisible));
     if (isVisible) visibleCount += 1;
   });
 
-  if (emptyState) {
-    emptyState.hidden = visibleCount !== 0;
+  if (emptyState) emptyState.hidden = visibleCount !== 0;
+  if (clearSearchButton) clearSearchButton.hidden = !searchInput?.value;
+  if (resultCount) {
+    const suffix = currentCategory === 'semua' ? '' : ' pada kategori ini';
+    resultCount.textContent = `${visibleCount} artikel ditemukan${suffix}.`;
   }
 }
 

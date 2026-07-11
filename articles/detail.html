@@ -8,35 +8,41 @@
   <meta property="og:title" content="Artikel Edukasi | VitaNusa AI" />
   <meta property="og:description" content="Baca artikel edukasi VitaNusa AI yang bersifat edukasi dan refleksi, bukan diagnosis medis." />
   <meta property="og:type" content="article" />
-  <link rel="stylesheet" href="articles-style.css" />
   <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260703-public-design-v1" />
+  <link rel="stylesheet" href="articles-style.css?v=20260711-article-reading-ui-v1" />
 </head>
 <body class="vn-page article-page">
   <a class="skip-link skip" href="#main">Lewati ke konten</a>
-<main id="main" class="main-container article-detail-container vn-section">
+  <main id="main" class="main-container article-detail-container vn-section">
     <a href="index.html" class="back-link">← Kembali ke Daftar Artikel</a>
 
-    <section data-public-article-detail>
-      <div class="empty-state article-detail-empty" style="display:block;">
-        <h3>Memuat artikel...</h3>
+    <section class="article-detail-shell" data-public-article-detail aria-busy="true">
+      <div class="empty-state article-detail-empty" role="status">
+        <h2>Memuat artikel...</h2>
+        <p>Mohon tunggu sebentar. Bacaan sedang disiapkan.</p>
+        <a href="index.html" class="btn btn-secondary">Kembali ke Daftar Artikel</a>
       </div>
     </section>
   </main>
 
-  <section class="cta-section">
-    <div class="cta-box">
-      <p class="eyebrow">Catatan Amanah</p>
-      <h2>Edukasi bukan pengganti konsultasi medis.</h2>
-      <p>Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, konsultasikan kepada tenaga kesehatan profesional.</p>
-      <a href="index.html" class="btn-primary">Baca Artikel Lain</a>
+  <section class="cta-section detail-cta vn-section" aria-labelledby="detailDisclaimerTitle">
+    <div class="wrap vn-container">
+      <div class="cta-box disclaimer-box vn-card vn-note">
+        <p class="eyebrow">Catatan Amanah</p>
+        <h2 id="detailDisclaimerTitle">Edukasi bukan pengganti konsultasi medis.</h2>
+        <p>Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, konsultasikan kepada tenaga kesehatan profesional.</p>
+        <div class="actions vn-actions">
+          <a href="index.html" class="btn btn-primary">Baca Artikel Lain</a>
+          <a href="../prinsip-amanah.html" class="btn btn-secondary">Prinsip Amanah</a>
+        </div>
+      </div>
     </div>
   </section>
 
   <footer class="site-footer vn-footer">
-    <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian.</p>
+    <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian. <a href="../prinsip-amanah.html">Prinsip Amanah</a></p>
   </footer>
 
-  <script src="articles-main.js"></script>
-  <script type="module" src="../assets/js/modules/public-articles.js?v=20260704-vitanusa-master-map-v1"></script>
+  <script type="module" src="../assets/js/modules/public-articles.js?v=20260711-article-reading-ui-v1"></script>
 </body>
 </html>

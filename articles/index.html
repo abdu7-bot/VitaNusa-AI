@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ruang Baca Edukasi Sehat | VitaNusa AI</title>
   <meta name="description" content="Ruang baca VitaNusa AI berisi artikel edukasi kesehatan, kebiasaan sehat, literasi produk, AI edukasi, pencernaan, dan prinsip amanah." />
-  <link rel="stylesheet" href="articles-style.css?v=20260709-vn-page-unify-v1" />
   <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260709-vn-page-unify-v1" />
+  <link rel="stylesheet" href="articles-style.css?v=20260711-article-reading-ui-v1" />
 </head>
 <body class="vn-page article-page">
   <a class="skip-link skip" href="#main">Lewati ke konten</a>
@@ -42,6 +42,7 @@
           <div class="search-box">
             <label class="sr-only" for="searchInput">Cari artikel, kategori, atau topik</label>
             <input type="search" id="searchInput" placeholder="Cari artikel, kategori, atau topik…" aria-label="Cari artikel, kategori, atau topik" autocomplete="off" />
+            <button class="clear-search" id="clearSearch" type="button" aria-label="Hapus pencarian" hidden>Hapus</button>
           </div>
           <p class="article-ux-note vn-note">Edukasi dulu, bukan klaim. Informasi kesehatan bukan diagnosis.</p>
           <div class="filter-buttons" role="group" aria-label="Filter kategori artikel">
@@ -59,6 +60,7 @@
             <button class="filter-btn" type="button" data-category="kapan harus ke dokter" aria-pressed="false">Kapan Harus ke Dokter</button>
             <button class="filter-btn" type="button" data-category="mitos vs fakta" aria-pressed="false">Mitos vs Fakta</button>
           </div>
+          <p class="article-result-count" id="articleResultCount" role="status" aria-live="polite" aria-atomic="true"></p>
         </section>
 
         <section class="all-articles-section" aria-labelledby="allArticlesTitle">
@@ -135,8 +137,8 @@
 
   <footer class="site-footer vn-footer"><p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian. <a href="../prinsip-amanah.html">Prinsip Amanah</a> · <a href="../products/index.html">Produk Amanah</a></p></footer>
 
-  <script src="articles-main.js?v=20260624-articles-index-upgrade"></script>
-  <script type="module" src="../assets/js/modules/public-articles.js?v=20260704-vitanusa-master-map-v1"></script>
+  <script type="module" src="articles-main.js?v=20260711-article-reading-ui-v1"></script>
+  <script type="module" src="../assets/js/modules/public-articles.js?v=20260711-article-reading-ui-v1"></script>
   <script type="module">
     import { initNusaUiShell } from '../assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
     initNusaUiShell();
