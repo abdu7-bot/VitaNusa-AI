@@ -133,6 +133,11 @@ def build_answer(
             "Yang aman dilakukan adalah memeriksa label, komposisi, peringatan, izin yang tercantum, kualitas bukti, "
             "dan berkonsultasi untuk kondisi pribadi. Produk hanya opsi pendukung, bukan solusi utama."
         )
+        if "universal_safety_claim_detected" in product_claim.reasons:
+            answer += (
+                "\n\nAlami tidak otomatis halal, dan halal tidak otomatis cocok atau aman "
+                "untuk setiap orang."
+            )
         return _append_policy_notes(
             answer,
             decision,
@@ -236,6 +241,14 @@ def build_answer(
     return _append_policy_notes(SAFE_FALLBACK_ANSWER, decision)
 
 
+def _is_product_catalog_route(href: str) -> bool:
+    normalized = href.strip().lower().split("?", 1)[0].split("#", 1)[0]
+    return (
+        normalized in {"products", "products/", "products/index.html"}
+        or "/products/" in normalized
+    )
+
+
 def build_actions(
     intent: str,
     decision: PolicyDecision | None = None,
@@ -274,8 +287,7 @@ def build_actions(
         actions = [
             action
             for action in actions
-            if "products" not in action["href"].lower()
-            and "produk" not in action["label"].lower()
+            if not _is_product_catalog_route(action["href"])
         ]
 
     return actions
