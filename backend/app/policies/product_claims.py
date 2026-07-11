@@ -33,7 +33,15 @@ class ProductClaimsPolicy(BasePolicy):
     def evaluate(self, context: PolicyContext) -> PolicyResult | None:
         text = context.normalized_question
         healing_claim = _contains_any(text, HEALING_CLAIM_TERMS)
-        universal_safety_claim = _contains_any(text, NATURAL_SAFETY_TERMS)
+        natural_context = "alami" in text or "natural" in text
+        universal_safety_claim = _contains_any(text, NATURAL_SAFETY_TERMS) or (
+            natural_context
+            and (
+                "pasti halal" in text
+                or "pasti aman" in text
+                or ("halal" in text and "aman" in text)
+            )
+        )
 
         if not healing_claim and not universal_safety_claim:
             return None
@@ -57,8 +65,13 @@ class ProductClaimsPolicy(BasePolicy):
             recommended_action=(
                 "Gunakan edukasi label dan klaim; untuk kondisi pribadi, konsultasikan kepada tenaga kesehatan."
             ),
-            reasons=(
-                "healing_claim_detected" if healing_claim else "universal_safety_claim_detected",
+            reasons=tuple(
+                reason
+                for active, reason in (
+                    (healing_claim, "healing_claim_detected"),
+                    (universal_safety_claim, "universal_safety_claim_detected"),
+                )
+                if active
             ),
             metadata={
                 "allowed_actions": ("provide_product_literacy", "show_educational_articles"),
