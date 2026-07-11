@@ -61,6 +61,19 @@ function focusInputWithoutPageScroll(input) {
   }
 }
 
+function resizeChatInput(input) {
+  if (!(input instanceof HTMLTextAreaElement)) return;
+
+  const maxHeight = 144;
+
+  input.style.height = 'auto';
+
+  const nextHeight = Math.min(input.scrollHeight, maxHeight);
+
+  input.style.height = `${nextHeight}px`;
+  input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+}
+
 function createRouteLink(action) {
   const link = document.createElement('a');
   link.className = 'nusa-route-link';
@@ -328,11 +341,27 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
   log.replaceChildren();
   log.hidden = true;
 
+  input.addEventListener('input', () => {
+    resizeChatInput(input);
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    if (event.isComposing) return;
+    if (event.shiftKey) return;
+
+    event.preventDefault();
+    form.requestSubmit();
+  });
+
+  resizeChatInput(input);
+
   function resetChat({ focus = true } = {}) {
     state.requestId += 1;
     log.replaceChildren();
     log.hidden = true;
     input.value = '';
+    resizeChatInput(input);
     if (focus) {
       focusInputWithoutPageScroll(input);
     }
@@ -345,6 +374,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     const requestId = ++state.requestId;
     appendMessage(log, 'user', question);
     input.value = '';
+    resizeChatInput(input);
     scrollLogToBottom(log);
 
     setTimeout(async () => {
