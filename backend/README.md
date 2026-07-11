@@ -1,6 +1,34 @@
 # VitaNusa AI Brain Backend
 
-Backend ini adalah tahap awal VitaNusa AI Brain berbasis FastAPI. Saat ini sistem masih rule-based: intent detector, risk classifier, safety guard kesehatan, dan Qur'anic Reflection opsional. Belum ada OpenAI API, RAG, embedding, vector database, API key, token, password, atau secret di repository.
+Backend FastAPI VitaNusa AI bersifat rule-based. Ia memakai intent detector, medical risk classifier, hierarchy policy engine, response router, dan Qur'anic Reflection opsional.
+
+Tidak ada OpenAI API, RAG, embedding, vector database, secret, atau dependency berat baru di fondasi ini.
+
+## Arsitektur
+
+```text
+normalize input
+  → detect intent
+  → classify medical risk
+  → run policy registry
+  → aggregate PolicyDecision
+  → route content/actions
+  → build AskResponse
+```
+
+Folder policy:
+
+```text
+app/policies/
+├── base.py
+├── registry.py
+├── medical_safety.py
+├── authority_boundary.py
+├── islamic_boundary.py
+├── halal_thayyib.py
+├── product_claims.py
+└── content_integrity.py
+```
 
 ## Menjalankan Lokal
 
@@ -10,122 +38,66 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Server lokal default:
+## Endpoint
 
-```text
-http://127.0.0.1:8000
-```
+- `GET /`
+- `GET /health`
+- `POST /ask`
 
-## Cara Test
-
-```bash
-curl http://127.0.0.1:8000/
-curl http://127.0.0.1:8000/health
-```
-
-Contoh `POST /ask`:
-
-```bash
-curl -X POST http://127.0.0.1:8000/ask \
-  -H "Content-Type: application/json" \
-  -d "{\"question\":\"Aplikasi apa ini?\"}"
-```
-
-Endpoint `/ask` menerima:
+Request:
 
 ```json
 {
-  "question": "Aplikasi apa ini?",
+  "question": "Apakah produk ini halal?",
   "includeQuranicReflection": false
 }
 ```
 
-Response berisi:
+Response tetap mempertahankan field lama dan menambah `policyDecision`:
 
 ```json
 {
-  "question": "Aplikasi apa ini?",
-  "intent": "identity",
-  "safetyLevel": "low",
+  "question": "Apakah produk ini halal?",
+  "intent": "product_claim",
+  "safetyLevel": "medium",
   "answer": "jawaban aman",
-  "disclaimer": "disclaimer VitaNusa AI",
-  "recommendedAction": "aksi aman atau null",
+  "disclaimer": "disclaimer",
+  "recommendedAction": "aksi aman",
   "actions": [],
   "sources": [],
-  "quranicReflection": null
+  "quranicReflection": null,
+  "policyDecision": {
+    "dominantPolicy": "halal_thayyib",
+    "responseBlocked": false,
+    "allowedActions": [],
+    "prohibitedActions": [],
+    "warnings": [],
+    "recommendedAction": null,
+    "results": []
+  }
 }
 ```
 
-Pertanyaan kosong mengembalikan HTTP 400.
+Frontend lama tetap memakai `answer`, `intent`, `safetyLevel`, dan `actions` tanpa perubahan.
 
-## Endpoint
+## Test
 
-- `GET /` mengembalikan status service.
-- `GET /health` mengembalikan `{ "status": "healthy" }`.
-- `POST /ask` mengembalikan jawaban edukatif berdasarkan intent dan risk classifier.
-
-## Deploy ke Render
-
-Pengaturan Render manual:
-
-```text
-Root Directory: backend
-Build Command: pip install -r requirements.txt
-Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```bash
+cd backend
+python -m unittest discover -s tests -v
+python -m compileall -q app tests
 ```
 
-Repository juga menyediakan `render.yaml` di root:
+Dengan server aktif:
 
-```yaml
-services:
-  - type: web
-    name: vitanusa-ai-backend
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    plan: free
+```bash
+python tests/ci_smoke_test.py
 ```
 
-## CORS
+## CORS dan Deploy
 
-Default allowed origins:
+Konfigurasi CORS, `render.yaml`, root directory, dan perintah deploy tidak diubah oleh policy engine.
 
-- `http://localhost:5173`
-- `http://localhost:3000`
-- `http://127.0.0.1:5500`
-- `https://abdu7-bot.github.io`
+## Safety
 
-Untuk override:
-
-```text
-VITANUSA_ALLOWED_ORIGINS=https://abdu7-bot.github.io,http://localhost:5173
-```
-
-## Mengganti URL Backend Frontend
-
-Frontend Nusa Chat membaca URL backend dengan prioritas:
-
-1. `window.VITANUSA_BACKEND_ASK_URL`
-2. meta tag `vitanusa-backend-ask-url`
-3. fallback lokal `http://127.0.0.1:8000/ask`
-
-Contoh:
-
-```html
-<script>
-  window.VITANUSA_BACKEND_ASK_URL = "https://nama-backend.onrender.com/ask";
-</script>
-```
-
-Atau:
-
-```html
-<meta name="vitanusa-backend-ask-url" content="https://nama-backend.onrender.com/ask">
-```
-
-Jika backend gagal, frontend tetap memakai jawaban lokal `getNusaReply`.
-
-## Catatan Safety
-
-Backend tidak membuat diagnosis, tidak memberi dosis obat resep, tidak menyarankan menghentikan obat dokter, tidak menjanjikan hasil produk, tidak memberi fatwa, dan tidak membuat tafsir baru. Refleksi Qur'ani hanya muncul bila diminta lewat `includeQuranicReflection: true` atau intent refleksi terdeteksi.
+Backend tidak memberi diagnosis, dosis personal, fatwa final, atau klaim kesembuhan. Status halal tidak ditebak. Emergency mengalahkan intent produk dan menghapus action produk/artikel biasa.

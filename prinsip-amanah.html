@@ -4,27 +4,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Prinsip Amanah VitaNusa AI</title>
-  <meta name="description" content="Piagam Prinsip Amanah VitaNusa AI: edukasi dulu, produk kemudian, tanpa klaim berlebihan, tanpa diagnosis, dan tanpa fatwa final.">
+  <meta name="description" content="Landasan Qur'ani, hierarki keselamatan, batas AI, halal-thayyib, dan etika produk VitaNusa AI.">
   <meta name="theme-color" content="#14532d">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260709-vn-page-unify-v1">
   <style>
     .constitution-hero .wrap {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(250px, 340px);
-      gap: clamp(18px, 4vw, 42px);
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap: clamp(20px, 4vw, 44px);
       align-items: end;
+    }
+
+    .hero-note,
+    .principle-panel,
+    .verse-card,
+    .hierarchy-card,
+    .boundary-card,
+    .status-card,
+    .flow-card {
+      border: 1px solid rgba(20, 83, 45, .14);
     }
 
     .hero-note {
       display: grid;
-      gap: 8px;
-      padding: 18px;
-      border-color: rgba(255, 255, 255, .26);
+      gap: 10px;
+      padding: 20px;
+      border-color: rgba(255, 255, 255, .28);
       background: rgba(255, 255, 255, .12);
       color: #fff;
       backdrop-filter: blur(12px);
       box-shadow: 0 18px 44px rgba(0, 0, 0, .12);
+    }
+
+    .hero-note p,
+    .hero-note strong {
+      margin: 0;
     }
 
     .hero-note a {
@@ -35,15 +50,121 @@
 
     .constitution-content {
       display: grid;
-      gap: 26px;
+      gap: clamp(28px, 5vw, 54px);
     }
 
     .section-title {
       margin: 0 0 10px;
       color: var(--vn-green-900);
       font-size: clamp(1.45rem, 3vw, 2rem);
+      line-height: 1.2;
     }
 
+    .section-copy {
+      max-width: 760px;
+      margin: 0 0 18px;
+      color: #405549;
+      line-height: 1.72;
+    }
+
+    .verse-grid,
+    .hierarchy-grid,
+    .boundary-grid,
+    .status-grid,
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(14px, 2.2vw, 22px);
+    }
+
+    .verse-card,
+    .hierarchy-card,
+    .boundary-card,
+    .status-card,
+    .flow-card,
+    .principle-panel {
+      background: #fff;
+      box-shadow: 0 16px 38px rgba(20, 83, 45, .07);
+    }
+
+    .verse-card,
+    .hierarchy-card,
+    .boundary-card,
+    .status-card,
+    .flow-card {
+      padding: clamp(17px, 2.6vw, 24px);
+      border-radius: 22px;
+    }
+
+    .verse-card h3,
+    .hierarchy-card h3,
+    .boundary-card h3,
+    .status-card h3,
+    .flow-card h3 {
+      margin: 0 0 9px;
+      color: var(--vn-green-900);
+    }
+
+    .verse-card p,
+    .hierarchy-card p,
+    .boundary-card p,
+    .status-card p,
+    .flow-card p {
+      margin: 0;
+      color: #405549;
+      line-height: 1.65;
+    }
+
+    .verse-card .arabic {
+      margin: 14px 0;
+      color: #173f2c;
+      font-family: "Noto Naskh Arabic", "Amiri", serif;
+      font-size: clamp(1.35rem, 3vw, 1.82rem);
+      line-height: 1.9;
+      text-align: right;
+      direction: rtl;
+    }
+
+    .verse-label,
+    .priority-label,
+    .status-label {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 8px;
+      border-radius: 999px;
+      background: #e9f6ed;
+      color: #14532d;
+      font-size: .78rem;
+      font-weight: 900;
+      padding: 6px 10px;
+    }
+
+    .hierarchy-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .hierarchy-line span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      border: 1px solid rgba(20, 83, 45, .14);
+      border-radius: 999px;
+      background: #f8fff9;
+      color: #173f2c;
+      font-size: .86rem;
+      font-weight: 850;
+      padding: 8px 12px;
+    }
+
+    .hierarchy-line b {
+      color: #a56b00;
+    }
+
+    .priority-list,
     .clean-list {
       display: grid;
       gap: 10px;
@@ -52,19 +173,56 @@
       list-style: none;
     }
 
+    .priority-list {
+      counter-reset: priority;
+    }
+
+    .priority-list li {
+      counter-increment: priority;
+      position: relative;
+      min-height: 50px;
+      padding: 13px 14px 13px 58px;
+      border: 1px solid rgba(20, 83, 45, .13);
+      border-radius: 16px;
+      background: #fff;
+      color: #2f4439;
+      line-height: 1.5;
+    }
+
+    .priority-list li::before {
+      content: counter(priority);
+      position: absolute;
+      left: 13px;
+      top: 10px;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: #14532d;
+      color: #ffe0a4;
+      font-weight: 900;
+    }
+
+    .principle-panel {
+      padding: clamp(18px, 3vw, 28px);
+      border-radius: 24px;
+    }
+
     .clean-list li {
       position: relative;
-      padding: 12px 14px 12px 38px;
+      padding: 12px 14px 12px 40px;
       border: 1px solid rgba(22, 163, 74, .12);
       border-radius: 16px;
       background: #fff;
       color: #2f4439;
+      line-height: 1.55;
     }
 
     .clean-list li::before {
       content: "✓";
       position: absolute;
-      left: 14px;
+      left: 15px;
       top: 12px;
       color: var(--vn-green-700);
       font-weight: 900;
@@ -80,79 +238,102 @@
       color: #7a5200;
     }
 
-    .principle-card span,
-    .flow-card span {
+    .status-card[data-status="unknown"] {
+      border-color: rgba(180, 83, 9, .25);
+      background: #fffaf0;
+    }
+
+    .status-card[data-status="verified"] {
+      border-color: rgba(22, 163, 74, .24);
+      background: #f7fff9;
+    }
+
+    .safety-callout {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      padding: clamp(18px, 3vw, 26px);
+      border: 1px solid rgba(180, 83, 9, .2);
+      border-radius: 24px;
+      background: #fff8e8;
+    }
+
+    .safety-callout strong {
       display: grid;
       place-items: center;
-      width: 38px;
-      height: 38px;
-      margin-bottom: 12px;
+      width: 42px;
+      height: 42px;
       border-radius: 14px;
-      background: #e7f6ed;
-      color: var(--vn-green-900);
-      font-weight: 900;
+      background: #7a5200;
+      color: #fff;
+      font-size: 1.15rem;
+    }
+
+    .safety-callout h3,
+    .safety-callout p {
+      margin: 0;
+    }
+
+    .safety-callout h3 {
+      color: #604000;
+    }
+
+    .safety-callout p {
+      margin-top: 6px;
+      color: #5a4926;
+      line-height: 1.66;
+    }
+
+    .flow-card {
+      position: relative;
+      padding-top: 58px;
     }
 
     .flow-card span {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
       border-radius: 999px;
       background: var(--vn-green-900);
       color: var(--vn-gold);
-    }
-
-    .faq-stack {
-      display: grid;
-      gap: 10px;
-    }
-
-    .faq-card {
-      overflow: hidden;
-    }
-
-    .faq-card summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      color: var(--vn-green-900);
       font-weight: 900;
-      cursor: pointer;
-      list-style: none;
     }
 
-    .faq-card summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .faq-card summary::after {
-      content: "+";
-      display: grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: var(--vn-green-100);
-      color: var(--vn-green-900);
-    }
-
-    .faq-card[open] summary::after {
-      content: "−";
-    }
-
-    .faq-card div {
-      padding-top: 12px;
-      color: #33493d;
-      line-height: 1.65;
-    }
-
-    @media (max-width: 1050px) {
-      .constitution-hero .wrap {
+    @media (max-width: 900px) {
+      .constitution-hero .wrap,
+      .verse-grid,
+      .hierarchy-grid,
+      .boundary-grid,
+      .status-grid {
         grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 640px) {
-      .principle-cards,
       .flow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hierarchy-line {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .hierarchy-line span {
+        width: 100%;
+        border-radius: 14px;
+      }
+
+      .hierarchy-line b {
+        display: none;
+      }
+
+      .safety-callout {
         grid-template-columns: 1fr;
       }
     }
@@ -166,75 +347,180 @@
       <div class="wrap vn-container">
         <div>
           <p class="eyebrow vn-eyebrow">Prinsip Amanah VitaNusa AI</p>
-          <h1 id="pageTitle">Edukasi dulu, produk kemudian.</h1>
-          <p>Kami menjaga agar informasi kesehatan, produk, dan refleksi hidup tetap jujur, tenang, dan tidak berlebihan.</p>
+          <h1 id="pageTitle">Ilmu dan keselamatan lebih dahulu, produk tetap di belakang.</h1>
+          <p>VitaNusa AI memakai nilai Islam sebagai kompas etika: jujur, amanah, adil, tidak membahayakan, dan tidak melampaui batas ilmu.</p>
           <div class="actions-minimal vn-actions">
             <a class="btn wa" href="index.html">Tanya Nusa AI</a>
-            <a class="btn outline" href="faq.html">Baca FAQ</a>
+            <a class="btn outline" href="articles/index.html">Baca Artikel</a>
           </div>
         </div>
 
-        <aside class="hero-note vn-card" aria-label="Batas utama">
+        <aside class="hero-note vn-card" aria-label="Batas utama VitaNusa AI">
           <strong>Batas utama</strong>
-          <p>VitaNusa AI membantu belajar. Bukan pengganti dokter, resep, fatwa final, atau keputusan profesional.</p>
-          <a href="contact.html">Hubungi admin bila perlu</a>
+          <p>VitaNusa AI bukan dokter, alat diagnosis, pemberi dosis, mufti, atau sales agresif.</p>
+          <p>Dalam keadaan darurat, pertolongan medis selalu didahulukan daripada artikel, VitaCheck, atau produk.</p>
+          <a href="contact.html">Hubungi admin untuk informasi umum</a>
         </aside>
       </div>
     </section>
 
     <section class="constitution-main vn-section">
-      <div class="wrap vn-container constitution-grid">
-        <div class="constitution-content">
-          <section id="prinsip" class="vn-section-block">
-            <h2 class="section-title">Empat prinsip utama</h2>
-            <p class="section-copy vn-note">Bagian ini adalah pegangan dasar agar VitaNusa AI tidak berubah menjadi ruang klaim, promosi berlebihan, atau nasihat yang melampaui batas ilmu.</p>
-            <div class="principle-cards vn-grid">
-              <article class="principle-card vn-card"><span>1</span><h3>Edukasi dulu</h3><p>Konten dibuat untuk memahami, bukan memaksa membeli.</p></article>
-              <article class="principle-card vn-card"><span>2</span><h3>Tidak menjanjikan hasil</h3><p>Produk tidak boleh disebut pasti menyembuhkan atau pasti cocok.</p></article>
-              <article class="principle-card vn-card"><span>3</span><h3>Testimoni bukan bukti utama</h3><p>Pengalaman pribadi tidak sama dengan bukti yang cukup.</p></article>
-              <article class="principle-card vn-card"><span>4</span><h3>Baca label resmi</h3><p>Keputusan harus melihat label, kondisi pribadi, dan rujukan ahli.</p></article>
-            </div>
-          </section>
+      <div class="wrap vn-container constitution-content">
+        <section aria-labelledby="quranTitle">
+          <h2 class="section-title" id="quranTitle">Landasan Qur'ani yang dibedakan dengan jelas</h2>
+          <p class="section-copy">Dua ayat berikut saling melengkapi, tetapi bukan satu ayat. Keduanya dipakai sebagai landasan nilai, bukan sebagai mesin fatwa otomatis.</p>
 
-          <section id="batas" class="panel vn-card">
-            <h2 class="section-title">Yang VitaNusa AI tidak lakukan</h2>
-            <ul class="clean-list no-list">
-              <li>Tidak memberi diagnosis kondisi pribadi.</li>
-              <li>Tidak memberi resep atau dosis obat.</li>
-              <li>Tidak memberi fatwa final.</li>
-              <li>Tidak menjanjikan produk menyembuhkan penyakit.</li>
-              <li>Tidak memakai testimoni sebagai bukti utama.</li>
-              <li>Tidak mendorong pembelian tergesa-gesa.</li>
+          <div class="verse-grid">
+            <article class="verse-card">
+              <span class="verse-label">QS. Al-Baqarah: 168</span>
+              <h3>Halal, thayyib, dan kewaspadaan terhadap jalan penipuan</h3>
+              <p class="arabic" lang="ar">يَا أَيُّهَا النَّاسُ كُلُوا مِمَّا فِي الْأَرْضِ حَلَالًا طَيِّبًا وَلَا تَتَّبِعُوا خُطُوَاتِ الشَّيْطَانِ ۚ إِنَّهُ لَكُمْ عَدُوٌّ مُبِينٌ</p>
+              <p>Ayat ini menjadi kompas agar pilihan tidak hanya mengejar manfaat, tetapi juga menjaga kehalalan, kebaikan, dan menjauhi langkah penipuan maupun kemudaratan.</p>
+            </article>
+
+            <article class="verse-card">
+              <span class="verse-label">QS. Al-Baqarah: 172</span>
+              <h3>Rezeki yang baik disambut dengan syukur</h3>
+              <p class="arabic" lang="ar">يَا أَيُّهَا الَّذِينَ آمَنُوا كُلُوا مِنْ طَيِّبَاتِ مَا رَزَقْنَاكُمْ وَاشْكُرُوا لِلَّهِ إِنْ كُنْتُمْ إِيَّاهُ تَعْبُدُونَ</p>
+              <p>Ayat ini menjadi landasan syukur dan penggunaan nikmat secara bertanggung jawab, tidak berlebihan, serta tidak mengubah produk menjadi janji keselamatan mutlak.</p>
+            </article>
+          </div>
+        </section>
+
+        <section aria-labelledby="valueTitle">
+          <h2 class="section-title" id="valueTitle">Hierarki nilai VitaNusa AI</h2>
+          <p class="section-copy">Nilai memberi arah. Ia tidak menggantikan pemeriksaan medis, bukti resmi, atau keputusan ahli.</p>
+          <div class="principle-panel">
+            <div class="hierarchy-line" aria-label="Hierarki nilai">
+              <span>Iman dan amanah</span><b>→</b>
+              <span>Kebenaran</span><b>→</b>
+              <span>Keadilan</span><b>→</b>
+              <span>Maslahat</span><b>→</b>
+              <span>Tidak membahayakan</span><b>→</b>
+              <span>Transparansi</span><b>→</b>
+              <span>Tidak berlebihan</span>
+            </div>
+            <div class="hierarchy-line" aria-label="Hierarki halal dan thayyib">
+              <span>Iman dan amanah</span><b>→</b>
+              <span>Halal</span><b>→</b>
+              <span>Thayyib</span><b>→</b>
+              <span>Syukur dan proporsional</span><b>→</b>
+              <span>Menjauhi klaim palsu dan mudarat</span><b>→</b>
+              <span>Edukasi</span><b>→</b>
+              <span>Produk sebagai opsi pendukung</span>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="priorityTitle">
+          <h2 class="section-title" id="priorityTitle">Ketika banyak aturan aktif, keselamatan menentukan urutan</h2>
+          <p class="section-copy">Urutan ini bukan merendahkan pentingnya halal. Maksudnya, orang yang sesak berat perlu ditolong dahulu; pembahasan status produk dapat dilanjutkan setelah kondisi aman.</p>
+          <ol class="priority-list">
+            <li>Kondisi darurat dan keselamatan jiwa.</li>
+            <li>Pencegahan bahaya serius dan arahan kepada tenaga kesehatan.</li>
+            <li>Batas kewenangan AI: tidak mendiagnosis, memberi dosis, atau memilih terapi personal.</li>
+            <li>Batas agama: tidak memberi fatwa halal-haram final tanpa otoritas dan data yang cukup.</li>
+            <li>Validitas data, kejujuran status halal, dan penilaian thayyib yang kontekstual.</li>
+            <li>Pencegahan klaim produk berlebihan serta promosi yang mengeksploitasi rasa takut.</li>
+            <li>Edukasi singkat, artikel relevan, VitaCheck, lalu produk sebagai pilihan pendukung.</li>
+          </ol>
+        </section>
+
+        <aside class="safety-callout" aria-labelledby="safetyTitle">
+          <strong>!</strong>
+          <div>
+            <h3 id="safetyTitle">Mengapa keselamatan medis didahulukan?</h3>
+            <p>Nyeri dada, sesak berat, pingsan, kejang, perdarahan berat, gejala stroke, alergi berat, atau risiko menyakiti diri tidak boleh dialihkan ke katalog. Nusa AI akan mengarahkan bantuan darurat, tidak memberi diagnosis, dan menahan produk maupun artikel biasa sampai prioritas keselamatan terpenuhi.</p>
+          </div>
+        </aside>
+
+        <section aria-labelledby="boundaryTitle">
+          <h2 class="section-title" id="boundaryTitle">Batas kewenangan Nusa AI</h2>
+          <div class="boundary-grid">
+            <article class="boundary-card">
+              <span class="priority-label">Boleh membantu</span>
+              <h3>Edukasi dan tabayyun</h3>
+              <ul class="clean-list">
+                <li>Menjelaskan informasi kesehatan umum dengan bahasa sederhana.</li>
+                <li>Membantu membaca label, klaim, komposisi, dan peringatan secara kritis.</li>
+                <li>Mengarahkan artikel dan VitaCheck bila konteksnya aman.</li>
+                <li>Menyebut status bukti secara jujur dan mengarahkan kepada ahli.</li>
+              </ul>
+            </article>
+
+            <article class="boundary-card">
+              <span class="priority-label">Tidak dilakukan</span>
+              <h3>Tidak melampaui batas ilmu</h3>
+              <ul class="clean-list no-list">
+                <li>Tidak memberi diagnosis, resep, atau dosis personal.</li>
+                <li>Tidak memastikan produk cocok atau menyembuhkan kondisi pribadi.</li>
+                <li>Tidak memberi fatwa final atau menebak status halal.</li>
+                <li>Tidak memakai ketakutan, testimoni, atau klaim ajaib untuk mendorong pembelian.</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section aria-labelledby="halalTitle">
+          <h2 class="section-title" id="halalTitle">Status halal harus eksplisit dan dapat diaudit</h2>
+          <p class="section-copy">Tidak terlihat bahan haram bukan bukti yang cukup untuk menyatakan halal. Pernyataan produsen juga tidak sama dengan sertifikasi resmi.</p>
+          <div class="status-grid">
+            <article class="status-card" data-status="verified">
+              <span class="status-label">verified</span>
+              <h3>Bukti resmi dapat diperiksa</h3>
+              <p>Dipakai hanya bila otoritas dan nomor sertifikat atau tautan bukti tersedia serta sesuai dengan objek yang dibahas.</p>
+            </article>
+            <article class="status-card">
+              <span class="status-label">self_declared</span>
+              <h3>Pernyataan produsen</h3>
+              <p>Harus ditampilkan sebagai pernyataan produsen, bukan sebagai sertifikasi resmi.</p>
+            </article>
+            <article class="status-card" data-status="unknown">
+              <span class="status-label">unknown</span>
+              <h3>Belum dapat diverifikasi</h3>
+              <p>Tidak boleh diubah menjadi “halal” maupun “haram”. Pengguna diarahkan memeriksa bukti resmi.</p>
+            </article>
+            <article class="status-card">
+              <span class="status-label">not_applicable</span>
+              <h3>Tidak relevan</h3>
+              <p>Dipakai bila status halal memang tidak berlaku pada objek yang sedang dinilai.</p>
+            </article>
+          </div>
+        </section>
+
+        <section aria-labelledby="thayyibTitle">
+          <h2 class="section-title" id="thayyibTitle">Thayyib bukan badge “pasti aman untuk semua”</h2>
+          <div class="principle-panel">
+            <p class="section-copy">Thayyib diterjemahkan menjadi hal yang dapat dijelaskan: keamanan, kebersihan, komposisi, kelayakan penggunaan, risiko, peringatan, kelompok yang perlu berhati-hati, proporsionalitas, dan tidak membahayakan.</p>
+            <ul class="clean-list">
+              <li>Halal tidak otomatis cocok untuk setiap kondisi tubuh.</li>
+              <li>Alami tidak otomatis halal dan tidak otomatis aman.</li>
+              <li>Kesesuaian tetap bergantung pada data resmi, cara penggunaan, obat yang dikonsumsi, dan kondisi pengguna.</li>
+              <li>Informasi yang belum lengkap harus disebut belum lengkap, bukan ditutup dengan bahasa pemasaran.</li>
             </ul>
-          </section>
+          </div>
+        </section>
 
-          <section id="alur" class="vn-section-block">
-            <h2 class="section-title">Cara menggunakan VitaNusa dengan benar</h2>
-            <div class="flow-grid vn-grid">
-              <article class="flow-card vn-card"><span>1</span><h3>Tanya Nusa AI</h3><p>Mulai dari pertanyaan umum dan jujur.</p></article>
-              <article class="flow-card vn-card"><span>2</span><h3>Baca artikel</h3><p>Perkuat pemahaman sebelum mengambil keputusan.</p></article>
-              <article class="flow-card vn-card"><span>3</span><h3>Jalankan VitaCheck</h3><p>Refleksi kebiasaan, bukan diagnosis.</p></article>
-              <article class="flow-card vn-card"><span>4</span><h3>Pahami amanah</h3><p>Baca batas klaim dan batas edukasi.</p></article>
-              <article class="flow-card vn-card"><span>5</span><h3>Lihat produk</h3><p>Produk hanya opsi pendukung, bukan janji ajaib.</p></article>
-            </div>
-          </section>
-
-          <section id="faq" class="vn-section-block">
-            <h2 class="section-title">FAQ singkat</h2>
-            <div class="faq-stack">
-              <details class="faq-card vn-card" open><summary>Apakah VitaNusa AI menggantikan dokter?</summary><div>Tidak. VitaNusa AI hanya membantu edukasi umum. Keluhan serius harus dirujuk kepada tenaga kesehatan profesional.</div></details>
-              <details class="faq-card vn-card"><summary>Apakah produk di VitaNusa AI adalah obat?</summary><div>Tidak. Produk ditampilkan sebagai katalog informasi reseller dan tidak boleh diposisikan sebagai janji kesembuhan.</div></details>
-              <details class="faq-card vn-card"><summary>Apakah testimoni bisa dipercaya?</summary><div>Testimoni bisa menjadi pengalaman pribadi, tetapi bukan bukti utama untuk klaim kesehatan.</div></details>
-              <details class="faq-card vn-card"><summary>Apakah Nusa AI memberi fatwa?</summary><div>Tidak. Nusa AI hanya memberi pengingat umum. Untuk hukum rinci, rujuk ustadz atau ulama yang kompeten.</div></details>
-            </div>
-          </section>
-        </div>
+        <section aria-labelledby="flowTitle">
+          <h2 class="section-title" id="flowTitle">Penerapan praktis di VitaNusa AI</h2>
+          <div class="flow-grid">
+            <article class="flow-card"><span>1</span><h3>Tanya dengan jujur</h3><p>Nusa AI mendeteksi maksud, tetapi keputusan tidak ditentukan oleh intent saja.</p></article>
+            <article class="flow-card"><span>2</span><h3>Safety dan policy lebih dulu</h3><p>Risiko medis, batas diagnosis, fatwa, halal, dan klaim dapat aktif bersamaan.</p></article>
+            <article class="flow-card"><span>3</span><h3>Edukasi yang aman</h3><p>Jawaban umum diberikan tanpa menjanjikan diagnosis, dosis, atau hasil produk.</p></article>
+            <article class="flow-card"><span>4</span><h3>Artikel dan VitaCheck</h3><p>Konten pendukung ditampilkan hanya bila tidak dilarang oleh hasil kebijakan.</p></article>
+            <article class="flow-card"><span>5</span><h3>Produk tetap opsi</h3><p>Katalog hadir setelah edukasi, dengan status data dan peringatan yang jujur.</p></article>
+            <article class="flow-card"><span>6</span><h3>Rujuk ahli saat perlu</h3><p>Dokter, apoteker, tenaga kesehatan, lembaga halal, atau ulama tetap memegang keputusan profesional.</p></article>
+          </div>
+        </section>
       </div>
     </section>
   </main>
 
   <footer class="vn-footer">
-    <div class="wrap vn-container"><h2>VitaNusa AI</h2><p>Informasi di website ini bersifat edukatif dan katalog. Tidak menggantikan diagnosis, resep, fatwa, atau konsultasi profesional.</p></div>
+    <div class="wrap vn-container">
+      <h2>VitaNusa AI</h2>
+      <p>Informasi di website ini bersifat edukatif. Tidak menggantikan diagnosis, resep, fatwa, sertifikasi resmi, atau konsultasi profesional.</p>
+    </div>
   </footer>
 
   <script type="module">

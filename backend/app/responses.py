@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from .policy_engine import PolicyDecision
+
 DISCLAIMER = (
     "VitaNusa AI bersifat edukasi umum, bukan diagnosis, resep, fatwa, "
     "atau pengganti dokter, apoteker, ahli gizi, tenaga kesehatan, maupun ulama. "
@@ -37,14 +41,131 @@ QURANIC_REFLECTION = {
 }
 
 
-def build_answer(intent: str, safety_level: str) -> str:
-    if intent == "danger_sign" or safety_level == "emergency":
-        return (
+def _policy(decision: PolicyDecision | None, policy_id: str):
+    return decision.get_policy(policy_id) if decision else None
+
+
+def _append_policy_notes(
+    answer: str,
+    decision: PolicyDecision | None,
+    *,
+    skip: tuple[str, ...] = (),
+) -> str:
+    if not decision:
+        return answer
+
+    notes: list[str] = []
+    for result in decision.results:
+        if result.policy_id in skip or not result.message:
+            continue
+        if result.message in answer or result.message in notes:
+            continue
+        if result.policy_id.startswith("policy_engine_failure.") or result.status in {
+            "caution",
+            "restrict",
+            "block",
+        }:
+            notes.append(result.message)
+        if len(notes) == 3:
+            break
+
+    if not notes:
+        return answer
+
+    return f"{answer}\n\nCatatan kebijakan:\n" + "\n".join(f"- {note}" for note in notes)
+
+
+def build_answer(
+    intent: str,
+    safety_level: str,
+    decision: PolicyDecision | None = None,
+) -> str:
+    medical = _policy(decision, "medical_safety")
+    authority = _policy(decision, "authority_boundary")
+    islamic = _policy(decision, "islamic_boundary")
+    halal = _policy(decision, "halal_thayyib")
+    product_claim = _policy(decision, "product_claims")
+
+    if intent == "danger_sign" or safety_level == "emergency" or (
+        medical and medical.status == "critical"
+    ):
+        answer = (
             "Keluhan seperti ini termasuk tanda bahaya.\n\n"
             "Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat sekarang. "
             "Jika ada orang di dekatmu, minta ditemani dan jangan menyetir sendiri.\n\n"
-            "Catatan amanah: VitaNusa AI tidak dapat menangani keadaan darurat."
+            "VitaNusa AI tidak dapat menangani keadaan darurat, memberi diagnosis, atau mengarahkan ke produk."
         )
+        if halal or product_claim:
+            answer += (
+                " Pembahasan status halal, klaim, atau evaluasi produk dapat dilakukan setelah kondisi aman."
+            )
+        return answer
+
+    if authority and authority.blocks_response:
+        boundary_type = authority.metadata.get("boundary_type")
+        if boundary_type == "dose":
+            answer = (
+                "Saya tidak dapat memberikan dosis, resep, atau memilihkan obat untuk kondisi pribadi melalui chat.\n\n"
+                "Tanyakan kepada dokter atau apoteker yang berwenang, ikuti label resmi untuk obat bebas, "
+                "dan jangan menghentikan obat dokter tanpa arahan."
+            )
+        elif boundary_type == "diagnosis":
+            answer = (
+                "Saya tidak dapat memastikan diagnosis atau menyatakan kamu terkena penyakit tertentu dari chat.\n\n"
+                "Saya hanya dapat membantu edukasi umum dan menyiapkan hal yang perlu ditanyakan kepada tenaga kesehatan."
+            )
+        else:
+            answer = (
+                "Saya tidak dapat menentukan produk yang cocok atau aman untuk kondisi pribadi.\n\n"
+                "Baca label resmi dan konsultasikan dengan tenaga kesehatan bila ada penyakit, kehamilan, alergi, "
+                "usia khusus, atau obat rutin. Produk bukan pengganti pemeriksaan maupun pengobatan."
+            )
+        return _append_policy_notes(
+            answer,
+            decision,
+            skip=("authority_boundary", "medical_safety"),
+        )
+
+    if product_claim and product_claim.blocks_response:
+        answer = (
+            "Produk herbal atau suplemen tidak boleh dipastikan menyembuhkan penyakit, menggantikan obat dokter, "
+            "atau pasti aman untuk semua orang.\n\n"
+            "Yang aman dilakukan adalah memeriksa label, komposisi, peringatan, izin yang tercantum, kualitas bukti, "
+            "dan berkonsultasi untuk kondisi pribadi. Produk hanya opsi pendukung, bukan solusi utama."
+        )
+        if "universal_safety_claim_detected" in product_claim.reasons:
+            answer += (
+                "\n\nAlami tidak otomatis halal, dan halal tidak otomatis cocok atau aman "
+                "untuk setiap orang."
+            )
+        return _append_policy_notes(
+            answer,
+            decision,
+            skip=("product_claims", "medical_safety"),
+        )
+
+    if islamic and islamic.blocks_response:
+        answer = (
+            "Saya tidak dapat memberi fatwa halal-haram final. Saya dapat membantu membedakan bukti resmi, "
+            "pernyataan produsen, data yang belum diketahui, dan prinsip kehati-hatian."
+        )
+        if halal and halal.message:
+            answer += f"\n\n{halal.message}"
+        answer += (
+            "\n\nUntuk keputusan hukum rinci, periksa lembaga halal yang berwenang atau tanyakan kepada ulama yang kompeten."
+        )
+        return _append_policy_notes(
+            answer,
+            decision,
+            skip=("islamic_boundary", "halal_thayyib"),
+        )
+
+    if halal:
+        answer = (
+            "Dalam VitaNusa AI, status halal tidak boleh ditebak dan thayyib tidak diperlakukan sebagai sertifikat universal.\n\n"
+            f"{halal.message or ''}"
+        )
+        return _append_policy_notes(answer, decision, skip=("halal_thayyib",))
 
     if intent == "identity":
         return (
@@ -59,30 +180,24 @@ def build_answer(intent: str, safety_level: str) -> str:
 
     if intent == "vitacheck":
         return (
-            "VitaCheck adalah alat refleksi kebiasaan sehat, bukan alat diagnosis.\n\n"
+            "VitaCheck adalah alat refleksi kebiasaan sehat, bukan alat diagnosis dan bukan penilai kadar iman.\n\n"
             "Poin penting:\n\n"
             "- melihat pola tidur, minum, makan, gerak ringan, energi, pencernaan, stres ringan, dan literasi produk\n"
             "- membantu memilih satu kebiasaan kecil untuk diperbaiki\n"
-            "- hasilnya tidak menentukan kondisi tubuh\n\n"
-            "Yang bisa dilakukan:\n\n"
-            "- isi dengan jujur\n"
-            "- pilih satu fokus kecil untuk beberapa hari\n"
-            "- konsultasikan ke tenaga kesehatan bila keluhan berat, menetap, atau memburuk"
+            "- hasilnya tidak menentukan kondisi tubuh atau hukum agama\n\n"
+            "Konsultasikan ke tenaga kesehatan bila keluhan berat, menetap, atau memburuk."
         )
 
     if intent == "article_search":
         return (
             "Bisa. Artikel VitaNusa AI disiapkan sebagai bacaan edukatif tentang kesehatan, kebiasaan harian, "
             "VitaCheck, dan literasi produk.\n\n"
-            "Yang bisa dilakukan:\n\n"
-            "- pilih artikel yang paling dekat dengan kebutuhanmu\n"
-            "- baca Catatan Amanah di artikel\n"
-            "- jangan memakai artikel sebagai diagnosis pribadi\n\n"
-            "Catatan amanah: bila ada gejala berat, memburuk, atau kondisi khusus, utamakan tenaga kesehatan."
+            "Pilih artikel yang paling dekat dengan kebutuhanmu dan jangan memakainya sebagai diagnosis pribadi. "
+            "Bila ada gejala berat, memburuk, atau kondisi khusus, utamakan tenaga kesehatan."
         )
 
     if intent == "health_general":
-        return (
+        answer = (
             "Saya paham, keluhan seperti ini bisa membuat tidak nyaman. Saya tidak bisa memastikan penyebabnya "
             "dari chat, jadi gunakan ini sebagai edukasi umum.\n\n"
             "Yang bisa dilakukan:\n\n"
@@ -90,77 +205,92 @@ def build_answer(intent: str, safety_level: str) -> str:
             "- makan ringan sesuai toleransi tubuh\n"
             "- amati durasi, pemicu, dan apakah keluhan memburuk\n"
             "- hindari obat resep tanpa arahan tenaga kesehatan\n\n"
-            "Segera cari bantuan medis bila muncul nyeri dada berat, sesak napas berat, pingsan, kejang, "
-            "lemah separuh tubuh, perdarahan hebat, alergi berat, pikiran menyakiti diri, atau keluhan makin berat.\n\n"
             f"{COMMON_HEALTH_DISCLAIMER}"
         )
+        return _append_policy_notes(answer, decision, skip=("medical_safety",))
 
     if intent == "medication_request":
         return (
             "Saya tidak dapat memberikan dosis, resep, atau memilihkan obat untuk kondisi pribadi melalui chat.\n\n"
-            "Yang bisa dilakukan:\n\n"
-            "- tanyakan dosis dan pilihan obat kepada dokter atau apoteker yang berwenang\n"
-            "- ikuti label resmi untuk obat bebas dan jangan melebihi petunjuknya\n"
-            "- jangan memakai obat resep milik orang lain atau menghentikan obat dokter tanpa arahan\n\n"
-            "Catatan amanah: VitaNusa AI hanya memberi edukasi umum, bukan diagnosis atau resep."
+            "Tanyakan dosis dan pilihan obat kepada dokter atau apoteker yang berwenang. Jangan memakai obat resep "
+            "milik orang lain atau menghentikan obat dokter tanpa arahan."
         )
 
     if intent == "product_claim":
-        return (
+        answer = (
             "Terima kasih sudah bertanya dengan hati-hati. Produk herbal atau suplemen tidak boleh dipastikan "
             "menyembuhkan penyakit tertentu, dan bukan pengganti obat atau kontrol dokter.\n\n"
-            "Yang bisa dilakukan:\n\n"
-            "- cek label, komposisi, aturan penggunaan, dan izin edar yang tercantum\n"
-            "- perhatikan potensi alergi atau interaksi dengan obat yang sedang digunakan\n"
-            "- konsultasikan dulu bila punya penyakit kronis, sedang minum obat dokter, hamil, menyusui, lansia, atau untuk anak\n\n"
-            "Catatan amanah: produk hanya boleh dibahas sebagai informasi reseller atau dukungan kebiasaan sehat, "
-            "bukan janji hasil. Jangan menghentikan obat dokter tanpa arahan tenaga kesehatan."
+            "Cek label, komposisi, aturan penggunaan, peringatan, serta bukti yang tersedia. "
+            "Untuk kondisi khusus atau obat rutin, konsultasikan lebih dahulu."
         )
+        return _append_policy_notes(answer, decision)
 
     if intent == "quranic_reflection":
         return (
             "Saya bisa membantu sebagai refleksi umum, bukan tafsir baru dan bukan fatwa.\n\n"
-            "Poin penting:\n\n"
-            "- menjaga kesehatan adalah bagian dari amanah\n"
-            "- ikhtiar bisa berupa mencari informasi yang benar dan langkah hidup sehat\n"
-            "- tawakal tetap berjalan bersama usaha yang aman\n\n"
-            "Catatan amanah: VitaNusa AI tidak menilai sebab spiritual kondisi seseorang dan tidak mencocokkan ayat "
-            "dengan teori medis. Bila ada keluhan berat, cari bantuan tenaga kesehatan."
+            "Menjaga kesehatan adalah bagian dari amanah; ikhtiar berjalan bersama tawakal. "
+            "VitaNusa AI tidak menilai sebab spiritual penyakit dan tidak menggantikan ulama atau tenaga kesehatan."
         )
 
     if intent == "contact_admin":
         return (
             "Kamu bisa menghubungi admin VitaNusa AI untuk pertanyaan umum seputar website, artikel, VitaCheck, "
-            "atau katalog reseller.\n\n"
-            "Poin penting:\n\n"
-            "- admin membantu urusan informasi umum dan kontak\n"
-            "- admin bukan pengganti dokter, apoteker, ahli gizi, atau tenaga kesehatan\n"
-            "- untuk tanda bahaya, utamakan fasilitas kesehatan atau layanan darurat"
+            "atau katalog reseller. Admin bukan pengganti dokter, apoteker, ahli gizi, atau tenaga kesehatan."
         )
 
-    return SAFE_FALLBACK_ANSWER
+    return _append_policy_notes(SAFE_FALLBACK_ANSWER, decision)
 
 
-def build_actions(intent: str) -> list[dict[str, str]]:
+def _is_product_catalog_route(href: str) -> bool:
+    normalized = href.strip().lower().split("?", 1)[0].split("#", 1)[0]
+    return (
+        normalized in {"products", "products/", "products/index.html"}
+        or "/products/" in normalized
+    )
+
+
+def build_actions(
+    intent: str,
+    decision: PolicyDecision | None = None,
+) -> list[dict[str, str]]:
+    prohibited = set(decision.prohibited_actions if decision else ())
+
+    if "show_articles" in prohibited or "seek_emergency_help" in (
+        decision.allowed_actions if decision else ()
+    ):
+        return []
+
     if intent == "identity":
-        return IDENTITY_ACTIONS
-    if intent == "vitacheck":
-        return [
+        actions = IDENTITY_ACTIONS
+    elif intent == "vitacheck":
+        actions = [
             {"label": "Mulai VitaCheck", "href": "vitacheck.html"},
             {"label": "Baca Cara Memakai VitaCheck", "href": "articles/cara-memakai-vitacheck.html"},
         ]
-    if intent == "article_search":
-        return [{"label": "Baca Artikel", "href": "articles/"}]
-    if intent == "product_claim":
-        return [
+    elif intent == "article_search":
+        actions = [{"label": "Baca Artikel", "href": "articles/"}]
+    elif intent == "product_claim":
+        actions = [
             {"label": "Prinsip Amanah", "href": "prinsip-amanah.html"},
             {"label": "Baca Produk Bukan Jalan Pintas", "href": "articles/produk-bukan-jalan-pintas.html"},
         ]
-    if intent == "quranic_reflection":
-        return [{"label": "Prinsip Amanah", "href": "prinsip-amanah.html"}]
-    if intent == "contact_admin":
-        return [{"label": "Hubungi Admin", "href": "contact.html"}]
-    return []
+    elif intent == "quranic_reflection":
+        actions = [{"label": "Prinsip Amanah", "href": "prinsip-amanah.html"}]
+    elif intent == "contact_admin":
+        actions = [{"label": "Hubungi Admin", "href": "contact.html"}]
+    else:
+        actions = []
+
+    if "run_vitacheck" in prohibited:
+        actions = [action for action in actions if "vitacheck" not in action["href"].lower()]
+    if "show_products" in prohibited:
+        actions = [
+            action
+            for action in actions
+            if not _is_product_catalog_route(action["href"])
+        ]
+
+    return actions
 
 
 def build_quranic_reflection() -> dict[str, str]:
