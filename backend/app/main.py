@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .intent_router import detect_intent
+from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
 from .schemas import AskRequest, AskResponse
 
@@ -33,7 +34,7 @@ def get_allowed_origins() -> list[str]:
 app = FastAPI(
     title="VitaNusa AI Brain",
     description="Backend otak dasar VitaNusa AI",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -72,6 +73,11 @@ def ask_ai(request: AskRequest) -> AskResponse:
 
     intent_result = detect_intent(question)
     intent = intent_result["intent"]
+    decision = POLICY_ENGINE.evaluate_question(
+        question,
+        intent=intent,
+        safety_level=intent_result["safetyLevel"],
+    )
     include_reflection = (
         request.includeQuranicReflection
         or intent == "quranic_reflection"
@@ -81,10 +87,13 @@ def ask_ai(request: AskRequest) -> AskResponse:
         question=question,
         intent=intent,
         safetyLevel=intent_result["safetyLevel"],
-        answer=build_answer(intent, intent_result["safetyLevel"]),
+        answer=build_answer(intent, intent_result["safetyLevel"], decision),
         disclaimer=DISCLAIMER,
-        recommendedAction=intent_result["recommendedAction"],
-        actions=build_actions(intent),
+        recommendedAction=(
+            decision.recommended_action or intent_result["recommendedAction"]
+        ),
+        actions=build_actions(intent, decision),
         sources=[],
         quranicReflection=build_quranic_reflection() if include_reflection else None,
+        policyDecision=serialize_policy_decision(decision),
     )
