@@ -200,6 +200,7 @@
 
     .nusa-chat-form {
       flex: 0 0 auto;
+      width: calc(100% - 28px);
       margin: 10px 14px 0;
     }
 
@@ -215,6 +216,12 @@
     @media (min-width: 1181px) {
       .nusa-home-chat {
         padding-right: 372px;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .nusa-chat-tools {
+        padding-right: 98px;
       }
     }
 
@@ -304,8 +311,8 @@
         padding: 8px;
       }
 
-      .nusa-chat-form input {
-        height: 42px;
+      .nusa-chat-form textarea {
+        min-height: 46px;
         font-size: .96rem;
       }
 
@@ -317,6 +324,12 @@
       .nusa-chat-note {
         margin: 7px 12px 10px;
         font-size: .68rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .nusa-chat-tools {
+        padding-right: 44px;
       }
     }
 
@@ -376,7 +389,7 @@
 
           <form class="nusa-chat-form" data-nusa-chat-form>
             <label class="sr-only" for="nusaChatInput">Tulis pertanyaanmu di sini</label>
-            <input id="nusaChatInput" data-nusa-chat-input type="text" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini">
+            <textarea id="nusaChatInput" data-nusa-chat-input rows="1" autocomplete="off" placeholder="Tulis pertanyaanmu di sini..." aria-label="Tulis pertanyaanmu di sini"></textarea>
             <button class="nusa-chat-submit" type="submit" aria-label="Kirim pertanyaan"><span aria-hidden="true">↑</span></button>
           </form>
 
