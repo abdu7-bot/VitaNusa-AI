@@ -40,6 +40,15 @@ INTENT_KEYWORDS = {
         "makan",
         "pencernaan",
     ),
+    "medication_request": (
+        "dosis",
+        "dosis obat",
+        "resep obat",
+        "obat resep",
+        "berikan obat",
+        "obat apa",
+        "minum obat apa",
+    ),
     "product_claim": (
         "produk",
         "herbal",

@@ -63,6 +63,7 @@ HIGH_RISK_KEYWORDS = (
 
 MEDIUM_RISK_INTENTS = {
     "health_general",
+    "medication_request",
     "product_claim",
 }
 

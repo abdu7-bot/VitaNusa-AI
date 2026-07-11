@@ -95,6 +95,16 @@ def build_answer(intent: str, safety_level: str) -> str:
             f"{COMMON_HEALTH_DISCLAIMER}"
         )
 
+    if intent == "medication_request":
+        return (
+            "Saya tidak dapat memberikan dosis, resep, atau memilihkan obat untuk kondisi pribadi melalui chat.\n\n"
+            "Yang bisa dilakukan:\n\n"
+            "- tanyakan dosis dan pilihan obat kepada dokter atau apoteker yang berwenang\n"
+            "- ikuti label resmi untuk obat bebas dan jangan melebihi petunjuknya\n"
+            "- jangan memakai obat resep milik orang lain atau menghentikan obat dokter tanpa arahan\n\n"
+            "Catatan amanah: VitaNusa AI hanya memberi edukasi umum, bukan diagnosis atau resep."
+        )
+
     if intent == "product_claim":
         return (
             "Terima kasih sudah bertanya dengan hati-hati. Produk herbal atau suplemen tidak boleh dipastikan "
