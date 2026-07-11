@@ -65,10 +65,10 @@ jobs:
             exit 1
           fi
 
-          declared_paths="$(
+          declared_paths="$({
             git config -f .gitmodules --get-regexp '^submodule\..*\.path$' \
               | awk '{ print $2 }'
-          )"
+          })"
 
           while read -r _mode _sha _stage path; do
             if ! grep -Fxq "$path" <<< "$declared_paths"; then
@@ -164,8 +164,11 @@ jobs:
 
       - name: Compile and import backend
         run: |
-          python -m compileall app
+          python -m compileall app tests
           python -c "from app.main import app; print(app.title)"
+
+      - name: Run hierarchy policy unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Run backend smoke tests
         shell: bash
@@ -208,3 +211,4 @@ jobs:
           fi
 
           python tests/ci_smoke_test.py
+          python tests/policy_http_smoke_test.py
