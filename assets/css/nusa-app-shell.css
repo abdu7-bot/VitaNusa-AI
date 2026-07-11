@@ -205,17 +205,22 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .nusa-chat-form textarea {
+  display: block;
   width: 100%;
   min-width: 0;
   min-height: 46px;
   max-height: 144px;
   padding: 11px 0;
   border: 0;
+  border-radius: 0;
   outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
   resize: none;
   overflow-x: hidden;
   overflow-y: hidden;
   background: transparent;
+  box-shadow: none;
   color: var(--nusa-ink);
   font: inherit;
   font-size: 1.02rem;
