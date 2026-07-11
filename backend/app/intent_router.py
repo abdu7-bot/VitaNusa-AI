@@ -59,6 +59,10 @@ INTENT_KEYWORDS = {
         "klaim",
         "menyembuhkan",
         "obat",
+        "halal",
+        "haram",
+        "thayyib",
+        "thoyyib",
     ),
     "quranic_reflection": (
         "ayat",
@@ -69,6 +73,8 @@ INTENT_KEYWORDS = {
         "hikmah sakit",
         "tawakal",
         "ikhtiar",
+        "fatwa",
+        "hukum agama",
     ),
     "contact_admin": (
         "kontak",
