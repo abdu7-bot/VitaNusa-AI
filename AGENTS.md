@@ -1,67 +1,77 @@
 # AGENTS.md
 
 ## Project
+
 VitaNusa AI adalah website edukasi kesehatan, refleksi Islami, VitaCheck, artikel, dan katalog reseller produk secara amanah.
 
+## Sumber Kebenaran
+
+- Nilai dan prioritas induk: `docs/vitanusa-constitution.md`
+- Cara menambah policy: `docs/hierarchy-system.md`
+- Kontrak policy: `backend/app/policies/base.py`
+- Registry: `backend/app/policies/registry.py`
+- Penggabungan keputusan: `backend/app/policy_engine.py`
+
+Jangan membuat hierarchy logic baru di frontend, prompt, atau response builder bila semestinya dimiliki specialized policy.
+
 ## Prinsip Utama
+
+- Safety medis lebih dahulu.
 - Edukasi dulu, bukan klaim.
-- Jaga amanah, tabayyun, ikhtiar, dan tawakal.
-- Konten kesehatan bersifat edukasi umum, bukan pengganti tenaga profesional.
-- Konten Islami bersifat refleksi, bukan fatwa dan bukan tafsir final.
-- Konten produk hanya untuk informasi reseller, bukan klaim medis.
-- Artikel sensitif tetap diberi warning, sensitive flags, reviewerNote, dan Catatan Amanah; sistem tidak memaksa draft otomatis.
+- Konten kesehatan adalah edukasi umum, bukan diagnosis.
+- Konten Islami adalah refleksi, bukan fatwa final.
+- Status halal tidak boleh ditebak.
+- Thayyib bukan sertifikasi universal.
+- Konten produk hanya informasi reseller, bukan klaim medis.
+- Artikel sensitif tetap memakai warning, sensitive flags, reviewerNote, dan Catatan Amanah sesuai kebijakan artikel.
+
+## Aturan Policy
+
+- Satu aturan memiliki satu pemilik teknis utama.
+- Intent hanya mendeteksi maksud; policy menentukan batas tindakan.
+- Policy baru harus punya `policy_id`, domain, priority, hasil, dan test.
+- Beberapa policy boleh aktif bersamaan.
+- Jangan menjadikan semua warning sebagai blocker.
+- Emergency harus melarang produk, artikel biasa, dan VitaCheck sebagai pengganti pertolongan.
+- Jangan memakai LLM sebagai satu-satunya penentu policy.
+- Jangan menambahkan status halal, sertifikat, izin, klaim, harga, atau stok tanpa bukti.
 
 ## Area yang Dilindungi
-Jangan mengubah bagian berikut kecuali diminta eksplisit:
-- homepage publik,
-- chat UI Nusa AI,
-- layout utama,
-- VitaCheck logic,
-- halaman produk,
-- halaman kontak,
-- Firebase config,
-- Firestore rules,
-- WhatsApp link,
-- email contact,
-- asset path penting.
 
-## Aturan Kode
-- Jangan menambah backend, API baru, RAG, embedding, vector database, payment, atau fitur besar tanpa instruksi eksplisit.
-- Jangan redesign besar tanpa permintaan.
-- Jangan menghapus kode lama tanpa alasan jelas.
-- Jaga HTML valid, tag tertutup rapi, dan mobile responsive.
-- Jelaskan setiap file yang diubah dan alasan perubahannya.
+Jangan mengubah kecuali dibutuhkan oleh scope:
+
+- homepage publik;
+- chat UI Nusa AI;
+- layout utama;
+- VitaCheck logic;
+- halaman produk;
+- halaman kontak;
+- Firebase config;
+- Firestore rules;
+- WhatsApp/email;
+- asset path;
+- service worker dan deployment config.
 
 ## Aturan Artikel Admin
-- Artikel baru atau import dari admin default ke status published.
-- Pertahankan metadata artikel: intentTarget, riskLevel, sensitive flags, relatedArticles, contentDepth, primaryAction, reviewerNote.
-- Related Articles wajib memakai slug, bukan judul.
-- Artikel draft dan archived tidak boleh tampil di publik.
-- Artikel sensitif tetap perlu warning/reviewerNote dan review amanah, tetapi tidak dipaksa draft oleh sistem.
+
+- Artikel baru/import default `published`.
+- Pertahankan metadata artikel.
+- Related Articles memakai slug.
+- Draft/archived tidak tampil publik.
+- Warning bukan alasan otomatis memaksa draft.
 - Jangan menghapus Catatan Amanah.
-- Jika artikel memakai referensi, taruh link di section article-references.
+- Referensi berada di `article-references`.
 
 ## Struktur HTML Artikel
-Gunakan struktur:
-- article.vitanusa-article
-- header dengan h1 dan article-summary
-- section isi utama
-- section.article-note untuk Catatan Amanah
-- section.article-references untuk referensi bila diperlukan
 
-Jangan memasukkan full document HTML seperti html, head, atau body ke contentHtml artikel.
+Gunakan `article.vitanusa-article`, header dengan `h1` dan summary, section isi, `article-note`, serta `article-references` bila ada. Jangan memasukkan full document HTML ke `contentHtml`.
 
-## Workflow Codex
-1. Kerjakan perubahan kecil dan spesifik.
-2. Jangan mengubah area yang tidak terkait.
-3. Jangan merge otomatis untuk perubahan sensitif.
-4. Berikan laporan perubahan.
-5. Berikan cara test.
-6. Tandai risiko konten bila ada.
+## Workflow
 
-## Prioritas Terdekat
-1. Pastikan blok Content Library Metadata V1 tampil di dashboard admin artikel, terutama mobile.
-2. Pastikan form artikel menyimpan metadata ke Firestore.
-3. Pastikan hanya artikel published yang tampil di publik.
-4. Test satu artikel low-risk sebelum artikel sensitif.
-5. Audit safety Nusa AI sebelum publish banyak artikel.
+1. Audit aliran sebelum refactor.
+2. Kerjakan perubahan kecil dan spesifik.
+3. Gunakan branch/worktree bersih.
+4. Jangan menyentuh gambar yang tidak terkait.
+5. Jalankan test lama dan test baru.
+6. Jangan merge otomatis untuk perubahan sensitif.
+7. Laporkan file, test, risiko, dan status Git.
