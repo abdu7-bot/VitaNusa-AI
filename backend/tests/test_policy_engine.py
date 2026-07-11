@@ -97,6 +97,25 @@ class PolicyEngineTests(unittest.TestCase):
         self.assertTrue(result.blocks_response)
         self.assertIn("claim_cure", decision.prohibited_actions)
 
+    def test_natural_does_not_imply_halal_or_safe(self) -> None:
+        decision, intent = evaluate("Apakah semua produk alami pasti halal dan aman?")
+        result = decision.get_policy("product_claims")
+        self.assertEqual(intent["intent"], "product_claim")
+        self.assertIsNotNone(result)
+        self.assertTrue(result.blocks_response)
+        self.assertIn("claim_universal_safety", decision.prohibited_actions)
+        answer = build_answer(intent["intent"], intent["safetyLevel"], decision)
+        self.assertIn("alami tidak otomatis halal", answer.lower())
+        self.assertIn("halal tidak otomatis cocok", answer.lower())
+
+    def test_product_block_keeps_safe_educational_article(self) -> None:
+        decision, intent = evaluate("Apakah semua produk alami pasti halal dan aman?")
+        actions = build_actions(intent["intent"], decision)
+        self.assertTrue(any("articles/" in action["href"] for action in actions))
+        self.assertFalse(
+            any(action["href"].startswith("products") for action in actions)
+        )
+
     def test_safe_education_intent_can_show_article(self) -> None:
         decision, intent = evaluate("Saya ingin baca artikel edukasi kesehatan.")
         actions = build_actions(intent["intent"], decision)
