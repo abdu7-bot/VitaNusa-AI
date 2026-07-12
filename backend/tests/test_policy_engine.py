@@ -23,6 +23,39 @@ def evaluate(question: str, metadata: dict | None = None):
     ), intent_result
 
 
+class IntentRouterTests(unittest.TestCase):
+    def test_product_claim_phrases_route_to_product_claim(self) -> None:
+        questions = (
+            "Bagaimana cara bijak menilai klaim produk kesehatan?",
+            "Produk ini katanya bisa menyembuhkan diabetes.",
+            "Apakah testimoni produk bisa dipercaya?",
+            "Bagaimana memeriksa klaim propolis?",
+        )
+
+        for question in questions:
+            with self.subTest(question=question):
+                self.assertEqual(detect_intent(question)["intent"], "product_claim")
+
+    def test_catalog_question_is_not_a_product_claim(self) -> None:
+        result = detect_intent("Saya ingin melihat katalog produk.")
+        self.assertNotEqual(result["intent"], "product_claim")
+
+    def test_safety_intents_keep_precedence_over_product_claim(self) -> None:
+        cases = (
+            ("Berikan dosis obat untuk saya.", "medication_request"),
+            ("Saya sesak berat dan nyeri dada.", "danger_sign"),
+            ("Saya pusing ringan.", "health_general"),
+        )
+
+        for question, expected_intent in cases:
+            with self.subTest(question=question):
+                result = detect_intent(question)
+                self.assertEqual(result["intent"], expected_intent)
+
+        emergency = detect_intent("Saya sesak berat dan nyeri dada.")
+        self.assertEqual(emergency["safetyLevel"], "emergency")
+
+
 class PolicyEngineTests(unittest.TestCase):
     def test_emergency_dominates_product_intent(self) -> None:
         decision, intent = evaluate(
