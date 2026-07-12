@@ -1,15 +1,15 @@
 const CACHE_PREFIX = 'vitanusa-ai-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v11-chat-fix`;
+const CACHE_NAME = `${CACHE_PREFIX}v12-chat-routing-ui`;
 const BASE_PATH = '/VitaNusa-AI';
 
 // Preload hanya shell penting. Halaman publik lain disimpan saat benar-benar dibuka.
 const APP_SHELL = [
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/manifest.webmanifest`,
-  `${BASE_PATH}/assets/css/nusa-app-shell.css?v=20260712-chat-fix-v2`,
+  `${BASE_PATH}/assets/css/nusa-app-shell.css?v=20260712-chat-routing-ui-v1`,
   `${BASE_PATH}/assets/css/vitanusa-public.css?v=20260703-public-design-v1`,
-  `${BASE_PATH}/assets/js/main.js?v=20260712-chat-fix-v2`,
-  `${BASE_PATH}/assets/js/modules/nusa-chat.js?v=20260709-keyboard-hard-lock-v1`,
+  `${BASE_PATH}/assets/js/main.js?v=20260712-chat-routing-ui-v1`,
+  `${BASE_PATH}/assets/js/modules/nusa-chat.js?v=20260712-chat-routing-ui-v1`,
   `${BASE_PATH}/assets/js/modules/nusa-knowledge.js?v=20260712-product-claim-v1`,
   `${BASE_PATH}/404.html`,
   `${BASE_PATH}/images/icon-192.png`,
