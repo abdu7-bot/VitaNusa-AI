@@ -26,553 +26,59 @@
   <meta property="og:image" content="Images/banner-artikel-3.png" />
   <meta name="twitter:card" content="summary_large_image" />
 
+  <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260703-public-design-v1" />
+  <link rel="stylesheet" href="premium-article-style.css?v=20260712-premium-reading-ui-v1" />
   <style>
-    :root {
-      --green-dark: #14523d;
-      --green: #257a58;
-      --green-soft: #eef8f3;
-      --cream: #fffaf0;
-      --gold: #b8912f;
-      --red-soft: #fff2f2;
-      --red: #8a2f2f;
-      --text: #26312d;
-      --muted: #65736d;
-      --line: #d9e5df;
-      --white: #ffffff;
-      --shadow: 0 10px 28px rgba(20, 82, 61, 0.08);
-      --radius: 18px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      line-height: 1.75;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(37, 122, 88, 0.12), transparent 32%),
-        linear-gradient(180deg, #fbfffd 0%, #ffffff 38%, #fffaf0 100%);
-    }
-
-    img,
-    video,
-    iframe {
-      max-width: 100%;
-      height: auto;
-    }
-
-    figure {
-      margin: 24px 0;
-    }
-
-    figcaption {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin-top: 8px;
-    }
-
-    a {
-      color: var(--green-dark);
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    a:focus-visible,
-    button:focus-visible {
-      outline: 3px solid rgba(184, 145, 47, 0.65);
-      outline-offset: 4px;
-      border-radius: 8px;
-    }
-
-    .skip-link {
-      position: absolute;
-      left: 16px;
-      top: -70px;
-      z-index: 999;
-      background: var(--green-dark);
-      color: var(--white);
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-weight: 700;
-      transition: top 0.2s ease;
-    }
-
-    .skip-link:focus {
-      top: 14px;
-    }.brand {
-      font-weight: 800;
-      color: var(--green-dark);
-      letter-spacing: 0.2px;
-      flex: 0 0 auto;
-      text-decoration: none;
-    }
-
-    .brand:hover {
-      text-decoration: none;
-    }.hero {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 58px 20px 28px;
-    }
-
-    .hero-card {
-      background: linear-gradient(135deg, var(--green-dark), var(--green));
-      color: var(--white);
-      border-radius: 28px;
-      padding: 44px;
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-    }
-
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      width: 260px;
-      height: 260px;
-      right: -90px;
-      top: -90px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .hero-card > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    .label {
-      display: inline-block;
-      padding: 7px 12px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.15);
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: clamp(34px, 5vw, 58px);
-      line-height: 1.08;
-      margin: 0 0 18px;
-      max-width: 850px;
-    }
-
-    .subtitle {
-      font-size: clamp(17px, 2vw, 21px);
-      color: rgba(255, 255, 255, 0.9);
-      max-width: 780px;
-      margin: 0 0 24px;
-    }
-
-    .meta {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 14px;
-    }
-
-    .meta span {
-      padding: 7px 11px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    .layout {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 18px 20px 70px;
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 26px;
-      align-items: start;
-    }
-
-    .toc {
-      position: sticky;
-      top: 78px;
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-    }
-
-    .toc h2 {
-      font-size: 18px;
-      margin: 0 0 12px;
-      color: var(--green-dark);
-    }
-
-    .toc ol {
-      padding-left: 20px;
-      margin: 0;
-    }
-
-    .toc li {
-      margin: 8px 0;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    .article {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      padding: 34px;
-      box-shadow: var(--shadow);
-      min-width: 0;
-    }
-
-    section {
-      scroll-margin-top: 96px;
-      margin-bottom: 46px;
-    }
-
-    h2 {
-      color: var(--green-dark);
-      font-size: clamp(25px, 3vw, 34px);
-      line-height: 1.25;
-      margin: 0 0 18px;
-    }
-
-    h3 {
-      color: var(--green);
-      font-size: 22px;
-      line-height: 1.35;
-      margin: 26px 0 12px;
-    }
-
-    p {
-      margin: 0 0 16px;
-    }
-
-    ul,
-    ol {
-      padding-left: 24px;
-    }
-
-    li {
-      margin-bottom: 10px;
-    }
-
-    .lead {
-      font-size: 18px;
-      color: #34443e;
-    }
-
-    .note,
-    .key,
-    .warning,
-    .principle,
-    .quote-box {
-      border-radius: 16px;
-      padding: 18px;
-      margin: 22px 0;
-    }
-
-    .note {
-      background: var(--green-soft);
-      border: 1px solid #b8dcca;
-    }
-
-    .key {
-      background: #f5fffa;
-      border: 1px solid var(--green);
-    }
-
-    .warning {
-      background: var(--red-soft);
-      border: 1px solid #d39b9b;
-    }
-
-    .principle {
-      background: var(--cream);
-      border: 1px solid #d7bd68;
-    }
-
-    .quote-box {
-      background: #fffdf3;
-      border: 1px solid #d9bd69;
-    }
-
-    .box-title {
-      display: block;
-      font-weight: 800;
-      color: var(--green-dark);
-      margin-bottom: 8px;
-    }
-
-    .warning .box-title {
-      color: var(--red);
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      margin: 22px 0;
-      border-radius: 14px;
-    }
-
-    table {
-      width: 100%;
-      min-width: 620px;
-      border-collapse: collapse;
-      font-size: 15px;
-    }
-
-    th,
-    td {
-      border: 1px solid #c8d4ce;
-      padding: 13px;
-      vertical-align: top;
-    }
-
-    th {
-      background: var(--green-dark);
-      color: var(--white);
-      text-align: left;
-    }
-
-    tr:nth-child(even) td {
-      background: #f7fbf9;
-    }
-
-    .red-table th {
-      background: var(--red);
-    }
-
-    .gold-table th {
-      background: var(--gold);
-    }
-
-    .arabic {
+    .premium-consumer-article .premium-article-arabic {
       direction: rtl;
-      text-align: right;
-      font-size: 26px;
-      line-height: 2;
-      font-family: "Times New Roman", serif;
-      color: var(--green-dark);
       margin-bottom: 10px;
+      color: var(--premium-primary-dark);
+      font-family: "Noto Naskh Arabic", "Amiri", "Times New Roman", serif;
+      font-size: clamp(1.4rem, 4vw, 1.72rem);
+      line-height: 2;
+      text-align: right;
     }
 
-    .translation {
-      font-style: italic;
+    .premium-consumer-article .translation {
       color: #34443e;
+      font-style: italic;
     }
 
-    .source {
-      color: var(--muted);
-      font-size: 14px;
+    .premium-consumer-article .source {
       margin-top: 6px;
+      color: var(--premium-muted);
+      font-size: 0.86rem;
     }
 
-    .checklist {
+    .premium-consumer-article .red-table th {
+      background: var(--premium-danger);
+    }
+
+    .premium-consumer-article .gold-table th {
+      background: #9a7215;
+    }
+
+    .premium-consumer-article .checklist {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin: 20px 0;
     }
 
-    .check-item {
-      background: #f7fbf9;
-      border: 1px solid var(--line);
+    .premium-consumer-article .check-item {
+      border: 1px solid var(--premium-border);
       border-radius: 14px;
       padding: 14px 15px;
-      font-weight: 700;
-    }
-
-    .footer {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 28px 20px 50px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 14px;
-    }
-
-    .back-top {
-      display: inline-block;
-      margin-top: 12px;
-      font-weight: 700;
-    }
-
-    @media (max-width: 920px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .toc {
-        position: static;
-      }
-
-      .hero-card {
-        padding: 30px;
-      }
-
-      .article {
-        padding: 24px;
-      }
-    }
-
-    @media (max-width: 768px) {.hero {
-        padding: 36px 16px 20px;
-      }
-
-      .layout {
-        padding: 14px 16px 54px;
-      }
-
-      .hero-card {
-        border-radius: 22px;
-        padding: 28px;
-      }
-
-      .article {
-        border-radius: 22px;
-        padding: 22px;
-      }
-
-      h1 {
-        font-size: clamp(29px, 8vw, 42px);
-        line-height: 1.12;
-      }
-
-      h2 {
-        font-size: clamp(23px, 6vw, 30px);
-      }
-
-      h3 {
-        font-size: 20px;
-      }
-
-      .subtitle {
-        font-size: 16px;
-      }
-
-      .lead {
-        font-size: 17px;
-      }
-
-      section {
-        scroll-margin-top: 92px;
-      }
-
-      .arabic {
-        font-size: clamp(22px, 6vw, 26px);
-        line-height: 1.9;
-      }
+      background: #f7fbf9;
+      font-weight: 750;
     }
 
     @media (max-width: 640px) {
-      .checklist {
+      .premium-consumer-article .checklist {
         grid-template-columns: 1fr;
-      }
-
-      .hero {
-        padding-top: 34px;
-      }
-    }
-
-    @media (max-width: 520px) {
-      .hero-card {
-        padding: 24px 20px;
-      }
-
-      .article {
-        padding: 20px 16px;
-      }
-
-      .toc {
-        padding: 18px 16px;
-      }
-
-      .meta {
-        gap: 8px;
-      }
-
-      .meta span {
-        font-size: 13px;
-      }
-
-      table {
-        min-width: 560px;
-      }
-
-      th,
-      td {
-        padding: 11px;
-      }
-
-      ul,
-      ol {
-        padding-left: 20px;
-      }
-
-      .note,
-      .key,
-      .warning,
-      .principle,
-      .quote-box {
-        padding: 16px;
-      }
-
-      section {
-        margin-bottom: 38px;
-      }
-    }
-
-    @media (max-width: 360px) {
-      .hero {
-        padding-left: 12px;
-        padding-right: 12px;
-      }
-
-      .layout {
-        padding-left: 12px;
-        padding-right: 12px;
-      }
-
-      .hero-card {
-        padding: 22px 16px;
-      }
-
-      .article {
-        padding: 18px 14px;
-      }
-
-      h1 {
-        font-size: 28px;
-      }
-
-      .subtitle,
-      .lead {
-        font-size: 16px;
-      }
-
-      table {
-        min-width: 520px;
-        font-size: 14px;
       }
     }
   </style>
-  <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260703-public-design-v1">
 
   <script type="application/ld+json">
   {
@@ -597,28 +103,37 @@
   </script>
 </head>
 
-<body id="top" class="vn-page article-page">
-  <a class="skip-link" href="#konten">Lewati ke isi artikel</a>
-<main id="konten">
-    <div class="hero">
-      <div class="hero-card">
-        <span class="label">Artikel Edukasi Jangka Panjang</span>
-        <h1>Testimoni Bukan Bukti: Cara Bijak Menilai Klaim Produk</h1>
-        <p class="subtitle">
+<body id="top" class="vn-page article-page premium-article-page premium-consumer-article">
+  <a class="skip-link skip" href="#main">Lewati ke konten</a>
+
+  <div class="premium-article-progress" aria-hidden="true" data-reading-progress>
+    <span data-reading-progress-bar></span>
+  </div>
+
+  <main id="main" class="premium-article-main">
+    <a class="premium-article-back" href="index.html">← Kembali ke Daftar Artikel</a>
+
+    <article id="konten" class="premium-article-shell vitanusa-article">
+      <header class="premium-article-header">
+        <p class="premium-article-category">Literasi Produk</p>
+        <h1 class="premium-article-title">Testimoni Bukan Bukti: Cara Bijak Menilai Klaim Produk</h1>
+        <p class="premium-article-summary">
           Panduan untuk konsumen, pelaku usaha, reseller, dan pembuat konten
           yang ingin menjual dengan ilmu, amanah, dan akal sehat.
         </p>
-        <div class="meta">
+        <div class="premium-article-meta" aria-label="Metadata artikel">
+          <span>VitaNusa AI</span>
+          <span>7 menit baca</span>
+          <span>Artikel Edukasi Jangka Panjang</span>
           <span>Edisi: 17 Juni 2026</span>
           <span>Topik: Edukasi Konsumen</span>
-          <span>Fokus: Klaim Produk & Amanah Promosi</span>
+          <span>Fokus: Klaim Produk &amp; Amanah Promosi</span>
         </div>
-      </div>
-    </div>
+      </header>
 
-    <div class="layout">
-      <aside class="toc">
-        <h2>Daftar Isi</h2>
+      <div class="premium-article-layout">
+      <nav class="premium-article-toc" aria-labelledby="tableOfContentsTitle">
+        <h2 id="tableOfContentsTitle">Daftar Isi</h2>
         <ol>
           <li><a href="#pembuka">Catatan Pembuka</a></li>
           <li><a href="#inti">Inti Artikel</a></li>
@@ -633,12 +148,12 @@
           <li><a href="#gambar">Instruksi Gambar</a></li>
           <li><a href="#rujukan">Rujukan</a></li>
         </ol>
-      </aside>
+      </nav>
 
-      <article class="article">
+      <div class="premium-article-body">
         <section id="pembuka">
           <h2>Catatan Pembuka</h2>
-          <p class="lead">
+          <p class="premium-article-lead">
             Artikel ini ditulis sebagai kerangka berpikir yang diharapkan tetap
             relevan untuk 10 tahun ke depan. Platform bisa berubah, algoritma
             bisa berganti pakaian seperti cicak ganti posisi di dinding, tetapi
@@ -647,8 +162,8 @@
             dengan ilmu.
           </p>
 
-          <div class="note">
-            <strong class="box-title">Batasan penting</strong>
+          <aside class="premium-article-disclaimer">
+            <strong class="premium-note__title">Batasan penting</strong>
             <p>
               Tulisan ini adalah edukasi umum. Untuk keluhan kesehatan, obat,
               suplemen, alergi, penyakit kronis, kehamilan, anak-anak, lansia,
@@ -656,7 +171,8 @@
               Artikel ini juga bukan fatwa halal-haram untuk produk tertentu;
               ia memberi cara berpikir agar keputusan lebih amanah dan rasional.
             </p>
-          </div>
+            <p>Artikel ini bersifat edukatif dan bukan diagnosis atau pengganti konsultasi tenaga kesehatan profesional.</p>
+          </aside>
         </section>
 
         <section id="inti">
@@ -696,8 +212,8 @@
             berdagang bisa menimbulkan masalah.
           </p>
 
-          <div class="key">
-            <strong class="box-title">Kalimat kunci</strong>
+          <div class="premium-note premium-note--amanah">
+            <strong class="premium-note__title">Kalimat kunci</strong>
             <p>
               Testimoni boleh didengar, tetapi tidak boleh menggantikan pemeriksaan
               bukti, izin, keamanan, komposisi, risiko, dan kewajaran klaim.
@@ -735,7 +251,7 @@
             dalam promosi produk.
           </p>
 
-          <div class="table-wrap">
+          <div class="premium-article-table-wrap premium-article-wide" role="region" aria-label="Perbandingan testimoni, klaim, bukti, dan izin edar" tabindex="0">
             <table>
               <thead>
                 <tr>
@@ -783,8 +299,8 @@
             boleh dijanjikan sebagai obat.
           </p>
 
-          <div class="note">
-            <strong class="box-title">Rumus sederhana</strong>
+          <div class="premium-note premium-note--info">
+            <strong class="premium-note__title">Rumus sederhana</strong>
             <p>
               Legalitas produk adalah pintu masuk. Kebenaran klaim adalah pemeriksaan
               berikutnya. Etika promosi adalah pagar agar pembeli tidak dirugikan.
@@ -793,7 +309,7 @@
 
           <h3>Tingkatan bukti: dari lemah ke lebih kuat</h3>
 
-          <div class="table-wrap">
+          <div class="premium-article-table-wrap premium-article-wide" role="region" aria-label="Tingkatan bukti klaim produk" tabindex="0">
             <table>
               <thead>
                 <tr>
@@ -899,7 +415,7 @@
         <section id="bendera-merah">
           <h2>5. Bendera Merah: Tanda Klaim Perlu Diwaspadai</h2>
 
-          <div class="table-wrap">
+          <div class="premium-article-table-wrap premium-article-wide" role="region" aria-label="Bendera merah klaim produk" tabindex="0">
             <table class="red-table">
               <thead>
                 <tr>
@@ -938,8 +454,8 @@
             </table>
           </div>
 
-          <div class="warning">
-            <strong class="box-title">Prinsip tegas</strong>
+          <div class="premium-note premium-note--warning">
+            <strong class="premium-note__title">Prinsip tegas</strong>
             <p>
               Semakin besar janji sebuah produk, semakin besar kewajiban
               pembuktiannya. Klaim besar dengan bukti kecil adalah tanda bahaya.
@@ -991,7 +507,7 @@
 
           <h3>Contoh bahasa promosi yang lebih amanah</h3>
 
-          <div class="table-wrap">
+          <div class="premium-article-table-wrap premium-article-wide" role="region" aria-label="Contoh bahasa promosi yang lebih amanah" tabindex="0">
             <table>
               <thead>
                 <tr>
@@ -1020,8 +536,8 @@
         <section id="islam">
           <h2>8. Prinsip Islam: Tabayyun, Amanah, dan Larangan Menipu</h2>
 
-          <div class="quote-box">
-            <p class="arabic">يَا أَيُّهَا الَّذِينَ آمَنُوا إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا</p>
+          <div class="premium-article-quote">
+            <p class="premium-article-arabic" lang="ar" dir="rtl">يَا أَيُّهَا الَّذِينَ آمَنُوا إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا</p>
             <p class="translation">
               “Wahai orang-orang yang beriman, jika datang kepadamu orang fasik
               membawa suatu berita, maka telitilah kebenarannya...”
@@ -1029,24 +545,24 @@
             <p class="source">QS. Al-Hujurat: 6</p>
           </div>
 
-          <div class="quote-box">
-            <p class="arabic">وَلَا تَقْفُ مَا لَيْسَ لَكَ بِهِ عِلْمٌ</p>
+          <div class="premium-article-quote">
+            <p class="premium-article-arabic" lang="ar" dir="rtl">وَلَا تَقْفُ مَا لَيْسَ لَكَ بِهِ عِلْمٌ</p>
             <p class="translation">
               “Dan janganlah kamu mengikuti sesuatu yang tidak kamu ketahui ilmunya...”
             </p>
             <p class="source">QS. Al-Isra: 36</p>
           </div>
 
-          <div class="quote-box">
-            <p class="arabic">مَنْ غَشَّنَا فَلَيْسَ مِنَّا</p>
+          <div class="premium-article-quote">
+            <p class="premium-article-arabic" lang="ar" dir="rtl">مَنْ غَشَّنَا فَلَيْسَ مِنَّا</p>
             <p class="translation">
               “Barang siapa menipu kami, maka ia bukan dari golongan kami.”
             </p>
             <p class="source">HR. Muslim</p>
           </div>
 
-          <div class="quote-box">
-            <p class="arabic">الْبَيِّعَانِ بِالْخِيَارِ مَا لَمْ يَتَفَرَّقَا، فَإِنْ صَدَقَا وَبَيَّنَا بُورِكَ لَهُمَا فِي بَيْعِهِمَا</p>
+          <div class="premium-article-quote">
+            <p class="premium-article-arabic" lang="ar" dir="rtl">الْبَيِّعَانِ بِالْخِيَارِ مَا لَمْ يَتَفَرَّقَا، فَإِنْ صَدَقَا وَبَيَّنَا بُورِكَ لَهُمَا فِي بَيْعِهِمَا</p>
             <p class="translation">
               “Penjual dan pembeli memiliki hak pilih selama belum berpisah. Jika
               keduanya jujur dan menjelaskan keadaan barang, diberkahi jual beli mereka...”
@@ -1069,7 +585,7 @@
             gunakan gambar yang netral dan tidak menyesatkan.
           </p>
 
-          <div class="table-wrap">
+          <div class="premium-article-table-wrap premium-article-wide" role="region" aria-label="Instruksi gambar edukasi" tabindex="0">
             <table class="gold-table">
               <thead>
                 <tr>
@@ -1098,8 +614,8 @@
             </table>
           </div>
 
-          <div class="principle">
-            <strong class="box-title">Catatan gambar</strong>
+          <div class="premium-note premium-note--important">
+            <strong class="premium-note__title">Catatan gambar</strong>
             <p>
               Hindari foto sebelum-sesudah ekstrem, wajah pasien sakit, simbol lembaga
               resmi tanpa izin, logo BPOM/WHO palsu, dan gambar yang memberi kesan
@@ -1120,8 +636,8 @@
             nalar, tetapi membantu orang mengambil keputusan dengan lebih terang.
           </p>
 
-          <div class="key">
-            <strong class="box-title">Kesimpulan akhir</strong>
+          <div class="premium-note premium-note--amanah">
+            <strong class="premium-note__title">Kesimpulan akhir</strong>
             <p>
               Dengarkan testimoni, tetapi minta bukti. Periksa izin, tetapi jangan
               berhenti di izin. Beli dengan ilmu. Jual dengan amanah.
@@ -1155,27 +671,25 @@
             <li>Al-Qur’an dan hadits shahih: QS. Al-Hujurat: 6, QS. Al-Isra: 36, HR. Muslim, serta HR. Bukhari-Muslim.</li>
           </ul>
 
-          <div class="note">
-            <strong class="box-title">Catatan penggunaan ulang</strong>
+          <div class="premium-note premium-note--info">
+            <strong class="premium-note__title">Catatan penggunaan ulang</strong>
             <p>
               Artikel ini cocok dikembangkan menjadi e-book mini, carousel Instagram,
               naskah video pendek, materi edukasi reseller, atau halaman blog.
             </p>
           </div>
 
-          <a class="back-top" href="#top">Kembali ke atas ↑</a>
+          <a class="premium-article-back-top" href="#top">Kembali ke atas ↑</a>
         </section>
-      </article>
-    </div>
+      </div>
+      </div>
+    </article>
   </main>
 
-  <footer class="footer">
-    <p>
-      © 2026 VitaNusa AI. Artikel edukasi ini dibuat untuk membantu pembaca
-      membeli dengan ilmu dan pelaku usaha menjual dengan amanah.
-    </p>
+  <footer class="premium-article-footer vn-footer">
+    <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian. <a href="../prinsip-amanah.html">Prinsip Amanah</a> · <a href="index.html">Daftar Artikel</a></p>
   </footer>
 
-  <script type="module">import{initNusaUiShell}from'../assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';initNusaUiShell();</script>
+  <script type="module" src="premium-article.js?v=20260712-premium-reading-ui-v1"></script>
 </body>
 </html>

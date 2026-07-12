@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+ fix/chat-css-cache-and-product-routing
   <title>Prinsip Amanah VitaNusa AI</title>
   <meta name="description" content="Hierarki Akad &amp; Amanah sebagai tata kelola umum, Urutan Keselamatan Medis, batas AI, dan prinsip halal-thayyib VitaNusa AI.">
+
+  <title>Prinsip Akad &amp; Amanah VitaNusa AI</title>
+  <meta name="description" content="Prinsip memenuhi akad, amanah informasi, keselamatan, batas AI, kejujuran produk, dan hak pengguna dalam tata kelola VitaNusa AI.">
+ main
   <meta name="theme-color" content="#14532d">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260709-vn-page-unify-v1">
@@ -19,8 +24,10 @@
     .hero-note,
     .principle-panel,
     .verse-card,
+    .akad-hierarchy-item,
     .hierarchy-card,
     .boundary-card,
+    .feature-card,
     .status-card,
     .flow-card {
       border: 1px solid rgba(20, 83, 45, .14);
@@ -67,9 +74,16 @@
       line-height: 1.72;
     }
 
-    .verse-grid,
+    .verse-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(14px, 2.2vw, 22px);
+      align-items: start;
+    }
+
     .hierarchy-grid,
     .boundary-grid,
+    .feature-grid,
     .status-grid,
     .flow-grid {
       display: grid;
@@ -78,8 +92,10 @@
     }
 
     .verse-card,
+    .akad-hierarchy-item,
     .hierarchy-card,
     .boundary-card,
+    .feature-card,
     .status-card,
     .flow-card,
     .principle-panel {
@@ -90,15 +106,19 @@
     .verse-card,
     .hierarchy-card,
     .boundary-card,
+    .feature-card,
     .status-card,
     .flow-card {
       padding: clamp(17px, 2.6vw, 24px);
       border-radius: 22px;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .verse-card h3,
     .hierarchy-card h3,
     .boundary-card h3,
+    .feature-card h3,
     .status-card h3,
     .flow-card h3 {
       margin: 0 0 9px;
@@ -108,6 +128,7 @@
     .verse-card p,
     .hierarchy-card p,
     .boundary-card p,
+    .feature-card p,
     .status-card p,
     .flow-card p {
       margin: 0;
@@ -123,6 +144,32 @@
       line-height: 1.9;
       text-align: right;
       direction: rtl;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+
+    .verse-source,
+    .verse-context {
+      margin-top: 14px !important;
+      padding-top: 12px;
+      border-top: 1px solid rgba(20, 83, 45, .12);
+      font-size: .9rem;
+    }
+
+    .verse-source a {
+      color: var(--vn-green-800);
+      font-weight: 850;
+      text-underline-offset: 3px;
+    }
+
+    .verse-boundary {
+      max-width: none;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(180, 83, 9, .18);
+      border-radius: 16px;
+      background: #fff8e8;
+      color: #5a4926;
     }
 
     .verse-card-primary {
@@ -205,6 +252,67 @@
       border-left: 4px solid #a56b00;
       border-radius: 0 14px 14px 0;
       background: #fff8e8;
+    }
+
+    .akad-hierarchy-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(14px, 2vw, 20px);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .akad-hierarchy-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      padding: clamp(17px, 2.6vw, 22px);
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 16px 38px rgba(20, 83, 45, .07);
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .akad-hierarchy-number {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: var(--vn-green-900);
+      color: var(--vn-gold);
+      font-weight: 900;
+    }
+
+    .akad-hierarchy-content h3,
+    .akad-hierarchy-content p {
+      margin: 0;
+    }
+
+    .akad-hierarchy-content h3 {
+      color: var(--vn-green-900);
+      font-size: 1.08rem;
+    }
+
+    .akad-hierarchy-content p {
+      margin-top: 7px;
+      color: #405549;
+      line-height: 1.65;
+    }
+
+    .principle-page .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
     }
 
     .priority-list,
@@ -347,11 +455,27 @@
       font-weight: 900;
     }
 
+    .repair-panel .section-copy {
+      max-width: none;
+    }
+
+    .principle-page a:focus-visible {
+      outline: 3px solid #a56b00;
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 980px) {
+      .verse-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 900px) {
       .constitution-hero .wrap,
-      .verse-grid,
+      .akad-hierarchy-list,
       .hierarchy-grid,
       .boundary-grid,
+      .feature-grid,
       .status-grid {
         grid-template-columns: 1fr;
       }
@@ -384,6 +508,12 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media (max-width: 420px) {
+      .akad-hierarchy-item {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body class="vn-page principle-page">
@@ -393,9 +523,9 @@
     <section class="constitution-hero vn-page-hero" aria-labelledby="pageTitle">
       <div class="wrap vn-container">
         <div>
-          <p class="eyebrow vn-eyebrow">Prinsip Amanah VitaNusa AI</p>
-          <h1 id="pageTitle">Ilmu dan keselamatan lebih dahulu, produk tetap di belakang.</h1>
-          <p>VitaNusa AI memakai nilai Islam sebagai kompas etika: jujur, amanah, adil, tidak membahayakan, dan tidak melampaui batas ilmu.</p>
+          <p class="eyebrow vn-eyebrow">Prinsip Akad &amp; Amanah VitaNusa AI</p>
+          <h1 id="pageTitle">Setiap janji, informasi, dan layanan adalah amanah yang harus dipenuhi.</h1>
+          <p>VitaNusa AI memakai nilai Islam sebagai kompas etika: memenuhi akad, menjaga keselamatan, menyampaikan informasi dengan jujur, menjelaskan keterbatasan, dan tidak melampaui batas ilmu.</p>
           <div class="actions-minimal vn-actions">
             <a class="btn wa" href="index.html">Tanya Nusa AI</a>
             <a class="btn outline" href="articles/index.html">Baca Artikel</a>
@@ -404,18 +534,23 @@
 
         <aside class="hero-note vn-card" aria-label="Batas utama VitaNusa AI">
           <strong>Batas utama</strong>
-          <p>VitaNusa AI bukan dokter, alat diagnosis, pemberi dosis, mufti, atau sales agresif.</p>
+          <p>VitaNusa AI bukan dokter, alat diagnosis, pemberi dosis, mufti, lembaga fatwa, lembaga sertifikasi halal, atau sales agresif; serta tidak menggantikan ulama maupun tenaga profesional.</p>
           <p>Dalam keadaan darurat, pertolongan medis selalu didahulukan daripada artikel, VitaCheck, atau produk.</p>
           <a href="contact.html">Hubungi admin untuk informasi umum</a>
         </aside>
       </div>
     </section>
 
-    <section class="constitution-main vn-section">
+    <div class="constitution-main vn-section">
       <div class="wrap vn-container constitution-content">
         <section aria-labelledby="quranTitle">
+fix/chat-css-cache-and-product-routing
           <h2 class="section-title" id="quranTitle">Landasan utama dan landasan pendukung</h2>
           <p class="section-copy">QS. Al-Mā’idah ayat 1 menjadi landasan utama Hierarki Akad &amp; Amanah. QS. Al-Baqarah ayat 168 dan 172 tetap menjadi landasan pendukung halal-thayyib dan syukur; ketiga ayat ini tidak digabung atau dipakai sebagai mesin fatwa otomatis.</p>
+
+          <h2 class="section-title" id="quranTitle">Landasan Qur'ani yang dibedakan dengan jelas</h2>
+          <p class="section-copy">Tiga ayat berikut saling melengkapi, tetapi bukan satu ayat. Ketiganya dipakai sebagai landasan nilai dan muhasabah internal, bukan sebagai mesin fatwa otomatis.</p>
+ main
 
           <div class="verse-grid">
             <article class="verse-card verse-card-primary">
@@ -427,19 +562,83 @@
             </article>
 
             <article class="verse-card">
+fix/chat-css-cache-and-product-routing
               <span class="verse-label">Landasan pendukung · QS. Al-Baqarah: 168</span>
+
+              <span class="verse-label">QS. Al-Mā’idah: 1</span>
+              <h3>Memenuhi akad adalah dasar amanah</h3>
+              <p class="arabic" lang="ar" dir="rtl">يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوٓاْ أَوۡفُواْ بِٱلۡعُقُودِ ۚ أُحِلَّتۡ لَكُم بَهِيمَةُ ٱلۡأَنۡعَٰمِ إِلَّا مَا يُتۡلَىٰ عَلَيۡكُمۡ غَيۡرَ مُحِلِّي ٱلصَّيۡدِ وَأَنتُمۡ حُرُمٌ ۗ إِنَّ ٱللَّهَ يَحۡكُمُ مَا يُرِيدُ</p>
+              <p>Wahai orang-orang yang beriman, penuhilah akad-akad itu. Dihalalkan bagimu hewan ternak, kecuali yang akan dibacakan kepadamu, dengan tidak menghalalkan berburu ketika kamu sedang berihram. Sesungguhnya Allah menetapkan hukum menurut apa yang Dia kehendaki.</p>
+              <p class="verse-context"><strong>Penerapan etika VitaNusa:</strong> Ayat ini menjadi pengingat bahwa janji, persetujuan, informasi, fitur, layanan, dan promosi harus sesuai dengan apa yang benar-benar dapat dipenuhi. VitaNusa tidak boleh menjanjikan hasil yang tidak dapat dibuktikan atau menampilkan fitur seolah sudah tersedia ketika masih berupa rencana. Penerapan ini bukan tafsir hukum yang mengikat dan bukan fatwa.</p>
+              <p class="verse-source">Terjemahan disalin dari <a href="https://quran.firanda.com" target="_blank" rel="noopener noreferrer">Quran Tadabbur</a>.</p>
+            </article>
+
+            <article class="verse-card">
+              <span class="verse-label">QS. Al-Baqarah: 168</span>
+ main
               <h3>Halal, thayyib, dan kewaspadaan terhadap jalan penipuan</h3>
-              <p class="arabic" lang="ar">يَا أَيُّهَا النَّاسُ كُلُوا مِمَّا فِي الْأَرْضِ حَلَالًا طَيِّبًا وَلَا تَتَّبِعُوا خُطُوَاتِ الشَّيْطَانِ ۚ إِنَّهُ لَكُمْ عَدُوٌّ مُبِينٌ</p>
+              <p class="arabic" lang="ar" dir="rtl">يَا أَيُّهَا النَّاسُ كُلُوا مِمَّا فِي الْأَرْضِ حَلَالًا طَيِّبًا وَلَا تَتَّبِعُوا خُطُوَاتِ الشَّيْطَانِ ۚ إِنَّهُ لَكُمْ عَدُوٌّ مُبِينٌ</p>
               <p>Ayat ini menjadi kompas agar pilihan tidak hanya mengejar manfaat, tetapi juga menjaga kehalalan, kebaikan, dan menjauhi langkah penipuan maupun kemudaratan.</p>
             </article>
 
             <article class="verse-card">
               <span class="verse-label">Landasan pendukung · QS. Al-Baqarah: 172</span>
               <h3>Rezeki yang baik disambut dengan syukur</h3>
-              <p class="arabic" lang="ar">يَا أَيُّهَا الَّذِينَ آمَنُوا كُلُوا مِنْ طَيِّبَاتِ مَا رَزَقْنَاكُمْ وَاشْكُرُوا لِلَّهِ إِنْ كُنْتُمْ إِيَّاهُ تَعْبُدُونَ</p>
+              <p class="arabic" lang="ar" dir="rtl">يَا أَيُّهَا الَّذِينَ آمَنُوا كُلُوا مِنْ طَيِّبَاتِ مَا رَزَقْنَاكُمْ وَاشْكُرُوا لِلَّهِ إِنْ كُنْتُمْ إِيَّاهُ تَعْبُدُونَ</p>
               <p>Ayat ini menjadi landasan syukur dan penggunaan nikmat secara bertanggung jawab, tidak berlebihan, serta tidak mengubah produk menjadi janji keselamatan mutlak.</p>
             </article>
           </div>
+
+          <p class="section-copy verse-boundary">Ayat digunakan sebagai landasan nilai dan muhasabah internal, bukan sebagai fatwa otomatis untuk setiap persoalan kesehatan, produk, atau transaksi. Ayat tidak memberi legitimasi agama otomatis kepada produk maupun promosi VitaNusa.</p>
+        </section>
+
+        <section aria-labelledby="akadHierarchyTitle">
+          <h2 class="section-title" id="akadHierarchyTitle">Hierarki Akad &amp; Amanah VitaNusa</h2>
+          <p class="section-copy">Hierarki ini menjadi panduan sebelum VitaNusa menerbitkan informasi, menjalankan fitur, menampilkan produk, atau memberikan respons kepada pengguna. Ia berlaku pada hasil VitaCheck, jawaban Nusa AI, artikel, data produk, promosi, pengelolaan data, dan layanan kontak.</p>
+          <ol class="akad-hierarchy-list" role="list">
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>1</span>
+              <div class="akad-hierarchy-content">
+                <h3>Penuhi akad</h3>
+                <p>Sampaikan dan lakukan hanya hal yang benar-benar dapat dipenuhi. Fitur yang masih direncanakan harus disebut sebagai rencana, bukan seolah sudah tersedia.</p>
+              </div>
+            </li>
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>2</span>
+              <div class="akad-hierarchy-content">
+                <h3>Utamakan keselamatan</h3>
+                <p>Risiko darurat, bahaya serius, dan kebutuhan tenaga kesehatan harus didahulukan daripada artikel, VitaCheck, katalog, atau promosi.</p>
+              </div>
+            </li>
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>3</span>
+              <div class="akad-hierarchy-content">
+                <h3>Sampaikan dengan jujur</h3>
+                <p>Jangan mengarang manfaat, komposisi, izin, status halal, bukti, testimoni, hasil kesehatan, atau kemampuan sistem.</p>
+              </div>
+            </li>
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>4</span>
+              <div class="akad-hierarchy-content">
+                <h3>Jelaskan batas layanan</h3>
+                <p>Bedakan edukasi umum, refleksi VitaCheck, respons AI, informasi produk, dan keputusan profesional.</p>
+              </div>
+            </li>
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>5</span>
+              <div class="akad-hierarchy-content">
+                <h3>Lindungi hak pengguna</h3>
+                <p>Jelaskan data yang digunakan, tujuan penggunaannya, pilihan pengguna, serta cara mengoreksi atau melaporkan kekeliruan.</p>
+              </div>
+            </li>
+            <li class="akad-hierarchy-item">
+              <span class="akad-hierarchy-number"><span class="visually-hidden">Tingkat </span>6</span>
+              <div class="akad-hierarchy-content">
+                <h3>Buktikan pelaksanaannya</h3>
+                <p>Nilai amanah harus terlihat dalam kode, konten, proses publikasi, pelayanan, dan perbaikan ketika kesalahan ditemukan.</p>
+              </div>
+            </li>
+          </ol>
         </section>
 
         <section aria-labelledby="governanceTitle">
@@ -486,10 +685,17 @@
           <p class="governance-boundary"><strong>Batasnya jelas:</strong> Hierarki Akad &amp; Amanah adalah kerangka tata kelola umum, bukan fatwa final tentang sah-batal akad dan bukan kampanye promosi produk.</p>
         </section>
 
+ fix/chat-css-cache-and-product-routing
         <section aria-labelledby="medicalPriorityTitle">
           <span class="priority-label">Lapisan khusus kesehatan</span>
           <h2 class="section-title" id="medicalPriorityTitle">Urutan Keselamatan Medis</h2>
           <p class="section-copy">Lapisan ini aktif ketika pembahasan menyentuh kesehatan atau risiko medis. Ia melengkapi tata kelola umum di atas dan memperjelas sistem keselamatan medis yang sudah berjalan—bukan menggantinya.</p>
+
+        <section aria-labelledby="priorityTitle">
+          <h2 class="section-title" id="priorityTitle">Ketika banyak aturan aktif, keselamatan menentukan urutan</h2>
+          <p class="section-copy">Hierarki Akad &amp; Amanah mengatur tata kelola umum. Ketika terdapat risiko kesehatan, urutan keselamatan berikut menjadi aturan operasional yang didahulukan.</p>
+          <p class="section-copy">Urutan ini bukan merendahkan pentingnya halal. Maksudnya, orang yang sesak berat perlu ditolong dahulu; pembahasan status produk dapat dilanjutkan setelah kondisi aman.</p>
+ main
           <ol class="priority-list">
             <li>Kenali tanda darurat dan dahulukan keselamatan jiwa.</li>
             <li>Cegah bahaya serius dan arahkan pengguna mencari pertolongan medis yang sesuai.</li>
@@ -575,6 +781,45 @@
           </div>
         </section>
 
+        <section aria-labelledby="featureAkadTitle">
+          <h2 class="section-title" id="featureAkadTitle">Penerapan akad pada fitur VitaNusa</h2>
+          <p class="section-copy">Pemetaan ini menjelaskan standar penyajian dan batas setiap fitur. Penyebutan fitur tidak berarti seluruh kemampuan atau rencana sudah selesai tersedia.</p>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <h3>Nusa AI</h3>
+              <p>Menjawab sesuai data dan knowledge yang tersedia, mengakui keterbatasan, tidak mendiagnosis, dan tidak mengarang jawaban.</p>
+            </article>
+            <article class="feature-card">
+              <h3>VitaCheck</h3>
+              <p>Menjelaskan bahwa hasil merupakan refleksi kebiasaan dan edukasi, bukan diagnosis penyakit.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Artikel</h3>
+              <p>Memisahkan edukasi umum, dugaan, peringatan keselamatan, dan kebutuhan pemeriksaan profesional.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Produk</h3>
+              <p>Hanya menampilkan manfaat, komposisi, cara pakai, izin, dan status halal berdasarkan data yang benar-benar tersedia.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Promosi</h3>
+              <p>Tidak memakai janji kesembuhan, hasil mutlak, testimoni palsu, atau ketakutan untuk mendorong pembelian.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Privasi dan akun</h3>
+              <p>Menjelaskan data yang dikumpulkan, tujuan penggunaan, pilihan pengguna, dan cara memperbaiki informasi.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Roadmap</h3>
+              <p>Membedakan fitur yang sudah tersedia, sedang dikembangkan, dan masih menjadi rencana. Roadmap adalah arah, bukan bukti bahwa suatu fitur telah tersedia.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Kontak dan WhatsApp</h3>
+              <p>Tidak diposisikan sebagai layanan medis darurat atau pengganti tenaga kesehatan.</p>
+            </article>
+          </div>
+        </section>
+
         <section aria-labelledby="flowTitle">
           <h2 class="section-title" id="flowTitle">Penerapan praktis di VitaNusa AI</h2>
           <div class="flow-grid">
@@ -586,8 +831,18 @@
             <article class="flow-card"><span>6</span><h3>Rujuk ahli saat perlu</h3><p>Dokter, apoteker, tenaga kesehatan, lembaga halal, atau ulama tetap memegang keputusan profesional.</p></article>
           </div>
         </section>
+
+        <section aria-labelledby="repairTitle">
+          <h2 class="section-title" id="repairTitle">Ketika VitaNusa melakukan kekeliruan</h2>
+          <div class="principle-panel repair-panel">
+            <p class="section-copy">Amanah juga berarti bersedia memperbaiki kesalahan. Ketika ditemukan informasi, tautan, fitur, atau penjelasan yang keliru, VitaNusa akan meninjau sumbernya, memperbaiki bagian yang salah, dan menjelaskan perubahan penting secara proporsional.</p>
+            <div class="actions-minimal vn-actions">
+              <a class="btn outline" href="contact.html">Laporkan kekeliruan</a>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
   </main>
 
   <footer class="vn-footer">
