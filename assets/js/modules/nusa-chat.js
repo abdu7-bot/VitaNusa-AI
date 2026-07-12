@@ -1,4 +1,4 @@
-import { getNusaReply } from './nusa-knowledge.js?v=20260704-vitanusa-master-map-v1';
+import { getNusaReply } from './nusa-knowledge.js?v=20260712-product-claim-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -21,6 +21,10 @@ const SAFE_FALLBACK_TEXT = [
 const SAFE_FALLBACK_REPLY = Object.freeze({
   text: SAFE_FALLBACK_TEXT,
   actions: [],
+});
+
+const BACKEND_INTENT_ALIASES = Object.freeze({
+  product_claim: 'product-claim',
 });
 
 // Ganti ke URL Render nanti lewat window.VITANUSA_BACKEND_ASK_URL, meta,
@@ -317,8 +321,11 @@ function buildBackendReflectionHtml(data) {
 }
 
 function mapBackendAnswer(data) {
+  const backendIntent = String(data.intent || 'answer').trim();
+  const normalizedIntent = BACKEND_INTENT_ALIASES[backendIntent] || backendIntent || 'answer';
+
   return {
-    id: `backend-${data.intent || 'answer'}`,
+    id: `backend-${normalizedIntent}`,
     text: data.answer || 'Maaf, backend belum memberikan jawaban.',
     html: buildBackendReflectionHtml(data),
     actions: Array.isArray(data.actions) ? data.actions : [],

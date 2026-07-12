@@ -33,6 +33,7 @@ export const NUSA_KEYWORDS = Object.freeze({
   vitacheckStart: ['mulai vitacheck', 'cara memakai vitacheck', 'cara pakai vitacheck', 'pakai vitacheck', 'hasil vitacheck', 'vita check', 'vitacheck', 'skor kebiasaan'],
   habit: ['kebiasaan', 'kebiasaan sehat', 'pola hidup', 'hidup sehat', 'rutinitas sehat', 'tidur', 'begadang', 'makan', 'pola makan', 'air putih', 'minum air', 'lelah', 'capek', 'energi', 'gerak', 'olahraga', 'pencernaan', 'perut tidak nyaman', 'mual ringan', 'kembung ringan', 'stres ringan', 'stress ringan'],
   generalHealth: ['menjaga kesehatan', 'cara menjaga kesehatan', 'bagaimana cara menjaga kesehatan', 'menjaga kesehatan tubuh', 'cara menjaga kesehatan tubuh', 'menjaga tubuh', 'merawat tubuh', 'tubuh sehat', 'tips sehat', 'tips hidup sehat', 'tips sehat sehari hari', 'cara hidup sehat', 'hidup lebih sehat', 'kesehatan harian', 'menjaga badan', 'badan sehat', 'mulai hidup sehat dari mana', 'keluhan ringan', 'pusing', 'pusing ringan', 'sakit kepala', 'sakit kepala ringan'],
+  productClaim: ['nilai klaim produk', 'menilai klaim produk', 'cek klaim produk', 'periksa klaim produk', 'klaim kesehatan', 'klaim menyembuhkan', 'apakah klaim ini benar', 'cara memeriksa klaim', 'memeriksa klaim', 'testimoni produk', 'janji sembuh'],
   testimonial: ['testimoni', 'testi', 'bukti', 'bukti nyata', 'klaim', 'klaim produk', 'promosi', 'hasil orang', 'review orang', 'ulasan orang', 'cek klaim', 'cek testimoni', 'percaya testimoni', 'katanya ' + CURE, 'katanya ampuh', 'cerita ' + CURE, 'janji ' + CURE, 'hasil instan'],
   productShortcut: ['produk bukan jalan pintas', 'produk jalan pintas', 'produk solusi cepat', 'produk menggantikan pola hidup', 'produk ini bisa menyem' + 'buhkan', 'produk bisa ' + CURE, 'produk bukan obat', 'produk bukan janji ' + CURE, 'suplemen bukan obat', 'suplemen solusi cepat'],
   product: ['produk', 'info produk', 'tanya produk', 'tanya langfit', 'tanya key propolis', 'key propolis', 'langfit deto pro', 'langfit', 'deto pro', 'propolis', 'katalog', 'katalog produk', 'harga', 'berapa harga', 'beli', 'cara beli', 'reseller', 'stok produk'],
@@ -49,8 +50,9 @@ export const NUSA_KEYWORDS = Object.freeze({
 
 const GENERAL_HEALTH_SIGNAL_TERMS = Object.freeze(['sehat', 'kesehatan', 'tubuh', 'badan', 'menjaga', 'merawat', 'pola', 'kebiasaan', 'hidup sehat']);
 const ARTICLE_SOURCE_SAFE_ATTACH_INTENTS = new Set(['product-shortcut', 'testimonial', 'vitacheck-start', 'habit', 'general-health', 'article-specific', 'article']);
-const ARTICLE_SOURCE_BLOCKED_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal', 'product-suitability', 'product', 'amanah', 'contact', 'start', 'greeting', 'faq']);
+const ARTICLE_SOURCE_BLOCKED_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal', 'product-suitability', 'product-shortcut', 'product-claim', 'product', 'amanah', 'contact', 'start', 'greeting', 'faq']);
 const SAFETY_BOUNDARY_INTENTS = new Set(['serious-complaint', DX, 'fatwa', 'tawakal']);
+const DIRECTED_INTENTS = new Set(['product-suitability', 'product-shortcut']);
 const PRODUCT_GATE_INTENTS = new Set(['product-suitability', 'product']);
 const BASIC_EDUCATION_SIGNALS = Object.freeze(['sudah baca', 'sudah membaca', 'sudah paham', 'sudah memahami', 'saya paham', 'prinsip amanah', 'produk bukan jalan pintas', 'testimoni bukan bukti', 'edukasi dasar', 'artikel dasar', 'basic', 'batas klaim', 'label resmi']);
 const PRODUCT_EDUCATION_ACTIONS = Object.freeze([NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.educationArticles]);
@@ -124,6 +126,19 @@ export const NUSA_RESPONSES = Object.freeze({
   habit: 'Bisa. Untuk mulai hidup lebih sehat, jangan ubah semuanya sekaligus. Pilih satu langkah kecil dulu: tidur sedikit lebih teratur, minum air lebih sadar, makan lebih rapi, atau gerak ringan. VitaCheck bisa membantu melihat bagian mana yang paling perlu diperbaiki.',
   generalHealth: 'Saya tidak bisa memastikan penyebab keluhan lewat chat. Untuk keluhan ringan, mulai dari dasar: istirahat cukup, minum air secara wajar, makan ringan sesuai toleransi, dan amati apakah memburuk. Kalau keluhan berat, menetap, atau disertai tanda bahaya, segera hubungi tenaga kesehatan. Nusa AI hanya membantu edukasi umum.',
   article: 'Kamu bisa mulai dari artikel edukasi VitaNusa AI. Pilih bacaan yang paling dekat dengan kebutuhanmu, lalu ambil satu langkah kecil yang realistis.',
+  productClaim: [
+    'Klaim produk perlu dinilai dengan tenang dan tidak hanya berdasarkan iklan atau testimoni.',
+    '',
+    'Poin penting:',
+    '',
+    '- cek label dan informasi resmi yang dapat diverifikasi',
+    '- bedakan manfaat umum dengan klaim menyembuhkan penyakit',
+    '- testimoni bukan bukti hasil untuk semua orang',
+    '- hindari janji hasil mutlak atau pasti sembuh',
+    '- konsultasikan kepada tenaga kesehatan bila memiliki kondisi medis atau sedang memakai obat',
+    '',
+    'Catatan amanah: Produk bukan pengganti diagnosis, pengobatan, atau tenaga kesehatan.'
+  ].join('\n'),
   testimonial: 'Testimoni perlu disikapi dengan tenang. Itu bisa menjadi pengalaman pribadi seseorang, tetapi bukan bukti utama untuk semua orang. Lebih aman cek label resmi, pahami batas klaim, dan jangan mudah percaya janji hasil mutlak.',
   amanah: 'Prinsip Amanah adalah pagar VitaNusa AI: edukasi dulu, tidak menentukan kondisi tubuh, tidak membuat klaim berlebihan, dan tidak menjadikan produk sebagai janji hasil.',
   product: 'Produk di VitaNusa AI ditampilkan sebagai informasi reseller. Sebelum melihat katalog, pahami dulu Prinsip Amanah: produk bukan obat, bukan janji hasil, dan bukan pengganti pola hidup sehat atau tenaga kesehatan.',
@@ -185,6 +200,7 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
   { id: 'tawakal', keywords: NUSA_KEYWORDS.tawakal, response: NUSA_RESPONSES.tawakal, actions: [NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'product-suitability', keywords: NUSA_KEYWORDS.productSuitability, response: NUSA_RESPONSES.productSuitability, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.testimonialArticle], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productSuitability) || (includesAny(text, ['produk','suplemen','langfit','deto pro','propolis','key propolis']) && includesAny(text, ['cocok','sesuai','pas','aman','boleh','konsumsi','minum']) && includesAny(text, ['untuk saya','buat saya','bagi saya','keluhan saya','kondisi saya','riwayat saya','sakit saya'])); } },
   { id: 'product-shortcut', keywords: NUSA_KEYWORDS.productShortcut, response: NUSA_RESPONSES.productShortcut, actions: [NUSA_ROUTE_BUTTONS.productShortcutArticle, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.testimonialArticle], matcher(text) { return includesAny(text, NUSA_KEYWORDS.productShortcut) || (includesAny(text, ['produk','suplemen']) && includesAny(text, ['jalan pintas','solusi cepat','pengganti pola hidup','menggantikan pola hidup'])); } },
+  { id: 'product-claim', keywords: NUSA_KEYWORDS.productClaim, response: NUSA_RESPONSES.productClaim, actions: [NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.testimonialArticle] },
   { id: 'product', keywords: [], response: NUSA_RESPONSES.product, actions: PRODUCT_EDUCATION_ACTIONS, matcher(text) { return includesAny(text, NUSA_KEYWORDS.product) && !includesAny(text, NUSA_KEYWORDS.testimonial) && !includesAny(text, NUSA_KEYWORDS.productShortcut); } },
   { id: 'testimonial', keywords: NUSA_KEYWORDS.testimonial, response: NUSA_RESPONSES.testimonial, actions: [NUSA_ROUTE_BUTTONS.testimonialArticle, NUSA_ROUTE_BUTTONS.amanah] },
   { id: 'vitacheck-start', keywords: NUSA_KEYWORDS.vitacheckStart, getReply: createVitaCheckReply },
@@ -201,6 +217,20 @@ export const NUSA_KNOWLEDGE_MAP = Object.freeze([
 ]);
 
 function normalizeText(value) { return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+function normalizeIntentId(value) {
+  const normalized = normalizeText(value).replace(/\s+/g, '-');
+  const aliases = {
+    'health-general': 'general-health',
+    'product-general': 'product',
+    vitacheck: 'vitacheck-start'
+  };
+  return aliases[normalized] || normalized;
+}
+function isKnowledgeIntentCompatible(intentTarget, intentId) {
+  const normalizedTarget = normalizeIntentId(intentTarget);
+  const normalizedIntent = normalizeIntentId(intentId);
+  return !normalizedTarget || !normalizedIntent || normalizedTarget === normalizedIntent;
+}
 function includesTerm(normalizedText, term) { const normalizedTerm = normalizeText(term); if (!normalizedTerm) return false; if (normalizedTerm.length <= 2) return ` ${normalizedText} `.includes(` ${normalizedTerm} `); return normalizedText.includes(normalizedTerm); }
 function includesAny(normalizedText, terms) { return terms.some((term) => includesTerm(normalizedText, term)); }
 function tokenizeKnowledge(value) {
@@ -334,7 +364,7 @@ function scoreKnowledgeItem(userQuestion, item) {
   score += Number(item.priority || 0);
   return score;
 }
-export async function findBestAnswer(userQuestion) {
+export async function findBestAnswer(userQuestion, { intentId = '' } = {}) {
   const safe = buildSafeAnswer(userQuestion);
   if (safe) return safe;
   const library = await load();
@@ -351,6 +381,7 @@ export async function findBestAnswer(userQuestion) {
   let best = null;
   let bestScore = 0;
   for (const item of library) {
+    if (!isKnowledgeIntentCompatible(item.intentTarget, intentId)) continue;
     const score = scoreKnowledgeItem(userQuestion, item);
     if (score > bestScore) {
       best = item;
@@ -440,12 +471,19 @@ function createKnowledgeReply(answer) {
     actions: mergeActions(actions)
   };
 }
+function createSafeReply(answer) {
+  const reply = createKnowledgeReply(answer);
+  return answer?.intentTarget === 'product-claim-boundary'
+    ? { ...reply, id: 'product-claim' }
+    : reply;
+}
 function intentMatches(intent, normalizedText) { if (!intent) return false; if (typeof intent.matcher === 'function' && intent.matcher(normalizedText)) return true; return includesAny(normalizedText, intent.keywords || []); }
 function findMatchingIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => intentMatches(intent, normalizedText)); }
 function findSafetyBoundaryIntent(normalizedText) { return NUSA_KNOWLEDGE_MAP.find((intent) => SAFETY_BOUNDARY_INTENTS.has(intent.id) && intentMatches(intent, normalizedText)); }
 function buildIntentReply(intent, normalizedText) { if (typeof intent.getReply === 'function') return intent.getReply(normalizedText); return { id: intent.id, text: intent.response, actions: intent.actions || [] }; }
 function isArticleSourceBlockedIntent(intent) { return Boolean(intent && ARTICLE_SOURCE_BLOCKED_INTENTS.has(intent.id)); }
 function canAttachArticleSources(intent) { return Boolean(intent && ARTICLE_SOURCE_SAFE_ATTACH_INTENTS.has(intent.id)); }
+function isDirectedIntent(intent) { return Boolean(intent && DIRECTED_INTENTS.has(intent.id)); }
 function isProductGateIntent(intent) { return Boolean(intent && PRODUCT_GATE_INTENTS.has(intent.id)); }
 function hasBasicEducationSignal(normalizedText) { return includesAny(normalizedText, BASIC_EDUCATION_SIGNALS); }
 function buildProductGateReply(intent, normalizedText) { if (intent.id === 'product-suitability') return buildIntentReply(intent, normalizedText) || NUSA_OUT_OF_CAPACITY_REPLY; if (hasBasicEducationSignal(normalizedText)) return { id: 'product-after-basic-education', text: NUSA_RESPONSES.productAfterEducation, actions: [NUSA_ROUTE_BUTTONS.products, NUSA_ROUTE_BUTTONS.amanah, NUSA_ROUTE_BUTTONS.whatsapp] }; return { id: 'product-education-gate', text: NUSA_RESPONSES.productEducationGate, actions: PRODUCT_EDUCATION_ACTIONS }; }
@@ -464,11 +502,18 @@ async function attachArticleSources(baseReply, normalizedText, intentId) { const
 export async function getNusaReply(input) {
   const normalizedText = normalizeText(input);
   if (!normalizedText) return NUSA_INITIAL_REPLY;
-  const adminKnowledgeAnswer = await findBestAnswer(input);
-  if (adminKnowledgeAnswer?.matched) return createKnowledgeReply(adminKnowledgeAnswer);
+  const safeAnswer = buildSafeAnswer(input);
+  if (safeAnswer) return createSafeReply(safeAnswer);
   const safetyIntent = findSafetyBoundaryIntent(normalizedText);
   if (safetyIntent) return buildIntentReply(safetyIntent, normalizedText) || NUSA_OUT_OF_CAPACITY_REPLY;
   const intent = findMatchingIntent(normalizedText);
+  if (isDirectedIntent(intent)) {
+    if (isProductGateIntent(intent)) return buildProductGateReply(intent, normalizedText);
+    return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
+  }
+  if (intent?.id === 'product-claim') return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
+  const adminKnowledgeAnswer = await findBestAnswer(input, { intentId: intent?.id || '' });
+  if (adminKnowledgeAnswer?.matched) return createKnowledgeReply(adminKnowledgeAnswer);
   if (isProductGateIntent(intent)) return buildProductGateReply(intent, normalizedText);
   if (isArticleSourceBlockedIntent(intent)) return buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE;
   if (intent && canAttachArticleSources(intent)) { const baseReply = buildIntentReply(intent, normalizedText) || NUSA_FALLBACK_RESPONSE; return attachArticleSources(baseReply, normalizedText, intent.id); }
