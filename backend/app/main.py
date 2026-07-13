@@ -4,9 +4,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .intent_router import detect_intent
+from .llm.config import LocalLlmConfig
+from .llm.guard import (
+    build_blocked_router_response,
+    build_guard_context,
+    evaluate_llm_guard,
+)
+from .llm.models import LlmRequest, LlmRouterResponse
+from .llm.prompts import build_system_prompt
+from .llm.router import LocalLlmRouter
 from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
-from .schemas import AskRequest, AskResponse
+from .schemas import AskRequest, AskResponse, LlmPreviewRequest
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -59,6 +68,61 @@ def home():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.post("/llm/preview", response_model=LlmRouterResponse)
+async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
+    config = LocalLlmConfig.from_env()
+    if not config.preview_enabled:
+        raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
+
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong.")
+
+    intent_result = detect_intent(message)
+    intent = intent_result["intent"]
+    safety_level = intent_result["safetyLevel"]
+    decision = POLICY_ENGINE.evaluate_question(
+        message,
+        intent=intent,
+        safety_level=safety_level,
+    )
+    guard_context = build_guard_context(
+        decision,
+        intent=intent,
+        safety_level=safety_level,
+    )
+    llm_request = LlmRequest(
+        system_prompt=build_system_prompt(guard_context),
+        user_message=message,
+        model=config.model,
+        temperature=config.temperature,
+        max_tokens=config.max_tokens,
+        intent=intent,
+        safety_level=safety_level,
+    )
+    guard = evaluate_llm_guard(guard_context, llm_request)
+    selected_strategy = request.strategy or config.strategy
+    selected_provider = (
+        request.provider.strip().lower() if request.provider else None
+    )
+
+    if not guard.allowed:
+        return build_blocked_router_response(
+            mode=config.mode,
+            strategy=selected_strategy,
+            provider=selected_provider or config.provider or "local-llm",
+            reason=guard.reason or "llm_guard_blocked",
+        )
+
+    router = LocalLlmRouter(config)
+    return await router.route(
+        llm_request,
+        provider=selected_provider,
+        strategy=selected_strategy,
+        guard_context=guard_context,
+    )
 
 
 @app.post("/ask", response_model=AskResponse)

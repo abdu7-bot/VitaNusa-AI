@@ -4,6 +4,8 @@ Backend FastAPI VitaNusa AI bersifat rule-based. Ia memakai intent detector, med
 
 Tidak ada OpenAI API, RAG, embedding, vector database, secret, atau dependency berat baru di fondasi ini.
 
+Dokumentasi fondasi Local LLM Router: [`../docs/local-llm-router.md`](../docs/local-llm-router.md).
+
 ## Arsitektur
 
 ```text
