@@ -6,6 +6,8 @@ Tidak ada OpenAI API, RAG, embedding, vector database, secret, atau dependency b
 
 Dokumentasi fondasi Local LLM Router: [`../docs/local-llm-router.md`](../docs/local-llm-router.md).
 
+Dokumentasi fondasi Web Search Router: [`../docs/web-search-router.md`](../docs/web-search-router.md).
+
 ## Arsitektur
 
 ```text
