@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 class AskRequest(BaseModel):
     question: str
     includeQuranicReflection: bool = False
+
+
+class LlmPreviewRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    provider: str | None = Field(default=None, min_length=1, max_length=50)
+    strategy: Literal["priority", "fallback"] | None = None
 
 
 class ActionLink(BaseModel):
