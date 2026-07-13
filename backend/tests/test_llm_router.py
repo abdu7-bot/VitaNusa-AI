@@ -208,10 +208,14 @@ class LocalLlmRouterTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("private detail", result.response.error_message or "")
 
     async def test_live_mode_never_falls_back_to_mock(self) -> None:
+        # No provider is enabled (OLLAMA_ENABLED/LM_STUDIO_ENABLED/LOCALAI_ENABLED
+        # all default to false), so live mode must fail closed without ever
+        # silently returning mock/simulated content.
         config = replace(LocalLlmConfig(), mode="live")
         result = await LocalLlmRouter(config).route(make_request())
         self.assertTrue(result.all_providers_failed)
-        self.assertEqual(result.response.status, "not_implemented")
+        self.assertEqual(result.response.status, "unavailable")
+        self.assertEqual(result.response.error_code, "provider_not_enabled")
         self.assertFalse(result.response.is_mock)
         self.assertTrue(all(name in result.failed_providers for name in config.providers))
 
@@ -282,8 +286,12 @@ class LlmPreviewEndpointTests(unittest.IsolatedAsyncioTestCase):
                     strategy="priority",
                 )
             )
+        # Live provider adapters are implemented, but no provider is enabled
+        # in this environment (OLLAMA_ENABLED=false by default), so this must
+        # fail closed rather than ever silently return mock/simulated content.
         self.assertTrue(result.all_providers_failed)
-        self.assertEqual(result.response.status, "not_implemented")
+        self.assertEqual(result.response.status, "unavailable")
+        self.assertEqual(result.response.error_code, "provider_not_enabled")
         self.assertFalse(result.response.is_mock)
 
     async def test_preview_all_failed_is_not_an_exception(self) -> None:
@@ -322,20 +330,22 @@ class LlmPreviewEndpointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.attempted_providers, [])
 
 
-class AskRegressionTests(unittest.TestCase):
-    def test_ask_answer_is_unchanged_in_disabled_and_mock_modes(self) -> None:
+class AskRegressionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_ask_answer_is_unchanged_in_disabled_and_mock_modes(self) -> None:
         request = AskRequest(question="Apa itu VitaCheck?")
         with patch.dict(os.environ, {"LOCAL_LLM_MODE": "disabled"}, clear=False):
-            disabled = ask_ai(request)
+            disabled = await ask_ai(request)
         with patch.dict(
             os.environ,
             {
                 "LOCAL_LLM_MODE": "mock",
                 "LOCAL_LLM_MOCK_SCENARIO": "success",
+                # ask_enabled defaults to false, so /ask must ignore LLM
+                # entirely here regardless of mode/scenario.
             },
             clear=False,
         ):
-            mocked = ask_ai(request)
+            mocked = await ask_ai(request)
 
         self.assertEqual(disabled.answer, mocked.answer)
         self.assertEqual(disabled.sources, mocked.sources)
@@ -343,20 +353,24 @@ class AskRegressionTests(unittest.TestCase):
         self.assertEqual(mocked.sources, [])
         self.assertIsNotNone(mocked.policyDecision)
 
-    def test_emergency_ask_never_calls_local_llm(self) -> None:
-        with patch(
-            "app.llm.router.LocalLlmRouter.route",
+    async def test_emergency_ask_never_calls_local_llm(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"LOCAL_LLM_MODE": "mock", "LOCAL_LLM_ASK_ENABLED": "true"},
+            clear=False,
+        ), patch(
+            "app.main.LocalLlmRouter.route",
             new=AsyncMock(side_effect=AssertionError("LLM must not be called")),
         ) as route:
-            response = ask_ai(
+            response = await ask_ai(
                 AskRequest(question="Saya sesak berat dan nyeri dada.")
             )
         route.assert_not_awaited()
         self.assertEqual(response.safetyLevel, "emergency")
         self.assertEqual(response.policyDecision.dominantPolicy, "medical_safety")
 
-    def test_medication_request_keeps_policy_boundary(self) -> None:
-        response = ask_ai(
+    async def test_medication_request_keeps_policy_boundary(self) -> None:
+        response = await ask_ai(
             AskRequest(question="Berikan dosis obat resep untuk saya.")
         )
         self.assertIn("tidak dapat memberikan dosis", response.answer.casefold())
@@ -366,7 +380,7 @@ class AskRegressionTests(unittest.TestCase):
             response.policyDecision.prohibitedActions,
         )
 
-    def test_all_provider_failure_cannot_break_ask(self) -> None:
+    async def test_all_provider_failure_cannot_break_ask(self) -> None:
         with patch.dict(
             os.environ,
             {
@@ -375,10 +389,33 @@ class AskRegressionTests(unittest.TestCase):
             },
             clear=False,
         ):
-            response = ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
         self.assertIn("VitaCheck adalah", response.answer)
         self.assertNotIn("mock", response.answer.casefold())
         self.assertEqual(response.sources, [])
+
+    async def test_ask_uses_llm_answer_when_ask_enabled_and_guard_allows(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "LOCAL_LLM_MODE": "mock",
+                "LOCAL_LLM_ASK_ENABLED": "true",
+                "LOCAL_LLM_MOCK_SCENARIO": "success",
+            },
+            clear=False,
+        ):
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        # Mock provider returns simulated content; when ask integration is
+        # explicitly enabled, that content should replace the rule template.
+        self.assertNotIn("VitaCheck adalah", response.answer)
+        self.assertTrue(response.policyDecision is not None)
+
+    async def test_ask_falls_back_to_rule_template_when_llm_disabled(self) -> None:
+        # Default env (no LOCAL_LLM_ASK_ENABLED) must behave exactly like the
+        # pure rule-based app — this is the "if Local LLM is inactive, fall
+        # back to the safe rule-based template" requirement.
+        response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        self.assertIn("VitaCheck adalah", response.answer)
 
 
 class LocalLlmConfigTests(unittest.TestCase):

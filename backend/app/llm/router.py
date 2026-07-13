@@ -23,7 +23,11 @@ from .models import (
     LlmRouterResponse,
     LlmStrategy,
 )
-from .providers import LMStudioProvider, LocalAIProvider, OllamaProvider
+from .http_providers import (
+    LiveLMStudioProvider,
+    LiveLocalAIProvider,
+    LiveOllamaProvider,
+)
 
 
 USABLE_STATUSES = frozenset({"success", "mock"})
@@ -42,9 +46,9 @@ class LocalLlmRouter:
 
     def _default_providers(self) -> dict[str, LlmProvider]:
         return {
-            "ollama": OllamaProvider(self.config),
-            "lmstudio": LMStudioProvider(self.config),
-            "localai": LocalAIProvider(self.config),
+            "ollama": LiveOllamaProvider(self.config),
+            "lmstudio": LiveLMStudioProvider(self.config),
+            "localai": LiveLocalAIProvider(self.config),
         }
 
     async def route(

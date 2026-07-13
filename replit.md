@@ -16,6 +16,9 @@ To reproduce locally: `npm install` for the frontend, `pip install -r backend/re
 ## Secrets
 None are required for the app to run as imported. `backend/.env.example` shows an optional `OPENAI_API_KEY` for a future LLM integration, but it is unused while `LOCAL_LLM_MODE=mock` (the default) — do not set it unless you're wiring up a real LLM provider.
 
+## Hybrid rule + local-LLM architecture
+The rule-based intent → risk → policy engine is still the safety authority and runs on every `/ask` call. On top of it, `backend/app/main.py`'s `_generate_llm_answer` can optionally rephrase the rule-based answer through a local LLM (Ollama / LM Studio / LocalAI) for more natural wording — see `docs/ml-architecture.md` for the full design, env vars, and how to turn it on. By default (`LOCAL_LLM_ASK_ENABLED` unset/false) `/ask` behaves exactly as the original pure rule-based app. Feedback (`/feedback`) and the audit log never change app behavior automatically — an admin must review and apply changes manually.
+
 ## User preferences
 - Preserve the existing project structure and content; do not redesign or add features without being asked.
 - Frontend and backend run as two separate services (matching the original GitHub Pages + Render split), not merged into one process.

@@ -56,7 +56,7 @@ class IntentRouterTests(unittest.TestCase):
         self.assertEqual(emergency["safetyLevel"], "emergency")
 
 
-class PolicyEngineTests(unittest.TestCase):
+class PolicyEngineTests(unittest.IsolatedAsyncioTestCase):
     def test_emergency_dominates_product_intent(self) -> None:
         decision, intent = evaluate(
             "Saya sesak berat setelah minum produk ini. Apakah produknya halal?"
@@ -250,8 +250,8 @@ class PolicyEngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_registry((MedicalSafetyPolicy(), MedicalSafetyPolicy()))
 
-    def test_ask_endpoint_contract_is_backward_compatible(self) -> None:
-        response = ask_ai(
+    async def test_ask_endpoint_contract_is_backward_compatible(self) -> None:
+        response = await ask_ai(
             AskRequest(
                 question="Saya sesak berat setelah minum produk ini. Apakah halal?"
             )

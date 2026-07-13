@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import unittest
 
 from app.intent_router import detect_intent
@@ -11,7 +12,7 @@ from app.schemas import AskRequest
 
 def ask(question: str):
     """Run the same path as the /ask endpoint, without going over HTTP."""
-    return ask_ai(AskRequest(question=question))
+    return asyncio.run(ask_ai(AskRequest(question=question)))
 
 
 class GreetingIntentTests(unittest.TestCase):

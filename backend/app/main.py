@@ -3,7 +3,10 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .intent_router import detect_intent
+from .audit_log import log_ask_event
+from .feedback import FeedbackReceipt, FeedbackRequest, list_pending_feedback, record_feedback
+from .intent_router import detect_intent, normalize_text
+from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
 from .llm.guard import (
     build_blocked_router_response,
@@ -125,8 +128,68 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     )
 
 
+async def _generate_llm_answer(
+    *,
+    question: str,
+    intent: str,
+    safety_level: str,
+    decision,
+    rule_based_answer: str,
+) -> tuple[str, str | None]:
+    """Try to rephrase `rule_based_answer` more naturally using a local LLM.
+
+    Returns (answer, provider_used). Falls back to `rule_based_answer`
+    (provider_used=None) on any disabled/blocked/failed/unavailable outcome —
+    this function must never raise and must never change the safety meaning
+    of the answer, only how naturally it reads.
+    """
+
+    config = LocalLlmConfig.from_env()
+    if not config.ask_enabled or config.mode == "disabled":
+        return rule_based_answer, None
+
+    guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
+
+    knowledge_context = build_knowledge_context(intent, normalize_text(question))
+    system_prompt = build_system_prompt(guard_context)
+    system_prompt += (
+        "\n\nJawaban dasar yang sudah disetujui aplikasi (edukasi ulang boleh membuatnya "
+        "lebih natural dan ramah, tetapi jangan mengubah maknanya, jangan menghapus "
+        "peringatan atau anjuran di dalamnya, dan jangan menambah klaim baru):\n"
+        + rule_based_answer
+    )
+    if knowledge_context:
+        system_prompt += "\n\n" + knowledge_context
+
+    llm_request = LlmRequest(
+        system_prompt=system_prompt,
+        user_message=question,
+        model=config.model,
+        temperature=config.temperature,
+        max_tokens=config.max_tokens,
+        intent=intent,
+        safety_level=safety_level,
+    )
+
+    guard = evaluate_llm_guard(guard_context, llm_request)
+    if not guard.allowed:
+        return rule_based_answer, None
+
+    router = LocalLlmRouter(config)
+    router_response = await router.route(
+        llm_request,
+        strategy=config.strategy,
+        guard_context=guard_context,
+    )
+    response = router_response.response
+    if response is not None and response.status in {"success", "mock"} and response.content.strip():
+        return response.content.strip(), router_response.selected_provider
+
+    return rule_based_answer, None
+
+
 @app.post("/ask", response_model=AskResponse)
-def ask_ai(request: AskRequest) -> AskResponse:
+async def ask_ai(request: AskRequest) -> AskResponse:
     question = request.question.strip()
 
     if not question:
@@ -137,27 +200,49 @@ def ask_ai(request: AskRequest) -> AskResponse:
 
     intent_result = detect_intent(question)
     intent = intent_result["intent"]
+    safety_level = intent_result["safetyLevel"]
     decision = POLICY_ENGINE.evaluate_question(
         question,
         intent=intent,
-        safety_level=intent_result["safetyLevel"],
+        safety_level=safety_level,
     )
     include_reflection = (
         request.includeQuranicReflection
         or intent == "quranic_reflection"
     )
 
+    rule_based_answer = build_answer(
+        intent,
+        safety_level,
+        decision,
+        greeting_prefix=intent_result.get("greetingPrefix", False),
+        is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
+    )
+
+    answer, llm_provider = await _generate_llm_answer(
+        question=question,
+        intent=intent,
+        safety_level=safety_level,
+        decision=decision,
+        rule_based_answer=rule_based_answer,
+    )
+
+    log_ask_event(
+        intent=intent,
+        safety_level=safety_level,
+        response_blocked=decision.response_blocked,
+        dominant_policy=decision.dominant_policy.policy_id if decision.dominant_policy else None,
+        llm_used=llm_provider is not None,
+        llm_provider=llm_provider,
+        llm_mode=LocalLlmConfig.from_env().mode,
+        question=question,
+    )
+
     return AskResponse(
         question=question,
         intent=intent,
-        safetyLevel=intent_result["safetyLevel"],
-        answer=build_answer(
-            intent,
-            intent_result["safetyLevel"],
-            decision,
-            greeting_prefix=intent_result.get("greetingPrefix", False),
-            is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
-        ),
+        safetyLevel=safety_level,
+        answer=answer,
         disclaimer=DISCLAIMER,
         recommendedAction=(
             decision.recommended_action or intent_result["recommendedAction"]
@@ -167,3 +252,24 @@ def ask_ai(request: AskRequest) -> AskResponse:
         quranicReflection=build_quranic_reflection() if include_reflection else None,
         policyDecision=serialize_policy_decision(decision),
     )
+
+
+@app.post("/feedback", response_model=FeedbackReceipt)
+def submit_feedback(feedback: FeedbackRequest) -> FeedbackReceipt:
+    """Record a like/dislike (+ optional reason) into the review queue.
+
+    This never changes app behavior by itself — an admin reviews the queue
+    (see GET /admin/feedback) and applies any resulting change as a normal,
+    tested code change.
+    """
+    return record_feedback(feedback)
+
+
+@app.get("/admin/feedback")
+def admin_feedback(token: str | None = None) -> list[dict]:
+    expected_token = os.getenv("VITANUSA_ADMIN_TOKEN", "").strip()
+    if not expected_token:
+        raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
+    if not token or token != expected_token:
+        raise HTTPException(status_code=403, detail="Token admin tidak valid.")
+    return list_pending_feedback()

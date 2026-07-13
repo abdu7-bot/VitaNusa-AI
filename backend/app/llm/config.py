@@ -29,6 +29,7 @@ class LocalLlmConfig:
     max_tokens: int = 500
     temperature: float = 0.2
     preview_enabled: bool = False
+    ask_enabled: bool = False
     mock_scenario: str = "success"
     ollama: ProviderRuntimeConfig = field(
         default_factory=lambda: ProviderRuntimeConfig(
@@ -124,6 +125,12 @@ class LocalLlmConfig:
                 read("LOCAL_LLM_PREVIEW_ENABLED", "false"),
                 default=False,
                 error_code="invalid_local_llm_preview_flag",
+                errors=errors,
+            ),
+            ask_enabled=_read_bool(
+                read("LOCAL_LLM_ASK_ENABLED", "false"),
+                default=False,
+                error_code="invalid_local_llm_ask_flag",
                 errors=errors,
             ),
             mock_scenario=read("LOCAL_LLM_MOCK_SCENARIO", "success").strip().lower(),
