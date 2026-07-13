@@ -1,0 +1,1 @@
+- [Keyword-based intent classifiers need word-boundary matching](keyword-substring-matching.md) — plain `substring in text` checks misfire when a short keyword hides inside a longer unrelated word.

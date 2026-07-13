@@ -151,7 +151,13 @@ def ask_ai(request: AskRequest) -> AskResponse:
         question=question,
         intent=intent,
         safetyLevel=intent_result["safetyLevel"],
-        answer=build_answer(intent, intent_result["safetyLevel"], decision),
+        answer=build_answer(
+            intent,
+            intent_result["safetyLevel"],
+            decision,
+            greeting_prefix=intent_result.get("greetingPrefix", False),
+            is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
+        ),
         disclaimer=DISCLAIMER,
         recommendedAction=(
             decision.recommended_action or intent_result["recommendedAction"]

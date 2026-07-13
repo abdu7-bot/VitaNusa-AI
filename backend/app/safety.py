@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 
@@ -79,12 +80,22 @@ LOW_RISK_INTENTS = {
     "article_search",
     "quranic_reflection",
     "contact_admin",
+    "greeting",
+    "conversation_correction",
     "fallback",
 }
 
 
 def contains_any(text: str, keywords: tuple[str, ...]) -> bool:
-    return any(keyword in text for keyword in keywords)
+    """Whole-word/phrase match: a keyword only counts when it is not merely a
+    substring embedded inside a longer word (e.g. "mual" inside
+    "assalamualaikum" must NOT match "mual")."""
+
+    for keyword in keywords:
+        pattern = r"(?<!\w)" + re.escape(keyword) + r"(?!\w)"
+        if re.search(pattern, text):
+            return True
+    return False
 
 
 def classify_risk(question: str, intent: str) -> SafetyResult:

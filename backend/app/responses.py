@@ -20,6 +20,27 @@ COMMON_HEALTH_DISCLAIMER = (
     "tidak menyuruh menghentikan obat dokter, dan tidak menjanjikan kesembuhan."
 )
 
+GREETING_ANSWER_ISLAMIC = (
+    "Waalaikumsalam warahmatullahi wabarakatuh. Selamat datang di VitaNusa AI.\n\n"
+    "Ada yang bisa saya bantu terkait VitaCheck, artikel edukasi kesehatan, "
+    "produk amanah, atau pertanyaan seputar kebiasaan sehat?"
+)
+
+GREETING_ANSWER_GENERAL = (
+    "Halo, selamat datang di VitaNusa AI.\n\n"
+    "Ada yang bisa saya bantu terkait VitaCheck, artikel edukasi kesehatan, "
+    "produk amanah, atau pertanyaan seputar kebiasaan sehat?"
+)
+
+GREETING_PREFIX_ISLAMIC = "Waalaikumsalam warahmatullahi wabarakatuh."
+GREETING_PREFIX_GENERAL = "Halo, terima kasih sudah menyapa."
+
+CORRECTION_ANSWER = (
+    "Mohon maaf jawaban sebelumnya belum sesuai dengan yang kamu maksud.\n\n"
+    "Boleh diperjelas atau diulang pertanyaannya dengan kalimat yang lebih spesifik? "
+    "Saya akan coba jawab ulang sesuai maksudmu."
+)
+
 SAFE_FALLBACK_ANSWER = (
     "Saya belum mempunyai informasi yang cukup untuk menjawab pertanyaan itu secara aman.\n\n"
     "Yang bisa dilakukan:\n\n"
@@ -79,6 +100,23 @@ def build_answer(
     intent: str,
     safety_level: str,
     decision: PolicyDecision | None = None,
+    greeting_prefix: bool = False,
+    is_islamic_greeting: bool = False,
+) -> str:
+    answer = _build_answer_body(intent, safety_level, decision, is_islamic_greeting)
+
+    if greeting_prefix and intent not in ("greeting", "danger_sign"):
+        prefix = GREETING_PREFIX_ISLAMIC if is_islamic_greeting else GREETING_PREFIX_GENERAL
+        answer = f"{prefix}\n\n{answer}"
+
+    return answer
+
+
+def _build_answer_body(
+    intent: str,
+    safety_level: str,
+    decision: PolicyDecision | None = None,
+    is_islamic_greeting: bool = False,
 ) -> str:
     medical = _policy(decision, "medical_safety")
     authority = _policy(decision, "authority_boundary")
@@ -237,6 +275,12 @@ def build_answer(
             "Kamu bisa menghubungi admin VitaNusa AI untuk pertanyaan umum seputar website, artikel, VitaCheck, "
             "atau katalog reseller. Admin bukan pengganti dokter, apoteker, ahli gizi, atau tenaga kesehatan."
         )
+
+    if intent == "greeting":
+        return GREETING_ANSWER_ISLAMIC if is_islamic_greeting else GREETING_ANSWER_GENERAL
+
+    if intent == "conversation_correction":
+        return CORRECTION_ANSWER
 
     return _append_policy_notes(SAFE_FALLBACK_ANSWER, decision)
 
