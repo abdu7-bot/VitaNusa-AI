@@ -101,7 +101,7 @@
     if (article) return article[0].trim();
 
     const firstHeading = contentCandidate.search(/<h1\b/i);
-    if (firstHeading >= 0) return contentCandidate.slice(firstHeading).trim();
+    if (firstHeading >= 0) return contentCandidate.slice(firstpwshHeading).trim();
 
     return contentCandidate.trim();
   }

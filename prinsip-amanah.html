@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+ fix/chat-css-cache-and-product-routing
+  <title>Prinsip Amanah VitaNusa AI</title>
+  <meta name="description" content="Hierarki Akad &amp; Amanah sebagai tata kelola umum, Urutan Keselamatan Medis, batas AI, dan prinsip halal-thayyib VitaNusa AI.">
+
   <title>Prinsip Akad &amp; Amanah VitaNusa AI</title>
   <meta name="description" content="Prinsip memenuhi akad, amanah informasi, keselamatan, batas AI, kejujuran produk, dan hak pengguna dalam tata kelola VitaNusa AI.">
+ main
   <meta name="theme-color" content="#14532d">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260709-vn-page-unify-v1">
@@ -167,6 +172,16 @@
       color: #5a4926;
     }
 
+    .verse-card-primary {
+      grid-column: 1 / -1;
+      border-color: rgba(165, 107, 0, .28);
+      background: linear-gradient(145deg, #fffdf7 0%, #f7fff9 100%);
+    }
+
+    .verse-card-primary p:not(.arabic) + p {
+      margin-top: 10px;
+    }
+
     .verse-label,
     .priority-label,
     .status-label {
@@ -186,7 +201,15 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      margin-top: 16px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .hierarchy-line li {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .hierarchy-line span {
@@ -202,8 +225,33 @@
       padding: 8px 12px;
     }
 
-    .hierarchy-line b {
+    .hierarchy-line li + li::before {
+      content: "→" / "";
       color: #a56b00;
+      font-weight: 900;
+    }
+
+    .hierarchy-summary,
+    .governance-boundary {
+      color: #405549;
+      line-height: 1.65;
+    }
+
+    .hierarchy-summary {
+      margin: 16px 0 0;
+    }
+
+    .hierarchy-grid,
+    .priority-list + .safety-callout {
+      margin-top: 18px;
+    }
+
+    .governance-boundary {
+      margin: 18px 0 0;
+      padding: 14px 16px;
+      border-left: 4px solid #a56b00;
+      border-radius: 0 14px 14px 0;
+      background: #fff8e8;
     }
 
     .akad-hierarchy-list {
@@ -448,8 +496,12 @@
         border-radius: 14px;
       }
 
-      .hierarchy-line b {
+      .hierarchy-line li + li::before {
         display: none;
+      }
+
+      .hierarchy-line li {
+        width: 100%;
       }
 
       .safety-callout {
@@ -492,11 +544,27 @@
     <div class="constitution-main vn-section">
       <div class="wrap vn-container constitution-content">
         <section aria-labelledby="quranTitle">
+fix/chat-css-cache-and-product-routing
+          <h2 class="section-title" id="quranTitle">Landasan utama dan landasan pendukung</h2>
+          <p class="section-copy">QS. Al-Mā’idah ayat 1 menjadi landasan utama Hierarki Akad &amp; Amanah. QS. Al-Baqarah ayat 168 dan 172 tetap menjadi landasan pendukung halal-thayyib dan syukur; ketiga ayat ini tidak digabung atau dipakai sebagai mesin fatwa otomatis.</p>
+
           <h2 class="section-title" id="quranTitle">Landasan Qur'ani yang dibedakan dengan jelas</h2>
           <p class="section-copy">Tiga ayat berikut saling melengkapi, tetapi bukan satu ayat. Ketiganya dipakai sebagai landasan nilai dan muhasabah internal, bukan sebagai mesin fatwa otomatis.</p>
+ main
 
           <div class="verse-grid">
+            <article class="verse-card verse-card-primary">
+              <span class="verse-label">Landasan utama · Petikan QS. Al-Mā’idah: 1</span>
+              <h3>Akad bukan slogan: komitmen harus dijelaskan dan dipenuhi</h3>
+              <p class="arabic" lang="ar">يَا أَيُّهَا الَّذِينَ آمَنُوا أَوْفُوا بِالْعُقُودِ</p>
+              <p><strong>Petikan makna yang menjadi landasan:</strong> “Wahai orang-orang yang beriman! Penuhilah janji-janji!”</p>
+              <p>VitaNusa menerjemahkan pesan pemenuhan akad ini menjadi komitmen tata kelola yang dapat diperiksa: peran dan batas layanan dijelaskan, informasi dijaga kejujurannya, hak pengguna dilindungi, dan kesalahan diperbaiki. Ini bukan kutipan dekoratif dan bukan cara instan menetapkan sah atau batalnya akad.</p>
+            </article>
+
             <article class="verse-card">
+fix/chat-css-cache-and-product-routing
+              <span class="verse-label">Landasan pendukung · QS. Al-Baqarah: 168</span>
+
               <span class="verse-label">QS. Al-Mā’idah: 1</span>
               <h3>Memenuhi akad adalah dasar amanah</h3>
               <p class="arabic" lang="ar" dir="rtl">يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوٓاْ أَوۡفُواْ بِٱلۡعُقُودِ ۚ أُحِلَّتۡ لَكُم بَهِيمَةُ ٱلۡأَنۡعَٰمِ إِلَّا مَا يُتۡلَىٰ عَلَيۡكُمۡ غَيۡرَ مُحِلِّي ٱلصَّيۡدِ وَأَنتُمۡ حُرُمٌ ۗ إِنَّ ٱللَّهَ يَحۡكُمُ مَا يُرِيدُ</p>
@@ -507,13 +575,14 @@
 
             <article class="verse-card">
               <span class="verse-label">QS. Al-Baqarah: 168</span>
+ main
               <h3>Halal, thayyib, dan kewaspadaan terhadap jalan penipuan</h3>
               <p class="arabic" lang="ar" dir="rtl">يَا أَيُّهَا النَّاسُ كُلُوا مِمَّا فِي الْأَرْضِ حَلَالًا طَيِّبًا وَلَا تَتَّبِعُوا خُطُوَاتِ الشَّيْطَانِ ۚ إِنَّهُ لَكُمْ عَدُوٌّ مُبِينٌ</p>
               <p>Ayat ini menjadi kompas agar pilihan tidak hanya mengejar manfaat, tetapi juga menjaga kehalalan, kebaikan, dan menjauhi langkah penipuan maupun kemudaratan.</p>
             </article>
 
             <article class="verse-card">
-              <span class="verse-label">QS. Al-Baqarah: 172</span>
+              <span class="verse-label">Landasan pendukung · QS. Al-Baqarah: 172</span>
               <h3>Rezeki yang baik disambut dengan syukur</h3>
               <p class="arabic" lang="ar" dir="rtl">يَا أَيُّهَا الَّذِينَ آمَنُوا كُلُوا مِنْ طَيِّبَاتِ مَا رَزَقْنَاكُمْ وَاشْكُرُوا لِلَّهِ إِنْ كُنْتُمْ إِيَّاهُ تَعْبُدُونَ</p>
               <p>Ayat ini menjadi landasan syukur dan penggunaan nikmat secara bertanggung jawab, tidak berlebihan, serta tidak mengubah produk menjadi janji keselamatan mutlak.</p>
@@ -572,53 +641,78 @@
           </ol>
         </section>
 
-        <section aria-labelledby="valueTitle">
-          <h2 class="section-title" id="valueTitle">Hierarki nilai VitaNusa AI</h2>
-          <p class="section-copy">Nilai memberi arah. Ia tidak menggantikan pemeriksaan medis, bukti resmi, atau keputusan ahli.</p>
+        <section aria-labelledby="governanceTitle">
+          <h2 class="section-title" id="governanceTitle">Hierarki Akad &amp; Amanah VitaNusa</h2>
+          <p class="section-copy">Ini adalah tata kelola umum untuk seluruh layanan VitaNusa: konten, layanan AI, pengelolaan data, kolaborasi, dan informasi reseller. Kerangka ini menjabarkan penerapan praktis—bukan menggantikan—hierarki nilai induk VitaNusa: iman dan amanah, kebenaran, keadilan, maslahat, tidak membahayakan, transparansi, dan tidak berlebihan.</p>
           <div class="principle-panel">
-            <div class="hierarchy-line" aria-label="Hierarki nilai">
-              <span>Iman dan amanah</span><b>→</b>
-              <span>Kebenaran</span><b>→</b>
-              <span>Keadilan</span><b>→</b>
-              <span>Maslahat</span><b>→</b>
-              <span>Tidak membahayakan</span><b>→</b>
-              <span>Transparansi</span><b>→</b>
-              <span>Tidak berlebihan</span>
-            </div>
-            <div class="hierarchy-line" aria-label="Hierarki halal dan thayyib">
-              <span>Iman dan amanah</span><b>→</b>
-              <span>Halal</span><b>→</b>
-              <span>Thayyib</span><b>→</b>
-              <span>Syukur dan proporsional</span><b>→</b>
-              <span>Menjauhi klaim palsu dan mudarat</span><b>→</b>
-              <span>Edukasi</span><b>→</b>
-              <span>Produk sebagai opsi pendukung</span>
-            </div>
+            <span class="priority-label">Tata kelola umum</span>
+            <ol class="hierarchy-line" role="list" aria-label="Hierarki Akad dan Amanah sebagai tata kelola umum">
+              <li><span>Akad atau komitmen yang dibuat diperjelas</span></li>
+              <li><span>Iman dan amanah dijaga; komitmen dipenuhi</span></li>
+              <li><span>Kebenaran dan bukti</span></li>
+              <li><span>Keadilan dan hak para pihak</span></li>
+              <li><span>Maslahat</span></li>
+              <li><span>Tidak membahayakan</span></li>
+              <li><span>Transparansi</span></li>
+              <li><span>Tidak berlebihan</span></li>
+            </ol>
+            <p class="hierarchy-summary">Urutan ini berarti komitmen tidak boleh dijalankan dengan mengorbankan kebenaran, hak pengguna, keselamatan, atau batas kewenangan. Bila data tidak cukup, VitaNusa wajib menyatakan keterbatasannya dan mengarahkan keputusan kepada pihak yang berwenang.</p>
           </div>
+
+          <div class="hierarchy-grid" aria-label="Penerapan Hierarki Akad dan Amanah">
+            <article class="hierarchy-card">
+              <span class="priority-label">Sebelum berkomitmen</span>
+              <h3>Jelaskan peran dan batas</h3>
+              <p>Tujuan, ruang lingkup, pihak yang terlibat, penggunaan data, dan hal yang tidak dapat dijanjikan harus dipahami sebelum pengguna bergantung pada layanan.</p>
+            </article>
+            <article class="hierarchy-card">
+              <span class="priority-label">Saat menjalankan</span>
+              <h3>Gunakan kebenaran yang dapat diperiksa</h3>
+              <p>Informasi, status, klaim, dan keputusan harus mengikuti bukti yang tersedia. Hal yang belum diketahui tidak boleh diisi dengan dugaan.</p>
+            </article>
+            <article class="hierarchy-card">
+              <span class="priority-label">Saat terjadi konflik</span>
+              <h3>Jaga hak, keadilan, dan keselamatan</h3>
+              <p>Kebenaran dan perlindungan pengguna tidak boleh dikalahkan oleh kecepatan, popularitas, target interaksi, atau kepentingan komersial.</p>
+            </article>
+            <article class="hierarchy-card">
+              <span class="priority-label">Sesudah keputusan</span>
+              <h3>Terbuka, bertanggung jawab, dan memperbaiki</h3>
+              <p>Keterbatasan dan perubahan dijelaskan, alasan dapat ditelusuri, serta kesalahan dikoreksi tanpa menutup-nutupi dampaknya.</p>
+            </article>
+          </div>
+
+          <p class="governance-boundary"><strong>Batasnya jelas:</strong> Hierarki Akad &amp; Amanah adalah kerangka tata kelola umum, bukan fatwa final tentang sah-batal akad dan bukan kampanye promosi produk.</p>
         </section>
+
+ fix/chat-css-cache-and-product-routing
+        <section aria-labelledby="medicalPriorityTitle">
+          <span class="priority-label">Lapisan khusus kesehatan</span>
+          <h2 class="section-title" id="medicalPriorityTitle">Urutan Keselamatan Medis</h2>
+          <p class="section-copy">Lapisan ini aktif ketika pembahasan menyentuh kesehatan atau risiko medis. Ia melengkapi tata kelola umum di atas dan memperjelas sistem keselamatan medis yang sudah berjalan—bukan menggantinya.</p>
 
         <section aria-labelledby="priorityTitle">
           <h2 class="section-title" id="priorityTitle">Ketika banyak aturan aktif, keselamatan menentukan urutan</h2>
           <p class="section-copy">Hierarki Akad &amp; Amanah mengatur tata kelola umum. Ketika terdapat risiko kesehatan, urutan keselamatan berikut menjadi aturan operasional yang didahulukan.</p>
           <p class="section-copy">Urutan ini bukan merendahkan pentingnya halal. Maksudnya, orang yang sesak berat perlu ditolong dahulu; pembahasan status produk dapat dilanjutkan setelah kondisi aman.</p>
+ main
           <ol class="priority-list">
-            <li>Kondisi darurat dan keselamatan jiwa.</li>
-            <li>Pencegahan bahaya serius dan arahan kepada tenaga kesehatan.</li>
-            <li>Batas kewenangan AI: tidak mendiagnosis, memberi dosis, atau memilih terapi personal.</li>
-            <li>Batas agama: tidak memberi fatwa halal-haram final tanpa otoritas dan data yang cukup.</li>
-            <li>Validitas data, kejujuran status halal, dan penilaian thayyib yang kontekstual.</li>
-            <li>Pencegahan klaim produk berlebihan serta promosi yang mengeksploitasi rasa takut.</li>
-            <li>Edukasi singkat, artikel relevan, VitaCheck, lalu produk sebagai pilihan pendukung.</li>
+            <li>Kenali tanda darurat dan dahulukan keselamatan jiwa.</li>
+            <li>Cegah bahaya serius dan arahkan pengguna mencari pertolongan medis yang sesuai.</li>
+            <li>Jaga batas AI: tidak mendiagnosis, memberi resep atau dosis, memilih terapi personal, maupun menyuruh menghentikan obat dokter.</li>
+            <li>Berikan edukasi kesehatan umum yang aman, proporsional, dan jujur tentang keterbatasan data.</li>
+            <li>Tampilkan artikel atau VitaCheck hanya bila diizinkan oleh hasil pemeriksaan keselamatan dan kebijakan yang relevan; keduanya bukan pengganti pertolongan.</li>
+            <li>Letakkan informasi produk dan transaksi paling akhir; dalam keadaan darurat keduanya ditahan dan tidak ditampilkan.</li>
           </ol>
-        </section>
 
-        <aside class="safety-callout" aria-labelledby="safetyTitle">
-          <strong>!</strong>
-          <div>
-            <h3 id="safetyTitle">Mengapa keselamatan medis didahulukan?</h3>
-            <p>Nyeri dada, sesak berat, pingsan, kejang, perdarahan berat, gejala stroke, alergi berat, atau risiko menyakiti diri tidak boleh dialihkan ke katalog. Nusa AI akan mengarahkan bantuan darurat, tidak memberi diagnosis, dan menahan produk maupun artikel biasa sampai prioritas keselamatan terpenuhi.</p>
-          </div>
-        </aside>
+          <aside class="safety-callout" aria-labelledby="safetyTitle">
+            <strong aria-hidden="true">!</strong>
+            <div>
+              <h3 id="safetyTitle">Mengapa keselamatan medis didahulukan?</h3>
+              <p>Nyeri dada, sesak berat, pingsan, kejang, perdarahan berat, gejala stroke, alergi berat, atau risiko menyakiti diri tidak boleh dialihkan ke katalog. Nusa AI akan mengarahkan bantuan darurat, tidak memberi diagnosis, dan menahan produk, artikel biasa, maupun VitaCheck sampai prioritas keselamatan terpenuhi.</p>
+            </div>
+          </aside>
+        </section>
 
         <section aria-labelledby="boundaryTitle">
           <h2 class="section-title" id="boundaryTitle">Batas kewenangan Nusa AI</h2>
