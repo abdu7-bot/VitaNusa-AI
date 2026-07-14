@@ -18,7 +18,16 @@ from .llm.prompts import build_system_prompt
 from .llm.router import LocalLlmRouter
 from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
-from .schemas import AskRequest, AskResponse, LlmPreviewRequest
+from .schemas import AskRequest, AskResponse, LlmPreviewRequest, SearchPreviewRequest
+from .search.config import WebSearchConfig
+from .search.guard import (
+    build_blocked_search_response,
+    build_search_guard_context,
+    evaluate_search_guard,
+)
+from .search.models import SearchQuery, SearchRouterResponse
+from .search.normalizer import clean_whitespace
+from .search.router import SearchRouter
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -125,6 +134,66 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
         provider=selected_provider,
         strategy=selected_strategy,
         guard_context=guard_context,
+    )
+
+
+@app.post("/search/preview", response_model=SearchRouterResponse)
+async def search_preview(request: SearchPreviewRequest) -> SearchRouterResponse:
+    config = WebSearchConfig.from_env()
+    if not config.preview_available:
+        raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
+
+    query_text = clean_whitespace(request.query)
+    if len(query_text) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Query harus berisi minimal dua karakter.",
+        )
+
+    intent_result = detect_intent(query_text)
+    intent = intent_result["intent"]
+    safety_level = intent_result["safetyLevel"]
+    decision = POLICY_ENGINE.evaluate_question(
+        query_text,
+        intent=intent,
+        safety_level=safety_level,
+    )
+    guard_context = build_search_guard_context(
+        decision,
+        intent=intent,
+        safety_level=safety_level,
+        query=query_text,
+    )
+    selected_strategy = request.strategy or config.strategy
+    guard = evaluate_search_guard(
+        guard_context,
+        requested_category=request.category,
+        providers=config.providers,
+        strategy=selected_strategy,
+    )
+
+    if not guard.allowed:
+        return build_blocked_search_response(
+            mode=config.mode,
+            strategy=guard.strategy,
+            query=query_text,
+            reason=guard.reason,
+        )
+
+    search_query = SearchQuery(
+        query=query_text,
+        language=config.language,
+        country=config.country,
+        category=guard.category,
+        max_results=request.maxResults,
+        safe_search=config.safe_search,
+    )
+    router = SearchRouter(config)
+    return await router.route(
+        search_query,
+        provider=request.provider,
+        providers=guard.providers,
+        strategy=guard.strategy,
     )
 
 

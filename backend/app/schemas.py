@@ -2,6 +2,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from .search.models import SearchCategory
+
 
 class AskRequest(BaseModel):
     question: str
@@ -12,6 +14,14 @@ class LlmPreviewRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     provider: str | None = Field(default=None, min_length=1, max_length=50)
     strategy: Literal["priority", "fallback"] | None = None
+
+
+class SearchPreviewRequest(BaseModel):
+    query: str = Field(min_length=2, max_length=500)
+    category: SearchCategory = "general"
+    provider: str | None = Field(default=None, min_length=1, max_length=50)
+    strategy: Literal["priority", "fallback", "aggregate"] | None = None
+    maxResults: int = Field(default=5, ge=1, le=10)
 
 
 class ActionLink(BaseModel):
