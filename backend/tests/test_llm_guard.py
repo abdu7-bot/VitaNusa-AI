@@ -145,6 +145,12 @@ class LlmPostResponseValidationTests(unittest.TestCase):
             "Produk ini terdaftar di BPOM.",
             "Dosis resepnya adalah 25 mg.",
             "Berhenti minum obat sekarang.",
+            "Produk ini pasti halal.",
+            "Produk ini sudah pasti terdaftar BPOM.",
+            "Produk ini pasti menyembuhkan diabetes.",
+            "Produk ini 100% aman untuk semua orang.",
+            "Hentikan obat dokter mulai sekarang.",
+            "Minum obat resep ini sebanyak tiga tablet.",
         )
 
         for content in unsafe_outputs:
@@ -153,6 +159,43 @@ class LlmPostResponseValidationTests(unittest.TestCase):
                 self.assertEqual(result.status, "blocked")
                 self.assertEqual(result.content, "")
                 self.assertEqual(result.error_code, "response_validation_blocked")
+
+    def test_clear_safety_negations_are_not_false_positives(self) -> None:
+        safe_outputs = (
+            "Saya tidak dapat memastikan produk ini halal.",
+            "Saya tidak dapat memastikan produk ini terdaftar BPOM.",
+            "Jangan percaya klaim bahwa produk pasti sembuh.",
+            "Tidak ada produk yang dapat dijamin 100% aman untuk semua orang.",
+            "Saya tidak dapat memberikan dosis obat resep.",
+        )
+
+        for content in safe_outputs:
+            with self.subTest(content=content):
+                result = validate_llm_response(self.response(content))
+                self.assertEqual(result.status, "success")
+                self.assertEqual(result.content, content)
+
+    def test_negation_with_reversal_remains_blocked(self) -> None:
+        unsafe_compounds = (
+            (
+                "Saya tidak dapat memastikan produk ini halal, tetapi sebenarnya "
+                "produk ini pasti halal."
+            ),
+            (
+                "Saya tidak dapat memastikan produk ini halal, minum obat resep "
+                "ini sebanyak tiga tablet."
+            ),
+            (
+                "Saya tidak dapat memastikan produk ini halal dan produk ini "
+                "pasti menyembuhkan diabetes."
+            ),
+        )
+
+        for content in unsafe_compounds:
+            with self.subTest(content=content):
+                result = validate_llm_response(self.response(content))
+                self.assertEqual(result.status, "blocked")
+                self.assertEqual(result.content, "")
 
     def test_religious_ruling_is_blocked_when_policy_prohibits_it(self) -> None:
         result = validate_llm_response(

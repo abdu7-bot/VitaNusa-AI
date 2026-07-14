@@ -2,7 +2,7 @@
 
 ## Tujuan dan batas kewenangan
 
-Local LLM Router menyediakan kontrak seragam untuk menguji Ollama, LM Studio, dan LocalAI tanpa memasang atau menghubungi aplikasi provider tersebut. Fondasi ini mencakup konfigurasi, pemilihan provider, fallback, timeout logis, guard policy, validasi hasil, fixture mock, dan endpoint preview khusus development.
+Local LLM Router menyediakan kontrak seragam untuk Ollama, LM Studio, dan LocalAI. Mode default tetap `mock` tanpa jaringan, sedangkan adapter HTTP live tersedia sebagai fitur opt-in untuk provider lokal yang dinyalakan secara eksplisit. Integrasi ini mencakup konfigurasi, pemilihan provider, fallback, timeout, guard policy, validasi hasil, fixture mock, dan endpoint preview khusus development.
 
 Local LLM bukan Policy Engine, bukan sumber diagnosis, dan bukan pemilik keputusan. Urutan kewenangannya tetap:
 
@@ -26,13 +26,13 @@ LocalLlmRouter
 └── LocalAIProvider   (identifier: localai)
 ```
 
-Router hanya mengenal kontrak `LlmProvider.generate(LlmRequest) -> LlmResponse`. Format API asli masing-masing provider kelak menjadi tanggung jawab adapter, bukan router.
+Router hanya mengenal kontrak `LlmProvider.generate(LlmRequest) -> LlmResponse`. Format API asli masing-masing provider menjadi tanggung jawab adapter HTTP, bukan router.
 
 | Provider | Fokus umum | Kondisi pada fondasi ini |
 | --- | --- | --- |
-| Ollama | Pengelolaan dan eksekusi model lokal yang ringkas | Dummy; tanpa HTTP |
-| LM Studio | Aplikasi desktop dengan server lokal bergaya OpenAI-compatible | Dummy; tanpa HTTP |
-| LocalAI | Server inference lokal yang umum dipakai secara service/container | Dummy; tanpa HTTP dan tanpa Docker |
+| Ollama | Pengelolaan dan eksekusi model lokal yang ringkas | Adapter live `POST /api/chat` tersedia; default nonaktif |
+| LM Studio | Aplikasi desktop dengan server lokal bergaya OpenAI-compatible | Adapter live teknis tersedia; default nonaktif |
+| LocalAI | Server inference lokal yang umum dipakai secara service/container | Adapter live teknis tersedia; default nonaktif |
 
 Perbedaan di atas hanya orientasi teknis. Fondasi ini tidak memilih provider sebagai sumber kebenaran kesehatan atau agama.
 
@@ -42,9 +42,9 @@ Perbedaan di atas hanya orientasi teknis. Fondasi ini tidak memilih provider seb
 | --- | --- |
 | `disabled` | Router tidak menjalankan provider dan mengembalikan status `disabled`. |
 | `mock` | Provider memakai fixture aman dan tidak melakukan jaringan. Ini default repository. |
-| `live` | Adapter mengembalikan `not_implemented`; tidak melakukan HTTP dan tidak jatuh diam-diam ke mock. |
+| `live` | Adapter HTTP lokal dapat dijalankan jika provider, model, dan flag terkait dikonfigurasi; kegagalan tidak jatuh diam-diam ke mock. |
 
-Flag `*_ENABLED` dan base URL telah tersedia untuk tahap live berikutnya. Pada PR ini, mengubah flag tersebut tidak mengaktifkan koneksi.
+Mode live tidak aktif hanya karena base URL tersedia. Operator tetap harus mengaktifkan provider, memilih model, dan—untuk jawaban publik `/ask`—mengaktifkan `LOCAL_LLM_ASK_ENABLED` secara terpisah.
 
 ## Strategi
 
@@ -66,15 +66,18 @@ Jika seluruh provider gagal, router mengembalikan respons terstruktur dengan `al
 | `LOCAL_LLM_MAX_TOKENS` | `500` | Batas token request, 50–2000 |
 | `LOCAL_LLM_TEMPERATURE` | `0.2` | Temperatur request, 0.0–1.0 |
 | `LOCAL_LLM_PREVIEW_ENABLED` | `false` | Mengaktifkan endpoint development |
+| `LOCAL_LLM_ASK_ENABLED` | `false` | Mengizinkan Ollama live memperhalus jawaban `/ask` setelah seluruh guard lulus |
 | `LOCAL_LLM_MOCK_SCENARIO` | `success` | Fixture simulasi |
-| `OLLAMA_ENABLED` | `false` | Disiapkan untuk aktivasi Ollama berikutnya |
-| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Hanya konfigurasi pada tahap ini |
-| `LM_STUDIO_ENABLED` | `false` | Disiapkan untuk aktivasi LM Studio berikutnya |
-| `LM_STUDIO_BASE_URL` | `http://127.0.0.1:1234/v1` | Hanya konfigurasi pada tahap ini |
-| `LOCALAI_ENABLED` | `false` | Disiapkan untuk aktivasi LocalAI berikutnya |
-| `LOCALAI_BASE_URL` | `http://127.0.0.1:8080/v1` | Hanya konfigurasi pada tahap ini |
+| `OLLAMA_ENABLED` | `false` | Mengaktifkan adapter Ollama live bila mode `live` |
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Target loopback HTTP untuk Ollama |
+| `LM_STUDIO_ENABLED` | `false` | Mengaktifkan adapter LM Studio; tetap nonaktif pada konfigurasi aman |
+| `LM_STUDIO_BASE_URL` | `http://127.0.0.1:1234/v1` | Target loopback HTTP untuk LM Studio |
+| `LOCALAI_ENABLED` | `false` | Mengaktifkan adapter LocalAI; tetap nonaktif pada konfigurasi aman |
+| `LOCALAI_BASE_URL` | `http://127.0.0.1:8080/v1` | Target loopback HTTP untuk LocalAI |
 
-Konfigurasi tidak memuat API key atau secret. Hanya system prompt terkontrol, pesan preview yang dibatasi 4.000 karakter, intent, dan safety level yang masuk ke request provider; data akun atau profil tidak ditambahkan.
+Konfigurasi tidak memuat API key atau secret. Base URL provider hanya menerima `http` dengan host eksplisit `127.0.0.1`, `localhost`, atau `::1`; alamat bind `0.0.0.0`, LAN/private IP, domain publik, URL berkredensial, dan skema selain HTTP ditolak tanpa DNS resolution. Klien HTTP lokal juga mengabaikan konfigurasi proxy dari environment agar request loopback tidak dialihkan. Hanya system prompt terkontrol, pesan preview yang dibatasi 4.000 karakter, intent, dan safety level yang masuk ke request provider; data akun atau profil tidak ditambahkan.
+
+Untuk Ollama live, model harus ditulis eksplisit melalui `LOCAL_LLM_MODEL`. Aplikasi tidak memilih `llama3` atau model lain secara diam-diam. Respons Ollama wajib berbentuk `{"message":{"content":"..."}}`; JSON atau schema yang salah, konten kosong, dan konten di atas 20.000 karakter ditolak secara terstruktur.
 
 ## Safety dan validasi hasil
 
@@ -106,7 +109,7 @@ Fixture menyatakan dengan jelas bahwa ia bukan hasil model nyata dan bukan rujuk
 
 ## Endpoint preview development
 
-Endpoint `POST /llm/preview` default-nya tidak tersedia (`404`). Untuk pengujian lokal:
+Endpoint `POST /llm/preview` default-nya tidak tersedia (`404`) dan selalu `404` ketika `APP_ENV=production`, walaupun flag preview dinyalakan. Untuk pengujian mock lokal:
 
 ```bash
 LOCAL_LLM_MODE=mock \
@@ -127,7 +130,7 @@ Request:
 
 Respons memuat mode, strategi, attempted providers, selected provider, status fallback, dan objek respons dengan `is_mock`. Endpoint tidak mengembalikan environment, filesystem path, stack trace, atau secret.
 
-Endpoint `/ask` tetap menggunakan Policy Engine dan `build_answer()`. Mode `disabled`, `mock`, kegagalan provider, atau mode `live` fondasi ini tidak mengganti jawaban publik `/ask`; fixture dummy juga tidak masuk ke `answer` maupun `sources`.
+Endpoint `/ask` tetap membangun jawaban rule-based lebih dahulu. Ollama hanya boleh memperhalus bahasa ketika `LOCAL_LLM_ASK_ENABLED=true`, mode `live`, provider utama `ollama`, Ollama aktif, model eksplisit tersedia, URL valid, dan seluruh guard mengizinkan. Pemanggilan `/ask` dipaksa memakai Ollama dengan strategi `priority`; LM Studio dan LocalAI tidak dicoba. Mode `disabled`/`mock`, konfigurasi tidak lengkap, timeout, koneksi gagal, HTTP error, respons kosong/invalid/terlalu besar, atau respons yang diblokir selalu kembali ke `build_answer()`. `sources` tetap kosong dan `policyDecision`, warning, serta recommended action tetap milik aplikasi.
 
 ## Menjalankan test
 
@@ -153,8 +156,60 @@ python tests/ci_smoke_test.py
 python tests/policy_http_smoke_test.py
 ```
 
-## Tahap aktivasi Ollama berikutnya
+## Runbook Ollama lokal
 
-Aktivasi nyata harus dikerjakan pada PR terpisah: pilih klien HTTP secara eksplisit, implementasikan serialisasi request/response hanya di `OllamaProvider`, batasi URL ke loopback yang disetujui, tambahkan timeout jaringan dan sanitasi error, aktifkan melalui flag eksplisit, lalu tambah contract/integration test dengan server tiruan. Sesudah itu ulangi pemeriksaan guard, post-response validation, kegagalan total, dan pastikan `/ask` tetap mempunyai fallback deterministik.
+Ollama harus dipasang dan model harus diunduh secara sadar oleh operator; repository tidak memasang Ollama atau mengunduh model. Periksa terlebih dahulu:
 
-LM Studio dan LocalAI mengikuti disiplin yang sama melalui adapter masing-masing. Tidak satu pun aktivasi provider boleh memindahkan kewenangan Policy Engine ke model lokal.
+```bash
+ollama --version
+curl http://127.0.0.1:11434/api/tags
+```
+
+Gunakan model kecil yang memang sudah tersedia, misalnya `gemma3:1b`. Jangan mengekspos port `11434` ke internet.
+
+### Preview Ollama
+
+```bash
+cd backend
+APP_ENV=development \
+LOCAL_LLM_MODE=live \
+LOCAL_LLM_STRATEGY=priority \
+LOCAL_LLM_PROVIDERS=ollama \
+LOCAL_LLM_PROVIDER=ollama \
+LOCAL_LLM_MODEL=gemma3:1b \
+LOCAL_LLM_TIMEOUT_SECONDS=45 \
+LOCAL_LLM_MAX_TOKENS=500 \
+LOCAL_LLM_TEMPERATURE=0.2 \
+LOCAL_LLM_PREVIEW_ENABLED=true \
+LOCAL_LLM_ASK_ENABLED=false \
+OLLAMA_ENABLED=true \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+LM_STUDIO_ENABLED=false \
+LOCALAI_ENABLED=false \
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Kirim `POST /llm/preview`:
+
+```json
+{
+  "message": "Jelaskan fungsi VitaCheck secara singkat.",
+  "provider": "ollama",
+  "strategy": "priority"
+}
+```
+
+Pastikan provider terpilih `ollama`, status `success`, `is_mock=false`, model sesuai konfigurasi, dan konten tidak kosong.
+
+### Mengaktifkan Ollama untuk `/ask`
+
+Setelah preview lulus, matikan preview dan aktifkan flag publik secara terpisah:
+
+```bash
+LOCAL_LLM_PREVIEW_ENABLED=false
+LOCAL_LLM_ASK_ENABLED=true
+```
+
+Uji pertanyaan biasa, klaim produk, permintaan dosis, dan kondisi darurat. Policy Engine selalu dievaluasi lebih dahulu. Kondisi darurat dan respons terlarang tidak boleh mencapai jawaban model; ketika Ollama dimatikan, `/ask` harus tetap mengembalikan jawaban rule-based tanpa HTTP 500.
+
+LM Studio dan LocalAI tetap nonaktif secara default. Ketersediaan adapter teknis tidak memindahkan kewenangan Policy Engine ke provider mana pun.

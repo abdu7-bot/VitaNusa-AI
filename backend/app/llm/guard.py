@@ -43,11 +43,13 @@ _STOP_DOCTOR_MEDICATION = re.compile(
 _PRESCRIPTION_DOSE = re.compile(
     r"\b(?:minum|gunakan|konsumsi|suntikkan|"
     r"dosis(?:\s+obat|\s+resep)?(?:nya)?(?:\s+adalah)?)\b.{0,50}"
-    r"\b\d+(?:[.,]\d+)?\s*(?:mg|ml|tablet|kapsul|kaplet|unit)\b",
+    r"\b(?:\d+(?:[.,]\d+)?|satu|dua|tiga|empat|lima|enam|tujuh|delapan|"
+    r"sembilan|sepuluh)\s*(?:mg|ml|tablet|kapsul|kaplet|unit)\b",
     re.IGNORECASE | re.DOTALL,
 )
 _GUARANTEED_CURE = re.compile(
-    r"\b(?:pasti sembuh|dijamin sembuh|sembuh total|menyembuhkan semua penyakit)\b",
+    r"\b(?:(?:pasti|dijamin)\s+(?:sembuh|menyembuhkan)|sembuh total|"
+    r"menyembuhkan semua penyakit)\b",
     re.IGNORECASE,
 )
 _UNIVERSAL_SAFETY = re.compile(
@@ -65,7 +67,8 @@ _UNSUPPORTED_HARAM = re.compile(
     re.IGNORECASE,
 )
 _UNSUPPORTED_BPOM = re.compile(
-    r"\b(?:produk|suplemen|herbal)\s+(?:ini\s+)?(?:sudah\s+|telah\s+|resmi\s+)?"
+    r"\b(?:produk|suplemen|herbal)\s+(?:ini\s+)?"
+    r"(?:(?:sudah|telah|resmi)\s+)?(?:pasti\s+)?"
     r"terdaftar\s+(?:di\s+)?bpom\b",
     re.IGNORECASE,
 )
@@ -73,6 +76,22 @@ _PERSONAL_PRODUCT_RECOMMENDATION = re.compile(
     r"\b(?:produk yang cocok untuk (?:anda|kamu)|"
     r"saya (?:merekomendasikan|sarankan) produk|"
     r"(?:gunakan|beli|konsumsi) produk ini untuk (?:keluhan|penyakit))\b",
+    re.IGNORECASE,
+)
+_SAFE_NEGATION_PREFIXES = (
+    re.compile(
+        r"^\s*(?:(?:saya|kami|vitanusa ai)\s+)?(?:tidak|belum)\s+"
+        r"(?:dapat|bisa|boleh|akan|menyarankan|memastikan|memberikan)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"^\s*jangan\s+(?:percaya|ikuti|mengikuti|andalkan)\b", re.IGNORECASE),
+    re.compile(
+        r"^\s*tidak ada\b.{0,100}\b(?:dapat|bisa)\s+dijamin\b",
+        re.IGNORECASE,
+    ),
+)
+_NEGATION_REVERSAL = re.compile(
+    r"[,:—]|\b(?:tetapi|namun|sebenarnya|meskipun|walaupun|dan|lalu|serta)\b",
     re.IGNORECASE,
 )
 
@@ -216,7 +235,18 @@ def validate_llm_response(
     ):
         patterns.append(_PERSONAL_PRODUCT_RECOMMENDATION)
 
-    if any(pattern.search(content) for pattern in patterns):
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?;])\s+|\n+", content)
+        if sentence.strip()
+    ]
+    unsafe_output = any(
+        any(pattern.search(sentence) for pattern in patterns)
+        for sentence in sentences
+        if not _is_clear_safe_negation(sentence)
+    )
+
+    if unsafe_output:
         return response.model_copy(
             update={
                 "content": "",
@@ -229,3 +259,9 @@ def validate_llm_response(
         )
 
     return response.model_copy(update={"content": content})
+
+
+def _is_clear_safe_negation(sentence: str) -> bool:
+    if _NEGATION_REVERSAL.search(sentence):
+        return False
+    return any(pattern.search(sentence) for pattern in _SAFE_NEGATION_PREFIXES)
