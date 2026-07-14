@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from typing import Mapping, cast
+from urllib.parse import urlsplit
 
 from .models import LlmMode, LlmStrategy
 
@@ -10,6 +11,45 @@ from .models import LlmMode, LlmStrategy
 SUPPORTED_MODES = frozenset({"disabled", "mock", "live"})
 SUPPORTED_STRATEGIES = frozenset({"priority", "fallback"})
 SUPPORTED_PROVIDERS = ("ollama", "lmstudio", "localai")
+LOCAL_PROVIDER_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def validate_local_provider_url(
+    raw_url: str,
+    *,
+    provider: str,
+) -> str:
+    """Return a normalized loopback-only provider URL or raise safely.
+
+    This intentionally performs no DNS resolution. A local provider client may
+    only target an explicit loopback hostname over HTTP, without credentials,
+    query parameters, or fragments.
+    """
+
+    error_code = f"invalid_{provider}_base_url"
+    candidate = raw_url.strip()
+    if not candidate or any(character.isspace() for character in candidate):
+        raise ValueError(error_code)
+
+    try:
+        parsed = urlsplit(candidate)
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError(error_code) from error
+
+    hostname = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme.lower() != "http"
+        or hostname not in LOCAL_PROVIDER_HOSTS
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or (port is not None and not 1 <= port <= 65535)
+    ):
+        raise ValueError(error_code)
+
+    return candidate.rstrip("/")
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,66 +151,90 @@ class LocalLlmConfig:
         )
 
         model = read("LOCAL_LLM_MODEL", "").strip() or None
+        provider = read("LOCAL_LLM_PROVIDER", "ollama").strip().lower()
+        preview_enabled = _read_bool(
+            read("LOCAL_LLM_PREVIEW_ENABLED", "false"),
+            default=False,
+            error_code="invalid_local_llm_preview_flag",
+            errors=errors,
+        )
+        ask_enabled = _read_bool(
+            read("LOCAL_LLM_ASK_ENABLED", "false"),
+            default=False,
+            error_code="invalid_local_llm_ask_flag",
+            errors=errors,
+        )
+        ollama_enabled = _read_bool(
+            read("OLLAMA_ENABLED", "false"),
+            default=False,
+            error_code="invalid_ollama_enabled_flag",
+            errors=errors,
+        )
+        lmstudio_enabled = _read_bool(
+            read("LM_STUDIO_ENABLED", "false"),
+            default=False,
+            error_code="invalid_lm_studio_enabled_flag",
+            errors=errors,
+        )
+        localai_enabled = _read_bool(
+            read("LOCALAI_ENABLED", "false"),
+            default=False,
+            error_code="invalid_localai_enabled_flag",
+            errors=errors,
+        )
+        ollama_base_url = _read_provider_url(
+            read("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
+            provider="ollama",
+            fallback="http://127.0.0.1:11434",
+            errors=errors,
+        )
+        lmstudio_base_url = _read_provider_url(
+            read("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
+            provider="lm_studio",
+            fallback="http://127.0.0.1:1234/v1",
+            errors=errors,
+        )
+        localai_base_url = _read_provider_url(
+            read("LOCALAI_BASE_URL", "http://127.0.0.1:8080/v1"),
+            provider="localai",
+            fallback="http://127.0.0.1:8080/v1",
+            errors=errors,
+        )
+
+        if (
+            raw_mode == "live"
+            and ask_enabled
+            and ollama_enabled
+            and provider == "ollama"
+            and model is None
+        ):
+            errors.append("missing_ollama_model_for_ask")
 
         return cls(
             mode=cast(LlmMode, raw_mode),
             strategy=cast(LlmStrategy, raw_strategy),
             providers=providers,
-            provider=read("LOCAL_LLM_PROVIDER", "ollama").strip().lower(),
+            provider=provider,
             model=model,
             timeout_seconds=timeout_seconds,
             max_tokens=max_tokens,
             temperature=temperature,
-            preview_enabled=_read_bool(
-                read("LOCAL_LLM_PREVIEW_ENABLED", "false"),
-                default=False,
-                error_code="invalid_local_llm_preview_flag",
-                errors=errors,
-            ),
-            ask_enabled=_read_bool(
-                read("LOCAL_LLM_ASK_ENABLED", "false"),
-                default=False,
-                error_code="invalid_local_llm_ask_flag",
-                errors=errors,
-            ),
+            preview_enabled=preview_enabled,
+            ask_enabled=ask_enabled,
             mock_scenario=read("LOCAL_LLM_MOCK_SCENARIO", "success").strip().lower(),
             ollama=ProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("OLLAMA_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_ollama_enabled_flag",
-                    errors=errors,
-                ),
-                base_url=read(
-                    "OLLAMA_BASE_URL",
-                    "http://127.0.0.1:11434",
-                ).strip(),
+                enabled=ollama_enabled,
+                base_url=ollama_base_url,
             ),
             lmstudio=ProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("LM_STUDIO_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_lm_studio_enabled_flag",
-                    errors=errors,
-                ),
-                base_url=read(
-                    "LM_STUDIO_BASE_URL",
-                    "http://127.0.0.1:1234/v1",
-                ).strip(),
+                enabled=lmstudio_enabled,
+                base_url=lmstudio_base_url,
             ),
             localai=ProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("LOCALAI_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_localai_enabled_flag",
-                    errors=errors,
-                ),
-                base_url=read(
-                    "LOCALAI_BASE_URL",
-                    "http://127.0.0.1:8080/v1",
-                ).strip(),
+                enabled=localai_enabled,
+                base_url=localai_base_url,
             ),
-            configuration_errors=tuple(errors),
+            configuration_errors=tuple(dict.fromkeys(errors)),
         )
 
     def provider_config(self, name: str) -> ProviderRuntimeConfig | None:
@@ -197,6 +261,20 @@ def _read_bool(
         return False
     errors.append(error_code)
     return default
+
+
+def _read_provider_url(
+    raw_value: str,
+    *,
+    provider: str,
+    fallback: str,
+    errors: list[str],
+) -> str:
+    try:
+        return validate_local_provider_url(raw_value, provider=provider)
+    except ValueError:
+        errors.append(f"invalid_{provider}_base_url")
+        return fallback
 
 
 def _read_float(

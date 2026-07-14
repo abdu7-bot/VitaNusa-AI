@@ -12,8 +12,19 @@ from time import perf_counter
 import httpx
 
 from .base import DummyLocalProvider
-from .config import LocalLlmConfig
+from .config import LocalLlmConfig, validate_local_provider_url
 from .models import LlmRequest, LlmResponse
+
+
+MAX_MODEL_RESPONSE_CHARS = 20_000
+
+
+class _ProviderResponseError(Exception):
+    def __init__(self, *, status: str, error_code: str, error_message: str) -> None:
+        super().__init__(error_code)
+        self.status = status
+        self.error_code = error_code
+        self.error_message = error_message
 
 
 class _LiveHttpProviderMixin:
@@ -36,8 +47,26 @@ class _LiveHttpProviderMixin:
                 error_message=f"Provider {self.name} tidak diaktifkan (set *_ENABLED=true).",
             )
 
+        if not model:
+            return LlmResponse(
+                provider=self.name,
+                status="failed",
+                error_code="model_not_configured",
+                error_message="Model Local LLM belum dikonfigurasi.",
+                elapsed_ms=_elapsed(started),
+            )
+
         try:
             content = await self._call(request, model)
+        except _ProviderResponseError as exc:
+            return LlmResponse(
+                provider=self.name,
+                model=model,
+                status=exc.status,
+                error_code=exc.error_code,
+                error_message=exc.error_message,
+                elapsed_ms=_elapsed(started),
+            )
         except httpx.TimeoutException:
             return LlmResponse(
                 provider=self.name,
@@ -81,7 +110,7 @@ class _LiveHttpProviderMixin:
             elapsed_ms=_elapsed(started),
         )
 
-    def _default_model(self) -> str:
+    def _default_model(self) -> str | None:
         return "local-model"
 
     async def _call(self, request: LlmRequest, model: str) -> str:
@@ -95,22 +124,44 @@ def _elapsed(started: float) -> int:
 class LiveOllamaProvider(_LiveHttpProviderMixin, DummyLocalProvider):
     name = "ollama"
 
-    def __init__(self, config: LocalLlmConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: LocalLlmConfig | None = None,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         resolved = config or LocalLlmConfig()
         super().__init__(resolved, resolved.ollama)
+        self._transport = transport
 
     async def generate(self, request: LlmRequest) -> LlmResponse:
         if self.config.mode != "live":
             return await super().generate(request)
         return await self._live_generate(request)
 
-    def _default_model(self) -> str:
-        return "llama3"
+    def _default_model(self) -> None:
+        return None
 
     async def _call(self, request: LlmRequest, model: str) -> str:
-        async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+        try:
+            base_url = validate_local_provider_url(
+                self.runtime.base_url,
+                provider="ollama",
+            )
+        except ValueError as error:
+            raise _ProviderResponseError(
+                status="failed",
+                error_code="invalid_ollama_base_url",
+                error_message="URL Ollama tidak memenuhi kebijakan loopback lokal.",
+            ) from error
+
+        async with httpx.AsyncClient(
+            timeout=self.config.timeout_seconds,
+            transport=self._transport,
+            trust_env=False,
+        ) as client:
             response = await client.post(
-                f"{self.runtime.base_url.rstrip('/')}/api/chat",
+                f"{base_url}/api/chat",
                 json={
                     "model": model,
                     "stream": False,
@@ -125,8 +176,52 @@ class LiveOllamaProvider(_LiveHttpProviderMixin, DummyLocalProvider):
                 },
             )
             response.raise_for_status()
-            payload = response.json()
-            return str(payload.get("message", {}).get("content", "")).strip()
+            try:
+                payload = response.json()
+            except ValueError as error:
+                raise _ProviderResponseError(
+                    status="failed",
+                    error_code="invalid_json_response",
+                    error_message="Ollama mengembalikan JSON yang tidak valid.",
+                ) from error
+            return _parse_ollama_content(payload)
+
+
+def _parse_ollama_content(payload: object) -> str:
+    if not isinstance(payload, dict):
+        raise _invalid_ollama_schema()
+
+    message = payload.get("message")
+    if not isinstance(message, dict):
+        raise _invalid_ollama_schema()
+
+    content = message.get("content")
+    if not isinstance(content, str):
+        raise _invalid_ollama_schema()
+
+    if len(content) > MAX_MODEL_RESPONSE_CHARS:
+        raise _ProviderResponseError(
+            status="blocked",
+            error_code="response_too_large",
+            error_message="Respons Ollama melampaui batas ukuran aplikasi.",
+        )
+
+    normalized = content.strip()
+    if not normalized:
+        raise _ProviderResponseError(
+            status="empty",
+            error_code="empty_model_response",
+            error_message="Ollama tidak menghasilkan konten yang dapat digunakan.",
+        )
+    return normalized
+
+
+def _invalid_ollama_schema() -> _ProviderResponseError:
+    return _ProviderResponseError(
+        status="failed",
+        error_code="invalid_response_schema",
+        error_message="Struktur respons Ollama tidak valid.",
+    )
 
 
 class _OpenAiCompatibleProvider(_LiveHttpProviderMixin, DummyLocalProvider):
@@ -138,7 +233,10 @@ class _OpenAiCompatibleProvider(_LiveHttpProviderMixin, DummyLocalProvider):
         return await self._live_generate(request)
 
     async def _call(self, request: LlmRequest, model: str) -> str:
-        async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+        async with httpx.AsyncClient(
+            timeout=self.config.timeout_seconds,
+            trust_env=False,
+        ) as client:
             response = await client.post(
                 f"{self.runtime.base_url.rstrip('/')}/chat/completions",
                 json={

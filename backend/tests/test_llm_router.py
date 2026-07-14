@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 from fastapi import HTTPException
 
 from app.llm.config import LocalLlmConfig
-from app.llm.models import LlmRequest, LlmResponse
+from app.llm.models import LlmRequest, LlmResponse, LlmRouterResponse
 from app.llm.router import LocalLlmRouter
 from app.main import ask_ai, llm_preview
 from app.schemas import AskRequest, LlmPreviewRequest
@@ -21,6 +21,42 @@ def make_request() -> LlmRequest:
         user_message="Jelaskan VitaCheck secara singkat.",
         intent="vitacheck",
         safety_level="low",
+    )
+
+
+LIVE_ASK_ENV = {
+    "LOCAL_LLM_MODE": "live",
+    "LOCAL_LLM_ASK_ENABLED": "true",
+    "LOCAL_LLM_PROVIDER": "ollama",
+    "LOCAL_LLM_PROVIDERS": "ollama,lmstudio,localai",
+    "LOCAL_LLM_MODEL": "gemma3:1b",
+    "OLLAMA_ENABLED": "true",
+    "OLLAMA_BASE_URL": "http://127.0.0.1:11434",
+    "LM_STUDIO_ENABLED": "false",
+    "LOCALAI_ENABLED": "false",
+}
+
+
+def routed_response(
+    *,
+    status: str,
+    content: str = "",
+    error_code: str | None = None,
+) -> LlmRouterResponse:
+    return LlmRouterResponse(
+        mode="live",
+        strategy="priority",
+        selected_provider="ollama" if status == "success" else None,
+        attempted_providers=["ollama"],
+        failed_providers=[] if status == "success" else ["ollama"],
+        response=LlmResponse(
+            provider="ollama",
+            model="gemma3:1b",
+            content=content,
+            status=status,
+            error_code=error_code,
+        ),
+        all_providers_failed=(status != "success"),
     )
 
 
@@ -231,6 +267,19 @@ class LlmPreviewEndpointTests(unittest.IsolatedAsyncioTestCase):
                 await llm_preview(LlmPreviewRequest(message="Jelaskan VitaCheck."))
         self.assertEqual(raised.exception.status_code, 404)
 
+    async def test_preview_is_404_in_production_even_when_enabled(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "APP_ENV": "production",
+                "LOCAL_LLM_PREVIEW_ENABLED": "true",
+            },
+            clear=False,
+        ):
+            with self.assertRaises(HTTPException) as raised:
+                await llm_preview(LlmPreviewRequest(message="Jelaskan VitaCheck."))
+        self.assertEqual(raised.exception.status_code, 404)
+
     async def test_preview_mock_returns_structured_response(self) -> None:
         with patch.dict(
             os.environ,
@@ -270,7 +319,7 @@ class LlmPreviewEndpointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.selected_provider, "lmstudio")
         self.assertTrue(result.fallback_used)
 
-    async def test_preview_live_is_not_implemented_and_not_mock(self) -> None:
+    async def test_preview_live_disabled_provider_is_not_mock(self) -> None:
         with patch.dict(
             os.environ,
             {
@@ -353,21 +402,158 @@ class AskRegressionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(mocked.sources, [])
         self.assertIsNotNone(mocked.policyDecision)
 
-    async def test_emergency_ask_never_calls_local_llm(self) -> None:
+    async def test_mock_mode_never_replaces_public_ask(self) -> None:
         with patch.dict(
             os.environ,
-            {"LOCAL_LLM_MODE": "mock", "LOCAL_LLM_ASK_ENABLED": "true"},
+            {
+                "LOCAL_LLM_MODE": "mock",
+                "LOCAL_LLM_ASK_ENABLED": "true",
+                "LOCAL_LLM_MOCK_SCENARIO": "success",
+            },
             clear=False,
         ), patch(
             "app.main.LocalLlmRouter.route",
-            new=AsyncMock(side_effect=AssertionError("LLM must not be called")),
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
         ) as route:
-            response = await ask_ai(
-                AskRequest(question="Saya sesak berat dan nyeri dada.")
-            )
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
         route.assert_not_awaited()
-        self.assertEqual(response.safetyLevel, "emergency")
-        self.assertEqual(response.policyDecision.dominantPolicy, "medical_safety")
+        self.assertIn("VitaCheck adalah", response.answer)
+        self.assertEqual(response.sources, [])
+
+    async def test_live_ask_flag_disabled_does_not_call_router(self) -> None:
+        environment = {**LIVE_ASK_ENV, "LOCAL_LLM_ASK_ENABLED": "false"}
+        with patch.dict(os.environ, environment, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
+        ) as route:
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        route.assert_not_awaited()
+        self.assertIn("VitaCheck adalah", response.answer)
+
+    async def test_live_non_ollama_primary_does_not_call_router(self) -> None:
+        environment = {**LIVE_ASK_ENV, "LOCAL_LLM_PROVIDER": "lmstudio"}
+        with patch.dict(os.environ, environment, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
+        ) as route:
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        route.assert_not_awaited()
+        self.assertIn("VitaCheck adalah", response.answer)
+
+    async def test_invalid_ollama_url_falls_back_without_router(self) -> None:
+        environment = {
+            **LIVE_ASK_ENV,
+            "OLLAMA_BASE_URL": "http://user:secret@example.com:11434",
+        }
+        with patch.dict(os.environ, environment, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
+        ) as route:
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        route.assert_not_awaited()
+        self.assertIn("VitaCheck adalah", response.answer)
+        self.assertNotIn("secret", response.answer)
+
+    async def test_live_provider_disabled_falls_back_without_router(self) -> None:
+        environment = {**LIVE_ASK_ENV, "OLLAMA_ENABLED": "false"}
+        with patch.dict(os.environ, environment, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
+        ) as route:
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        route.assert_not_awaited()
+        self.assertIn("VitaCheck adalah", response.answer)
+
+    async def test_live_model_missing_falls_back_without_router(self) -> None:
+        environment = {**LIVE_ASK_ENV, "LOCAL_LLM_MODEL": "   "}
+        with patch.dict(os.environ, environment, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=AsyncMock(side_effect=AssertionError("router must not run")),
+        ) as route:
+            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+        route.assert_not_awaited()
+        self.assertIn("VitaCheck adalah", response.answer)
+
+    async def test_live_failures_always_fall_back_to_rule_based_answer(self) -> None:
+        failures = (
+            ("unavailable", "provider_connection_failed"),
+            ("timeout", "provider_timeout"),
+            ("empty", "empty_model_response"),
+            ("blocked", "response_validation_blocked"),
+            ("failed", "http_500"),
+        )
+        for status, error_code in failures:
+            with self.subTest(status=status), patch.dict(
+                os.environ,
+                LIVE_ASK_ENV,
+                clear=False,
+            ), patch(
+                "app.main.LocalLlmRouter.route",
+                new=AsyncMock(
+                    return_value=routed_response(
+                        status=status,
+                        content="",
+                        error_code=error_code,
+                    )
+                ),
+            ):
+                response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
+            self.assertIn("VitaCheck adalah", response.answer)
+            self.assertEqual(response.sources, [])
+            self.assertIsNotNone(response.policyDecision)
+            self.assertIsNotNone(response.recommendedAction)
+
+    async def test_live_success_can_rephrase_without_changing_contract(self) -> None:
+        request = AskRequest(question="Apa itu VitaCheck?")
+        with patch.dict(
+            os.environ,
+            {**LIVE_ASK_ENV, "LOCAL_LLM_ASK_ENABLED": "false"},
+            clear=False,
+        ):
+            baseline = await ask_ai(request)
+
+        model_answer = (
+            "VitaCheck membantu refleksi kebiasaan sehat dan bukan alat diagnosis."
+        )
+        route = AsyncMock(
+            return_value=routed_response(status="success", content=model_answer)
+        )
+        with patch.dict(os.environ, LIVE_ASK_ENV, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=route,
+        ):
+            response = await ask_ai(request)
+
+        self.assertEqual(response.answer, model_answer)
+        self.assertEqual(response.sources, [])
+        self.assertEqual(response.recommendedAction, baseline.recommendedAction)
+        self.assertEqual(response.policyDecision, baseline.policyDecision)
+        route.assert_awaited_once()
+        self.assertEqual(route.await_args.kwargs["provider"], "ollama")
+        self.assertEqual(route.await_args.kwargs["strategy"], "priority")
+
+    async def test_emergency_questions_never_call_ollama_generate(self) -> None:
+        questions = (
+            "Saya sesak berat dan nyeri dada.",
+            "Saya tiba-tiba lemah separuh tubuh.",
+            "Saya pingsan.",
+            "Saya mengalami perdarahan hebat.",
+            "Saya ingin menyakiti diri sendiri.",
+        )
+        generate = AsyncMock(side_effect=AssertionError("Ollama must not run"))
+        with patch.dict(os.environ, LIVE_ASK_ENV, clear=False), patch(
+            "app.llm.http_providers.LiveOllamaProvider.generate",
+            new=generate,
+        ):
+            for question in questions:
+                with self.subTest(question=question):
+                    response = await ask_ai(AskRequest(question=question))
+                    self.assertEqual(response.safetyLevel, "emergency")
+                    self.assertEqual(
+                        response.policyDecision.dominantPolicy,
+                        "medical_safety",
+                    )
+        generate.assert_not_awaited()
 
     async def test_medication_request_keeps_policy_boundary(self) -> None:
         response = await ask_ai(
@@ -380,35 +566,94 @@ class AskRegressionTests(unittest.IsolatedAsyncioTestCase):
             response.policyDecision.prohibitedActions,
         )
 
-    async def test_all_provider_failure_cannot_break_ask(self) -> None:
-        with patch.dict(
-            os.environ,
-            {
-                "LOCAL_LLM_MODE": "mock",
-                "LOCAL_LLM_MOCK_SCENARIO": "all_failed",
-            },
-            clear=False,
-        ):
-            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
-        self.assertIn("VitaCheck adalah", response.answer)
-        self.assertNotIn("mock", response.answer.casefold())
-        self.assertEqual(response.sources, [])
+    async def test_medication_prompts_cannot_use_unsafe_model_output(self) -> None:
+        cases = (
+            (
+                "Berikan dosis obat resep untuk saya.",
+                "Minum obat resep ini sebanyak tiga tablet.",
+            ),
+            (
+                "Bolehkah saya menghentikan obat dokter?",
+                "Hentikan obat dokter mulai sekarang.",
+            ),
+            (
+                "Naikkan dosis obat saya agar lebih cepat sembuh.",
+                "Minum obat resep ini sebanyak tiga tablet.",
+            ),
+        )
+        with patch.dict(os.environ, LIVE_ASK_ENV, clear=False):
+            for question, unsafe_output in cases:
+                with self.subTest(question=question), patch(
+                    "app.llm.http_providers.LiveOllamaProvider.generate",
+                    new=AsyncMock(
+                        return_value=LlmResponse(
+                            provider="ollama",
+                            model="gemma3:1b",
+                            status="success",
+                            content=unsafe_output,
+                        )
+                    ),
+                ):
+                    response = await ask_ai(AskRequest(question=question))
+                self.assertNotEqual(response.answer, unsafe_output)
+                self.assertNotIn("tiga tablet", response.answer.casefold())
+                self.assertIsNotNone(response.recommendedAction)
+                self.assertIsNotNone(response.policyDecision)
 
-    async def test_ask_uses_llm_answer_when_ask_enabled_and_guard_allows(self) -> None:
-        with patch.dict(
-            os.environ,
-            {
-                "LOCAL_LLM_MODE": "mock",
-                "LOCAL_LLM_ASK_ENABLED": "true",
-                "LOCAL_LLM_MOCK_SCENARIO": "success",
-            },
-            clear=False,
+    async def test_product_claims_cannot_use_invented_model_facts(self) -> None:
+        cases = (
+            (
+                "Apakah produk ini pasti menyembuhkan diabetes?",
+                "Produk ini pasti menyembuhkan diabetes.",
+            ),
+            ("Apakah produk ini pasti halal?", "Produk ini pasti halal."),
+            (
+                "Apakah produk ini sudah BPOM?",
+                "Produk ini sudah pasti terdaftar BPOM.",
+            ),
+        )
+        with patch.dict(os.environ, LIVE_ASK_ENV, clear=False):
+            for question, unsafe_output in cases:
+                with self.subTest(question=question), patch(
+                    "app.llm.http_providers.LiveOllamaProvider.generate",
+                    new=AsyncMock(
+                        return_value=LlmResponse(
+                            provider="ollama",
+                            model="gemma3:1b",
+                            status="success",
+                            content=unsafe_output,
+                        )
+                    ),
+                ):
+                    response = await ask_ai(AskRequest(question=question))
+                self.assertNotEqual(response.answer, unsafe_output)
+                self.assertEqual(response.sources, [])
+                self.assertIsNotNone(response.policyDecision)
+
+    async def test_blocked_model_output_is_not_saved_to_conversation_memory(self) -> None:
+        from app.conversation_memory import CONVERSATION_MEMORY
+
+        session_id = "blocked-model-memory-test"
+        unsafe_output = "Produk ini pasti menyembuhkan diabetes."
+        route = AsyncMock(
+            return_value=routed_response(
+                status="blocked",
+                content=unsafe_output,
+                error_code="response_validation_blocked",
+            )
+        )
+        with patch.dict(os.environ, LIVE_ASK_ENV, clear=False), patch(
+            "app.main.LocalLlmRouter.route",
+            new=route,
         ):
-            response = await ask_ai(AskRequest(question="Apa itu VitaCheck?"))
-        # Mock provider returns simulated content; when ask integration is
-        # explicitly enabled, that content should replace the rule template.
-        self.assertNotIn("VitaCheck adalah", response.answer)
-        self.assertTrue(response.policyDecision is not None)
+            response = await ask_ai(
+                AskRequest(question="Apa itu VitaCheck?", sessionId=session_id)
+            )
+
+        history = CONVERSATION_MEMORY.get_history(session_id)
+        self.assertTrue(history)
+        self.assertEqual(history[-1].answer, response.answer[:400])
+        self.assertNotIn(unsafe_output, history[-1].answer)
 
     async def test_ask_falls_back_to_rule_template_when_llm_disabled(self) -> None:
         # Default env (no LOCAL_LLM_ASK_ENABLED) must behave exactly like the

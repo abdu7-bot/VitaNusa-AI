@@ -87,7 +87,8 @@ def health():
 @app.post("/llm/preview", response_model=LlmRouterResponse)
 async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     config = LocalLlmConfig.from_env()
-    if not config.preview_enabled:
+    app_env = os.getenv("APP_ENV", "development").strip().lower()
+    if app_env == "production" or not config.preview_enabled:
         raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
 
     message = request.message.strip()
@@ -217,7 +218,14 @@ async def _generate_llm_answer(
     """
 
     config = LocalLlmConfig.from_env()
-    if not config.ask_enabled or config.mode == "disabled":
+    if not (
+        config.ask_enabled
+        and config.mode == "live"
+        and config.provider == "ollama"
+        and config.ollama.enabled
+        and config.model
+        and not config.configuration_errors
+    ):
         return rule_based_answer, None
 
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
@@ -247,14 +255,25 @@ async def _generate_llm_answer(
     if not guard.allowed:
         return rule_based_answer, None
 
-    router = LocalLlmRouter(config)
-    router_response = await router.route(
-        llm_request,
-        strategy=config.strategy,
-        guard_context=guard_context,
-    )
+    try:
+        router = LocalLlmRouter(config)
+        router_response = await router.route(
+            llm_request,
+            provider="ollama",
+            strategy="priority",
+            guard_context=guard_context,
+        )
+    except Exception:
+        return rule_based_answer, None
+
     response = router_response.response
-    if response is not None and response.status in {"success", "mock"} and response.content.strip():
+    if (
+        response is not None
+        and response.provider == "ollama"
+        and router_response.selected_provider == "ollama"
+        and response.status == "success"
+        and response.content.strip()
+    ):
         return response.content.strip(), router_response.selected_provider
 
     return rule_based_answer, None
