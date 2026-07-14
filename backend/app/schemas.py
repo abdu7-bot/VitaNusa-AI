@@ -8,6 +8,7 @@ from .search.models import SearchCategory
 class AskRequest(BaseModel):
     question: str
     includeQuranicReflection: bool = False
+    sessionId: str | None = Field(default=None, max_length=200)
 
 
 class LlmPreviewRequest(BaseModel):
@@ -68,3 +69,4 @@ class AskResponse(BaseModel):
     sources: list[dict[str, str]] = Field(default_factory=list)
     quranicReflection: QuranicReflection | None = None
     policyDecision: PolicyDecisionResponse | None = None
+    sessionId: str = Field(default="")

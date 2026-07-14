@@ -132,5 +132,75 @@ class AskEndpointContractTests(unittest.TestCase):
             self.assertIn(old_field, payload)
 
 
+class GeneralChatIntentTests(unittest.TestCase):
+    def test_unmatched_question_becomes_general_chat_not_defensive_fallback(self) -> None:
+        result = detect_intent("Mengapa langit pagi terasa tenang?")
+        self.assertEqual(result["intent"], "general_chat")
+        self.assertEqual(result["safetyLevel"], "low")
+
+    def test_general_chat_answer_is_warm_and_still_safe(self) -> None:
+        response = ask("Ceritakan tentang sejarah nusantara ya.")
+        self.assertEqual(response.intent, "general_chat")
+        answer = response.answer.lower()
+        self.assertIn("senang mengobrol", answer)
+        # Must still steer risky follow-ups toward the safety-reviewed paths.
+        self.assertIn("hati-hati", answer)
+
+    def test_health_keywords_still_bypass_general_chat(self) -> None:
+        # A general-sounding question that contains a real safety-relevant
+        # keyword must still be routed by its specific intent, never
+        # swallowed by the new general_chat catch-all.
+        result = detect_intent("Kenapa ya saya pusing terus dari kemarin?")
+        self.assertEqual(result["intent"], "health_general")
+
+
+class ConversationMemoryTests(unittest.TestCase):
+    def test_ask_without_session_id_still_returns_one(self) -> None:
+        response = ask("Halo")
+        self.assertTrue(response.sessionId)
+
+    def test_same_session_id_is_echoed_back(self) -> None:
+        response = asyncio.run(
+            ask_ai(AskRequest(question="Halo", sessionId="test-session-abc"))
+        )
+        self.assertEqual(response.sessionId, "test-session-abc")
+
+    def test_history_is_recorded_and_scoped_per_session(self) -> None:
+        from app.conversation_memory import CONVERSATION_MEMORY
+
+        session_a = "memory-test-session-a"
+        session_b = "memory-test-session-b"
+
+        asyncio.run(ask_ai(AskRequest(question="Halo", sessionId=session_a)))
+        asyncio.run(
+            ask_ai(AskRequest(question="Apa itu VitaCheck?", sessionId=session_a))
+        )
+
+        history_a = CONVERSATION_MEMORY.get_history(session_a)
+        history_b = CONVERSATION_MEMORY.get_history(session_b)
+
+        self.assertEqual(len(history_a), 2)
+        self.assertEqual(history_a[0].question, "Halo")
+        self.assertEqual(history_a[1].intent, "vitacheck")
+        self.assertEqual(history_b, [])
+
+    def test_history_never_overrides_a_fresh_safety_decision(self) -> None:
+        # Even if a prior turn in the same session was a low-risk greeting,
+        # a later emergency message in the same session must still be
+        # classified as an emergency on its own merits.
+        session_id = "memory-test-session-safety"
+        asyncio.run(ask_ai(AskRequest(question="Halo", sessionId=session_id)))
+        response = asyncio.run(
+            ask_ai(
+                AskRequest(
+                    question="Sesak napas berat dan nyeri dada, tolong.",
+                    sessionId=session_id,
+                )
+            )
+        )
+        self.assertEqual(response.intent, "danger_sign")
+        self.assertEqual(response.safetyLevel, "emergency")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -183,7 +183,14 @@ def detect_intent(question: str) -> dict:
         is_islamic_greeting = contains_any(text, ISLAMIC_GREETING_KEYWORDS)
         has_greeting = is_islamic_greeting or contains_any(text, GENERAL_GREETING_KEYWORDS)
 
-        intent = "fallback"
+        # Terminal case: no specific health/product/religious/app keyword
+        # matched. Per the hybrid_open scope, this is treated as ordinary
+        # general conversation (`general_chat`) rather than a defensive
+        # "can't help" fallback — the Policy Engine still evaluates every
+        # message independently below, so a general-sounding question that
+        # actually contains a safety-relevant keyword is still caught by the
+        # specific intents/policies, not by this branch.
+        intent = "general_chat"
         for candidate, keywords in INTENT_KEYWORDS.items():
             if contains_any(text, keywords):
                 intent = candidate
@@ -191,7 +198,7 @@ def detect_intent(question: str) -> dict:
 
         if has_correction:
             intent = "conversation_correction"
-        elif intent == "fallback" and has_greeting:
+        elif intent == "general_chat" and has_greeting:
             intent = "greeting"
 
     safety = classify_risk(text, intent)

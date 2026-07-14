@@ -267,22 +267,22 @@ def test_medication_request() -> None:
     )
 
 
-def test_fallback() -> None:
-    case = "POST /ask fallback"
+def test_general_chat() -> None:
+    case = "POST /ask general_chat"
     payload = post_ask(case, "Mengapa langit pagi terasa tenang?")
-    ensure(payload["intent"] == "fallback", case, "intent must be 'fallback'")
+    ensure(payload["intent"] == "general_chat", case, "intent must be 'general_chat'")
     ensure(
         contains_any(
             payload["answer"],
             (
-                "belum mempunyai informasi",
-                "lebih spesifik",
-                "edukasi",
-                "bantuan medis",
+                "senang mengobrol",
+                "lebih detail",
+                "VitaCheck",
+                "artikel kesehatan",
             ),
         ),
         case,
-        "fallback answer must remain safe and helpful",
+        "general_chat answer must remain safe and helpful",
     )
 
 
@@ -295,7 +295,7 @@ TESTS: tuple[tuple[str, Callable[[], None]], ...] = (
     ("POST /ask product claim", test_product_claim),
     ("POST /ask emergency", test_emergency),
     ("POST /ask medication request", test_medication_request),
-    ("POST /ask fallback", test_fallback),
+    ("POST /ask general_chat", test_general_chat),
 )
 
 

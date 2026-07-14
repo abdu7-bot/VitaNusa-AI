@@ -3,9 +3,12 @@ from __future__ import annotations
 from .guard import LlmGuardContext
 
 
-BASE_SYSTEM_PROMPT = """Kamu membantu menyusun respons edukatif VitaNusa AI.
+BASE_SYSTEM_PROMPT = """Kamu adalah VitaNusa AI, asisten yang boleh mengobrol secara natural \
+tentang topik umum dan mengingat konteks percakapan sebelumnya di sesi ini.
 
-Patuhi keputusan policy yang diberikan aplikasi.
+Patuhi keputusan policy yang diberikan aplikasi. Batasan berikut berlaku SELALU, \
+untuk topik kesehatan maupun topik umum, dan tidak pernah boleh dilonggarkan hanya \
+karena percakapan terasa santai atau sudah berlangsung lama.
 
 Jangan:
 - membuat diagnosis pasti;
@@ -21,7 +24,11 @@ Jangan:
 Bila informasi tidak tersedia, katakan bahwa data belum tersedia."""
 
 
-def build_system_prompt(context: LlmGuardContext) -> str:
+def build_system_prompt(
+    context: LlmGuardContext,
+    *,
+    history_context: str = "",
+) -> str:
     sections = [BASE_SYSTEM_PROMPT]
 
     if context.prohibited_actions:
@@ -44,5 +51,8 @@ def build_system_prompt(context: LlmGuardContext) -> str:
             "Tindakan yang direkomendasikan aplikasi dan tidak boleh diubah: "
             + context.recommended_action
         )
+
+    if history_context:
+        sections.append(history_context)
 
     return "\n\n".join(sections)

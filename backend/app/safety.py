@@ -82,6 +82,7 @@ LOW_RISK_INTENTS = {
     "contact_admin",
     "greeting",
     "conversation_correction",
+    "general_chat",
     "fallback",
 }
 

@@ -1,9 +1,11 @@
 import os
+import uuid
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .audit_log import log_ask_event
+from .conversation_memory import CONVERSATION_MEMORY, build_history_context
 from .feedback import FeedbackReceipt, FeedbackRequest, list_pending_feedback, record_feedback
 from .intent_router import detect_intent, normalize_text
 from .knowledge_base import build_knowledge_context
@@ -204,6 +206,7 @@ async def _generate_llm_answer(
     safety_level: str,
     decision,
     rule_based_answer: str,
+    history_context: str = "",
 ) -> tuple[str, str | None]:
     """Try to rephrase `rule_based_answer` more naturally using a local LLM.
 
@@ -220,7 +223,7 @@ async def _generate_llm_answer(
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
 
     knowledge_context = build_knowledge_context(intent, normalize_text(question))
-    system_prompt = build_system_prompt(guard_context)
+    system_prompt = build_system_prompt(guard_context, history_context=history_context)
     system_prompt += (
         "\n\nJawaban dasar yang sudah disetujui aplikasi (edukasi ulang boleh membuatnya "
         "lebih natural dan ramah, tetapi jangan mengubah maknanya, jangan menghapus "
@@ -267,6 +270,13 @@ async def ask_ai(request: AskRequest) -> AskResponse:
             detail="Pertanyaan tidak boleh kosong."
         )
 
+    # Session id is opaque and client-supplied (typically a per-tab id kept
+    # in the browser). It only unlocks short-lived, in-process conversation
+    # context (see conversation_memory.py) — it never affects intent
+    # detection or the Policy Engine's decision for the *current* message.
+    session_id = (request.sessionId or "").strip() or uuid.uuid4().hex
+    history = CONVERSATION_MEMORY.get_history(session_id)
+
     intent_result = detect_intent(question)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
@@ -294,6 +304,15 @@ async def ask_ai(request: AskRequest) -> AskResponse:
         safety_level=safety_level,
         decision=decision,
         rule_based_answer=rule_based_answer,
+        history_context=build_history_context(history),
+    )
+
+    CONVERSATION_MEMORY.record_turn(
+        session_id,
+        question=question,
+        intent=intent,
+        safety_level=safety_level,
+        answer=answer,
     )
 
     log_ask_event(
@@ -320,6 +339,7 @@ async def ask_ai(request: AskRequest) -> AskResponse:
         sources=[],
         quranicReflection=build_quranic_reflection() if include_reflection else None,
         policyDecision=serialize_policy_decision(decision),
+        sessionId=session_id,
     )
 
 

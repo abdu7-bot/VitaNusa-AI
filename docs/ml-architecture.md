@@ -47,6 +47,42 @@ sebagai proses terpisah (atau host eksternal) dan set base URL-nya, lalu set
 Jika provider tidak aktif/terhubung, sistem otomatis kembali ke jawaban
 template rule-based (tidak pernah error ke pengguna).
 
+## Percakapan umum (`general_chat`) dan memori multi-giliran
+Sejak revisi "hybrid_open", `intent_router.py` tidak lagi memperlakukan
+pertanyaan yang tidak cocok dengan kata kunci kesehatan/produk/agama/aplikasi
+sebagai fallback defensif. Kasus itu sekarang diberi intent `general_chat`
+(risiko `low`) dan dijawab dengan nada mengobrol yang jujur soal keterbatasan
+saat ini (lihat `GENERAL_CHAT_ANSWER` di `responses.py`), bukan "saya belum
+punya informasi". Ini **tidak melonggarkan keselamatan**: setiap pesan tetap
+melewati `detect_intent` → `classify_risk` → `PolicyEngine.evaluate_question`
+apa adanya, jadi pertanyaan yang memuat kata kunci darurat/obat/produk/agama
+tetap dialihkan ke intent spesifiknya masing-masing, tidak pernah "tertelan"
+oleh `general_chat`.
+
+`backend/app/conversation_memory.py` menambahkan memori percakapan singkat,
+in-process, per `sessionId` (dikirim klien lewat body `/ask`; server membuat
+satu baru bila kosong dan selalu mengembalikannya di `AskResponse.sessionId`).
+Beberapa catatan penting:
+- **Bukan penyimpanan permanen.** Riwayat hanya hidup di memori proses
+  (hilang saat proses restart), dibatasi jumlah giliran per sesi
+  (`VITANUSA_MEMORY_MAX_TURNS`, default 6), TTL tanpa aktivitas
+  (`VITANUSA_MEMORY_TTL_SECONDS`, default 1800 detik), dan jumlah sesi yang
+  dilacak (`VITANUSA_MEMORY_MAX_SESSIONS`, default 1000) — jadi tidak
+  menambah beban privasi/audit baru di luar yang sudah ada untuk feedback
+  dan audit log. Teks yang disimpan tetap melewati `redact_pii` yang sama
+  dengan feedback queue.
+- **Hanya konteks untuk LLM, tidak pernah mengubah keputusan keselamatan.**
+  `build_history_context()` merender giliran-giliran sebelumnya sebagai teks
+  yang disisipkan ke system prompt lewat `build_system_prompt(...,
+  history_context=...)` — ini murni membantu LLM (saat `LOCAL_LLM_ASK_ENABLED`
+  aktif) menjawab lebih nyambung secara nada bahasa. Jalur rule-based (intent,
+  safety level, Policy Engine) tetap dievaluasi ulang dari nol pada setiap
+  pesan; riwayat tidak pernah dibaca oleh `detect_intent` atau
+  `PolicyEngine.evaluate_question`.
+- Frontend (`assets/js/modules/nusa-chat.js`) menyimpan `sessionId` per tab di
+  `sessionStorage` dan mengirimkannya di setiap request; tombol "Chat Baru"
+  menghapusnya sehingga percakapan berikutnya dimulai tanpa riwayat.
+
 ## Feedback (like/dislike) — bukan self-learning
 `POST /feedback` menyimpan rating + alasan opsional ke antrean
 `backend/data/feedback_queue.jsonl` dengan status `pending_review`. Teks

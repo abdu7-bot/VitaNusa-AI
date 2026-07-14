@@ -35,6 +35,7 @@ const DEFAULT_LOCAL_BACKENDS = Object.freeze([
 ]);
 
 const ACTIVE_BACKEND_STORAGE_KEY = 'VITANUSA_ACTIVE_BACKEND_ASK_URL';
+const CHAT_SESSION_STORAGE_KEY = 'VITANUSA_CHAT_SESSION_ID';
 const BACKEND_TIMEOUT_MS = 7000;
 const BLOCKED_DETAIL_SELECTOR = 'script, iframe, object, embed, link, meta, style';
 const URL_DETAIL_ATTRIBUTES = new Set(['href', 'src', 'srcdoc', 'xlink:href']);
@@ -288,6 +289,53 @@ function rememberActiveBackendUrl(url) {
   }
 }
 
+function createSessionId() {
+  try {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  } catch {
+    // Lanjut ke fallback di bawah.
+  }
+  return `nusa-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// Sesi obrolan (dan konteks percakapan yang diingat backend) dipetakan ke id
+// ini, disimpan per-tab lewat sessionStorage supaya percakapan multi-giliran
+// tetap nyambung selama tab terbuka, tapi otomatis "lupa" saat tab ditutup
+// atau pengguna menekan tombol "Chat Baru" (lihat resetChatSession()).
+function getOrCreateChatSessionId() {
+  try {
+    const existing = window.sessionStorage?.getItem(CHAT_SESSION_STORAGE_KEY);
+    if (existing) return existing;
+  } catch {
+    // sessionStorage bisa tidak tersedia pada mode privasi tertentu.
+  }
+
+  const created = createSessionId();
+  try {
+    window.sessionStorage?.setItem(CHAT_SESSION_STORAGE_KEY, created);
+  } catch {
+    // Abaikan bila browser membatasi sessionStorage; sesi hanya berlaku di memori.
+  }
+  return created;
+}
+
+function resetChatSession() {
+  try {
+    window.sessionStorage?.removeItem(CHAT_SESSION_STORAGE_KEY);
+  } catch {
+    // Abaikan bila browser membatasi sessionStorage.
+  }
+}
+
+function rememberChatSessionId(sessionId) {
+  if (!sessionId) return;
+  try {
+    window.sessionStorage?.setItem(CHAT_SESSION_STORAGE_KEY, sessionId);
+  } catch {
+    // Abaikan bila browser membatasi sessionStorage.
+  }
+}
+
 async function fetchJsonWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), BACKEND_TIMEOUT_MS);
@@ -369,6 +417,9 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     log.hidden = true;
     input.value = '';
     resizeChatInput(input);
+    // "Chat Baru" juga memulai sesi backend yang baru: percakapan lama tidak
+    // lagi diingat, konsisten dengan tampilan yang dikosongkan di sini.
+    resetChatSession();
     if (focus) {
       focusInputWithoutPageScroll(input);
     }
@@ -462,6 +513,7 @@ function updateNusaSession(session, question, reply) {
 
 async function getNusaBackendReply(question) {
   const urls = getBackendAskUrls();
+  const sessionId = getOrCreateChatSessionId();
   let lastError = null;
 
   for (const url of urls) {
@@ -474,6 +526,7 @@ async function getNusaBackendReply(question) {
         body: JSON.stringify({
           question,
           includeQuranicReflection: false,
+          sessionId,
         }),
       });
 
@@ -483,6 +536,7 @@ async function getNusaBackendReply(question) {
 
       const data = await response.json();
       rememberActiveBackendUrl(url);
+      rememberChatSessionId(data.sessionId);
       return mapBackendAnswer(data);
     } catch (error) {
       lastError = error;

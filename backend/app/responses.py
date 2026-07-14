@@ -50,6 +50,15 @@ SAFE_FALLBACK_ANSWER = (
     "Untuk keluhan berat atau darurat, segera cari bantuan medis."
 )
 
+GENERAL_CHAT_ANSWER = (
+    "Saya senang mengobrol soal itu. Untuk topik umum di luar kesehatan, saya masih "
+    "menjawab secara sederhana karena belum tersambung ke sumber pengetahuan umum yang luas.\n\n"
+    "Ceritakan lebih detail kalau kamu mau lanjut membahasnya, atau tanyakan seputar VitaCheck, "
+    "artikel kesehatan, produk amanah, maupun kebiasaan sehat — di area itu saya paling bisa diandalkan.\n\n"
+    "Untuk topik kesehatan, obat, produk, atau hukum agama, saya tetap akan berhati-hati dan "
+    "mengarahkan ke ahli yang tepat."
+)
+
 QURANIC_REFLECTION = {
     "type": "reflection",
     "text": (
@@ -282,6 +291,12 @@ def _build_answer_body(
     if intent == "conversation_correction":
         return CORRECTION_ANSWER
 
+    if intent == "general_chat":
+        return _append_policy_notes(GENERAL_CHAT_ANSWER, decision)
+
+    # Defensive catch-all: should be unreachable in practice, since every
+    # intent detect_intent() can return now has an explicit branch above
+    # (terminal/no-keyword-match now resolves to "general_chat").
     return _append_policy_notes(SAFE_FALLBACK_ANSWER, decision)
 
 

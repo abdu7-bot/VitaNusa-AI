@@ -1,2 +1,3 @@
 - [Keyword-based intent classifiers need word-boundary matching](keyword-substring-matching.md) — plain `substring in text` checks misfire when a short keyword hides inside a longer unrelated word.
 - [Default relative file paths must anchor to `__file__`, not cwd](relative-path-vs-cwd.md) — a workflow's `cd backend && ...` run command silently doubles a `"backend/..."` default path into `backend/backend/...`.
+- [VitaNusa AI conversation scope decision](vitanusa-conversation-scope.md) — "hybrid_open": general chat + session memory allowed, but Policy Engine safety pipeline runs unchanged on every turn; real LLM deferred, mock stays default.
