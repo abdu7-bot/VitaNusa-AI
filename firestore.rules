@@ -12,6 +12,10 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active";
     }
 
+    function isOwnAdminDocument(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
     function isPublished() {
       return resource.data.status == "published";
     }
@@ -22,7 +26,8 @@ service cloud.firestore {
     }
 
     match /admins/{uid} {
-      allow get, list: if isActiveAdmin();
+      allow get: if isOwnAdminDocument(uid) || isActiveAdmin();
+      allow list: if isActiveAdmin();
       allow create, update, delete: if isActiveAdmin();
     }
 

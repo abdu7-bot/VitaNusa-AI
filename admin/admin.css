@@ -203,6 +203,25 @@
   background: #fbfefc;
 }
 
+.admin-diagnostic-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.admin-diagnostic-actions .admin-button,
+.admin-login-card .admin-diagnostic-actions .admin-button {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding-inline: 12px;
+}
+
+.admin-button[hidden] {
+  display: none;
+}
+
 .admin-uid-card[hidden],
 .admin-auth-denied[hidden],
 .admin-protected[hidden] {
@@ -229,6 +248,7 @@
 
 .admin-identity-row code {
   display: block;
+  min-width: 0;
   overflow-wrap: anywhere;
   border: 1px solid var(--admin-line);
   border-radius: 12px;
@@ -837,5 +857,20 @@
   .admin-login-links,
   .admin-button-row {
     flex-direction: column;
+  }
+
+  .admin-login-shell,
+  .admin-auth-gate {
+    padding: 14px;
+  }
+
+  .admin-login-card,
+  .admin-auth-denied {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .admin-diagnostic-actions {
+    grid-template-columns: 1fr;
   }
 }

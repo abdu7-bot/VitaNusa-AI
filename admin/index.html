@@ -8,7 +8,7 @@
     content="Dashboard admin VitaNusa AI untuk mengelola konten edukasi, knowledge, dan artikel dengan prinsip amanah.">
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
-  <link rel="stylesheet" href="admin.css?v=20260626-admin-v5">
+  <link rel="stylesheet" href="admin.css?v=20260715-admin-auth-v1">
   <link rel="stylesheet" href="articles.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="knowledge-mobile-fix.css?v=20260704-knowledge-mobile-v1">
 </head>
@@ -21,11 +21,11 @@
     </div>
 
     <div class="admin-auth-denied" data-auth-denied hidden>
-      <h1>Akun ini belum terdaftar sebagai admin aktif.</h1>
-      <p>Dashboard diblokir sampai owner membuat dokumen admin aktif secara manual di Firestore Console.</p>
+      <h1 data-auth-denied-title>Akses admin belum dapat diverifikasi.</h1>
+      <p data-auth-denied-message>Dashboard tetap diblokir sampai pemeriksaan server selesai.</p>
 
       <div class="admin-uid-card" data-uid-card>
-        <p class="admin-uid-title">Data akun untuk pendaftaran manual</p>
+        <p class="admin-uid-title">Diagnostik akses admin</p>
         <div class="admin-identity-row">
           <span>Email</span>
           <code data-auth-email>-</code>
@@ -34,7 +34,30 @@
           <span>UID</span>
           <code data-auth-uid>-</code>
         </div>
-        <button class="admin-button admin-button-light" type="button" data-copy-uid>Salin UID</button>
+        <div class="admin-identity-row">
+          <span>Firebase Project ID</span>
+          <code data-firebase-project>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status Authentication</span>
+          <code data-auth-state>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status pemeriksaan Firestore</span>
+          <code data-firestore-state>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status dokumen admin</span>
+          <code data-admin-document-status>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Kode error aman</span>
+          <code data-auth-error-code>-</code>
+        </div>
+        <div class="admin-button-row admin-diagnostic-actions">
+          <button class="admin-button admin-button-light" type="button" data-copy-uid>Salin UID</button>
+          <button class="admin-button admin-button-light" type="button" data-recheck-admin>Periksa Ulang</button>
+        </div>
       </div>
 
       <div class="admin-button-row">
@@ -666,8 +689,8 @@
     </div>
   </div>
 
-  <script src="admin.js?v=20260626-admin-v5"></script>
-  <script type="module" src="firebase-auth.js?v=20260626-admin-v5"></script>
+  <script src="admin.js?v=20260715-admin-auth-v1"></script>
+  <script type="module" src="firebase-auth.js?v=20260715-admin-auth-v1"></script>
   <script type="module" src="content-library.js?v=20260705-admin-content-library-v1"></script>
   <script type="module" src="articles-import-one-block.js?v=20260704-vitanusa-master-map-v1"></script>
   <script type="module" src="articles.js?v=20260704-vitanusa-master-map-v1"></script>

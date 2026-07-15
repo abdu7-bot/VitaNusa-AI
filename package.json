@@ -8,7 +8,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "check": "npm run build"
+    "check": "npm run build",
+    "test:admin-auth": "node --test tests/admin-access.test.mjs"
   },
   "devDependencies": {
     "vite": "^5.4.0"
