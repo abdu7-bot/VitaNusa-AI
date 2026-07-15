@@ -261,7 +261,9 @@
     const user = event.detail?.user || {};
     const admin = event.detail?.admin || {};
     const displayName = user.displayName || user.email?.split('@')[0] || 'Admin VitaNusa';
-    const role = admin.role || admin.type || 'Admin';
+    const role = admin.role === 'owner' ? 'Owner' : 'Admin';
+
+    document.body.dataset.canManageAdmins = String(Boolean(event.detail?.canManageAdmins));
 
     document.querySelectorAll('[data-profile-name]').forEach((target) => {
       target.value = displayName;

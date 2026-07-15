@@ -1,7 +1,7 @@
 const RESULT_COPY = Object.freeze({
   active: {
     title: "Admin aktif",
-    message: "Dokumen admin ditemukan dari server dan status active sudah terverifikasi."
+    message: "Dokumen admin ditemukan dari server; status active dan role yang diizinkan sudah terverifikasi."
   },
   "no-user": {
     title: "Belum login",
@@ -14,6 +14,10 @@ const RESULT_COPY = Object.freeze({
   "inactive-admin": {
     title: "Akun admin belum aktif.",
     message: "Dokumen admin ditemukan, tetapi field status belum bernilai active."
+  },
+  "invalid-admin-role": {
+    title: "Role akun admin tidak valid.",
+    message: "Dokumen admin ditemukan, tetapi field role harus bernilai owner atau admin."
   },
   "permission-denied": {
     title: "Pemeriksaan admin ditolak oleh Firestore.",
@@ -76,6 +80,7 @@ function makeResult(reason, overrides = {}) {
     message: copy.message,
     errorCode: null,
     documentStatus: null,
+    documentRole: null,
     ...overrides
   };
 }
@@ -100,6 +105,22 @@ function getSafeDocumentStatus(data) {
   }
   if (typeof status === "number" || typeof status === "boolean") return String(status);
   return `(tipe ${Array.isArray(status) ? "array" : "object"} tidak valid)`;
+}
+
+function getSafeDocumentRole(data) {
+  const role = data?.role;
+
+  if (role === undefined || role === null) return null;
+  if (typeof role === "string") {
+    const compact = role.replace(/\s+/g, " ").trim();
+    return compact ? compact.slice(0, 80) : "(kosong)";
+  }
+  if (typeof role === "number" || typeof role === "boolean") return String(role);
+  return `(tipe ${Array.isArray(role) ? "array" : "object"} tidak valid)`;
+}
+
+export function canManageAdmins(adminData) {
+  return adminData?.status === "active" && adminData?.role === "owner";
 }
 
 export function normalizeFirebaseErrorCode(errorOrCode) {
@@ -149,6 +170,7 @@ export function evaluateAdminAccess({ user = null, exists = false, data = null, 
   if (exists !== true) return makeResult("missing-admin-document");
 
   const documentStatus = getSafeDocumentStatus(data);
+  const documentRole = getSafeDocumentRole(data);
   if (data?.status !== "active") {
     const statusMessage = documentStatus
       ? ` Status dokumen saat ini: ${documentStatus}. Nilai yang diperlukan: active.`
@@ -156,9 +178,25 @@ export function evaluateAdminAccess({ user = null, exists = false, data = null, 
 
     return makeResult("inactive-admin", {
       documentStatus,
+      documentRole,
       message: `${RESULT_COPY["inactive-admin"].message}${statusMessage}`
     });
   }
 
-  return makeResult("active", { documentStatus: "active" });
+  if (!["owner", "admin"].includes(data?.role)) {
+    const roleMessage = documentRole
+      ? ` Role dokumen saat ini: ${documentRole}. Nilai yang diizinkan: owner atau admin.`
+      : " Field role tidak tersedia. Nilai yang diizinkan: owner atau admin.";
+
+    return makeResult("invalid-admin-role", {
+      documentStatus: "active",
+      documentRole,
+      message: `${RESULT_COPY["invalid-admin-role"].message}${roleMessage}`
+    });
+  }
+
+  return makeResult("active", {
+    documentStatus: "active",
+    documentRole: data.role
+  });
 }
