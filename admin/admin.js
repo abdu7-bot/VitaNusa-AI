@@ -198,6 +198,9 @@
         || navLinks.find((item) => item.dataset.adminSection === target);
     const activePanel = panels.find((panel) => panel.dataset.adminPanel === target);
     if (!activePanel) return false;
+    if (activePanel.dataset.ownerOnly === 'true' && document.body.dataset.canManageAdmins !== 'true') {
+      return false;
+    }
 
     navLinks.forEach((item) => item.classList.toggle('is-active', item === activeLink));
     panels.forEach((panel) => {
@@ -263,7 +266,17 @@
     const displayName = user.displayName || user.email?.split('@')[0] || 'Admin VitaNusa';
     const role = admin.role === 'owner' ? 'Owner' : 'Admin';
 
-    document.body.dataset.canManageAdmins = String(Boolean(event.detail?.canManageAdmins));
+    const mayManageAdmins = Boolean(event.detail?.canManageAdmins);
+    document.body.dataset.canManageAdmins = String(mayManageAdmins);
+    document.querySelectorAll('[data-owner-admin-management-nav]').forEach((target) => {
+      target.hidden = !mayManageAdmins;
+      target.disabled = !mayManageAdmins;
+      target.setAttribute('aria-hidden', String(!mayManageAdmins));
+    });
+
+    if (!mayManageAdmins && panels.some((panel) => panel.dataset.ownerOnly === 'true' && !panel.hidden)) {
+      openSection('dashboard');
+    }
 
     document.querySelectorAll('[data-profile-name]').forEach((target) => {
       target.value = displayName;
