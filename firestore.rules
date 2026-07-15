@@ -6,14 +6,43 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function hasValidAdminRole(adminData) {
+      return adminData.role == "owner"
+        || adminData.role == "admin";
+    }
+
     function isActiveAdmin() {
       return signedIn()
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active";
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active"
+        && hasValidAdminRole(
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data
+        );
+    }
+
+    function isActiveOwner() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active"
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "owner";
     }
 
     function isOwnAdminDocument(uid) {
       return signedIn() && request.auth.uid == uid;
+    }
+
+    function isValidAdminDocument(adminData) {
+      return adminData.keys().hasAll(["email", "role", "status"])
+        && adminData.keys().hasOnly(["email", "role", "status"])
+        && adminData.email is string
+        && hasValidAdminRole(adminData)
+        && (adminData.status == "active" || adminData.status == "inactive");
+    }
+
+    function keepsOwnerSelfActive(uid) {
+      return request.auth.uid != uid
+        || (request.resource.data.role == "owner"
+          && request.resource.data.status == "active");
     }
 
     function isPublished() {
@@ -26,9 +55,15 @@ service cloud.firestore {
     }
 
     match /admins/{uid} {
-      allow get: if isOwnAdminDocument(uid) || isActiveAdmin();
-      allow list: if isActiveAdmin();
-      allow create, update, delete: if isActiveAdmin();
+      allow get: if isOwnAdminDocument(uid) || isActiveOwner();
+      allow list: if isActiveOwner();
+      allow create: if isActiveOwner()
+        && isValidAdminDocument(request.resource.data);
+      allow update: if isActiveOwner()
+        && isValidAdminDocument(request.resource.data)
+        && keepsOwnerSelfActive(uid);
+      allow delete: if isActiveOwner()
+        && request.auth.uid != uid;
     }
 
     match /articles/{articleId} {

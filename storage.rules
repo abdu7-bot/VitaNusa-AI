@@ -6,10 +6,18 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function hasValidAdminRole(adminData) {
+      return adminData.role == "owner"
+        || adminData.role == "admin";
+    }
+
     function isActiveAdmin() {
       return signedIn()
         && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.status == "active";
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.status == "active"
+        && hasValidAdminRole(
+          firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data
+        );
     }
 
     function isAllowedContentType() {

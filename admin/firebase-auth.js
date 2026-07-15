@@ -16,6 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 import {
+  canManageAdmins,
   evaluateAdminAccess,
   getAdminRetryAction,
   getFirebaseConfigError,
@@ -77,6 +78,7 @@ const authStateTargets = document.querySelectorAll("[data-auth-state]");
 const firestoreStateTargets = document.querySelectorAll("[data-firestore-state]");
 const errorCodeTargets = document.querySelectorAll("[data-auth-error-code]");
 const documentStatusTargets = document.querySelectorAll("[data-admin-document-status]");
+const documentRoleTargets = document.querySelectorAll("[data-admin-role]");
 const uidCards = document.querySelectorAll("[data-uid-card]");
 const copyUidButtons = document.querySelectorAll("[data-copy-uid]");
 
@@ -87,11 +89,13 @@ function clearAdminReady() {
 }
 
 function announceAdminReady(user, adminData) {
+  const selectedAdmin = adminData || {};
   const detail = {
     user,
     auth,
     db,
-    admin: adminData || {}
+    admin: selectedAdmin,
+    canManageAdmins: canManageAdmins(selectedAdmin)
   };
 
   window.vitaNusaAdmin = detail;
@@ -139,6 +143,7 @@ function getFirestoreState(result) {
     "no-user": "Belum diperiksa",
     "missing-admin-document": "Dokumen tidak ditemukan",
     "inactive-admin": "Dokumen ditemukan, status tidak aktif",
+    "invalid-admin-role": "Dokumen ditemukan, role tidak valid",
     "permission-denied": "Ditolak oleh Firestore Rules",
     "network-unavailable": "Koneksi Firestore gagal",
     "request-timeout": "Request Firestore timeout",
@@ -147,6 +152,12 @@ function getFirestoreState(result) {
   };
 
   return states[result?.reason] || "Belum diperiksa";
+}
+
+function getAdminRoleLabel(role) {
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
+  return role || "-";
 }
 
 function showUserIdentity(user) {
@@ -169,6 +180,7 @@ function updateDiagnostics(user, result) {
   setText(firestoreStateTargets, getFirestoreState(result));
   setText(errorCodeTargets, result?.errorCode || "-");
   setText(documentStatusTargets, result?.documentStatus || "-");
+  setText(documentRoleTargets, getAdminRoleLabel(result?.documentRole));
 
   const showCard = Boolean(user) || result?.reason === "firebase-config-error";
   uidCards.forEach((card) => {
@@ -186,7 +198,7 @@ function setCheckingState(checking) {
 function selectAdminMetadata(data) {
   return {
     status: data?.status === "active" ? "active" : undefined,
-    role: typeof data?.role === "string" ? data.role : undefined
+    role: ["owner", "admin"].includes(data?.role) ? data.role : undefined
   };
 }
 

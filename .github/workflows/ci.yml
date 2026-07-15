@@ -125,6 +125,12 @@ jobs:
           node-version: "20"
           cache: npm
 
+      - name: Set up Java for Firebase Emulator
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
       - name: Install frontend dependencies
         run: npm ci
 
@@ -133,6 +139,9 @@ jobs:
 
       - name: Test admin access logic
         run: npm run test:admin-auth
+
+      - name: Test Firestore security rules
+        run: npm run test:firestore-rules
 
       - name: Check important JavaScript syntax
         run: |

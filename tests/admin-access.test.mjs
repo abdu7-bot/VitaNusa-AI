@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
+  canManageAdmins,
   evaluateAdminAccess,
   getAdminRetryAction,
   getFirebaseConfigError,
@@ -30,6 +31,39 @@ test("role owner tetap diizinkan bila status tepat active", () => {
 
   assert.equal(result.allowed, true);
   assert.equal(result.reason, "active");
+  assert.equal(result.documentRole, "owner");
+});
+
+test("role tidak dikenal ditolak walau status active", () => {
+  const result = evaluateAdminAccess({
+    user: TEST_USER,
+    exists: true,
+    data: { status: "active", role: "editor" }
+  });
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, "invalid-admin-role");
+  assert.equal(result.documentRole, "editor");
+});
+
+test("role yang hilang ditolak walau status active", () => {
+  const result = evaluateAdminAccess({
+    user: TEST_USER,
+    exists: true,
+    data: { status: "active" }
+  });
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, "invalid-admin-role");
+  assert.equal(result.documentRole, null);
+});
+
+test("canManageAdmins hanya true untuk owner active", () => {
+  assert.equal(canManageAdmins({ status: "active", role: "owner" }), true);
+  assert.equal(canManageAdmins({ status: "active", role: "admin" }), false);
+  assert.equal(canManageAdmins({ status: "inactive", role: "owner" }), false);
+  assert.equal(canManageAdmins({ status: "active", role: "editor" }), false);
+  assert.equal(canManageAdmins(null), false);
 });
 
 test("dokumen admin yang hilang ditolak secara khusus", () => {
@@ -185,12 +219,33 @@ test("service worker membuat path admin network-only tanpa menghapus PWA publik"
   assert.doesNotMatch(worker, /APP_SHELL[\s\S]{0,1200}admin\/login\.html/);
 });
 
-test("Rules hanya membuka get dokumen admin milik sendiri, bukan list atau write", async () => {
+test("Rules memisahkan self-read, owner management, dan content admin", async () => {
   const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
 
   assert.match(rules, /function isOwnAdminDocument\(uid\)\s*{\s*return signedIn\(\) && request\.auth\.uid == uid;\s*}/);
-  assert.match(rules, /allow get: if isOwnAdminDocument\(uid\) \|\| isActiveAdmin\(\);/);
-  assert.match(rules, /allow list: if isActiveAdmin\(\);/);
-  assert.match(rules, /allow create, update, delete: if isActiveAdmin\(\);/);
+  assert.match(rules, /function isActiveOwner\(\)/);
+  assert.match(rules, /allow get: if isOwnAdminDocument\(uid\) \|\| isActiveOwner\(\);/);
+  assert.match(rules, /allow list: if isActiveOwner\(\);/);
+  assert.match(rules, /allow create: if isActiveOwner\(\)/);
+  assert.match(rules, /allow update: if isActiveOwner\(\)/);
+  assert.match(rules, /allow delete: if isActiveOwner\(\)/);
+  assert.match(rules, /request\.auth\.uid != uid/);
+  assert.match(rules, /adminData\.keys\(\)\.hasAll\(\["email", "role", "status"\]\)/);
+  assert.match(rules, /adminData\.keys\(\)\.hasOnly\(\["email", "role", "status"\]\)/);
   assert.doesNotMatch(rules, /allow\s+read\s*,?\s*write\s*:\s*if\s+true/);
+});
+
+test("Storage content write juga mensyaratkan role admin yang valid", async () => {
+  const rules = await readFile(new URL("../storage.rules", import.meta.url), "utf8");
+
+  assert.match(rules, /function hasValidAdminRole\(adminData\)/);
+  assert.match(rules, /hasValidAdminRole\(\s*firestore\.get/);
+  assert.doesNotMatch(rules, /allow\s+read\s*,?\s*write\s*:\s*if\s+true/);
+});
+
+test("otorisasi owner tidak memakai daftar email hardcoded", async () => {
+  const rules = await readFile(new URL("../firestore.rules", import.meta.url), "utf8");
+
+  assert.doesNotMatch(rules, /request\.auth\.token\.email/);
+  assert.doesNotMatch(rules, /@(?:gmail|googlemail)\.com/i);
 });
