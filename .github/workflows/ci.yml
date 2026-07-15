@@ -131,8 +131,15 @@ jobs:
       - name: Build frontend
         run: npm run check
 
+      - name: Test admin access logic
+        run: npm run test:admin-auth
+
       - name: Check important JavaScript syntax
         run: |
+          node --check admin/admin-access.js
+          node --check admin/firebase-auth.js
+          node --check admin/admin.js
+          node --check service-worker.js
           node --check assets/js/modules/nusa-chat.js
           node --check assets/js/modules/nusa-knowledge.js
           node --check assets/js/modules/nusa-ui-shell.js

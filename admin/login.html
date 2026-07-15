@@ -6,7 +6,7 @@
   <meta name="description" content="Halaman login admin VitaNusa AI untuk akses dashboard pengelolaan konten amanah.">
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Login</title>
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=20260715-admin-auth-v1">
 </head>
 <body class="admin-page admin-login-page" data-admin-auth-page="login">
   <main class="admin-login-shell" id="main">
@@ -29,7 +29,7 @@
       </div>
 
       <div class="admin-uid-card" data-uid-card hidden>
-        <p class="admin-uid-title">Data akun untuk pendaftaran manual</p>
+        <p class="admin-uid-title">Diagnostik akses admin</p>
         <div class="admin-identity-row">
           <span>Email</span>
           <code data-auth-email>-</code>
@@ -38,7 +38,31 @@
           <span>UID</span>
           <code data-auth-uid>-</code>
         </div>
-        <button class="admin-button admin-button-light" type="button" data-copy-uid>Salin UID</button>
+        <div class="admin-identity-row">
+          <span>Firebase Project ID</span>
+          <code data-firebase-project>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status Authentication</span>
+          <code data-auth-state>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status pemeriksaan Firestore</span>
+          <code data-firestore-state>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Status dokumen admin</span>
+          <code data-admin-document-status>-</code>
+        </div>
+        <div class="admin-identity-row">
+          <span>Kode error aman</span>
+          <code data-auth-error-code>-</code>
+        </div>
+        <div class="admin-button-row admin-diagnostic-actions">
+          <button class="admin-button admin-button-light" type="button" data-copy-uid>Salin UID</button>
+          <button class="admin-button admin-button-light" type="button" data-recheck-admin hidden>Periksa Ulang</button>
+          <button class="admin-button admin-button-danger" type="button" data-logout-button hidden>Logout</button>
+        </div>
       </div>
 
       <button class="admin-button admin-button-primary" type="button" data-login-button>
@@ -52,7 +76,7 @@
     </section>
   </main>
 
-  <script src="admin.js"></script>
-  <script type="module" src="firebase-auth.js"></script>
+  <script src="admin.js?v=20260715-admin-auth-v1"></script>
+  <script type="module" src="firebase-auth.js?v=20260715-admin-auth-v1"></script>
 </body>
 </html>

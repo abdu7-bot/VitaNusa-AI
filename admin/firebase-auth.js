@@ -1,37 +1,86 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getApps,
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
+  signInWithPopup,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import {
-  getFirestore,
   doc,
-  getDoc
+  getDocFromServer,
+  getFirestore
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
+import {
+  evaluateAdminAccess,
+  getAdminRetryAction,
+  getFirebaseConfigError,
+  normalizeFirebaseErrorCode
+} from "./admin-access.js";
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
-
-googleProvider.setCustomParameters({
-  prompt: "select_account"
+const EXPECTED_FIREBASE_CONFIG = Object.freeze({
+  projectId: "vitanusa-ai",
+  authDomain: "vitanusa-ai.firebaseapp.com"
 });
+const ADMIN_CHECK_TIMEOUT_MS = 10000;
+const ADMIN_AUTH_BOOT_KEY = "__vitaNusaAdminAuthBooted";
+
+let auth = null;
+let db = null;
+let googleProvider = null;
+let firebaseInitializationResult = null;
+
+const declaredConfigError = getFirebaseConfigError(firebaseConfig, EXPECTED_FIREBASE_CONFIG);
+
+if (declaredConfigError) {
+  firebaseInitializationResult = evaluateAdminAccess({ errorCode: declaredConfigError });
+} else {
+  try {
+    const existingDefaultApp = getApps().find((candidate) => candidate.name === "[DEFAULT]");
+    const app = existingDefaultApp || initializeApp(firebaseConfig);
+    const existingConfigError = getFirebaseConfigError(app.options, EXPECTED_FIREBASE_CONFIG);
+
+    if (existingConfigError) {
+      firebaseInitializationResult = evaluateAdminAccess({ errorCode: existingConfigError });
+    } else {
+      auth = getAuth(app);
+      db = getFirestore(app);
+      googleProvider = new GoogleAuthProvider();
+      googleProvider.setCustomParameters({ prompt: "select_account" });
+    }
+  } catch (error) {
+    const code = normalizeFirebaseErrorCode(error);
+    const safeCode = code === "unknown-error" ? "firebase-config-error" : code;
+    firebaseInitializationResult = evaluateAdminAccess({ errorCode: safeCode });
+  }
+}
+
+export { auth, db, googleProvider };
 
 const page = document.body.dataset.adminAuthPage;
 const loginButton = document.querySelector("[data-login-button]");
 const logoutButtons = document.querySelectorAll("[data-logout-button]");
+const recheckButtons = document.querySelectorAll("[data-recheck-admin]");
 const statusBox = document.querySelector("[data-auth-status]");
 const protectedContent = document.querySelector("[data-protected-content]");
 const deniedContent = document.querySelector("[data-auth-denied]");
+const deniedTitle = document.querySelector("[data-auth-denied-title]");
+const deniedMessage = document.querySelector("[data-auth-denied-message]");
 const emailTargets = document.querySelectorAll("[data-auth-email]");
 const uidTargets = document.querySelectorAll("[data-auth-uid]");
+const projectTargets = document.querySelectorAll("[data-firebase-project]");
+const authStateTargets = document.querySelectorAll("[data-auth-state]");
+const firestoreStateTargets = document.querySelectorAll("[data-firestore-state]");
+const errorCodeTargets = document.querySelectorAll("[data-auth-error-code]");
+const documentStatusTargets = document.querySelectorAll("[data-admin-document-status]");
 const uidCards = document.querySelectorAll("[data-uid-card]");
 const copyUidButtons = document.querySelectorAll("[data-copy-uid]");
+
+let adminCheckInFlight = null;
 
 function clearAdminReady() {
   window.vitaNusaAdmin = null;
@@ -51,12 +100,14 @@ function announceAdminReady(user, adminData) {
 
 function setText(targets, value) {
   targets.forEach((target) => {
+    const safeValue = value === undefined || value === null || value === "" ? "-" : String(value);
+
     if ("value" in target && target.matches("input, textarea, select")) {
-      target.value = value || "-";
+      target.value = safeValue;
       return;
     }
 
-    target.textContent = value || "-";
+    target.textContent = safeValue;
   });
 }
 
@@ -70,81 +121,223 @@ function setStatus(kind, title, message) {
   messageNode.textContent = message;
 
   statusBox.hidden = false;
+  statusBox.setAttribute("aria-busy", String(kind === "loading"));
   statusBox.classList.remove("is-loading", "is-success", "is-error", "is-warning");
   statusBox.classList.add(`is-${kind}`);
   statusBox.replaceChildren(titleNode, messageNode);
 }
 
+function getResultTone(result) {
+  if (result.allowed) return "success";
+  if (["no-user", "missing-admin-document", "inactive-admin"].includes(result.reason)) return "warning";
+  return "error";
+}
+
+function getFirestoreState(result) {
+  const states = {
+    active: "Terverifikasi dari server",
+    "no-user": "Belum diperiksa",
+    "missing-admin-document": "Dokumen tidak ditemukan",
+    "inactive-admin": "Dokumen ditemukan, status tidak aktif",
+    "permission-denied": "Ditolak oleh Firestore Rules",
+    "network-unavailable": "Koneksi Firestore gagal",
+    "request-timeout": "Request Firestore timeout",
+    "firebase-config-error": "Konfigurasi Firebase tidak valid",
+    "unknown-error": "Pemeriksaan gagal"
+  };
+
+  return states[result?.reason] || "Belum diperiksa";
+}
+
 function showUserIdentity(user) {
   setText(emailTargets, user?.email || "Email tidak tersedia");
   setText(uidTargets, user?.uid || "UID tidak tersedia");
-  uidCards.forEach((card) => {
-    card.hidden = !user;
+  setText(authStateTargets, user ? "Login Google berhasil" : auth ? "Belum login" : "Firebase tidak tersedia");
+
+  if (loginButton) loginButton.hidden = Boolean(user);
+  logoutButtons.forEach((button) => {
+    button.hidden = !user;
+  });
+  recheckButtons.forEach((button) => {
+    button.hidden = !user;
   });
 }
 
-async function checkActiveAdmin(user) {
-  if (!user) return { active: false, reason: "no-user" };
+function updateDiagnostics(user, result) {
+  showUserIdentity(user);
+  setText(projectTargets, firebaseConfig?.projectId || "Tidak tersedia");
+  setText(firestoreStateTargets, getFirestoreState(result));
+  setText(errorCodeTargets, result?.errorCode || "-");
+  setText(documentStatusTargets, result?.documentStatus || "-");
 
+  const showCard = Boolean(user) || result?.reason === "firebase-config-error";
+  uidCards.forEach((card) => {
+    card.hidden = !showCard;
+  });
+}
+
+function setCheckingState(checking) {
+  if (loginButton && !loginButton.hidden) loginButton.disabled = checking;
+  recheckButtons.forEach((button) => {
+    button.disabled = checking;
+  });
+}
+
+function selectAdminMetadata(data) {
+  return {
+    status: data?.status === "active" ? "active" : undefined,
+    role: typeof data?.role === "string" ? data.role : undefined
+  };
+}
+
+function createTimeoutError() {
+  const error = new Error("Admin access request timed out");
+  error.code = "firestore/deadline-exceeded";
+  return error;
+}
+
+function withRequestTimeout(promise) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(createTimeoutError()), ADMIN_CHECK_TIMEOUT_MS);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+}
+
+async function readAdminFromServer(user) {
   try {
     const adminRef = doc(db, "admins", user.uid);
-    const adminSnapshot = await getDoc(adminRef);
-
-    if (!adminSnapshot.exists()) {
-      return { active: false, reason: "missing-admin-doc" };
-    }
-
-    const adminData = adminSnapshot.data();
-    return {
-      active: adminData.status === "active",
-      reason: adminData.status === "active" ? "active" : "inactive-admin",
+    const adminSnapshot = await withRequestTimeout(getDocFromServer(adminRef));
+    const adminData = adminSnapshot.exists() ? adminSnapshot.data() : null;
+    const result = evaluateAdminAccess({
+      user,
+      exists: adminSnapshot.exists(),
       data: adminData
-    };
+    });
+
+    if (!result.allowed) return result;
+    return { ...result, data: selectAdminMetadata(adminData) };
   } catch (error) {
-    return {
-      active: false,
-      reason: "admin-check-failed",
-      error
-    };
+    return evaluateAdminAccess({
+      user,
+      errorCode: normalizeFirebaseErrorCode(error)
+    });
   }
 }
 
-function renderUnauthorized(user) {
-  clearAdminReady();
-  showUserIdentity(user);
+async function checkActiveAdmin(user) {
+  if (!user) return { ...evaluateAdminAccess({ user: null }), attempts: 0 };
+  if (!db) {
+    return {
+      ...(firebaseInitializationResult || evaluateAdminAccess({ errorCode: "firebase-config-error" })),
+      attempts: 0
+    };
+  }
 
+  const startedAt = performance.now();
+  let attempts = 1;
+  let result = await readAdminFromServer(user);
+  const retryAction = getAdminRetryAction(result.reason, attempts);
+
+  if (retryAction === "refresh-token" && typeof user.getIdToken === "function") {
+    try {
+      await withRequestTimeout(user.getIdToken(true));
+      attempts += 1;
+      result = await readAdminFromServer(user);
+    } catch (error) {
+      result = evaluateAdminAccess({
+        user,
+        errorCode: normalizeFirebaseErrorCode(error)
+      });
+    }
+  } else if (retryAction === "retry-server") {
+    attempts += 1;
+    result = await readAdminFromServer(user);
+  }
+
+  const durationMs = Math.round(performance.now() - startedAt);
+  const safeLog = {
+    reason: result.reason,
+    errorCode: result.errorCode || null,
+    projectId: firebaseConfig.projectId,
+    durationMs,
+    attempts
+  };
+
+  if (result.allowed) console.info("VitaNusa admin access check", safeLog);
+  else console.warn("VitaNusa admin access check", safeLog);
+
+  return { ...result, attempts, durationMs };
+}
+
+function renderDeniedState(user, result) {
+  clearAdminReady();
   if (protectedContent) protectedContent.hidden = true;
   if (deniedContent) deniedContent.hidden = false;
+  if (deniedTitle) deniedTitle.textContent = result.title;
+  if (deniedMessage) deniedMessage.textContent = result.message;
+  updateDiagnostics(user, result);
+  setStatus(getResultTone(result), result.title, result.message);
+}
 
-  setStatus(
-    "error",
-    "Akun ini belum terdaftar sebagai admin aktif.",
-    "Minta owner membuat dokumen admins/{uid} di Firestore Console dengan status active."
-  );
+function renderAdminAccessResult(user, result) {
+  updateDiagnostics(user, result);
+
+  if (!result.allowed) {
+    renderDeniedState(user, result);
+    return;
+  }
+
+  if (deniedContent) deniedContent.hidden = true;
+  setStatus("success", result.title, result.message);
+
+  if (page === "login") {
+    window.location.replace("index.html");
+    return;
+  }
+
+  if (protectedContent) protectedContent.hidden = false;
+  announceAdminReady(user, result.data);
+}
+
+async function verifyAndRenderAdmin(user) {
+  if (adminCheckInFlight) return adminCheckInFlight;
+
+  adminCheckInFlight = (async () => {
+    setCheckingState(true);
+    setStatus("loading", "Memeriksa akses admin", "Membaca dokumen admins/{uid} langsung dari server Firestore.");
+    updateDiagnostics(user, {
+      allowed: false,
+      reason: "checking",
+      errorCode: null,
+      documentStatus: null
+    });
+
+    try {
+      const result = await checkActiveAdmin(user);
+      renderAdminAccessResult(user, result);
+      return result;
+    } finally {
+      setCheckingState(false);
+      adminCheckInFlight = null;
+    }
+  })();
+
+  return adminCheckInFlight;
 }
 
 async function handleLoginPage(user) {
   if (!user) {
     clearAdminReady();
-    setStatus("warning", "Belum login", "Silakan login dengan Google untuk meminta akses admin.");
-    showUserIdentity(null);
+    const result = evaluateAdminAccess({ user: null });
+    updateDiagnostics(null, result);
+    setStatus("warning", result.title, result.message);
     if (loginButton) loginButton.disabled = false;
     return;
   }
 
-  setStatus("loading", "Memeriksa akses admin", "Sedang mengecek dokumen admins/{uid} di Firestore.");
-  showUserIdentity(user);
-
-  const adminCheck = await checkActiveAdmin(user);
-
-  if (adminCheck.active) {
-    setStatus("success", "Admin aktif", "Login berhasil. Mengarahkan ke dashboard admin.");
-    window.location.replace("index.html");
-    return;
-  }
-
-  renderUnauthorized(user);
-  if (loginButton) loginButton.disabled = false;
+  await verifyAndRenderAdmin(user);
 }
 
 async function handleDashboardPage(user) {
@@ -154,83 +347,141 @@ async function handleDashboardPage(user) {
     return;
   }
 
-  setStatus("loading", "Memeriksa akses admin", "Sedang mengecek status admin aktif.");
-  showUserIdentity(user);
+  await verifyAndRenderAdmin(user);
+}
 
-  const adminCheck = await checkActiveAdmin(user);
+function renderLoginError(error) {
+  const errorCode = normalizeFirebaseErrorCode(error);
 
-  if (!adminCheck.active) {
-    renderUnauthorized(user);
+  if (["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(errorCode)) {
+    setStatus("warning", "Login dibatalkan", "Tidak ada perubahan akun. Tekan Login dengan Google jika ingin mencoba lagi.");
+    setText(errorCodeTargets, errorCode);
     return;
   }
 
-  if (deniedContent) deniedContent.hidden = true;
-  if (protectedContent) protectedContent.hidden = false;
+  const result = evaluateAdminAccess({ user: {}, errorCode });
+  const title = result.reason === "unknown-error" ? "Login Google gagal" : result.title;
+  const message = result.reason === "unknown-error"
+    ? "Catat kode error yang ditampilkan, lalu coba login kembali."
+    : result.message;
 
-  announceAdminReady(user, adminCheck.data);
-
-  setStatus(
-    "success",
-    "Admin aktif",
-    "Firebase Auth aktif. Article CRUD dan upload banner artikel sudah aktif; komik CRUD belum aktif."
-  );
+  updateDiagnostics(auth?.currentUser || null, { ...result, title, message });
+  setStatus("error", title, message);
 }
 
-if (loginButton) {
+function bindLoginButton() {
+  if (!loginButton) return;
+
   loginButton.addEventListener("click", async () => {
+    if (!auth || !googleProvider) {
+      renderAdminAccessResult(null, firebaseInitializationResult || evaluateAdminAccess({ errorCode: "firebase-config-error" }));
+      return;
+    }
+
     loginButton.disabled = true;
     setStatus("loading", "Membuka Google Login", "Pilih akun Google untuk masuk ke admin VitaNusa AI.");
 
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      loginButton.disabled = false;
-      setStatus("error", "Login gagal", error.message || "Login Google tidak berhasil.");
+      renderLoginError(error);
+    } finally {
+      if (!auth.currentUser) loginButton.disabled = false;
     }
   });
 }
 
-logoutButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    button.disabled = true;
-    setStatus("loading", "Logout", "Sedang keluar dari sesi admin.");
+function bindLogoutButtons() {
+  logoutButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!auth) return;
 
-    try {
-      await signOut(auth);
-      clearAdminReady();
-      window.location.replace("login.html");
-    } catch (error) {
-      button.disabled = false;
-      setStatus("error", "Logout gagal", error.message || "Gagal keluar dari sesi admin.");
-    }
+      button.disabled = true;
+      setStatus("loading", "Logout", "Sedang keluar dari sesi admin.");
+
+      try {
+        await signOut(auth);
+        clearAdminReady();
+        window.location.replace("login.html");
+      } catch (error) {
+        const errorCode = normalizeFirebaseErrorCode(error);
+        setText(errorCodeTargets, errorCode);
+        setStatus("error", "Logout gagal", "Catat kode error yang ditampilkan, lalu coba kembali.");
+        button.disabled = false;
+      }
+    });
   });
-});
+}
 
-copyUidButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    const uid = document.querySelector("[data-auth-uid]")?.textContent?.trim();
-    if (!uid || uid === "UID tidak tersedia") return;
+function bindRecheckButtons() {
+  recheckButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (button.disabled || adminCheckInFlight) return;
+      const user = auth?.currentUser || null;
 
-    try {
-      await navigator.clipboard.writeText(uid);
-      button.textContent = "UID disalin";
-      window.setTimeout(() => {
-        button.textContent = "Salin UID";
-      }, 1800);
-    } catch (error) {
-      window.alert("UID belum bisa disalin otomatis. Silakan salin manual dari kotak UID.");
-    }
+      if (!user) {
+        const result = evaluateAdminAccess({ user: null });
+        renderAdminAccessResult(null, result);
+        return;
+      }
+
+      await verifyAndRenderAdmin(user);
+    });
   });
-});
+}
 
-onAuthStateChanged(auth, async (user) => {
-  if (page === "login") {
-    await handleLoginPage(user);
+function bindCopyUidButtons() {
+  copyUidButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const uid = document.querySelector("[data-auth-uid]")?.textContent?.trim();
+      if (!uid || uid === "UID tidak tersedia") return;
+
+      try {
+        await navigator.clipboard.writeText(uid);
+        button.textContent = "UID disalin";
+        window.setTimeout(() => {
+          button.textContent = "Salin UID";
+        }, 1800);
+      } catch (error) {
+        window.alert("UID belum bisa disalin otomatis. Silakan salin manual dari kotak UID.");
+      }
+    });
+  });
+}
+
+function bootAdminAuth() {
+  setText(projectTargets, firebaseConfig?.projectId || "Tidak tersedia");
+  bindLoginButton();
+  bindLogoutButtons();
+  bindRecheckButtons();
+  bindCopyUidButtons();
+
+  if (firebaseInitializationResult || !auth) {
+    renderAdminAccessResult(null, firebaseInitializationResult || evaluateAdminAccess({ errorCode: "firebase-config-error" }));
     return;
   }
 
-  if (page === "dashboard") {
-    await handleDashboardPage(user);
-    return;
-  }
-});
+  onAuthStateChanged(
+    auth,
+    async (user) => {
+      if (page === "login") {
+        await handleLoginPage(user);
+        return;
+      }
+
+      if (page === "dashboard") await handleDashboardPage(user);
+    },
+    (error) => {
+      const result = evaluateAdminAccess({
+        user: auth.currentUser || {},
+        errorCode: normalizeFirebaseErrorCode(error)
+      });
+      renderAdminAccessResult(auth.currentUser, result);
+    }
+  );
+}
+
+if (!window[ADMIN_AUTH_BOOT_KEY]) {
+  window[ADMIN_AUTH_BOOT_KEY] = true;
+  bootAdminAuth();
+}

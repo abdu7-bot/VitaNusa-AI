@@ -1,6 +1,7 @@
 const CACHE_PREFIX = 'vitanusa-ai-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v12-chat-routing-ui`;
+const CACHE_NAME = `${CACHE_PREFIX}v13-admin-network-only`;
 const BASE_PATH = '/VitaNusa-AI';
+const ADMIN_PATH = `${BASE_PATH}/admin`;
 
 // Preload hanya shell penting. Halaman publik lain disimpan saat benar-benar dibuka.
 const APP_SHELL = [
@@ -82,6 +83,16 @@ function isStaticAsset(request) {
   );
 }
 
+function isAdminRequest(request) {
+  const url = new URL(request.url);
+
+  return (
+    request.method === 'GET' &&
+    url.origin === self.location.origin &&
+    (url.pathname === ADMIN_PATH || url.pathname.startsWith(`${ADMIN_PATH}/`))
+  );
+}
+
 function shouldBypassCache(request) {
   const url = new URL(request.url);
   const hostname = url.hostname.toLowerCase();
@@ -151,6 +162,20 @@ async function networkFirst(request) {
   }
 }
 
+async function networkOnly(request) {
+  try {
+    return await fetch(request, { cache: 'no-store' });
+  } catch (error) {
+    return new Response('Halaman admin memerlukan koneksi jaringan. Silakan coba lagi saat online.', {
+      status: 503,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store'
+      }
+    });
+  }
+}
+
 async function staleWhileRevalidate(request, event) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
@@ -173,6 +198,11 @@ async function staleWhileRevalidate(request, event) {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  if (isAdminRequest(request)) {
+    event.respondWith(networkOnly(request));
+    return;
+  }
 
   if (shouldBypassCache(request)) {
     return;
