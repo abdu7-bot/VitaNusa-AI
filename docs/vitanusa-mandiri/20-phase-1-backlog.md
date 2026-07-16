@@ -6,11 +6,14 @@ Status: **Calon issue; jangan dibuat otomatis di GitHub**. Urutan mengikuti depe
 
 | Item | Status faktual |
 | --- | --- |
-| VM-F1-004 | Diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
-| VM-F1-005 | Migration version 1 non-destruktif diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
-| VM-F1-006 | Repository IndexedDB/memory ter-scope dan unit-of-work rollback diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
+| VM-F1-004 | IndexedDB wrapper version 1 tersedia di `main` setelah PR 3 merge. |
+| VM-F1-005 | Migration version 1 non-destruktif tersedia di `main` setelah PR 3 merge. |
+| VM-F1-006 | Repository IndexedDB/memory ter-scope dan unit-of-work rollback tersedia di `main` setelah PR 3 merge. |
+| VM-F1-007 | Pembuatan satu workspace lokal, initial owner, audit event, dan operation receipt atomik diimplementasikan dan diuji pada branch PR 4; menunggu review/merge. |
+| VM-F1-008 | PR 4 hanya mengaktifkan initial `merchant_owner` lokal dan menampilkan label local-only; invitation, cashier UI, dan pengelolaan membership belum dibuat. |
+| VM-F1-011 | PR 4 memakai model/repository audit append-only untuk event `workspace_created`; viewer audit belum dibuat. |
 
-Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Workspace service, UI, dan pembuatan workspace atomik tetap berada pada PR 4 dan belum dimulai.
+Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Implementasi PR 4 tetap local-only, berada di balik feature flag `internal`, dan belum menjadi aplikasi kasir.
 
 ## VM-F1-001 — Feature flag VitaNusa Mandiri
 

@@ -66,24 +66,64 @@ async function initializeSharedVitaNusaShell() {
   return module.initNusaUiShell({ mandiriState: MANDIRI_FEATURE_STATES.INTERNAL });
 }
 
+async function initializeLocalWorkspacePanel(options) {
+  const module = await import('./workspace-panel.js?v=20260717-mandiri-f1-workspace-v1');
+  return module.initMandiriWorkspacePanel(options);
+}
+
 export async function initializeMandiriApp({
   documentRef = document,
   windowRef = documentRef.defaultView || window,
   featureState = getMandiriFeatureState(),
   initializeSharedShell = initializeSharedVitaNusaShell,
   initializeStatus = initMandiriOfflineStatus,
+  initializeWorkspacePanel = initializeLocalWorkspacePanel,
 } = {}) {
   const model = createMandiriShellModel(featureState);
   applyMandiriShellModel(documentRef, model);
 
   if (model.view === 'unavailable') {
-    return Object.freeze({ model, statusController: null });
+    return Object.freeze({
+      model,
+      statusController: null,
+      workspaceController: null,
+      destroy() {},
+    });
   }
 
   const statusController = initializeStatus({ documentRef, windowRef });
-  await initializeSharedShell();
+  const hasWorkspacePanel = Boolean(
+    documentRef.querySelector('[data-mandiri-workspace-panel]'),
+  );
+  const [sharedShellOutcome, workspaceOutcome] = await Promise.allSettled([
+    initializeSharedShell(),
+    hasWorkspacePanel
+      ? initializeWorkspacePanel({
+        documentRef,
+        featureState: MANDIRI_FEATURE_STATES.INTERNAL,
+      })
+      : null,
+  ]);
+  const workspaceController = workspaceOutcome.status === 'fulfilled'
+    ? workspaceOutcome.value
+    : null;
+  if (sharedShellOutcome.status === 'rejected' || workspaceOutcome.status === 'rejected') {
+    workspaceController?.destroy?.();
+    statusController?.destroy?.();
+    throw sharedShellOutcome.status === 'rejected'
+      ? sharedShellOutcome.reason
+      : workspaceOutcome.reason;
+  }
 
-  return Object.freeze({ model, statusController });
+  return Object.freeze({
+    model,
+    statusController,
+    workspaceController,
+    destroy() {
+      workspaceController?.destroy?.();
+      statusController?.destroy?.();
+    },
+  });
 }
 
 export function getOrCreateMandiriAppSingleton(registry, key, factory) {
