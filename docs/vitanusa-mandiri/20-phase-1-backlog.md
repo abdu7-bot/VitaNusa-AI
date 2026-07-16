@@ -2,6 +2,16 @@
 
 Status: **Calon issue; jangan dibuat otomatis di GitHub**. Urutan mengikuti dependency. Fase 1 local-only dan tidak menambah Firestore collection, Rules, backend endpoint, atau fitur kasir/belajar lengkap.
 
+## Status implementasi bertahap
+
+| Item | Status faktual |
+| --- | --- |
+| VM-F1-004 | Diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
+| VM-F1-005 | Migration version 1 non-destruktif diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
+| VM-F1-006 | Repository IndexedDB/memory ter-scope dan unit-of-work rollback diimplementasikan dan diuji pada branch PR 3; menunggu review/merge. |
+
+Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Workspace service, UI, dan pembuatan workspace atomik tetap berada pada PR 4 dan belum dimulai.
+
 ## VM-F1-001 — Feature flag VitaNusa Mandiri
 
 - **Goal:** boundary off-by-default yang dapat mematikan seluruh entry Mandiri.

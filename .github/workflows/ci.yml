@@ -158,6 +158,12 @@ jobs:
       - name: Test VitaNusa Mandiri domain primitives
         run: npm run test:mandiri:domain
 
+      - name: Test VitaNusa Mandiri storage
+        run: npm run test:mandiri:storage
+
+      - name: Test VitaNusa Mandiri repositories
+        run: npm run test:mandiri:repositories
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -188,6 +194,17 @@ jobs:
           node --check assets/js/mandiri/domain/money.js
           node --check assets/js/mandiri/domain/ids.js
           node --check assets/js/mandiri/domain/audit.js
+          node --check assets/js/mandiri/storage/database.js
+          node --check assets/js/mandiri/storage/schema.js
+          node --check assets/js/mandiri/storage/migrations.js
+          node --check assets/js/mandiri/storage/storage-errors.js
+          node --check assets/js/mandiri/repositories/repository-utils.js
+          node --check assets/js/mandiri/repositories/workspace-repository.js
+          node --check assets/js/mandiri/repositories/membership-repository.js
+          node --check assets/js/mandiri/repositories/audit-repository.js
+          node --check assets/js/mandiri/repositories/operation-receipt-repository.js
+          node --check assets/js/mandiri/repositories/repository-context.js
+          node --check assets/js/mandiri/repositories/memory-repositories.js
 
   backend:
     name: Backend
