@@ -155,6 +155,9 @@ jobs:
       - name: Test VitaNusa Mandiri shell
         run: npm run test:mandiri:shell
 
+      - name: Test VitaNusa Mandiri domain primitives
+        run: npm run test:mandiri:domain
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -178,6 +181,13 @@ jobs:
           node --check assets/js/mandiri/config/feature-flags.js
           node --check assets/js/mandiri/shell/app-shell.js
           node --check assets/js/mandiri/shell/offline-status.js
+          node --check assets/js/mandiri/domain/validation.js
+          node --check assets/js/mandiri/domain/workspace.js
+          node --check assets/js/mandiri/domain/membership.js
+          node --check assets/js/mandiri/domain/permissions.js
+          node --check assets/js/mandiri/domain/money.js
+          node --check assets/js/mandiri/domain/ids.js
+          node --check assets/js/mandiri/domain/audit.js
 
   backend:
     name: Backend
