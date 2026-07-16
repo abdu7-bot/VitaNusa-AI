@@ -1,0 +1,395 @@
+body.nusa-agent-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.nusa-agent[hidden] {
+  display: none;
+}
+
+.nusa-agent {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  justify-content: flex-end;
+  color: #143d2c;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.nusa-agent-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(8, 28, 18, .58);
+  cursor: default;
+}
+
+.nusa-agent-panel {
+  position: relative;
+  z-index: 1;
+  width: min(500px, calc(100vw - 40px));
+  height: calc(100dvh - 28px);
+  min-height: 0;
+  max-height: 920px;
+  display: flex;
+  flex-direction: column;
+  margin: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(22, 163, 74, .2);
+  border-radius: 26px;
+  background: #f8fcf9;
+  box-shadow: 0 28px 90px rgba(8, 28, 18, .32);
+}
+
+.nusa-agent-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(22, 163, 74, .14);
+  background: #ffffff;
+  padding: 15px 16px 12px;
+}
+
+.nusa-agent-header h2 {
+  margin: 0;
+  color: #0f3d2e;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.nusa-agent-context {
+  max-width: 280px;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #64766b;
+  font-size: .78rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nusa-agent-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.nusa-agent-reset,
+.nusa-agent-close {
+  min-height: 44px;
+  border: 1px solid rgba(22, 163, 74, .18);
+  background: #ffffff;
+  color: #14532d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+}
+
+.nusa-agent-reset {
+  border-radius: 999px;
+  font-size: .76rem;
+  padding: 8px 11px;
+}
+
+.nusa-agent-close {
+  width: 44px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.nusa-agent-reset:focus-visible,
+.nusa-agent-close:focus-visible,
+.nusa-agent-quick-action:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, .28);
+  outline-offset: 2px;
+}
+
+.nusa-agent-status {
+  flex: 0 0 auto;
+  margin: 0;
+  border-bottom: 1px solid rgba(22, 163, 74, .1);
+  background: #ffffff;
+  color: #53685e;
+  font-size: .76rem;
+  font-weight: 800;
+  line-height: 1.3;
+  padding: 8px 16px;
+}
+
+.nusa-agent-status[data-connection="online"] {
+  color: #166534;
+}
+
+.nusa-agent-status[data-connection="offline"],
+.nusa-agent-status[data-connection="unavailable"] {
+  background: #fff7df;
+  color: #7c4a0a;
+}
+
+.nusa-agent-quick-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 10px 12px 5px;
+  scrollbar-width: thin;
+}
+
+.nusa-agent-quick-actions[hidden] {
+  display: none;
+}
+
+.nusa-agent-quick-action {
+  flex: 0 0 auto;
+  min-height: 44px;
+  max-width: 210px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(22, 163, 74, .18);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #14532d;
+  cursor: pointer;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 8px 11px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.nusa-agent-chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.nusa-agent .nusa-chat-window {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 14px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nusa-agent .nusa-chat-window[hidden] {
+  display: none;
+}
+
+.nusa-agent-chat:has(.nusa-chat-window[hidden])::before {
+  content: "";
+  flex: 1 1 auto;
+}
+
+.nusa-agent .nusa-message {
+  display: flex;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.nusa-agent .nusa-message.assistant {
+  justify-content: flex-start;
+}
+
+.nusa-agent .nusa-message.user {
+  justify-content: flex-end;
+}
+
+.nusa-agent .nusa-bubble {
+  max-width: 88%;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(22, 163, 74, .13);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 81, 50, .05);
+  padding: 11px 13px;
+}
+
+.nusa-agent .nusa-message.user .nusa-bubble {
+  border-color: #14532d;
+  background: linear-gradient(135deg, #14532d, #16a34a);
+  color: #ffffff;
+}
+
+.nusa-agent .nusa-bubble p,
+.nusa-agent .nusa-formatted-response {
+  margin: 0;
+  font-size: .94rem;
+  line-height: 1.58;
+}
+
+.nusa-agent .nusa-formatted-response :where(p, ul, ol) {
+  margin: 0 0 9px;
+}
+
+.nusa-agent .nusa-formatted-response :where(ul, ol) {
+  padding-inline-start: 1.2rem;
+}
+
+.nusa-agent .nusa-formatted-response > :last-child {
+  margin-bottom: 0;
+}
+
+.nusa-agent .nusa-route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.nusa-agent .nusa-route-link {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(22, 163, 74, .2);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #14532d;
+  font-size: .78rem;
+  font-weight: 800;
+  padding: 7px 10px;
+  text-decoration: none;
+}
+
+.nusa-agent .nusa-route-link[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+.nusa-agent .nusa-chat-form {
+  flex: 0 0 auto;
+  width: calc(100% - 24px);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 8px 12px 10px;
+  border: 1px solid rgba(22, 163, 74, .28);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(20, 83, 45, .1);
+  padding: 8px;
+}
+
+.nusa-agent .nusa-chat-form:focus-within {
+  border-color: rgba(22, 163, 74, .58);
+}
+
+.nusa-agent .nusa-chat-form textarea {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 144px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: #10251b;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.42;
+  padding: 10px 4px;
+}
+
+.nusa-agent .nusa-chat-submit {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #14532d, #16a34a);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.nusa-agent-note {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #64766b;
+  font-size: .7rem;
+  line-height: 1.35;
+  padding: 0 16px 12px;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .nusa-agent {
+    height: var(--nusa-viewport-height, 100svh);
+    min-height: 100svh;
+    min-height: 100dvh;
+    align-items: stretch;
+  }
+
+  .nusa-agent-backdrop {
+    display: none;
+  }
+
+  .nusa-agent-panel {
+    width: 100%;
+    height: var(--nusa-viewport-height, 100dvh);
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nusa-agent-header {
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+
+  .nusa-agent-context {
+    max-width: min(48vw, 240px);
+  }
+
+  .nusa-agent .nusa-chat-window {
+    touch-action: pan-y;
+  }
+
+  html.nusa-keyboard-active .nusa-agent-panel {
+    height: var(--nusa-viewport-height, 100dvh);
+    padding-bottom: 0;
+  }
+
+  html.nusa-keyboard-active .nusa-agent-note,
+  html.nusa-keyboard-active .nusa-agent-quick-actions {
+    display: none;
+  }
+}
+
+@media (max-width: 380px), (max-height: 680px) {
+  .nusa-agent-header {
+    padding-block: 9px 8px;
+  }
+
+  .nusa-agent-context,
+  .nusa-agent-note {
+    display: none;
+  }
+
+  .nusa-agent-reset {
+    font-size: .7rem;
+    padding-inline: 9px;
+  }
+}

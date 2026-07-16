@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>VitaNusa Sedang Offline</title>
+  <meta name="theme-color" content="#14532d">
+  <meta name="robots" content="noindex">
+  <script>
+    (() => {
+      const workerUrl = navigator.serviceWorker?.controller?.scriptURL;
+      const base = document.createElement('base');
+      base.href = workerUrl ? new URL('./', workerUrl).href : new URL('./', window.location.href).href;
+      document.head.append(base);
+    })();
+  </script>
+  <link rel="apple-touch-icon" href="images/icon-192.png">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260716-user-history-v1">
+  <link rel="stylesheet" href="assets/css/android-pwa.css?v=20260716-android-pwa-v1">
+  <link rel="stylesheet" href="assets/css/nusa-agent.css?v=20260716-android-pwa-v1">
+</head>
+<body class="vn-page vn-offline-page">
+  <main id="main" class="vn-offline-card" aria-labelledby="offlineTitle">
+    <p class="vn-privacy-kicker">Mode offline</p>
+    <h1 id="offlineTitle">VitaNusa sedang offline</h1>
+    <p>Koneksi internet belum tersedia. Beberapa halaman dan aset yang pernah tersimpan masih dapat dibuka.</p>
+    <ul class="vn-offline-list">
+      <li>Nusa Agent online belum tersedia.</li>
+      <li>Respons lokal terbatas dapat tetap digunakan bila modulnya sudah tersimpan.</li>
+      <li>VitaCheck tetap menyimpan hasil secara lokal bila halamannya tersedia.</li>
+    </ul>
+    <div class="actions vn-actions">
+      <button class="btn primary" type="button" data-offline-retry>Coba lagi</button>
+      <a class="btn outline" href="index.html">Buka Beranda</a>
+      <a class="btn outline" href="vitacheck.html">Buka VitaCheck</a>
+    </div>
+  </main>
+
+  <script>
+    document.querySelector('[data-offline-retry]')?.addEventListener('click', () => window.location.reload());
+  </script>
+  <script type="module" src="assets/js/main.js?v=20260716-android-pwa-v1"></script>
+</body>
+</html>

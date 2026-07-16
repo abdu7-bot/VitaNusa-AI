@@ -1,28 +1,60 @@
 const CACHE_PREFIX = 'vitanusa-ai-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v14-user-auth-network-first`;
-const BASE_PATH = '/VitaNusa-AI';
+const CACHE_NAME = `${CACHE_PREFIX}v15-android-agent`;
+const SCOPE_URL = new URL(self.registration.scope);
+const BASE_PATH = SCOPE_URL.pathname.replace(/\/$/, '');
 const ADMIN_PATH = `${BASE_PATH}/admin`;
+const BUILD_ASSETS = [];
+
+function scopedUrl(path = '') {
+  return new URL(path, self.registration.scope).href;
+}
+
+function scopedPath(path = '') {
+  return new URL(path, self.registration.scope).pathname;
+}
+
+const SHARE_TARGET_PATH = scopedPath('share-target.html');
+const OFFLINE_URL = scopedUrl('offline.html');
 const NETWORK_FIRST_PUBLIC_PATHS = new Set([
-  `${BASE_PATH}/account.html`,
-  `${BASE_PATH}/settings.html`,
-  `${BASE_PATH}/vitacheck.html`,
-  `${BASE_PATH}/assets/js/modules/user-auth.js`,
-  `${BASE_PATH}/assets/js/modules/vitacheck-history.js`,
-  `${BASE_PATH}/assets/js/modules/vitacheck.js`
+  scopedPath('account.html'),
+  scopedPath('settings.html'),
+  scopedPath('vitacheck.html'),
+  scopedPath('share-target.html'),
+  scopedPath('offline.html'),
+  scopedPath('assets/js/main.js'),
+  scopedPath('assets/js/modules/pwa-install.js'),
+  scopedPath('assets/js/modules/nusa-agent.js'),
+  scopedPath('assets/js/modules/share-target.js'),
+  scopedPath('assets/js/modules/user-auth.js'),
+  scopedPath('assets/js/modules/vitacheck-history.js'),
+  scopedPath('assets/js/modules/vitacheck.js'),
 ]);
 
-// Preload hanya shell penting. Halaman publik lain disimpan saat benar-benar dibuka.
+// Shell statis saja. Data akun, chat, VitaCheck, dan parameter Share Target
+// tidak pernah dimasukkan ke Cache API.
 const APP_SHELL = [
-  `${BASE_PATH}/index.html`,
-  `${BASE_PATH}/manifest.webmanifest`,
-  `${BASE_PATH}/assets/css/nusa-app-shell.css?v=20260712-chat-routing-ui-v1`,
-  `${BASE_PATH}/assets/css/vitanusa-public.css?v=20260703-public-design-v1`,
-  `${BASE_PATH}/assets/js/main.js?v=20260712-chat-routing-ui-v1`,
-  `${BASE_PATH}/assets/js/modules/nusa-chat.js?v=20260712-chat-routing-ui-v1`,
-  `${BASE_PATH}/assets/js/modules/nusa-knowledge.js?v=20260712-product-claim-v1`,
-  `${BASE_PATH}/404.html`,
-  `${BASE_PATH}/images/icon-192.png`,
-  `${BASE_PATH}/images/icon-512.png`
+  scopedUrl('./'),
+  scopedUrl('index.html'),
+  scopedUrl('offline.html'),
+  scopedUrl('share-target.html'),
+  scopedUrl('vitacheck.html'),
+  scopedUrl('manifest.webmanifest'),
+  scopedUrl('assets/css/nusa-app-shell.css'),
+  scopedUrl('assets/css/vitanusa-public.css'),
+  scopedUrl('assets/css/android-pwa.css'),
+  scopedUrl('assets/css/nusa-agent.css'),
+  scopedUrl('assets/js/main.js'),
+  scopedUrl('assets/js/modules/nusa-ui-shell.js'),
+  scopedUrl('assets/js/modules/nusa-agent.js'),
+  scopedUrl('assets/js/modules/nusa-chat.js'),
+  scopedUrl('assets/js/modules/nusa-knowledge.js'),
+  scopedUrl('assets/js/modules/chat-viewport.js'),
+  scopedUrl('assets/js/modules/pwa-install.js'),
+  scopedUrl('assets/js/modules/share-target.js'),
+  scopedUrl('404.html'),
+  scopedUrl('images/icon-192.png'),
+  scopedUrl('images/icon-512.png'),
+  ...BUILD_ASSETS.map((path) => scopedUrl(path)),
 ];
 
 const STATIC_DESTINATIONS = new Set([
@@ -30,75 +62,72 @@ const STATIC_DESTINATIONS = new Set([
   'script',
   'image',
   'font',
-  'manifest'
+  'manifest',
 ]);
-
 const STATIC_FILE_PATTERN = /\.(?:css|js|mjs|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|webmanifest)$/i;
-const API_PATH_PATTERN = /\/(?:ask|health)\/?$/i;
+const API_PATH_PATTERN = /\/(?:ask|health|feedback)\/?$/i;
 const EXTERNAL_DATA_HOSTS = [
   'googleapis.com',
   'gstatic.com',
   'firebaseio.com',
-  'firestore.googleapis.com'
+  'firestore.googleapis.com',
+  'identitytoolkit.googleapis.com',
+  'securetoken.googleapis.com',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      await Promise.all(
-        APP_SHELL.map((url) => cache.add(url).catch(() => null))
-      );
-    } finally {
-      await self.skipWaiting();
-    }
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.all(APP_SHELL.map((url) => cache.add(url).catch(() => null)));
   })());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-
     await Promise.all(
       keys
         .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
-        .map((key) => caches.delete(key))
+        .map((key) => caches.delete(key)),
     );
-
     await self.clients.claim();
   })());
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    event.waitUntil(self.skipWaiting());
+  }
+});
+
+function isWithinScope(url) {
+  if (url.origin !== self.location.origin) return false;
+  if (!BASE_PATH) return url.pathname.startsWith('/');
+  return url.pathname === BASE_PATH || url.pathname.startsWith(`${BASE_PATH}/`);
+}
+
 function isHtmlRequest(request) {
   const url = new URL(request.url);
   const accept = request.headers.get('accept') || '';
-
   return (
-    request.mode === 'navigate' ||
-    request.destination === 'document' ||
-    accept.includes('text/html') ||
-    url.pathname.endsWith('.html') ||
-    url.pathname.endsWith('/')
+    request.mode === 'navigate'
+    || request.destination === 'document'
+    || accept.includes('text/html')
+    || url.pathname.endsWith('.html')
+    || url.pathname.endsWith('/')
   );
 }
 
 function isStaticAsset(request) {
   const url = new URL(request.url);
-
-  return (
-    STATIC_DESTINATIONS.has(request.destination) ||
-    STATIC_FILE_PATTERN.test(url.pathname)
-  );
+  return STATIC_DESTINATIONS.has(request.destination)
+    || STATIC_FILE_PATTERN.test(url.pathname);
 }
 
 function isAdminRequest(request) {
   const url = new URL(request.url);
-
-  return (
-    request.method === 'GET' &&
-    url.origin === self.location.origin &&
-    (url.pathname === ADMIN_PATH || url.pathname.startsWith(`${ADMIN_PATH}/`))
-  );
+  return url.origin === self.location.origin
+    && (url.pathname === ADMIN_PATH || url.pathname.startsWith(`${ADMIN_PATH}/`));
 }
 
 function isNetworkFirstPublicRequest(request) {
@@ -108,87 +137,95 @@ function isNetworkFirstPublicRequest(request) {
     && NETWORK_FIRST_PUBLIC_PATHS.has(url.pathname);
 }
 
+function isShareTargetRequest(request) {
+  const url = new URL(request.url);
+  return url.origin === self.location.origin && url.pathname === SHARE_TARGET_PATH;
+}
+
+function isExternalDataHost(hostname) {
+  const lower = hostname.toLowerCase();
+  return EXTERNAL_DATA_HOSTS.some((host) => lower === host || lower.endsWith(`.${host}`));
+}
+
 function shouldBypassCache(request) {
   const url = new URL(request.url);
-  const hostname = url.hostname.toLowerCase();
 
   if (request.method !== 'GET') return true;
   if (API_PATH_PATTERN.test(url.pathname)) return true;
-
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '[::1]'
-  ) {
-    return true;
-  }
-
-  if (hostname.endsWith('onrender.com')) return true;
-  if (hostname.endsWith('railway.app')) return true;
-
-  if (EXTERNAL_DATA_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`))) {
-    return true;
-  }
-
-  // Cache hanya resource same-origin milik root atau scope /VitaNusa-AI.
-  if (url.origin !== self.location.origin) return true;
-
-  return !(
-    url.pathname === '/' ||
-    url.pathname === BASE_PATH ||
-    url.pathname.startsWith(`${BASE_PATH}/`)
-  );
+  if (isExternalDataHost(url.hostname)) return true;
+  if (!isWithinScope(url)) return true;
+  return false;
 }
 
 function canCache(response) {
+  const cacheControl = response?.headers?.get('cache-control') || '';
   return Boolean(
-    response &&
-    response.ok &&
-    response.type !== 'opaque'
+    response
+    && response.ok
+    && response.type !== 'opaque'
+    && !cacheControl.toLowerCase().includes('no-store')
   );
 }
 
-async function networkFirst(request, { allowAppShellFallback = true } = {}) {
+function getNavigationCacheKey(request) {
+  const url = new URL(request.url);
+  if (url.pathname === SHARE_TARGET_PATH && url.search) return null;
+  url.search = '';
+  url.hash = '';
+  return url.href;
+}
+
+async function getOfflineResponse(cache) {
+  const offline = await cache.match(OFFLINE_URL, { ignoreSearch: true });
+  if (offline) return offline;
+  return new Response('VitaNusa sedang offline. Silakan coba lagi.', {
+    status: 503,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+async function networkFirst(request, {
+  allowOfflineFallback = true,
+  cacheKey = request,
+  fallbackKey = null,
+} = {}) {
   const cache = await caches.open(CACHE_NAME);
 
   try {
     const fresh = await fetch(request, { cache: 'no-store' });
-
-    if (canCache(fresh)) {
-      await cache.put(request, fresh.clone()).catch(() => null);
+    if (cacheKey && canCache(fresh)) {
+      await cache.put(cacheKey, fresh.clone()).catch(() => null);
     }
-
     return fresh;
-  } catch (error) {
-    const cached = await cache.match(request, { ignoreSearch: true });
+  } catch {
+    const cached = cacheKey
+      ? await cache.match(cacheKey, { ignoreSearch: true })
+      : null;
     if (cached) return cached;
 
-    if (allowAppShellFallback) {
-      const fallback = await cache.match(`${BASE_PATH}/index.html`, {
-        ignoreSearch: true
-      });
+    if (fallbackKey) {
+      const fallback = await cache.match(fallbackKey, { ignoreSearch: true });
       if (fallback) return fallback;
     }
 
-    return new Response('VitaNusa AI sedang offline. Silakan coba lagi.', {
-      status: 503,
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8'
-      }
-    });
+    if (allowOfflineFallback) return getOfflineResponse(cache);
+    return Response.error();
   }
 }
 
 async function networkOnly(request) {
   try {
     return await fetch(request, { cache: 'no-store' });
-  } catch (error) {
+  } catch {
     return new Response('Halaman admin memerlukan koneksi jaringan. Silakan coba lagi saat online.', {
       status: 503,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-store'
-      }
+        'Cache-Control': 'no-store',
+      },
     });
   }
 }
@@ -196,12 +233,10 @@ async function networkOnly(request) {
 async function staleWhileRevalidate(request, event) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
-
   const networkUpdate = fetch(request).then(async (response) => {
     if (canCache(response)) {
       await cache.put(request, response.clone()).catch(() => null);
     }
-
     return response;
   });
 
@@ -209,7 +244,6 @@ async function staleWhileRevalidate(request, event) {
     event.waitUntil(networkUpdate.catch(() => null));
     return cached;
   }
-
   return networkUpdate.catch(() => Response.error());
 }
 
@@ -221,19 +255,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (shouldBypassCache(request)) {
+  if (shouldBypassCache(request)) return;
+
+  if (isShareTargetRequest(request)) {
+    const shareTargetShell = scopedUrl('share-target.html');
+    // Parameter GET tetap berada di address bar agar halaman dapat membentuk
+    // draft, tetapi shell diambil tanpa query supaya teks pengguna tidak
+    // diteruskan ke origin atau dijadikan cache key.
+    event.respondWith(networkFirst(shareTargetShell, {
+      cacheKey: shareTargetShell,
+      fallbackKey: shareTargetShell,
+      allowOfflineFallback: true,
+    }));
     return;
   }
 
   if (isNetworkFirstPublicRequest(request)) {
     event.respondWith(networkFirst(request, {
-      allowAppShellFallback: isHtmlRequest(request)
+      allowOfflineFallback: isHtmlRequest(request),
+      cacheKey: isHtmlRequest(request) ? getNavigationCacheKey(request) : request,
     }));
     return;
   }
 
   if (isHtmlRequest(request)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, {
+      cacheKey: getNavigationCacheKey(request),
+    }));
     return;
   }
 

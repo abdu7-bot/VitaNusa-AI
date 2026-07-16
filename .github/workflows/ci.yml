@@ -149,6 +149,9 @@ jobs:
       - name: Test VitaCheck history logic
         run: npm run test:vitacheck-history
 
+      - name: Test Android PWA and Nusa Agent
+        run: npm run test:android-pwa
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -164,6 +167,10 @@ jobs:
           node --check assets/js/modules/nusa-chat.js
           node --check assets/js/modules/nusa-knowledge.js
           node --check assets/js/modules/nusa-ui-shell.js
+          node --check assets/js/modules/pwa-install.js
+          node --check assets/js/modules/nusa-agent.js
+          node --check assets/js/modules/share-target.js
+          node --check assets/js/modules/chat-viewport.js
           node --check assets/js/modules/vitacheck.js
 
   backend:

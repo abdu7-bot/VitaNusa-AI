@@ -6,14 +6,15 @@
   <title>VitaNusa AI | Nusa Chat Amanah</title>
   <meta name="description" content="Nusa Chat membantu edukasi kesehatan secara amanah: VitaCheck, artikel, komik edukatif, dan katalog produk reseller tanpa klaim berlebihan.">
   <meta name="theme-color" content="#14532d">
-  <link rel="manifest" href="/VitaNusa-AI/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/VitaNusa-AI/images/icon-192.png">
+  <link rel="apple-touch-icon" href="images/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="VitaNusa AI">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="assets/css/nusa-app-shell.css?v=20260712-chat-routing-ui-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
+  <link rel="stylesheet" href="assets/css/android-pwa.css?v=20260716-android-pwa-v1">
+  <link rel="stylesheet" href="assets/css/nusa-agent.css?v=20260716-android-pwa-v1">
   <style>
     body.nusa-chat-page {
       min-height: 100svh;
@@ -321,7 +322,8 @@
           <div class="nusa-chat-topbar">
             <div class="nusa-chat-brand" aria-label="VitaNusa AI">Nusa AI</div>
             <div class="nusa-chat-tools">
-              <span class="nusa-chat-status">Edukasi amanah</span>
+              <span class="nusa-chat-status" data-nusa-agent-status role="status" aria-live="polite">Koneksi backend belum diperiksa</span>
+              <button class="vn-pwa-inline-install" type="button" data-pwa-install data-pwa-install-context="primary" hidden>Pasang VitaNusa</button>
               <button class="nusa-chat-reset" type="button" data-nusa-chat-reset aria-label="Mulai chat baru dan bersihkan percakapan">Chat Baru</button>
             </div>
           </div>
@@ -336,17 +338,21 @@
               <strong>Mulai VitaCheck</strong>
               <small>Cek kebiasaan sehat.</small>
             </button>
-            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Bagaimana cara bijak menilai klaim produk kesehatan?">
-              <strong>Nilai klaim produk</strong>
-              <small>Hindari klaim berlebihan.</small>
-            </button>
             <button class="nusa-prompt-card" type="button" data-nusa-prompt="Tunjukkan artikel edukasi yang cocok untuk pemula.">
-              <strong>Cari artikel</strong>
+              <strong>Cari artikel kebiasaan sehat</strong>
               <small>Baca edukasi ringan.</small>
             </button>
-            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa prinsip amanah VitaNusa AI dalam membahas produk?">
-              <strong>Prinsip amanah</strong>
-              <small>Edukasi dulu.</small>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Bagaimana merapikan kebiasaan tidur secara bertahap?">
+              <strong>Tanya tentang tidur</strong>
+              <small>Mulai dari kebiasaan kecil.</small>
+            </button>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Bagaimana merapikan pola makan secara bertahap?">
+              <strong>Tanya tentang pola makan</strong>
+              <small>Edukasi umum, bukan diagnosis.</small>
+            </button>
+            <button class="nusa-prompt-card" type="button" data-nusa-prompt="Apa Prinsip Amanah VitaNusa AI?">
+              <strong>Lihat Prinsip Amanah</strong>
+              <small>Pahami batas edukasi.</small>
             </button>
           </section>
 
@@ -365,6 +371,7 @@
   </main>
 
   <script type="module" src="assets/js/modules/nusa-knowledge.js?v=20260712-product-claim-v1"></script>
-  <script type="module" src="assets/js/main.js?v=20260712-chat-routing-ui-v1"></script>
+  <span class="sr-only" data-pwa-install-status role="status" aria-live="polite"></span>
+  <script type="module" src="assets/js/main.js?v=20260716-android-pwa-v1"></script>
 </body>
 </html>
