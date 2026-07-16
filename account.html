@@ -3,134 +3,116 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Akun Pengguna | VitaNusa AI</title>
-  <meta name="description" content="Placeholder akun pengguna VitaNusa AI yang masih dalam pengembangan.">
+  <title>Akun VitaNusa | Riwayat VitaCheck Privat</title>
+  <meta name="description" content="Login Google opsional untuk menyimpan dan mengelola riwayat VitaCheck secara privat.">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
-  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
-  <style>
-    .account-shell {
-      padding-block: clamp(42px, 7vw, 76px);
-    }
-
-    .account-card {
-      display: grid;
-      grid-template-columns: 120px minmax(0, 1fr);
-      gap: 20px;
-      align-items: start;
-      max-width: 760px;
-      margin-inline: auto;
-      border: 1px solid var(--vn-line);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, .94);
-      box-shadow: var(--vn-shadow);
-      padding: clamp(18px, 4vw, 28px);
-    }
-
-    .account-avatar {
-      display: grid;
-      width: 108px;
-      height: 108px;
-      place-items: center;
-      border-radius: 24px;
-      background: linear-gradient(135deg, var(--vn-green-900), var(--vn-green-500));
-      color: #ffffff;
-      font-size: 2rem;
-      font-weight: 900;
-    }
-
-    .account-fields {
-      display: grid;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .placeholder-status {
-      display: inline-flex;
-      width: fit-content;
-      border: 1px solid rgba(194, 154, 59, .32);
-      border-radius: 999px;
-      background: var(--vn-gold-soft);
-      color: #5d4210;
-      padding: 6px 10px;
-      font-size: .78rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .account-field {
-      display: grid;
-      gap: 4px;
-      border: 1px solid var(--vn-line);
-      border-radius: 16px;
-      background: #fbfefc;
-      padding: 12px;
-    }
-
-    .account-field span {
-      color: var(--vn-muted);
-      font-size: .78rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .account-field strong {
-      color: var(--vn-green-900);
-      overflow-wrap: anywhere;
-    }
-
-    .account-note {
-      margin: 0;
-      color: var(--vn-muted);
-      line-height: 1.6;
-    }
-
-    @media (max-width: 680px) {
-      .account-card {
-        grid-template-columns: 1fr;
-      }
-
-      .account-avatar {
-        width: 86px;
-        height: 86px;
-        border-radius: 20px;
-        font-size: 1.55rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260716-user-history-v1">
 </head>
-<body class="vn-page account-page">
+<body class="vn-page account-page" data-public-account-page>
   <a class="skip" href="#main">Lewati ke konten</a>
   <main id="main">
     <section class="vn-page-hero" aria-labelledby="accountTitle">
       <div class="wrap vn-container">
-        <p class="eyebrow vn-eyebrow">VitaNusa AI</p>
-        <h1 id="accountTitle">Akun Pengguna</h1>
-        <p>Halaman akun publik disiapkan sebagai placeholder aman. Fitur login dan profil publik belum diaktifkan penuh.</p>
+        <p class="eyebrow vn-eyebrow">Privasi pengguna</p>
+        <h1 id="accountTitle">Akun VitaNusa</h1>
+        <p>Simpan riwayat VitaCheck secara privat di akunmu. Login bersifat opsional dan VitaCheck tetap dapat dipakai tanpa akun.</p>
         <div class="actions vn-actions">
-          <a class="btn primary" href="index.html">Kembali ke Vita AI</a>
+          <a class="btn outline vn-btn-secondary" href="vitacheck.html">Buka VitaCheck</a>
+          <a class="btn outline vn-btn-secondary" href="settings.html">Pengaturan privasi</a>
         </div>
       </div>
     </section>
 
-    <section class="account-shell vn-section">
-      <div class="wrap vn-container">
-        <article class="account-card">
-          <div class="account-avatar" aria-hidden="true">AK</div>
-          <div class="account-fields">
-            <span class="placeholder-status">Dalam pengembangan</span>
-            <div class="account-field"><span>Nama pengguna</span><strong>Pengguna VitaNusa</strong></div>
-            <div class="account-field"><span>Role pengguna</span><strong>Pengunjung</strong></div>
-            <div class="account-field"><span>Email</span><strong>Belum tersedia</strong></div>
-            <p class="account-note">Fitur akun publik akan dikembangkan bertahap. Saat ini halaman ini hanya menampilkan placeholder dan tidak menyimpan data pengguna.</p>
+    <section class="vn-account-shell vn-section" aria-label="Status akun">
+      <div class="wrap vn-container vn-account-stack">
+        <div class="vn-inline-status" data-user-auth-status role="status" aria-live="polite" aria-busy="true">
+          <strong>Memeriksa sesi</strong>
+          <span>Menyiapkan status akun pengguna.</span>
+        </div>
+
+        <article class="vn-account-card" data-user-signed-out>
+          <div class="vn-account-mark" aria-hidden="true">VN</div>
+          <div class="vn-account-content">
+            <p class="vn-privacy-kicker">Login opsional</p>
+            <h2>Riwayat privat bila kamu menginginkannya</h2>
+            <p>Login tidak diperlukan untuk menggunakan VitaCheck. Hasil tidak diunggah sampai kamu memilih <strong>Simpan ke akun</strong> dan mengonfirmasi penyimpanan.</p>
+            <div class="vn-actions">
+              <button class="btn primary" type="button" data-user-login>Login dengan Google</button>
+              <a class="btn outline" href="vitacheck.html">Gunakan tanpa login</a>
+            </div>
+            <p class="vn-privacy-note">Login tidak mengunggah hasil lama secara otomatis. Jawaban mentah, keluhan pribadi, dan percakapan Nusa AI tidak disimpan ke riwayat.</p>
           </div>
         </article>
+
+        <article class="vn-account-card" data-user-signed-in hidden>
+          <div class="vn-account-avatar-wrap">
+            <img class="vn-account-photo" data-user-photo alt="" width="104" height="104" referrerpolicy="no-referrer" hidden>
+            <div class="vn-account-mark" data-user-photo-fallback aria-hidden="true">AK</div>
+          </div>
+          <div class="vn-account-content">
+            <p class="vn-privacy-kicker">Akun aktif</p>
+            <h2 data-user-name>Pengguna VitaNusa</h2>
+            <dl class="vn-account-facts">
+              <div><dt>Email</dt><dd data-user-email>Email tidak tersedia</dd></div>
+              <div><dt>Status login</dt><dd data-user-login-state>Login Google aktif</dd></div>
+            </dl>
+            <div class="vn-actions">
+              <a class="btn primary" href="vitacheck.html">Mulai VitaCheck</a>
+              <button class="btn outline" type="button" data-user-logout>Logout</button>
+            </div>
+            <p class="vn-privacy-note">UID lengkap, token, dan objek Firebase User tidak ditampilkan. Logout tidak menghapus hasil lokal di perangkat.</p>
+          </div>
+        </article>
+
+        <section id="riwayat-vitacheck" class="vn-history-panel" data-vc-history-panel aria-labelledby="historyTitle" aria-busy="false" hidden>
+          <div class="vn-history-heading">
+            <div>
+              <p class="vn-privacy-kicker">Milik akun aktif</p>
+              <h2 id="historyTitle">Riwayat VitaCheck</h2>
+              <p>Terbaru lebih dahulu. Hanya ringkasan minimal yang pernah kamu simpan secara sadar.</p>
+            </div>
+            <button class="btn outline vn-danger-button" type="button" data-vc-history-delete-all disabled>Hapus seluruh riwayat</button>
+          </div>
+
+          <div class="vn-inline-status" data-vc-history-status role="status" aria-live="polite" aria-busy="false">
+            <strong>Memuat…</strong>
+            <span>Mengambil riwayat privat akun aktif.</span>
+          </div>
+
+          <div class="vn-history-grid" data-vc-history-list aria-live="polite"></div>
+          <button class="btn outline vn-history-more" type="button" data-vc-history-more hidden>Muat lebih banyak</button>
+
+          <dialog class="vn-confirm-dialog" data-history-dialog aria-labelledby="historyDialogTitle">
+            <div class="vn-confirm-dialog-card">
+              <p class="vn-privacy-kicker">Konfirmasi penghapusan</p>
+              <h2 id="historyDialogTitle" data-dialog-title>Hapus hasil?</h2>
+              <p data-dialog-message>Tindakan ini tidak dapat dibatalkan.</p>
+              <div class="vn-dialog-actions">
+                <button class="btn outline" type="button" data-dialog-cancel>Batal</button>
+                <button class="btn primary vn-danger-button" type="button" data-dialog-confirm>Hapus hasil</button>
+              </div>
+            </div>
+          </dialog>
+        </section>
+
+        <aside class="vn-health-disclaimer">
+          <strong>Batas VitaCheck</strong>
+          <p>VitaCheck bersifat edukatif dan reflektif. VitaCheck bukan diagnosis medis dan bukan pengganti tenaga kesehatan.</p>
+        </aside>
       </div>
     </section>
   </main>
 
   <script type="module">
     import { initNusaUiShell } from './assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+    import { initUserAccountPage } from './assets/js/modules/user-auth.js?v=20260716-user-history-v1';
+    import { initVitaCheckHistoryPanel } from './assets/js/modules/vitacheck-history.js?v=20260716-user-history-v1';
+
     initNusaUiShell();
+    const historyPanel = initVitaCheckHistoryPanel(document);
+    initUserAccountPage(document, {
+      onStateChange: (state) => historyPanel.setAuthState(state),
+    });
   </script>
 </body>
 </html>

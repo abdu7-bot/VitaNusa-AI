@@ -143,6 +143,12 @@ jobs:
       - name: Test admin management logic
         run: npm run test:admin-management
 
+      - name: Test public user auth logic
+        run: npm run test:user-auth
+
+      - name: Test VitaCheck history logic
+        run: npm run test:vitacheck-history
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -153,6 +159,8 @@ jobs:
           node --check admin/admin-management.js
           node --check admin/admin.js
           node --check service-worker.js
+          node --check assets/js/modules/user-auth.js
+          node --check assets/js/modules/vitacheck-history.js
           node --check assets/js/modules/nusa-chat.js
           node --check assets/js/modules/nusa-knowledge.js
           node --check assets/js/modules/nusa-ui-shell.js

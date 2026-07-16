@@ -1,7 +1,15 @@
 const CACHE_PREFIX = 'vitanusa-ai-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v13-admin-network-only`;
+const CACHE_NAME = `${CACHE_PREFIX}v14-user-auth-network-first`;
 const BASE_PATH = '/VitaNusa-AI';
 const ADMIN_PATH = `${BASE_PATH}/admin`;
+const NETWORK_FIRST_PUBLIC_PATHS = new Set([
+  `${BASE_PATH}/account.html`,
+  `${BASE_PATH}/settings.html`,
+  `${BASE_PATH}/vitacheck.html`,
+  `${BASE_PATH}/assets/js/modules/user-auth.js`,
+  `${BASE_PATH}/assets/js/modules/vitacheck-history.js`,
+  `${BASE_PATH}/assets/js/modules/vitacheck.js`
+]);
 
 // Preload hanya shell penting. Halaman publik lain disimpan saat benar-benar dibuka.
 const APP_SHELL = [
@@ -93,6 +101,13 @@ function isAdminRequest(request) {
   );
 }
 
+function isNetworkFirstPublicRequest(request) {
+  const url = new URL(request.url);
+  return request.method === 'GET'
+    && url.origin === self.location.origin
+    && NETWORK_FIRST_PUBLIC_PATHS.has(url.pathname);
+}
+
 function shouldBypassCache(request) {
   const url = new URL(request.url);
   const hostname = url.hostname.toLowerCase();
@@ -133,7 +148,7 @@ function canCache(response) {
   );
 }
 
-async function networkFirst(request) {
+async function networkFirst(request, { allowAppShellFallback = true } = {}) {
   const cache = await caches.open(CACHE_NAME);
 
   try {
@@ -148,10 +163,12 @@ async function networkFirst(request) {
     const cached = await cache.match(request, { ignoreSearch: true });
     if (cached) return cached;
 
-    const fallback = await cache.match(`${BASE_PATH}/index.html`, {
-      ignoreSearch: true
-    });
-    if (fallback) return fallback;
+    if (allowAppShellFallback) {
+      const fallback = await cache.match(`${BASE_PATH}/index.html`, {
+        ignoreSearch: true
+      });
+      if (fallback) return fallback;
+    }
 
     return new Response('VitaNusa AI sedang offline. Silakan coba lagi.', {
       status: 503,
@@ -205,6 +222,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (shouldBypassCache(request)) {
+    return;
+  }
+
+  if (isNetworkFirstPublicRequest(request)) {
+    event.respondWith(networkFirst(request, {
+      allowAppShellFallback: isHtmlRequest(request)
+    }));
     return;
   }
 

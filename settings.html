@@ -3,112 +3,135 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Pengaturan Aplikasi | VitaNusa AI</title>
-  <meta name="description" content="Placeholder pengaturan aplikasi VitaNusa AI yang masih dalam pengembangan.">
+  <title>Pengaturan Privasi | VitaNusa AI</title>
+  <meta name="description" content="Kelola preferensi dan penghapusan data VitaCheck lokal maupun cloud secara terpisah.">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
-  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260703-public-design-v1">
-  <style>
-    .settings-shell {
-      padding-block: clamp(42px, 7vw, 76px);
-    }
-
-    .settings-card {
-      display: grid;
-      gap: 14px;
-      max-width: 760px;
-      margin-inline: auto;
-      border: 1px solid var(--vn-line);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, .94);
-      box-shadow: var(--vn-shadow);
-      padding: clamp(18px, 4vw, 28px);
-    }
-
-    .placeholder-status {
-      display: inline-flex;
-      width: fit-content;
-      border: 1px solid rgba(194, 154, 59, .32);
-      border-radius: 999px;
-      background: var(--vn-gold-soft);
-      color: #5d4210;
-      padding: 6px 10px;
-      font-size: .78rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .settings-field {
-      display: grid;
-      gap: 6px;
-      border: 1px solid var(--vn-line);
-      border-radius: 16px;
-      background: #fbfefc;
-      padding: 12px;
-    }
-
-    .settings-field span {
-      color: var(--vn-muted);
-      font-size: .78rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .settings-field strong {
-      color: var(--vn-green-900);
-      overflow-wrap: anywhere;
-    }
-
-    .settings-note {
-      margin: 0;
-      color: var(--vn-muted);
-      line-height: 1.6;
-    }
-
-    @media (max-width: 760px) {
-      .settings-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260716-user-history-v1">
 </head>
-<body class="vn-page settings-page">
+<body class="vn-page settings-page" data-public-account-page>
   <a class="skip" href="#main">Lewati ke konten</a>
   <main id="main">
     <section class="vn-page-hero" aria-labelledby="settingsTitle">
       <div class="wrap vn-container">
-        <p class="eyebrow vn-eyebrow">VitaNusa AI</p>
-        <h1 id="settingsTitle">Pengaturan Aplikasi</h1>
-        <p>Preferensi publik disiapkan bertahap. Belum ada pengaturan yang disimpan atau diterapkan secara permanen.</p>
+        <p class="eyebrow vn-eyebrow">Kontrol data</p>
+        <h1 id="settingsTitle">Pengaturan Privasi</h1>
+        <p>Data lokal dan riwayat cloud dikelola secara terpisah. Penyimpanan otomatis ke akun tetap dimatikan.</p>
         <div class="actions vn-actions">
-          <a class="btn primary" href="index.html">Kembali ke Vita AI</a>
+          <a class="btn outline vn-btn-secondary" href="account.html">Buka akun</a>
+          <a class="btn outline vn-btn-secondary" href="vitacheck.html">Buka VitaCheck</a>
         </div>
       </div>
     </section>
 
-    <section class="settings-shell vn-section">
-      <div class="wrap vn-container">
-        <article class="settings-card">
-          <span class="placeholder-status">Dalam pengembangan</span>
-          <div class="settings-grid">
-            <div class="settings-field"><span>Tema tampilan</span><strong>Hijau wellness</strong></div>
-            <div class="settings-field"><span>Bahasa</span><strong>Indonesia</strong></div>
-            <div class="settings-field"><span>Notifikasi</span><strong>Belum aktif</strong></div>
+    <section class="vn-settings-shell vn-section">
+      <div class="wrap vn-container vn-account-stack">
+        <div class="vn-inline-status" data-user-auth-status role="status" aria-live="polite" aria-busy="true">
+          <strong>Memeriksa sesi</strong>
+          <span>Menyiapkan kontrol privasi.</span>
+        </div>
+
+        <article class="vn-settings-account" data-user-signed-out>
+          <div>
+            <p class="vn-privacy-kicker">Mode lokal</p>
+            <h2>Belum login</h2>
+            <p>Hasil lokal tetap dapat dihapus tanpa akun. Login hanya diperlukan untuk menghapus riwayat cloud milikmu.</p>
           </div>
-          <p class="settings-note">Fitur pengaturan publik akan dikembangkan bertahap. Saat ini pilihan di halaman ini hanya placeholder dan belum mengubah preferensi aplikasi.</p>
+          <button class="btn primary" type="button" data-user-login>Login dengan Google</button>
         </article>
+
+        <article class="vn-settings-account" data-user-signed-in hidden>
+          <div>
+            <p class="vn-privacy-kicker">Akun terhubung</p>
+            <h2 data-user-name>Pengguna VitaNusa</h2>
+            <p><span data-user-email>Email tidak tersedia</span> · <span data-user-login-state>Login Google aktif</span></p>
+          </div>
+          <button class="btn outline" type="button" data-user-logout>Logout</button>
+        </article>
+
+        <section class="vn-privacy-settings" data-vc-privacy-settings aria-labelledby="privacySettingsTitle" aria-busy="false">
+          <div class="vn-settings-heading">
+            <p class="vn-privacy-kicker">Preferensi VitaCheck</p>
+            <h2 id="privacySettingsTitle">Penyimpanan dan penghapusan</h2>
+            <p>Setiap kontrol menjelaskan apakah tindakannya berlaku pada perangkat atau akun cloud.</p>
+          </div>
+
+          <div class="vn-setting-list">
+            <div class="vn-setting-row">
+              <div>
+                <h3>Simpan hasil otomatis ke akun</h3>
+                <p>Tidak tersedia pada versi pertama. Setiap penyimpanan cloud harus dikonfirmasi dari hasil VitaCheck.</p>
+              </div>
+              <label class="vn-switch">
+                <input type="checkbox" data-vc-auto-save disabled>
+                <span aria-hidden="true"></span>
+                <span class="vn-sr-only">Penyimpanan otomatis mati</span>
+              </label>
+            </div>
+
+            <div class="vn-setting-row">
+              <div>
+                <h3>Tampilkan pengingat riwayat</h3>
+                <p>Preferensi ini hanya disimpan di browser dan tidak memuat data kesehatan.</p>
+              </div>
+              <label class="vn-switch">
+                <input type="checkbox" data-vc-history-reminder checked>
+                <span aria-hidden="true"></span>
+                <span class="vn-sr-only">Aktifkan pengingat riwayat</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="vn-data-delete-grid">
+            <article>
+              <p class="vn-privacy-kicker">Perangkat ini</p>
+              <h3>Hapus hasil lokal</h3>
+              <p>Menghapus hasil VitaCheck terakhir dari localStorage browser ini. Riwayat cloud tidak berubah.</p>
+              <button class="btn outline vn-danger-button" type="button" data-vc-clear-local>Hapus hasil di perangkat ini</button>
+            </article>
+            <article>
+              <p class="vn-privacy-kicker">Akun aktif</p>
+              <h3>Hapus riwayat cloud</h3>
+              <p>Menghapus seluruh dokumen riwayat milik UID yang sedang login. Hasil lokal tidak berubah.</p>
+              <button class="btn outline vn-danger-button" type="button" data-vc-clear-cloud disabled>Hapus riwayat cloud</button>
+            </article>
+          </div>
+
+          <div class="vn-inline-status" data-vc-privacy-status role="status" aria-live="polite" aria-busy="false">
+            <strong>Mode lokal</strong>
+            <span>Login diperlukan untuk mengelola riwayat cloud.</span>
+          </div>
+
+          <dialog class="vn-confirm-dialog" data-privacy-dialog aria-labelledby="privacyDialogTitle">
+            <div class="vn-confirm-dialog-card">
+              <p class="vn-privacy-kicker">Konfirmasi penghapusan</p>
+              <h2 id="privacyDialogTitle" data-dialog-title>Hapus data?</h2>
+              <p data-dialog-message>Pastikan tindakan ini memang kamu inginkan.</p>
+              <div class="vn-dialog-actions">
+                <button class="btn outline" type="button" data-dialog-cancel>Batal</button>
+                <button class="btn primary vn-danger-button" type="button" data-dialog-confirm>Hapus data</button>
+              </div>
+            </div>
+          </dialog>
+        </section>
+
+        <aside class="vn-health-disclaimer">
+          <strong>Batas VitaCheck</strong>
+          <p>VitaCheck bersifat edukatif dan reflektif. VitaCheck bukan diagnosis medis dan bukan pengganti tenaga kesehatan.</p>
+        </aside>
       </div>
     </section>
   </main>
 
   <script type="module">
     import { initNusaUiShell } from './assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+    import { initUserAccountPage } from './assets/js/modules/user-auth.js?v=20260716-user-history-v1';
+    import { initVitaCheckPrivacySettings } from './assets/js/modules/vitacheck-history.js?v=20260716-user-history-v1';
+
     initNusaUiShell();
+    const privacySettings = initVitaCheckPrivacySettings(document);
+    initUserAccountPage(document, {
+      onStateChange: (state) => privacySettings.setAuthState(state),
+    });
   </script>
 </body>
 </html>
