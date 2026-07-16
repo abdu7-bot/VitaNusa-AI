@@ -5,11 +5,15 @@ import {
   initPwaInstall,
   registerVitaNusaServiceWorker,
 } from './pwa-install.js?v=20260716-android-pwa-v1';
+import {
+  getMandiriFeatureContract,
+  getMandiriFeatureState,
+} from '../mandiri/config/feature-flags.js';
 
 const SHELL_READY_ATTR = 'data-vn-ui-shell-ready';
 const SITE_BASE_URL = getVitaNusaBaseUrl(import.meta.url);
 
-const FEATURES = [
+const CORE_FEATURES = [
   ['Nusa Chat', 'Tanya edukasi amanah', 'index.html', 'AI'],
   ['VitaCheck', 'Refleksi kebiasaan', 'vitacheck.html', 'VC'],
   ['VitaGame', 'Game klaim sehat', 'vitagame.html', 'VG'],
@@ -21,6 +25,14 @@ const FEATURES = [
   ['Akun', 'Profil & akses pengguna', 'account.html', 'AK'],
   ['Pengaturan', 'Preferensi aplikasi', 'settings.html', 'PG']
 ];
+
+export function getNusaShellFeatures(mandiriState = getMandiriFeatureState()) {
+  const features = CORE_FEATURES.map((feature) => [...feature]);
+  if (getMandiriFeatureContract(mandiriState).visibleInNavigation) {
+    features.push(['VitaNusa Mandiri', 'Fondasi lokal', 'mandiri/', 'VM']);
+  }
+  return features;
+}
 
 function getSiteBasePath() {
   return SITE_BASE_URL.pathname.endsWith('/')
@@ -41,6 +53,7 @@ function normalizeHref(href) {
 
 function getCurrentKey() {
   const path = window.location.pathname.toLowerCase();
+  if (path.includes('/mandiri/')) return 'VitaNusa Mandiri';
   if (path.includes('/articles/')) return 'Artikel';
   if (path.includes('/products/')) return 'Produk Amanah';
   if (path.includes('/komik')) return 'Komik';
@@ -200,7 +213,7 @@ function normalizeExistingLinks() {
   });
 }
 
-function buildRail(currentKey) {
+function buildRail(currentKey, features) {
   const aside = document.createElement('aside');
   aside.className = 'vn-right-rail';
   aside.setAttribute('data-vn-right-rail', '');
@@ -215,14 +228,16 @@ function buildRail(currentKey) {
       <button class="vn-rail-close" type="button" data-vn-shell-close aria-label="Tutup menu fitur">×</button>
     </div>
     <nav class="vn-rail-nav" aria-label="Menu fitur VitaNusa">
-      ${FEATURES.map(([title, desc, href, icon]) => `<a class="vn-rail-link${title === currentKey ? ' is-active' : ''}" href="${normalizeHref(href)}"><span class="vn-rail-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><small>${desc}</small></span></a>`).join('')}
+      ${features.map(([title, desc, href, icon]) => `<a class="vn-rail-link${title === currentKey ? ' is-active' : ''}" href="${normalizeHref(href)}"><span class="vn-rail-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><small>${desc}</small></span></a>`).join('')}
     </nav>
     <p class="vn-rail-note"><strong>Amanah:</strong> edukasi dulu, produk belakangan. Tidak menggantikan dokter, fatwa ahli, atau keputusan profesional.</p>
   `;
   return aside;
 }
 
-export function initNusaUiShell() {
+export function initNusaUiShell({
+  mandiriState = getMandiriFeatureState(),
+} = {}) {
   ensurePwaMetadata(document, SITE_BASE_URL);
   initPwaInstall(document);
   registerVitaNusaServiceWorker({ baseUrl: SITE_BASE_URL });
@@ -239,7 +254,7 @@ export function initNusaUiShell() {
   if (document.querySelector('[data-vn-right-rail]')) return;
 
   const currentKey = getCurrentKey();
-  const rail = buildRail(currentKey);
+  const rail = buildRail(currentKey, getNusaShellFeatures(mandiriState));
   const overlay = document.createElement('div');
   overlay.className = 'vn-shell-overlay';
   overlay.hidden = true;

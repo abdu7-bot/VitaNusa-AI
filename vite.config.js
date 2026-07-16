@@ -71,6 +71,7 @@ export default defineConfig({
         products: resolve(__dirname, 'products/index.html'),
         documents: resolve(__dirname, 'documents/index.html'),
         komik: resolve(__dirname, 'komik/index.html'),
+        mandiri: resolve(__dirname, 'mandiri/index.html'),
         admin: resolve(__dirname, 'admin/index.html')
       }
     }
