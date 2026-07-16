@@ -13,6 +13,12 @@
     "test:admin-management": "node --test tests/admin-management.test.mjs",
     "test:user-auth": "node --test tests/user-auth.test.mjs",
     "test:vitacheck-history": "node --test tests/vitacheck-history.test.mjs",
+    "test:pwa-manifest": "node --test tests/pwa-manifest.test.mjs",
+    "test:pwa-install": "node --test tests/pwa-install.test.mjs",
+    "test:nusa-agent": "node --test tests/nusa-agent.test.mjs",
+    "test:share-target": "node --test tests/share-target.test.mjs",
+    "test:service-worker": "node --test tests/service-worker.test.mjs",
+    "test:android-pwa": "node --test tests/pwa-manifest.test.mjs tests/pwa-install.test.mjs tests/nusa-agent.test.mjs tests/share-target.test.mjs tests/service-worker.test.mjs",
     "test:firestore-rules": "firebase emulators:exec --project demo-vitanusa-rules --only firestore \"node --test tests/firestore-rules.test.mjs\""
   },
   "devDependencies": {

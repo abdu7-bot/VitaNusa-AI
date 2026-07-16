@@ -1,4 +1,13 @@
+import { initNusaAgent } from './nusa-agent.js?v=20260716-android-pwa-v1';
+import {
+  ensurePwaMetadata,
+  getVitaNusaBaseUrl,
+  initPwaInstall,
+  registerVitaNusaServiceWorker,
+} from './pwa-install.js?v=20260716-android-pwa-v1';
+
 const SHELL_READY_ATTR = 'data-vn-ui-shell-ready';
+const SITE_BASE_URL = getVitaNusaBaseUrl(import.meta.url);
 
 const FEATURES = [
   ['Nusa Chat', 'Tanya edukasi amanah', 'index.html', 'AI'],
@@ -14,15 +23,9 @@ const FEATURES = [
 ];
 
 function getSiteBasePath() {
-  const path = window.location.pathname.replace(/\\/g, '/');
-  const segments = path.split('/').filter(Boolean);
-  const repoIndex = segments.findIndex((segment) => segment.toLowerCase() === 'vitanusa-ai');
-
-  if (repoIndex !== -1) {
-    return `/${segments.slice(0, repoIndex + 1).join('/')}/`;
-  }
-
-  return '/';
+  return SITE_BASE_URL.pathname.endsWith('/')
+    ? SITE_BASE_URL.pathname
+    : `${SITE_BASE_URL.pathname}/`;
 }
 
 function normalizeHref(href) {
@@ -220,6 +223,13 @@ function buildRail(currentKey) {
 }
 
 export function initNusaUiShell() {
+  ensurePwaMetadata(document, SITE_BASE_URL);
+  initPwaInstall(document);
+  registerVitaNusaServiceWorker({ baseUrl: SITE_BASE_URL });
+  void initNusaAgent(document).catch((error) => {
+    console.warn('Nusa Agent belum dapat diinisialisasi:', error?.message || 'agent-init-failed');
+  });
+
   if (document.documentElement.hasAttribute(SHELL_READY_ATTR)) return;
   document.documentElement.setAttribute(SHELL_READY_ATTR, 'true');
   document.body.classList.add('vn-shell-polished');

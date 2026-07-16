@@ -1,4 +1,5 @@
 import { getNusaReply } from './nusa-knowledge.js?v=20260712-product-claim-v1';
+import { getVitaNusaBaseUrl } from './pwa-install.js?v=20260716-android-pwa-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -41,9 +42,22 @@ const BLOCKED_DETAIL_SELECTOR = 'script, iframe, object, embed, link, meta, styl
 const URL_DETAIL_ATTRIBUTES = new Set(['href', 'src', 'srcdoc', 'xlink:href']);
 const UNORDERED_LIST_PATTERN = /^-\s+(.+)$/;
 const ORDERED_LIST_PATTERN = /^\d+\.\s+(.+)$/;
+const CHAT_CONTROLLERS = new WeakMap();
+const APP_BASE_URL = getVitaNusaBaseUrl(import.meta.url);
 
 function getActionHref(action) {
-  return ROUTE_OVERRIDES[action.href] || action.href;
+  const href = String(ROUTE_OVERRIDES[action?.href] || action?.href || '').trim();
+  if (!href) return '';
+  if (href.startsWith('#')) return href;
+
+  try {
+    const url = /^(?:https?:|mailto:)/i.test(href)
+      ? new URL(href)
+      : new URL(href.replace(/^\/+/, ''), APP_BASE_URL);
+    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
 }
 
 function getContextActions(reply) {
@@ -80,10 +94,12 @@ function resizeChatInput(input) {
 }
 
 function createRouteLink(action) {
-  const link = document.createElement('a');
+  const href = getActionHref(action);
+  const link = document.createElement(href ? 'a' : 'span');
   link.className = 'nusa-route-link';
-  link.href = getActionHref(action);
-  link.textContent = action.label;
+  if (href) link.href = href;
+  else link.setAttribute('aria-disabled', 'true');
+  link.textContent = String(action?.label || 'Buka tautan');
   return link;
 }
 
@@ -380,18 +396,39 @@ function mapBackendAnswer(data) {
   };
 }
 
-export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
-  const root = document.querySelector(rootSelector);
+export function initNusaChat({
+  rootSelector = '[data-nusa-chat]',
+  rootElement = null,
+  resetElement = null,
+} = {}) {
+  const root = rootElement || document.querySelector(rootSelector);
   if (!root) return null;
+  if (CHAT_CONTROLLERS.has(root)) return CHAT_CONTROLLERS.get(root);
 
   const log = root.querySelector('[data-nusa-chat-log]');
   const form = root.querySelector('[data-nusa-chat-form]');
   const input = root.querySelector('[data-nusa-chat-input]');
-  const resetButton = root.querySelector('[data-nusa-chat-reset]');
+  const resetButton = resetElement || root.querySelector('[data-nusa-chat-reset]');
 
   if (!log || !form || !input) return null;
 
-  const state = { requestId: 0 };
+  const state = {
+    requestId: 0,
+    busy: false,
+    hasConversation: false,
+    backendState: navigator.onLine === false ? 'offline' : 'unknown',
+  };
+
+  const emitState = () => {
+    const EventConstructor = root.ownerDocument?.defaultView?.CustomEvent || CustomEvent;
+    root.dispatchEvent(new EventConstructor('nusa-chat-state', {
+      detail: {
+        busy: state.busy,
+        hasConversation: state.hasConversation,
+        backendState: state.backendState,
+      },
+    }));
+  };
 
   log.replaceChildren();
   log.hidden = true;
@@ -413,6 +450,8 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
 
   function resetChat({ focus = true } = {}) {
     state.requestId += 1;
+    state.busy = false;
+    state.hasConversation = false;
     log.replaceChildren();
     log.hidden = true;
     input.value = '';
@@ -420,6 +459,7 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     // "Chat Baru" juga memulai sesi backend yang baru: percakapan lama tidak
     // lagi diingat, konsisten dengan tampilan yang dikosongkan di sini.
     resetChatSession();
+    emitState();
     if (focus) {
       focusInputWithoutPageScroll(input);
     }
@@ -430,6 +470,10 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     if (!question) return;
 
     const requestId = ++state.requestId;
+    state.busy = true;
+    state.hasConversation = true;
+    state.backendState = navigator.onLine === false ? 'offline' : 'checking';
+    emitState();
     appendMessage(log, 'user', question);
     input.value = '';
     resizeChatInput(input);
@@ -440,11 +484,18 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
       try {
         let reply;
 
-        try {
-          reply = await getNusaBackendReply(question);
-        } catch (backendError) {
-          console.warn('Backend belum bisa dipakai, pakai jawaban lokal:', backendError);
+        if (navigator.onLine === false) {
+          state.backendState = 'offline';
           reply = await getNusaReply(question);
+        } else {
+          try {
+            reply = await getNusaBackendReply(question);
+            state.backendState = 'online';
+          } catch (backendError) {
+            state.backendState = navigator.onLine === false ? 'offline' : 'unavailable';
+            console.warn('Backend belum bisa dipakai, pakai jawaban lokal:', backendError);
+            reply = await getNusaReply(question);
+          }
         }
 
         if (requestId !== state.requestId) return;
@@ -453,6 +504,11 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
         if (requestId !== state.requestId) return;
         console.warn('Nusa reply failed:', error);
         renderReply(log, SAFE_FALLBACK_REPLY);
+      } finally {
+        if (requestId === state.requestId) {
+          state.busy = false;
+          emitState();
+        }
       }
     }, 120);
   }
@@ -477,10 +533,22 @@ export function initNusaChat({ rootSelector = '[data-nusa-chat]' } = {}) {
     focusInputWithoutPageScroll(input);
   });
 
-  return {
+  const controller = {
     ask: handleQuestion,
     reset: resetChat,
+    setDraft(value, { focus = true } = {}) {
+      input.value = String(value || '').slice(0, 6000);
+      resizeChatInput(input);
+      if (focus) focusInputWithoutPageScroll(input);
+    },
+    getState() {
+      return { ...state };
+    },
   };
+  CHAT_CONTROLLERS.set(root, controller);
+  root.setAttribute('data-nusa-chat-ready', 'true');
+  emitState();
+  return controller;
 }
 
 function updateNusaSession(session, question, reply) {

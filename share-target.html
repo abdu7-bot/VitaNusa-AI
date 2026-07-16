@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>Bagikan ke Nusa | VitaNusa AI</title>
+  <meta name="description" content="Tinjau teks atau tautan sebelum menjadikannya draft pertanyaan untuk Nusa Agent.">
+  <meta name="theme-color" content="#14532d">
+  <meta name="robots" content="noindex">
+  <link rel="apple-touch-icon" href="images/icon-192.png">
+  <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
+  <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260716-user-history-v1">
+  <link rel="stylesheet" href="assets/css/android-pwa.css?v=20260716-android-pwa-v1">
+  <link rel="stylesheet" href="assets/css/nusa-agent.css?v=20260716-android-pwa-v1">
+</head>
+<body class="vn-page share-target-page" data-share-target-page>
+  <a class="skip" href="#main">Lewati ke konten</a>
+  <main id="main">
+    <section class="vn-page-hero" aria-labelledby="shareTargetTitle">
+      <div class="wrap vn-container">
+        <p class="eyebrow vn-eyebrow">Bagikan ke VitaNusa</p>
+        <h1 id="shareTargetTitle">Tinjau sebelum bertanya</h1>
+        <p>Teks dan tautan di bawah hanya menjadi draft di perangkat ini. VitaNusa tidak mengirim atau membuka tautan secara otomatis.</p>
+      </div>
+    </section>
+
+    <section class="vn-section">
+      <div class="wrap vn-container">
+        <article class="vn-share-preview" aria-labelledby="sharePreviewTitle">
+          <div>
+            <p class="vn-privacy-kicker">Draft lokal sementara</p>
+            <h2 id="sharePreviewTitle">Konten yang dibagikan</h2>
+          </div>
+
+          <dl class="vn-share-fields">
+            <div class="vn-share-field" data-share-title-row hidden>
+              <dt>Judul</dt>
+              <dd data-share-title></dd>
+            </div>
+            <div class="vn-share-field" data-share-text-row hidden>
+              <dt>Teks</dt>
+              <dd data-share-text></dd>
+            </div>
+            <div class="vn-share-field" data-share-url-row hidden>
+              <dt>Tautan</dt>
+              <dd data-share-url></dd>
+            </div>
+          </dl>
+
+          <p data-share-empty>Belum ada teks atau tautan yang dapat ditampilkan.</p>
+          <p class="vn-share-warning"><strong>Catatan:</strong> VitaNusa tidak otomatis memastikan isi tautan ini benar. Tinjau sumber dan hindari membagikan data pribadi.</p>
+          <p class="vn-share-status" data-share-status role="status" aria-live="polite">Menyiapkan draft…</p>
+
+          <div class="actions vn-actions">
+            <button class="btn primary" type="button" data-share-send disabled>Tanya Nusa</button>
+            <button class="btn outline" type="button" data-share-cancel>Batalkan</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/main.js?v=20260716-android-pwa-v1"></script>
+  <script type="module" src="assets/js/modules/share-target.js?v=20260716-android-pwa-v1"></script>
+</body>
+</html>

@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Pengaturan Privasi | VitaNusa AI</title>
   <meta name="description" content="Kelola preferensi dan penghapusan data VitaCheck lokal maupun cloud secara terpisah.">
+  <meta name="theme-color" content="#14532d">
+  <link rel="apple-touch-icon" href="images/icon-192.png">
   <link rel="stylesheet" href="style.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="assets/css/vitanusa-public.css?v=20260716-user-history-v1">
+  <link rel="stylesheet" href="assets/css/android-pwa.css?v=20260716-android-pwa-v1">
+  <link rel="stylesheet" href="assets/css/nusa-agent.css?v=20260716-android-pwa-v1">
 </head>
 <body class="vn-page settings-page" data-public-account-page>
   <a class="skip" href="#main">Lewati ke konten</a>
@@ -29,6 +33,16 @@
           <strong>Memeriksa sesi</strong>
           <span>Menyiapkan kontrol privasi.</span>
         </div>
+
+        <article class="vn-pwa-install-card" aria-labelledby="installVitaNusaTitle">
+          <div class="vn-pwa-install-copy">
+            <p class="vn-privacy-kicker">Aplikasi Android PWA</p>
+            <h2 id="installVitaNusaTitle">Pasang VitaNusa di layar utama</h2>
+            <p>Pasang VitaNusa di layar utama agar lebih mudah dibuka seperti aplikasi Android. Pemasangan hanya dimulai setelah kamu menekan tombol.</p>
+            <p class="vn-pwa-install-status" data-pwa-install-status role="status" aria-live="polite">Memeriksa dukungan pemasangan…</p>
+          </div>
+          <button class="btn primary" type="button" data-pwa-install data-pwa-install-context="settings" disabled>Pasang VitaNusa</button>
+        </article>
 
         <article class="vn-settings-account" data-user-signed-out>
           <div>
