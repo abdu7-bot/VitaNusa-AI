@@ -152,6 +152,9 @@ jobs:
       - name: Test Android PWA and Nusa Agent
         run: npm run test:android-pwa
 
+      - name: Test VitaNusa Mandiri shell
+        run: npm run test:mandiri:shell
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -172,6 +175,9 @@ jobs:
           node --check assets/js/modules/share-target.js
           node --check assets/js/modules/chat-viewport.js
           node --check assets/js/modules/vitacheck.js
+          node --check assets/js/mandiri/config/feature-flags.js
+          node --check assets/js/mandiri/shell/app-shell.js
+          node --check assets/js/mandiri/shell/offline-status.js
 
   backend:
     name: Backend

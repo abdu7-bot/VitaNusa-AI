@@ -30,6 +30,7 @@ function normalizeSlug(value) {
 
 function getPageType(pathname) {
   const path = String(pathname || '').toLowerCase();
+  if (path.includes('/mandiri/')) return 'mandiri';
   if (path.includes('/articles/')) return 'article';
   if (path.includes('/products/')) return 'product';
   if (path.endsWith('/vitacheck.html')) return 'vitacheck';
@@ -48,6 +49,7 @@ function getRouteKey(pageType) {
     article: 'education',
     product: 'products',
     account: 'account',
+    mandiri: 'mandiri',
     settings: 'settings',
     'share-target': 'share-target',
     offline: 'offline',
