@@ -31,6 +31,10 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function isOwnUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
     function isValidAdminDocument(adminData) {
       return adminData.keys().hasAll(["email", "role", "status"])
         && adminData.keys().hasOnly(["email", "role", "status"])
@@ -43,6 +47,73 @@ service cloud.firestore {
       return request.auth.uid != uid
         || (request.resource.data.role == "owner"
           && request.resource.data.status == "active");
+    }
+
+    function isValidVitaCheckCategoryList(categoryIds) {
+      return categoryIds is list
+        && categoryIds.size() <= 4
+        && categoryIds.hasOnly([
+          "tidur",
+          "air",
+          "makan",
+          "gerak",
+          "pencernaan",
+          "energi",
+          "stres",
+          "literasi"
+        ]);
+    }
+
+    function isSafeVitaCheckRecommendationSlug(slug) {
+      return slug is string
+        && slug.size() >= 1
+        && slug.size() <= 120
+        && slug.matches("^[a-z0-9]+(-[a-z0-9]+)*$");
+    }
+
+    function isValidVitaCheckRecommendationSlugs(slugs) {
+      return slugs is list
+        && slugs.size() <= 3
+        && (slugs.size() < 1 || isSafeVitaCheckRecommendationSlug(slugs[0]))
+        && (slugs.size() < 2 || isSafeVitaCheckRecommendationSlug(slugs[1]))
+        && (slugs.size() < 3 || isSafeVitaCheckRecommendationSlug(slugs[2]));
+    }
+
+    function isValidVitaCheckHistory(historyData) {
+      return historyData.keys().hasAll([
+          "version",
+          "score",
+          "resultBand",
+          "focusIds",
+          "attentionIds",
+          "recommendationSlugs",
+          "source",
+          "createdAt"
+        ])
+        && historyData.keys().hasOnly([
+          "version",
+          "score",
+          "resultBand",
+          "focusIds",
+          "attentionIds",
+          "recommendationSlugs",
+          "source",
+          "createdAt"
+        ])
+        && historyData.version is int
+        && historyData.version == 2
+        && historyData.score is int
+        && historyData.score >= 0
+        && historyData.score <= 100
+        && (historyData.resultBand == "strong"
+          || historyData.resultBand == "medium"
+          || historyData.resultBand == "low")
+        && isValidVitaCheckCategoryList(historyData.focusIds)
+        && isValidVitaCheckCategoryList(historyData.attentionIds)
+        && isValidVitaCheckRecommendationSlugs(historyData.recommendationSlugs)
+        && historyData.source == "vitacheck-v2"
+        && historyData.createdAt is timestamp
+        && historyData.createdAt == request.time;
     }
 
     function isPublished() {
@@ -64,6 +135,14 @@ service cloud.firestore {
         && keepsOwnerSelfActive(uid);
       allow delete: if isActiveOwner()
         && request.auth.uid != uid;
+    }
+
+    match /users/{uid}/vitaCheckHistory/{resultId} {
+      allow get, list: if isOwnUser(uid);
+      allow create: if isOwnUser(uid)
+        && isValidVitaCheckHistory(request.resource.data);
+      allow update: if false;
+      allow delete: if isOwnUser(uid);
     }
 
     match /articles/{articleId} {

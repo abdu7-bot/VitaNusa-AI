@@ -13,7 +13,9 @@ import {
   getDoc,
   getDocs,
   query,
+  serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where
 } from "firebase/firestore";
@@ -24,6 +26,9 @@ const ADMIN_UID = "admin-test-uid";
 const INACTIVE_UID = "inactive-test-uid";
 const UNKNOWN_ROLE_UID = "unknown-role-test-uid";
 const USER_UID = "user-test-uid";
+const USER_A_UID = "user-a-test-uid";
+const USER_B_UID = "user-b-test-uid";
+const HISTORY_RESULT_ID = "vc2-rules-history-test";
 
 const ADMIN_DOCUMENTS = Object.freeze({
   [OWNER_UID]: {
@@ -54,6 +59,20 @@ const ADMIN_DOCUMENTS = Object.freeze({
 });
 
 let testEnv;
+
+function validVitaCheckHistory(overrides = {}) {
+  return {
+    version: 2,
+    score: 68,
+    resultBand: "medium",
+    focusIds: ["tidur", "gerak"],
+    attentionIds: ["pencernaan"],
+    recommendationSlugs: ["tidur-dan-energi-harian"],
+    source: "vitacheck-v2",
+    createdAt: serverTimestamp(),
+    ...overrides
+  };
+}
 
 function getEmulatorAddress() {
   const address = process.env.FIRESTORE_EMULATOR_HOST;
@@ -95,6 +114,16 @@ async function seedFirestore() {
       }),
       setDoc(doc(db, "siteSettings", "private"), {
         internalNote: "Data privat pengujian"
+      }),
+      setDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID), {
+        version: 2,
+        score: 68,
+        resultBand: "medium",
+        focusIds: ["tidur", "gerak"],
+        attentionIds: ["pencernaan"],
+        recommendationSlugs: ["tidur-dan-energi-harian"],
+        source: "vitacheck-v2",
+        createdAt: Timestamp.fromDate(new Date("2026-01-01T00:00:00.000Z"))
       })
     );
 
@@ -352,4 +381,210 @@ test("owner aktif dapat menulis konten", async () => {
 test("admin aktif dapat membaca draft untuk pengelolaan konten", async () => {
   const db = authenticatedDb(ADMIN_UID);
   await assertSucceeds(getDoc(doc(db, "articles", "private-draft")));
+});
+
+test("pengguna belum login tidak dapat membuat riwayat VitaCheck", async () => {
+  const db = testEnv.unauthenticatedContext().firestore();
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-unauth-test-result"),
+    validVitaCheckHistory()
+  ));
+});
+
+test("pengguna dapat membuat riwayat VitaCheck miliknya", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertSucceeds(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-own-create-test"),
+    validVitaCheckHistory()
+  ));
+});
+
+test("pengguna dapat membaca riwayat VitaCheck miliknya", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertSucceeds(getDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("pengguna dapat list riwayat VitaCheck miliknya", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  const snapshot = await assertSucceeds(getDocs(collection(db, "users", USER_A_UID, "vitaCheckHistory")));
+  assert.equal(snapshot.size, 1);
+});
+
+test("pengguna tidak dapat membaca riwayat pengguna lain", async () => {
+  const db = authenticatedDb(USER_B_UID);
+  await assertFails(getDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("pengguna tidak dapat menulis riwayat ke UID lain", async () => {
+  const db = authenticatedDb(USER_B_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-cross-write-test"),
+    validVitaCheckHistory()
+  ));
+});
+
+test("admin tidak dapat membaca riwayat VitaCheck pengguna", async () => {
+  const db = authenticatedDb(ADMIN_UID);
+  await assertFails(getDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("owner tidak dapat membaca riwayat VitaCheck pengguna", async () => {
+  const db = authenticatedDb(OWNER_UID);
+  await assertFails(getDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("score VitaCheck di bawah nol ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-low-score-test"),
+    validVitaCheckHistory({ score: -1 })
+  ));
+});
+
+test("score VitaCheck di atas seratus ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-high-score-test"),
+    validVitaCheckHistory({ score: 101 })
+  ));
+});
+
+test("resultBand VitaCheck tidak dikenal ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-band-test"),
+    validVitaCheckHistory({ resultBand: "healthy" })
+  ));
+});
+
+test("source VitaCheck yang salah ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-source-test"),
+    validVitaCheckHistory({ source: "manual" })
+  ));
+});
+
+test("field tambahan pada riwayat VitaCheck ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-extra-field-test"),
+    validVitaCheckHistory({ privateNote: "data-test" })
+  ));
+});
+
+test("field answers pada riwayat VitaCheck ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-answers-test"),
+    validVitaCheckHistory({ answers: [{ questionId: "tidur", value: 0 }] })
+  ));
+});
+
+test("field symptoms pada riwayat VitaCheck ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-symptoms-test"),
+    validVitaCheckHistory({ symptoms: ["contoh-test"] })
+  ));
+});
+
+test("array kategori VitaCheck yang terlalu panjang ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-array-limit-test"),
+    validVitaCheckHistory({ focusIds: ["tidur", "air", "makan", "gerak", "energi"] })
+  ));
+});
+
+test("update dokumen riwayat VitaCheck lama ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(updateDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID),
+    { score: 70 }
+  ));
+});
+
+test("pengguna dapat menghapus hasil VitaCheck miliknya", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertSucceeds(deleteDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("pengguna tidak dapat menghapus hasil VitaCheck orang lain", async () => {
+  const db = authenticatedDb(USER_B_UID);
+  await assertFails(deleteDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("default deny tetap menolak path privat yang tidak dikenal", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(doc(db, "users", USER_A_UID, "privateNotes", "note-test"), {
+    note: "data-test"
+  }));
+});
+
+test("pengguna belum login tidak dapat membaca riwayat VitaCheck", async () => {
+  const db = testEnv.unauthenticatedContext().firestore();
+  await assertFails(getDoc(doc(db, "users", USER_A_UID, "vitaCheckHistory", HISTORY_RESULT_ID)));
+});
+
+test("admin dan owner tidak dapat list riwayat VitaCheck pengguna lain", async () => {
+  for (const uid of [ADMIN_UID, OWNER_UID]) {
+    const db = authenticatedDb(uid);
+    await assertFails(getDocs(collection(db, "users", USER_A_UID, "vitaCheckHistory")));
+  }
+});
+
+test("version VitaCheck yang tidak didukung ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-version-test"),
+    validVitaCheckHistory({ version: 3 })
+  ));
+});
+
+test("kategori VitaCheck yang tidak dikenal ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-category-test"),
+    validVitaCheckHistory({ attentionIds: ["unknown-category"] })
+  ));
+});
+
+test("slug rekomendasi VitaCheck yang tidak aman ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-slug-test"),
+    validVitaCheckHistory({ recommendationSlugs: ["Unsafe Slug"] })
+  ));
+});
+
+test("createdAt dari client dan bukan server timestamp ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-client-time-test"),
+    validVitaCheckHistory({
+      createdAt: Timestamp.fromDate(new Date("2026-01-01T00:00:00.000Z"))
+    })
+  ));
+});
+
+test("field diagnosis dan freeText pada riwayat VitaCheck ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-private-text-test"),
+    validVitaCheckHistory({
+      diagnosis: "data-test",
+      freeText: "data-test"
+    })
+  ));
+});
+
+test("field wajib riwayat VitaCheck yang hilang ditolak", async () => {
+  const db = authenticatedDb(USER_A_UID);
+  const payload = validVitaCheckHistory();
+  delete payload.attentionIds;
+  await assertFails(setDoc(
+    doc(db, "users", USER_A_UID, "vitaCheckHistory", "vc2-missing-field-test"),
+    payload
+  ));
 });

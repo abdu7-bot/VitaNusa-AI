@@ -470,3 +470,554 @@ body.vn-shell-polished:not(.nusa-chat-page) .cta-box {
     width: 100%;
   }
 }
+
+/* Optional public account and private VitaCheck history */
+.vn-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.vn-account-shell,
+.vn-settings-shell {
+  padding-block: clamp(38px, 6vw, 72px);
+}
+
+.vn-account-stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.vn-inline-status {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--vn-green-900);
+  padding: 12px 14px;
+}
+
+.vn-inline-status[hidden] {
+  display: none;
+}
+
+.vn-inline-status strong,
+.vn-inline-status span {
+  overflow-wrap: anywhere;
+}
+
+.vn-inline-status span {
+  color: var(--vn-muted);
+  line-height: 1.5;
+}
+
+.vn-inline-status[data-kind="loading"] {
+  border-color: rgba(194, 154, 59, .38);
+  background: var(--vn-gold-soft);
+}
+
+.vn-inline-status[data-kind="success"] {
+  border-color: rgba(22, 163, 74, .32);
+  background: var(--vn-green-50);
+}
+
+.vn-inline-status[data-kind="error"] {
+  border-color: rgba(185, 28, 28, .3);
+  background: #fff1f2;
+  color: #8b1a1a;
+}
+
+.vn-account-card,
+.vn-settings-account,
+.vn-history-panel,
+.vn-privacy-settings,
+.vn-health-disclaimer {
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: var(--vn-shadow);
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.vn-account-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: clamp(16px, 3vw, 24px);
+  align-items: start;
+}
+
+.vn-account-mark,
+.vn-account-photo {
+  width: 104px;
+  height: 104px;
+  border-radius: 24px;
+}
+
+.vn-account-mark {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--vn-green-900), var(--vn-green-500));
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 900;
+}
+
+.vn-account-photo {
+  display: block;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+  box-shadow: 0 12px 28px rgba(20, 83, 45, .16);
+}
+
+.vn-account-photo[hidden],
+.vn-account-mark[hidden],
+.vn-account-card[hidden],
+.vn-settings-account[hidden],
+.vn-history-panel[hidden] {
+  display: none;
+}
+
+.vn-account-content,
+.vn-settings-heading,
+.vn-history-heading > div {
+  min-width: 0;
+}
+
+.vn-account-content h2,
+.vn-settings-heading h2,
+.vn-history-heading h2 {
+  margin: 4px 0 10px;
+  color: var(--vn-green-900);
+  overflow-wrap: anywhere;
+}
+
+.vn-account-content p,
+.vn-settings-account p,
+.vn-settings-heading p,
+.vn-history-heading p,
+.vn-health-disclaimer p {
+  line-height: 1.65;
+}
+
+.vn-privacy-kicker {
+  margin: 0;
+  color: var(--vn-green-700);
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.vn-privacy-note {
+  margin: 14px 0 0;
+  color: var(--vn-muted);
+  font-size: .9rem;
+}
+
+.vn-account-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.vn-account-facts div {
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 14px;
+  background: #fbfefc;
+  padding: 11px;
+}
+
+.vn-account-facts dt {
+  color: var(--vn-muted);
+  font-size: .76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.vn-account-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.vn-history-heading,
+.vn-settings-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.vn-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.vn-history-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 20px;
+  background: #fbfefc;
+  padding: 16px;
+}
+
+.vn-history-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vn-history-date {
+  color: var(--vn-muted);
+  font-size: .84rem;
+  overflow-wrap: anywhere;
+}
+
+.vn-history-score {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--vn-green-100);
+  color: var(--vn-green-900);
+  padding: 6px 10px;
+}
+
+.vn-history-band {
+  margin: 0;
+  color: var(--vn-green-900);
+  font-weight: 900;
+}
+
+.vn-history-card h3 {
+  margin: 0 0 8px;
+  color: var(--vn-green-900);
+  font-size: .88rem;
+}
+
+.vn-history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vn-history-tags li {
+  border-radius: 999px;
+  background: var(--vn-green-100);
+  color: var(--vn-green-900);
+  padding: 5px 9px;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.vn-history-links {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.vn-history-links a,
+.vn-history-links span {
+  overflow-wrap: anywhere;
+}
+
+.vn-history-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.vn-history-more {
+  margin-top: 16px;
+}
+
+.vn-danger-button {
+  border-color: rgba(185, 28, 28, .42) !important;
+  color: #8b1a1a !important;
+  background: #ffffff !important;
+}
+
+.vn-health-disclaimer {
+  border-color: rgba(194, 154, 59, .32);
+  background: var(--vn-gold-soft);
+  color: #503c18;
+  box-shadow: none;
+}
+
+.vn-health-disclaimer p {
+  margin: 6px 0 0;
+}
+
+.vn-confirm-dialog {
+  width: min(560px, calc(100vw - 28px));
+  max-width: 100%;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: var(--vn-green-900);
+  padding: 0;
+}
+
+.vn-confirm-dialog::backdrop {
+  background: rgba(8, 28, 18, .62);
+}
+
+.vn-confirm-dialog-card {
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(8, 28, 18, .28);
+  padding: clamp(18px, 5vw, 28px);
+}
+
+.vn-confirm-dialog-card h2,
+.vn-confirm-dialog-card h4 {
+  margin: 5px 0 10px;
+  color: var(--vn-green-900);
+}
+
+.vn-confirm-dialog-card p {
+  line-height: 1.6;
+}
+
+.vn-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.vn-settings-account > div {
+  min-width: 0;
+}
+
+.vn-settings-account h2 {
+  margin: 4px 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.vn-setting-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.vn-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+  border: 1px solid var(--vn-line);
+  border-radius: 18px;
+  background: #fbfefc;
+  padding: 15px;
+}
+
+.vn-setting-row > div {
+  min-width: 0;
+}
+
+.vn-setting-row h3,
+.vn-data-delete-grid h3 {
+  margin: 0 0 6px;
+  color: var(--vn-green-900);
+}
+
+.vn-setting-row p,
+.vn-data-delete-grid p {
+  margin: 0;
+  color: var(--vn-muted);
+  line-height: 1.55;
+}
+
+.vn-switch {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 52px;
+  min-height: 32px;
+}
+
+.vn-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.vn-switch > span[aria-hidden="true"] {
+  display: block;
+  width: 52px;
+  height: 32px;
+  border: 1px solid var(--vn-line);
+  border-radius: 999px;
+  background: #dbe5df;
+  transition: background .18s ease;
+}
+
+.vn-switch > span[aria-hidden="true"]::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(8, 28, 18, .2);
+  transition: transform .18s ease;
+}
+
+.vn-switch input:checked + span {
+  background: var(--vn-green-500);
+}
+
+.vn-switch input:checked + span::after {
+  transform: translateX(20px);
+}
+
+.vn-switch input:focus-visible + span {
+  outline: 3px solid rgba(22, 163, 74, .28);
+  outline-offset: 3px;
+}
+
+.vn-switch input:disabled + span {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.vn-data-delete-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-block: 18px;
+}
+
+.vn-data-delete-grid article {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid rgba(185, 28, 28, .18);
+  border-radius: 18px;
+  background: #fffafa;
+  padding: 16px;
+}
+
+.vn-data-delete-grid .btn {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.vitacheck-save-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border: 1px solid rgba(22, 163, 74, .22);
+  border-radius: 18px;
+  background: var(--vn-green-50);
+  padding: 15px;
+}
+
+.vitacheck-save-panel[hidden] {
+  display: none;
+}
+
+.vitacheck-save-panel h4,
+.vitacheck-save-panel p {
+  margin: 0;
+}
+
+.vitacheck-save-panel p {
+  color: var(--vn-muted);
+  line-height: 1.55;
+}
+
+.vitacheck-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.account-page button,
+.settings-page button,
+.vitacheck-save-panel button,
+.vitacheck-save-panel a {
+  min-height: 44px;
+}
+
+@media (max-width: 760px) {
+  .vn-account-card {
+    grid-template-columns: 1fr;
+  }
+
+  .vn-account-mark,
+  .vn-account-photo {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+  }
+
+  .vn-history-heading,
+  .vn-settings-account,
+  .vn-setting-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vn-account-facts,
+  .vn-history-grid,
+  .vn-data-delete-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vn-switch {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .vn-account-card,
+  .vn-settings-account,
+  .vn-history-panel,
+  .vn-privacy-settings,
+  .vn-health-disclaimer {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .vn-history-card-heading,
+  .vn-dialog-actions,
+  .vitacheck-save-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vn-history-actions .btn,
+  .vn-dialog-actions .btn,
+  .vitacheck-save-actions .btn,
+  .vitacheck-save-actions a {
+    width: 100%;
+  }
+}

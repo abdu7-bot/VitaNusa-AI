@@ -11,6 +11,8 @@
     "check": "npm run build",
     "test:admin-auth": "node --test tests/admin-access.test.mjs",
     "test:admin-management": "node --test tests/admin-management.test.mjs",
+    "test:user-auth": "node --test tests/user-auth.test.mjs",
+    "test:vitacheck-history": "node --test tests/vitacheck-history.test.mjs",
     "test:firestore-rules": "firebase emulators:exec --project demo-vitanusa-rules --only firestore \"node --test tests/firestore-rules.test.mjs\""
   },
   "devDependencies": {

@@ -1,4 +1,19 @@
-import { firebaseConfig } from '../../../admin/firebase-config.js';
+import {
+  getCurrentPublicUser,
+  mapUserAuthError,
+  signInPublicUser,
+  subscribeUserAuth,
+} from './user-auth.js';
+import {
+  VITACHECK_CATEGORIES,
+  VITACHECK_RESULT_BANDS,
+  createVitaCheckResultId,
+  getVitaCheckResultBand,
+  mapVitaCheckHistoryError,
+  readLocalVitaCheckResult,
+  saveLocalVitaCheckResult,
+  saveVitaCheckHistory,
+} from './vitacheck-history.js';
 
 const QUESTIONS = [
   {
@@ -110,9 +125,8 @@ const QUESTIONS = [
   },
 ];
 
-const STORAGE_KEY = 'vitanusa-vitacheck-v2-result';
 const MAX_SCORE = QUESTIONS.length * 2;
-const EDUCATION_DISCLAIMER = 'VitaCheck bersifat edukatif dan reflektif. Ini bukan diagnosis medis, bukan pengganti dokter, apoteker, ahli gizi, psikolog, atau tenaga kesehatan profesional.';
+const EDUCATION_DISCLAIMER = 'VitaCheck bersifat edukatif dan reflektif. VitaCheck bukan diagnosis medis dan bukan pengganti tenaga kesehatan.';
 const RED_FLAG_COPY = 'Catatan penting: Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas harian, jangan hanya mengandalkan tips umum. Konsultasikan kepada tenaga kesehatan yang berwenang.';
 const FIRESTORE_ARTICLE_LIMIT = 80;
 let firestoreArticleCache = null;
@@ -121,12 +135,12 @@ let firebaseModulesPromise = null;
 const RESULT_COPY = {
   strong: {
     min: 80,
-    status: 'Kebiasaanmu cukup kuat',
+    status: 'Kebiasaan cukup kuat',
     summary: 'Pertahankan kebiasaan baik. Jangan terlalu cepat merasa aman, tetapi juga jangan terlalu keras pada diri sendiri. Fokusmu adalah konsistensi.',
   },
   medium: {
     min: 50,
-    status: 'Cukup, tapi perlu dirapikan',
+    status: 'Cukup, tetapi perlu dirapikan',
     summary: 'Kebiasaanmu belum buruk, tetapi ada beberapa bagian yang perlu ditata. Pilih satu kebiasaan dulu, jangan memperbaiki semuanya sekaligus.',
   },
   low: {
@@ -138,16 +152,19 @@ const RESULT_COPY = {
 
 const ARTICLE_RECOMMENDATIONS = {
   habits: {
+    slug: 'kebiasaan-sehat-7-hari',
     title: 'Sehat Itu Dimulai dari Kebiasaan Kecil yang Konsisten',
     href: 'articles/index.html',
     note: 'Buka daftar artikel dan pilih artikel kebiasaan kecil dari Firestore.',
   },
   testimony: {
+    slug: 'testimoni-bukan-bukti',
     title: 'Testimoni Bukan Bukti',
     href: 'articles/artikel-3.html',
     note: 'Untuk melatih sikap kritis saat membaca klaim produk.',
   },
   ai: {
+    slug: 'ai-untuk-edukasi-kesehatan',
     title: 'AI untuk Edukasi Kesehatan',
     href: 'articles/ai-untuk-edukasi-kesehatan.html',
     note: 'Untuk memahami peran AI sebagai alat bantu edukasi.',
@@ -217,22 +234,15 @@ function animateScore(element, nextScore) {
 
 function saveResult(payload) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    return saveLocalVitaCheckResult(payload);
   } catch {
     // localStorage mungkin tidak tersedia di beberapa mode browser.
+    return null;
   }
 }
 
 function readSavedResult() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed.score !== 'number') return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  return readLocalVitaCheckResult();
 }
 
 function buildVitaCheckShell(form) {
@@ -317,6 +327,27 @@ function ensureResultDetails(output) {
         <a href="articles/index.html">Buka daftar artikel VitaNusa AI</a>
       </div>
     </section>
+    <section class="vitacheck-save-panel" data-vc-save-panel hidden aria-busy="false">
+      <h4>Simpan hasil refleksi</h4>
+      <p>Hasil otomatis tersimpan secara lokal di perangkat ini. Penyimpanan ke akun selalu memerlukan persetujuanmu.</p>
+      <div class="vitacheck-save-actions">
+        <button class="btn outline" type="button" data-vc-save-local>Simpan di perangkat</button>
+        <button class="btn primary" type="button" data-vc-save-cloud>Simpan ke akun</button>
+        <a class="btn outline" href="account.html#riwayat-vitacheck">Lihat riwayat</a>
+      </div>
+      <div class="vn-inline-status" data-vc-save-status role="status" aria-live="polite" hidden></div>
+      <dialog class="vn-confirm-dialog" data-vc-save-dialog aria-labelledby="vcSaveDialogTitle">
+        <form method="dialog" class="vn-confirm-dialog-card">
+          <p class="eyebrow">Persetujuan penyimpanan</p>
+          <h4 id="vcSaveDialogTitle">Simpan ringkasan ke akun?</h4>
+          <p>Hanya versi, skor refleksi, kategori hasil, ID fokus, ID perhatian, slug artikel, sumber, dan waktu server yang dikirim. Jawaban mentah tidak dikirim.</p>
+          <div class="vn-dialog-actions">
+            <button class="btn outline" type="button" data-vc-save-cancel>Batal</button>
+            <button class="btn primary" type="button" data-vc-save-confirm>Simpan ringkasan privat</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
     <p class="note vitacheck-redflag" data-vc-redflag hidden>${RED_FLAG_COPY}</p>
     <p class="note vitacheck-disclaimer">${EDUCATION_DISCLAIMER}</p>
     <button class="btn outline full" type="button" data-vc-reset>Ulangi VitaCheck</button>
@@ -344,6 +375,13 @@ function getOutputElements() {
     strongList: details.querySelector('[data-vc-strong-list]'),
     attentionList: details.querySelector('[data-vc-attention-list]'),
     articles: details.querySelector('[data-vc-articles]'),
+    savePanel: details.querySelector('[data-vc-save-panel]'),
+    saveLocal: details.querySelector('[data-vc-save-local]'),
+    saveCloud: details.querySelector('[data-vc-save-cloud]'),
+    saveStatus: details.querySelector('[data-vc-save-status]'),
+    saveDialog: details.querySelector('[data-vc-save-dialog]'),
+    saveCancel: details.querySelector('[data-vc-save-cancel]'),
+    saveConfirm: details.querySelector('[data-vc-save-confirm]'),
     redFlag: details.querySelector('[data-vc-redflag]'),
     reset: details.querySelector('[data-vc-reset]'),
   };
@@ -382,6 +420,40 @@ function getAnswerSummary(answers) {
     hasLowHealthyHabit,
     hasLowProductLiteracy,
   };
+}
+
+function getStoredResultSummary(payload) {
+  const focusIds = Array.isArray(payload?.focusIds) ? payload.focusIds : [];
+  const attentionIds = Array.isArray(payload?.attentionIds) ? payload.attentionIds : [];
+  const redFlagIds = new Set(['tidur', 'pencernaan', 'energi', 'stres']);
+
+  return {
+    strong: ['Ringkasan lokal tidak menyimpan jawaban per pertanyaan.'],
+    attention: attentionIds.length
+      ? attentionIds.map((id) => VITACHECK_CATEGORIES[id]?.label || id)
+      : ['Tidak ada kategori perhatian yang tersimpan.'],
+    focus: focusIds.length
+      ? focusIds.map((id) => VITACHECK_CATEGORIES[id]?.focus || VITACHECK_CATEGORIES[id]?.label || id)
+      : ['Pertahankan rutinitas sehat yang sudah berjalan.'],
+    hasRedFlag: attentionIds.some((id) => redFlagIds.has(id)),
+    hasLowHealthyHabit: attentionIds.some((id) => id !== 'stres' && id !== 'literasi'),
+    hasLowProductLiteracy: attentionIds.includes('literasi'),
+  };
+}
+
+function getStoredRecommendedArticles(payload) {
+  const slugs = Array.isArray(payload?.recommendationSlugs) ? payload.recommendationSlugs : [];
+  const known = Object.values(ARTICLE_RECOMMENDATIONS);
+  return slugs.map((slug) => {
+    const match = known.find((article) => article.slug === slug);
+    if (match) return match;
+    return {
+      slug,
+      title: slug.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      href: `articles/detail.html?slug=${encodeURIComponent(slug)}`,
+      note: 'Artikel terkait ringkasan VitaCheck.',
+    };
+  });
 }
 
 function getRecommendedArticles(summary) {
@@ -425,6 +497,7 @@ async function loadFirebaseModules() {
 
 async function getDb() {
   const { initializeApp, getApp, getApps, getFirestore } = await loadFirebaseModules();
+  const { firebaseConfig } = await import('../../../admin/firebase-config.js');
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   return getFirestore(app);
 }
@@ -488,6 +561,7 @@ async function getFirestoreRecommendedArticles(summary) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
       .map(({ article }) => ({
+        slug: article.slug,
         title: article.title,
         href: `articles/detail.html?slug=${encodeURIComponent(article.slug)}`,
         note: article.answerSnippet || article.summary || 'Artikel terkait hasil VitaCheck.'
@@ -504,7 +578,11 @@ function renderArticles(container, articles) {
       const link = document.createElement('a');
       link.href = article.href;
       link.className = 'vitacheck-article-link';
-      link.innerHTML = `<strong>${article.title}</strong><span>${article.note}</span>`;
+      const title = document.createElement('strong');
+      const note = document.createElement('span');
+      title.textContent = article.title;
+      note.textContent = article.note;
+      link.append(title, note);
       return link;
     }),
   );
@@ -512,8 +590,8 @@ function renderArticles(container, articles) {
 
 function renderResult(output, payload, { animate = true } = {}) {
   const result = getResultCopy(payload.score);
-  const summary = payload.summary || getAnswerSummary(payload.answers || []);
-  const articles = payload.articles || getRecommendedArticles(summary);
+  const summary = payload.summary || getStoredResultSummary(payload);
+  const articles = payload.articles || getStoredRecommendedArticles(payload);
 
   if (animate) {
     animateScore(output.score, payload.score);
@@ -527,15 +605,17 @@ function renderResult(output, payload, { animate = true } = {}) {
   renderList(output.strongList, summary.strong);
   renderList(output.attentionList, summary.attention);
   renderArticles(output.articles, articles);
+  if (output.savePanel) output.savePanel.hidden = false;
 
   if (output.redFlag) output.redFlag.hidden = !summary.hasRedFlag;
 }
 
 async function refreshFirestoreRecommendations(output, payload) {
-  const summary = payload.summary || getAnswerSummary(payload.answers || []);
+  const summary = payload.summary || getStoredResultSummary(payload);
   const articles = await getFirestoreRecommendedArticles(summary);
   if (!articles.length) return;
   payload.articles = articles;
+  payload.recommendationSlugs = articles.map((article) => article.slug).filter(Boolean).slice(0, 3);
   renderArticles(output.articles, articles);
   saveResult(payload);
 }
@@ -544,11 +624,19 @@ function buildPayload(answers) {
   const score = calculateScoreFromAnswers(answers);
   const summary = getAnswerSummary(answers);
   const articles = getRecommendedArticles(summary);
+  const answered = answers.map((answer, index) => ({ answer, question: QUESTIONS[index] }));
+  const lowIds = answered.filter((item) => item.answer?.value === 0).map((item) => item.question.id);
+  const mediumIds = answered.filter((item) => item.answer?.value === 1).map((item) => item.question.id);
 
   return {
+    resultId: createVitaCheckResultId(),
     version: 2,
     score,
-    answers,
+    resultBand: getVitaCheckResultBand(score),
+    focusIds: (lowIds.length ? lowIds : mediumIds).slice(0, 4),
+    attentionIds: lowIds.slice(0, 4),
+    recommendationSlugs: articles.map((article) => article.slug).filter(Boolean).slice(0, 3),
+    source: 'vitacheck-v2',
     summary,
     articles,
     createdAt: new Date().toISOString(),
@@ -605,6 +693,30 @@ function updateSavedNote(form, text) {
   note.textContent = text;
 }
 
+function setSaveStatus(output, kind, title, message, busy = false) {
+  if (!output.saveStatus) return;
+  output.saveStatus.hidden = false;
+  output.saveStatus.dataset.kind = kind;
+  output.saveStatus.setAttribute('aria-busy', String(busy));
+  output.saveStatus.replaceChildren();
+  const strong = document.createElement('strong');
+  const span = document.createElement('span');
+  strong.textContent = title;
+  span.textContent = message;
+  output.saveStatus.append(strong, span);
+}
+
+function setSaveButtonsBusy(output, busy) {
+  if (output.savePanel) output.savePanel.setAttribute('aria-busy', String(busy));
+  if (output.saveLocal) output.saveLocal.disabled = busy;
+  if (output.saveCloud) {
+    output.saveCloud.disabled = busy;
+    output.saveCloud.textContent = busy ? 'Memproses…' : 'Simpan ke akun';
+  }
+  if (output.saveConfirm) output.saveConfirm.disabled = busy;
+  if (output.saveCancel) output.saveCancel.disabled = busy;
+}
+
 export function initVitaCheck({ formSelector = '#form' } = {}) {
   const form = document.querySelector(formSelector);
   if (!form) return null;
@@ -617,14 +729,127 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
 
   const answers = getInitialAnswers();
   let currentIndex = 0;
+  let currentPayload = null;
+  let authState = { isAuthenticated: false, user: null };
+  let saveOperationInFlight = false;
+  let loginRequestedForSave = false;
 
   const saved = readSavedResult();
   if (saved) {
+    currentPayload = saved;
     renderResult(output, saved, { animate: false });
-    updateSavedNote(form, `Hasil terakhir tersimpan: skor ${saved.score}/100. Isi ulang VitaCheck kapan saja untuk memperbarui fokus 7 hari.`);
+    setSaveStatus(output, 'neutral', 'Tersimpan di perangkat', 'Login dan penyimpanan cloud tetap bersifat opsional.');
+    updateSavedNote(form, `Hasil terakhir tersimpan lokal: skor refleksi ${saved.score}/100. Isi ulang VitaCheck kapan saja untuk memperbarui fokus 7 hari.`);
   }
 
   renderStep(shell, answers, currentIndex);
+
+  const closeSaveDialog = ({ restoreFocus = true } = {}) => {
+    if (!output.saveDialog) return;
+    if (output.saveDialog.open) output.saveDialog.close();
+    else output.saveDialog.hidden = true;
+    if (restoreFocus) output.saveCloud?.focus({ preventScroll: true });
+  };
+
+  const openSaveDialog = () => {
+    if (!output.saveDialog || saveOperationInFlight) return;
+    output.saveDialog.hidden = false;
+    if (typeof output.saveDialog.showModal === 'function' && !output.saveDialog.open) {
+      output.saveDialog.showModal();
+    }
+    output.saveConfirm?.focus({ preventScroll: true });
+  };
+
+  const handleSaveLocal = () => {
+    if (!currentPayload || saveOperationInFlight) return;
+    const savedResult = saveResult(currentPayload);
+    if (savedResult) {
+      setSaveStatus(output, 'success', 'Tersimpan di perangkat', 'Ringkasan berbasis ID disimpan lokal tanpa jawaban mentah.');
+    } else {
+      setSaveStatus(output, 'error', 'Penyimpanan lokal belum berhasil', 'Browser tidak menyediakan localStorage. Hasil pada layar tidak dihapus.');
+    }
+  };
+
+  const handleSaveCloud = async () => {
+    if (!currentPayload || saveOperationInFlight) return;
+    const user = getCurrentPublicUser();
+
+    if (!user) {
+      loginRequestedForSave = true;
+      saveOperationInFlight = true;
+      setSaveButtonsBusy(output, true);
+      setSaveStatus(output, 'loading', 'Login diperlukan', 'Setelah login, tekan Simpan ke akun lagi. Tidak ada upload otomatis.', true);
+      try {
+        const result = await signInPublicUser();
+        if (result.mode === 'popup') {
+          loginRequestedForSave = false;
+          setSaveStatus(output, 'success', 'Login berhasil', 'Tekan Simpan ke akun lagi untuk membuka konfirmasi penyimpanan.');
+        }
+      } catch (error) {
+        loginRequestedForSave = false;
+        const mapped = mapUserAuthError(error);
+        setSaveStatus(output, 'error', mapped.title, `${mapped.message} Hasil tetap tersimpan di perangkat.`);
+      } finally {
+        saveOperationInFlight = false;
+        setSaveButtonsBusy(output, false);
+      }
+      return;
+    }
+
+    openSaveDialog();
+  };
+
+  const handleSaveConfirm = async () => {
+    if (!currentPayload || saveOperationInFlight) return;
+    const user = getCurrentPublicUser();
+    if (!user) {
+      closeSaveDialog();
+      setSaveStatus(output, 'error', 'Sesi berubah', 'Sesi pengguna tidak lagi valid. Silakan login kembali. Hasil lokal tetap tersedia.');
+      return;
+    }
+
+    saveOperationInFlight = true;
+    setSaveButtonsBusy(output, true);
+    setSaveStatus(output, 'loading', 'Menyimpan ringkasan privat', 'Mengirim hanya field minimal yang diizinkan.', true);
+
+    try {
+      await saveVitaCheckHistory({ uid: user.uid, result: currentPayload });
+      closeSaveDialog({ restoreFocus: false });
+      setSaveStatus(output, 'success', 'Tersimpan ke akun', 'Hasil berhasil disimpan secara privat ke akunmu.');
+      output.saveCloud?.focus({ preventScroll: true });
+    } catch (error) {
+      const mapped = mapVitaCheckHistoryError(error);
+      if (mapped.code === 'already-exists') {
+        closeSaveDialog({ restoreFocus: false });
+        setSaveStatus(output, 'success', mapped.title, mapped.message);
+        output.saveCloud?.focus({ preventScroll: true });
+      } else {
+        setSaveStatus(output, 'error', mapped.title, `Hasil tetap tersimpan di perangkat. Penyimpanan akun belum berhasil. ${mapped.message}`);
+      }
+    } finally {
+      saveOperationInFlight = false;
+      setSaveButtonsBusy(output, false);
+    }
+  };
+
+  const handleSaveCancel = () => {
+    if (saveOperationInFlight) return;
+    closeSaveDialog();
+    setSaveStatus(output, 'neutral', 'Penyimpanan dibatalkan', 'Tidak ada ringkasan yang dikirim ke akun. Hasil lokal tetap tersedia.');
+  };
+
+  const handleSaveDialogCancel = (event) => {
+    event.preventDefault();
+    handleSaveCancel();
+  };
+
+  const unsubscribeAuth = subscribeUserAuth((state) => {
+    authState = state;
+    if (loginRequestedForSave && authState.isAuthenticated) {
+      loginRequestedForSave = false;
+      setSaveStatus(output, 'success', 'Login berhasil', 'Tekan Simpan ke akun lagi untuk membuka konfirmasi penyimpanan.');
+    }
+  });
 
   const handlePrevious = () => {
     currentIndex = Math.max(0, currentIndex - 1);
@@ -641,10 +866,12 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
     }
 
     const payload = buildPayload(answers);
+    currentPayload = payload;
     renderResult(output, payload, { animate: true });
     saveResult(payload);
     refreshFirestoreRecommendations(output, payload);
-    updateSavedNote(form, `Hasil terbaru tersimpan: skor ${payload.score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`);
+    setSaveStatus(output, 'success', 'Tersimpan di perangkat', 'Belum ada data yang dikirim ke akun. Pilih Simpan ke akun jika kamu menyetujuinya.');
+    updateSavedNote(form, `Hasil terbaru tersimpan lokal: skor refleksi ${payload.score}/100. Gunakan sebagai bahan refleksi kebiasaan, bukan diagnosis medis.`);
   };
 
   const handleSubmit = (event) => {
@@ -655,6 +882,7 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
   const handleReset = () => {
     answers.fill(null);
     currentIndex = 0;
+    currentPayload = null;
     output.score.textContent = '0';
     output.status.textContent = 'Hasil Edukasi';
     output.summary.textContent = 'Isi VitaCheck untuk melihat saran kebiasaan sehat.';
@@ -663,6 +891,8 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
     renderList(output.attentionList, ['Isi VitaCheck untuk melihat bagian yang perlu dirapikan.']);
     renderArticles(output.articles, [{ title: 'Buka daftar artikel VitaNusa AI', href: 'articles/index.html', note: 'Pilih artikel edukasi yang paling sesuai kebutuhanmu.' }]);
     if (output.redFlag) output.redFlag.hidden = true;
+    if (output.savePanel) output.savePanel.hidden = true;
+    closeSaveDialog({ restoreFocus: false });
     renderStep(shell, answers, currentIndex);
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -671,6 +901,11 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
   shell.next.addEventListener('click', handleNext);
   form.addEventListener('submit', handleSubmit);
   output.reset?.addEventListener('click', handleReset);
+  output.saveLocal?.addEventListener('click', handleSaveLocal);
+  output.saveCloud?.addEventListener('click', handleSaveCloud);
+  output.saveConfirm?.addEventListener('click', handleSaveConfirm);
+  output.saveCancel?.addEventListener('click', handleSaveCancel);
+  output.saveDialog?.addEventListener('cancel', handleSaveDialogCancel);
 
   return {
     calculateScore: calculateScoreFromAnswers,
@@ -680,6 +915,12 @@ export function initVitaCheck({ formSelector = '#form' } = {}) {
       shell.next.removeEventListener('click', handleNext);
       form.removeEventListener('submit', handleSubmit);
       output.reset?.removeEventListener('click', handleReset);
+      output.saveLocal?.removeEventListener('click', handleSaveLocal);
+      output.saveCloud?.removeEventListener('click', handleSaveCloud);
+      output.saveConfirm?.removeEventListener('click', handleSaveConfirm);
+      output.saveCancel?.removeEventListener('click', handleSaveCancel);
+      output.saveDialog?.removeEventListener('cancel', handleSaveDialogCancel);
+      unsubscribeAuth();
     },
   };
 }
