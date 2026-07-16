@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>VitaNusa Mandiri | Fondasi Lokal</title>
   <meta name="description" content="Fondasi lokal VitaNusa Mandiri untuk belajar dan usaha kecil. Belum menjadi aplikasi kasir, pembelajaran, atau sinkronisasi cloud.">
-  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260716-mandiri-f1-shell-v1">
+  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-f1-workspace-v1">
 </head>
 <body class="vn-mandiri-page">
   <a class="vn-mandiri-skip" href="#mandiriMain">Lewati ke konten utama</a>
@@ -34,7 +34,7 @@
         <article class="vn-mandiri-status-card">
           <p class="vn-mandiri-status-label">Status fitur</p>
           <strong data-mandiri-feature-state>Off — belum tersedia</strong>
-          <p>Shell fondasi saja. Belum siap produksi.</p>
+          <p>Fondasi lokal terbatas. Belum siap produksi.</p>
         </article>
 
         <article class="vn-mandiri-status-card">
@@ -48,6 +48,91 @@
           <strong>Koneksi perangkat</strong>
           <p data-mandiri-connection-status role="status" aria-live="polite">Memeriksa status koneksi perangkat.</p>
         </article>
+      </section>
+
+      <section
+        class="vn-mandiri-workspace"
+        data-mandiri-workspace-panel
+        data-workspace-panel-state="auth-loading"
+        aria-labelledby="mandiriWorkspaceTitle"
+        aria-busy="true"
+      >
+        <div class="vn-mandiri-section-heading">
+          <p class="vn-mandiri-kicker">Workspace lokal</p>
+          <h2 id="mandiriWorkspaceTitle">Ruang kerja di perangkat ini</h2>
+          <p>Workspace memisahkan fondasi data lokal per akun VitaNusa. Fitur ini belum menjadi aplikasi kasir.</p>
+        </div>
+
+        <p class="vn-mandiri-workspace-status" data-workspace-status role="status" aria-live="polite">
+          Memeriksa sesi akun VitaNusa.
+        </p>
+
+        <p class="vn-mandiri-workspace-user" data-workspace-user-panel hidden>
+          Akun aktif: <strong data-workspace-user-name></strong>. Nama ini hanya tampil di UI dan tidak disimpan dalam record workspace.
+        </p>
+
+        <div class="vn-mandiri-workspace-panel" data-workspace-loading>
+          <p>Menyiapkan workspace lokal dengan aman.</p>
+        </div>
+
+        <div class="vn-mandiri-workspace-panel" data-workspace-signed-out hidden>
+          <p>Login diperlukan untuk memisahkan workspace lokal antar-akun. Data workspace tetap disimpan hanya di perangkat ini.</p>
+          <div class="vn-mandiri-workspace-actions">
+            <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-workspace-login>
+              Login dengan Google
+            </button>
+            <a class="vn-mandiri-link" href="../account.html">Buka halaman akun</a>
+          </div>
+        </div>
+
+        <div class="vn-mandiri-workspace-panel" data-workspace-form-panel hidden>
+          <form class="vn-mandiri-workspace-form" data-workspace-form novalidate>
+            <fieldset data-workspace-fieldset>
+              <legend>Buat satu workspace lokal</legend>
+
+              <label for="workspaceName">Nama usaha atau ruang kerja</label>
+              <input
+                id="workspaceName"
+                name="workspaceName"
+                type="text"
+                maxlength="120"
+                autocomplete="organization"
+                required
+              >
+
+              <label for="workspaceTimezone">Zona waktu</label>
+              <select id="workspaceTimezone" name="workspaceTimezone" required>
+                <option value="Asia/Jakarta" selected>Asia/Jakarta (WIB)</option>
+                <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+              </select>
+
+              <label for="workspaceCurrency">Mata uang</label>
+              <input id="workspaceCurrency" name="workspaceCurrency" value="IDR" readonly>
+
+              <button class="vn-mandiri-button vn-mandiri-button-primary" type="submit" data-workspace-submit>
+                Buat workspace lokal
+              </button>
+            </fieldset>
+          </form>
+        </div>
+
+        <div class="vn-mandiri-workspace-panel" data-workspace-summary hidden>
+          <dl class="vn-mandiri-workspace-summary">
+            <div><dt>Nama workspace</dt><dd data-workspace-name></dd></div>
+            <div><dt>Zona waktu</dt><dd data-workspace-timezone></dd></div>
+            <div><dt>Mata uang</dt><dd data-workspace-currency></dd></div>
+            <div><dt>Status</dt><dd data-workspace-record-status></dd></div>
+            <div><dt>Label</dt><dd>Local-only</dd></div>
+            <div><dt>Role</dt><dd data-workspace-role></dd></div>
+          </dl>
+          <p>Workspace ini hanya tersimpan pada perangkat ini. Belum ada sinkronisasi cloud atau pencadangan otomatis.</p>
+        </div>
+
+        <div class="vn-mandiri-workspace-panel vn-mandiri-workspace-error" data-workspace-error hidden>
+          <p data-workspace-error-message role="alert"></p>
+          <button class="vn-mandiri-button" type="button" data-workspace-retry hidden>Coba lagi</button>
+        </div>
       </section>
 
       <section class="vn-mandiri-planned" aria-labelledby="mandiriPlannedTitle">
@@ -85,8 +170,8 @@
       </section>
 
       <aside class="vn-mandiri-boundary" aria-labelledby="mandiriBoundaryTitle">
-        <h2 id="mandiriBoundaryTitle">Batas Fase 1 PR 1</h2>
-        <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud. Nusa Agent yang sudah tersedia tetap informasional, tidak membuat draft transaksi, dan tidak membaca isi shell secara otomatis.</p>
+        <h2 id="mandiriBoundaryTitle">Batas Fase 1 PR 4</h2>
+        <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. PR ini hanya menambahkan database lokal workspace yang terbatas. Nusa Agent tetap informasional dan tidak membaca workspace.</p>
       </aside>
 
       <footer class="vn-mandiri-footer">
@@ -96,6 +181,6 @@
     </section>
   </main>
 
-  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260716-mandiri-f1-shell-v1"></script>
+  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260717-mandiri-f1-workspace-v1"></script>
 </body>
 </html>

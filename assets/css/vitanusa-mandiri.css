@@ -239,6 +239,174 @@ body.vn-mandiri-page {
   gap: 18px;
 }
 
+.vn-mandiri-workspace {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--vn-mandiri-line);
+  border-radius: 24px;
+  background: linear-gradient(145deg, #fbfefc, var(--vn-mandiri-green-50));
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.vn-mandiri-workspace-status,
+.vn-mandiri-workspace-user,
+.vn-mandiri-workspace-panel p,
+.vn-mandiri-workspace-summary dt,
+.vn-mandiri-workspace-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.vn-mandiri-workspace-user {
+  color: var(--vn-mandiri-muted);
+  line-height: 1.55;
+}
+
+.vn-mandiri-workspace-user strong {
+  color: var(--vn-mandiri-green-950);
+}
+
+.vn-mandiri-workspace-status {
+  border-left: 4px solid var(--vn-mandiri-green-600);
+  color: var(--vn-mandiri-green-950);
+  font-weight: 750;
+  line-height: 1.55;
+  padding-left: 12px;
+}
+
+.vn-mandiri-workspace-panel {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: clamp(16px, 3vw, 22px);
+}
+
+.vn-mandiri-workspace-panel > p {
+  color: var(--vn-mandiri-muted);
+  line-height: 1.6;
+}
+
+.vn-mandiri-workspace-actions {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vn-mandiri-button {
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--vn-mandiri-green-800);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--vn-mandiri-green-800);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+  padding: 10px 18px;
+}
+
+.vn-mandiri-button-primary {
+  background: linear-gradient(135deg, var(--vn-mandiri-green-800), var(--vn-mandiri-green-600));
+  color: #ffffff;
+}
+
+.vn-mandiri-button:focus-visible,
+.vn-mandiri-workspace :where(input, select):focus-visible {
+  outline: 3px solid rgba(22, 163, 74, .3);
+  outline-offset: 3px;
+}
+
+.vn-mandiri-button:disabled {
+  cursor: wait;
+  opacity: .66;
+}
+
+.vn-mandiri-workspace-form,
+.vn-mandiri-workspace-form fieldset {
+  min-width: 0;
+  margin: 0;
+}
+
+.vn-mandiri-workspace-form fieldset {
+  display: grid;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+}
+
+.vn-mandiri-workspace-form legend {
+  margin-bottom: 14px;
+  color: var(--vn-mandiri-green-950);
+  font-size: 1.15rem;
+  font-weight: 850;
+}
+
+.vn-mandiri-workspace-form label {
+  margin-top: 6px;
+  color: var(--vn-mandiri-green-950);
+  font-weight: 750;
+}
+
+.vn-mandiri-workspace-form :where(input, select) {
+  width: 100%;
+  max-width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(20, 83, 45, .35);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--vn-mandiri-ink);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.vn-mandiri-workspace-form input[readonly] {
+  background: #f4f7f5;
+}
+
+.vn-mandiri-workspace-form .vn-mandiri-button {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 10px;
+}
+
+.vn-mandiri-workspace-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.vn-mandiri-workspace-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--vn-mandiri-line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.vn-mandiri-workspace-summary dt {
+  color: var(--vn-mandiri-muted);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.vn-mandiri-workspace-summary dd {
+  color: var(--vn-mandiri-green-950);
+  font-weight: 850;
+}
+
+.vn-mandiri-workspace-error {
+  border: 1px solid rgba(180, 83, 9, .3);
+  background: #fffaf0;
+}
+
 .vn-mandiri-section-heading {
   min-width: 0;
   display: grid;
@@ -336,7 +504,8 @@ body.vn-mandiri-page {
 
 @media (max-width: 820px) {
   .vn-mandiri-status-grid,
-  .vn-mandiri-module-grid {
+  .vn-mandiri-module-grid,
+  .vn-mandiri-workspace-summary {
     grid-template-columns: 1fr;
   }
 
@@ -382,12 +551,19 @@ body.vn-mandiri-page {
   }
 
   .vn-mandiri-status-card,
-  .vn-mandiri-module-card {
+  .vn-mandiri-module-card,
+  .vn-mandiri-workspace {
     border-radius: 18px;
     padding: 16px;
   }
 
   .vn-mandiri-link {
+    width: 100%;
+  }
+
+  .vn-mandiri-workspace-actions,
+  .vn-mandiri-workspace-form .vn-mandiri-button,
+  .vn-mandiri-workspace-actions .vn-mandiri-button {
     width: 100%;
   }
 }
