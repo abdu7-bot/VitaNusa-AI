@@ -42,6 +42,19 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+## Dependency Python
+
+`../pyproject.toml` adalah sumber utama dependency langsung Python.
+`requirements.txt` merupakan mirror kompatibilitas untuk instalasi berbasis pip, Render, dan CI,
+sedangkan `../uv.lock` mengunci dependency lengkap untuk environment berbasis uv.
+
+Setiap perubahan dependency langsung harus diterapkan pada `pyproject.toml` dan `requirements.txt`.
+Sebelum commit, jalankan pemeriksaan berikut dari root repository:
+
+```bash
+python scripts/check_python_dependency_sync.py
+```
+
 ## Endpoint
 
 - `GET /`
