@@ -8,7 +8,7 @@
     content="Dashboard admin VitaNusa AI untuk mengelola konten edukasi, knowledge, dan artikel dengan prinsip amanah.">
   <meta name="robots" content="noindex, nofollow">
   <title>VitaNusa AI Admin Dashboard</title>
-  <link rel="stylesheet" href="admin.css?v=20260715-admin-auth-v1">
+  <link rel="stylesheet" href="admin.css?v=20260716-owner-admin-management-v1">
   <link rel="stylesheet" href="articles.css?v=20260704-vitanusa-master-map-v1">
   <link rel="stylesheet" href="knowledge-mobile-fix.css?v=20260704-knowledge-mobile-v1">
 </head>
@@ -133,6 +133,9 @@
           <button class="admin-nav-link" type="button" data-admin-section="profile" title="Profil Pengguna"><span
               class="admin-nav-icon" aria-hidden="true">PF</span><span class="admin-nav-text">Profil
               Pengguna</span></button>
+          <button class="admin-nav-link" type="button" data-admin-section="admin-management"
+            data-owner-admin-management-nav title="Kelola Admin" aria-hidden="true" hidden disabled><span
+              class="admin-nav-icon" aria-hidden="true">KA</span><span class="admin-nav-text">Kelola Admin</span></button>
         </div>
       </nav>
 
@@ -656,6 +659,141 @@
               </article>
             </div>
         </section>
+        <section class="admin-panel" data-admin-panel="admin-management" data-owner-only="true"
+          aria-labelledby="adminManagementTitle" hidden>
+          <div class="admin-section-heading">
+            <p class="admin-kicker">Khusus Owner</p>
+            <h2 id="adminManagementTitle">Kelola Admin</h2>
+            <p>Kelola dokumen <code>admins/{uid}</code>. Firebase Authentication tetap dibuat melalui login Google;
+              panel ini tidak membuat akun Google dan tidak dapat mencari UID dari email.</p>
+          </div>
+
+          <div class="admin-management" data-admin-management-app>
+            <section class="admin-management-summary" aria-labelledby="activeAdminSummaryTitle">
+              <div class="admin-management-subheading">
+                <div>
+                  <h3 id="activeAdminSummaryTitle">Akun aktif</h3>
+                  <p>Identitas aman dari sesi owner yang sedang digunakan.</p>
+                </div>
+                <span class="admin-status-pill">Owner terverifikasi</span>
+              </div>
+              <dl class="admin-management-account-grid">
+                <div><dt>Email</dt><dd data-admin-management-current-email>-</dd></div>
+                <div><dt>UID singkat</dt><dd><code data-admin-management-current-uid>-</code></dd></div>
+                <div><dt>Role</dt><dd data-admin-management-current-role>-</dd></div>
+                <div><dt>Status</dt><dd data-admin-management-current-status>-</dd></div>
+              </dl>
+            </section>
+
+            <div class="admin-management-message is-loading" data-admin-management-message role="status"
+              aria-live="polite">
+              <strong>Menunggu verifikasi owner</strong>
+              <span>Daftar admin belum dimuat.</span>
+            </div>
+
+            <p class="admin-management-protection-note">Akun owner yang sedang digunakan tidak dapat dinonaktifkan,
+              diturunkan rolenya, atau dihapus dari sesi ini.</p>
+
+            <div class="admin-management-layout">
+              <section class="admin-management-card" aria-labelledby="addAdminTitle">
+                <div class="admin-management-subheading">
+                  <div>
+                    <h3 id="addAdminTitle">Tambah admin</h3>
+                    <p>Calon admin harus login Google satu kali dan memberikan UID miliknya.</p>
+                  </div>
+                </div>
+                <form class="admin-management-form" data-admin-management-form novalidate>
+                  <label for="adminManagementUid">UID Firebase
+                    <input id="adminManagementUid" name="uid" type="text" required maxlength="128"
+                      autocomplete="off" spellcheck="false" aria-describedby="adminManagementUidHelp adminManagementUidError">
+                  </label>
+                  <small id="adminManagementUidHelp" class="admin-management-help">Gunakan UID sebagai Document ID;
+                    jangan memakai ID otomatis.</small>
+                  <small id="adminManagementUidError" class="admin-management-field-error"
+                    data-admin-management-error="uid" hidden></small>
+
+                  <label for="adminManagementEmail">Email
+                    <input id="adminManagementEmail" name="email" type="email" required maxlength="254"
+                      autocomplete="off" aria-describedby="adminManagementEmailError">
+                  </label>
+                  <small id="adminManagementEmailError" class="admin-management-field-error"
+                    data-admin-management-error="email" hidden></small>
+
+                  <label for="adminManagementRole">Role
+                    <select id="adminManagementRole" name="role" required aria-describedby="adminManagementRoleError">
+                      <option value="admin" selected>Admin</option>
+                      <option value="owner">Owner</option>
+                    </select>
+                  </label>
+                  <small id="adminManagementRoleError" class="admin-management-field-error"
+                    data-admin-management-error="role" hidden></small>
+
+                  <label for="adminManagementStatus">Status
+                    <select id="adminManagementStatus" name="status" required
+                      aria-describedby="adminManagementStatusHelp adminManagementStatusError">
+                      <option value="inactive" selected>Inactive</option>
+                      <option value="active">Active</option>
+                    </select>
+                  </label>
+                  <small id="adminManagementStatusHelp" class="admin-management-help">Default inactive agar identitas
+                    dapat diverifikasi sebelum akses diaktifkan.</small>
+                  <small id="adminManagementStatusError" class="admin-management-field-error"
+                    data-admin-management-error="status" hidden></small>
+
+                  <button class="admin-button admin-button-primary" type="submit"
+                    data-admin-management-submit>Tambah admin</button>
+                </form>
+              </section>
+
+              <section class="admin-management-card admin-management-list-card" aria-labelledby="adminListTitle">
+                <div class="admin-management-subheading">
+                  <div>
+                    <h3 id="adminListTitle">Daftar admin</h3>
+                    <p>Urutan: owner active, admin active, inactive, lalu email.</p>
+                  </div>
+                  <button class="admin-button admin-button-light" type="button"
+                    data-admin-management-refresh>Refresh</button>
+                </div>
+                <div class="admin-management-table-wrap" data-admin-management-list-region aria-live="polite"
+                  aria-busy="false" tabindex="0">
+                  <table class="admin-management-table">
+                    <thead>
+                      <tr>
+                        <th>Email</th>
+                        <th>UID</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Tindakan</th>
+                      </tr>
+                    </thead>
+                    <tbody data-admin-management-list>
+                      <tr><td colspan="5" class="admin-management-list-state">Menunggu verifikasi owner aktif...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+
+            <dialog class="admin-management-dialog" data-admin-management-dialog
+              aria-labelledby="adminManagementDialogTitle">
+              <div class="admin-management-dialog-content">
+                <p class="admin-kicker">Konfirmasi perubahan</p>
+                <h3 id="adminManagementDialogTitle" data-admin-management-dialog-title>Konfirmasi tindakan</h3>
+                <dl class="admin-management-dialog-summary">
+                  <div><dt>Email</dt><dd data-admin-management-dialog-email>-</dd></div>
+                  <div><dt>UID singkat</dt><dd><code data-admin-management-dialog-uid>-</code></dd></div>
+                  <div><dt>Perubahan</dt><dd data-admin-management-dialog-change>-</dd></div>
+                </dl>
+                <div class="admin-management-dialog-actions">
+                  <button class="admin-button admin-button-light" type="button"
+                    data-admin-management-dialog-cancel>Batal</button>
+                  <button class="admin-button admin-button-danger" type="button"
+                    data-admin-management-dialog-confirm>Konfirmasi</button>
+                </div>
+              </div>
+            </dialog>
+          </div>
+        </section>
         <section class="admin-panel" data-admin-panel="settings" hidden>
           <div class="admin-section-heading">
             <p class="admin-kicker">Pengaturan</p>
@@ -695,7 +833,8 @@
     </div>
   </div>
 
-  <script src="admin.js?v=20260715-admin-auth-v1"></script>
+  <script src="admin.js?v=20260716-owner-admin-management-v1"></script>
+  <script type="module" src="admin-management.js?v=20260716-owner-admin-management-v1"></script>
   <script type="module" src="firebase-auth.js?v=20260715-admin-auth-v1"></script>
   <script type="module" src="content-library.js?v=20260705-admin-content-library-v1"></script>
   <script type="module" src="articles-import-one-block.js?v=20260704-vitanusa-master-map-v1"></script>

@@ -22,7 +22,18 @@ Jangan mengambil UID dari tebakan, email, atau nama akun. Jangan mengirim token,
 
 ## Membuat dokumen admin
 
-Dalam aplikasi, hanya owner aktif yang boleh membuat dokumen admin. Karena halaman pengelolaan admin belum tersedia, project owner yang berwenang masih dapat melakukan bootstrap atau pemulihan melalui Firebase Console. Perlu diingat bahwa Firebase Console memakai hak project dan tidak dibatasi oleh client Rules, sehingga perubahan manual wajib direview dengan ketat.
+Dalam aplikasi, hanya owner aktif yang boleh membuat dokumen admin melalui panel **Kelola Admin**. Firebase Console hanya diperlukan untuk bootstrap owner pertama atau pemulihan yang telah disetujui. Console memakai hak project dan tidak dibatasi oleh client Rules, sehingga perubahan manual wajib direview dengan ketat.
+
+Frontend tidak membuat akun Firebase Authentication dan tidak dapat mencari UID pengguna berdasarkan email. Alur pendaftaran yang benar:
+
+1. Calon admin login dengan Google satu kali melalui halaman admin.
+2. Firebase Authentication menghasilkan UID dan halaman diagnostik menampilkannya.
+3. Calon admin menyalin UID miliknya dan memberikannya kepada owner melalui jalur yang aman.
+4. Owner membuka **Pengaturan > Kelola Admin**, lalu memasukkan UID, email, role, dan status.
+5. Owner mempertahankan default `role: admin` dan `status: inactive` sampai identitas diverifikasi.
+6. Setelah verifikasi, owner mengubah status menjadi `active` dan calon admin login ulang atau menekan **Periksa Ulang**.
+
+UID dipakai sebagai Document ID. Panel memeriksa dokumen dari server dan memakai transaksi sebelum create sehingga dokumen yang sudah tersedia tidak ditimpa melalui alur tambah.
 
 Contoh data pengujian yang valid:
 
@@ -52,6 +63,24 @@ Dokumen admin wajib memiliki tepat tiga field:
 - `status`, bernilai `active` atau `inactive`.
 
 Field tambahan seperti `token`, `password`, `secret`, `privateKey`, dan `serviceAccount` ditolak oleh Rules.
+
+## Panel Kelola Admin
+
+Menu dan section **Kelola Admin** hanya dibuka bila metadata sesi tepat `role === "owner"` dan `status === "active"`. Admin biasa tidak menerima menu tersebut dan navigasi dashboard menolak pembukaan panel owner secara manual. Pembatasan UI ini membantu mencegah salah operasi; Firestore Rules tetap menjadi pengaman utama untuk list, create, update, dan delete.
+
+Panel menampilkan email, UID, role, dan status saja. Jangan memasukkan password, token, access token, refresh token, service account, private key, nomor telepon, data kesehatan, atau catatan pribadi ke koleksi `admins`.
+
+Operasi panel:
+
+- **Tambah admin:** masukkan UID dari akun yang sudah login Google, email, role, dan status. Default aman adalah `admin` serta `inactive`.
+- **Aktivasi:** setelah memverifikasi UID dan email, ubah status admin lain dari `inactive` menjadi `active`, lalu minta pengguna login ulang.
+- **Ubah role:** owner dapat mengubah admin lain menjadi owner atau menurunkan owner lain menjadi admin. Perubahan berisiko meminta konfirmasi yang menyebut akun dan perubahan.
+- **Nonaktifkan:** ubah status admin lain menjadi `inactive`. Akses konten berhenti setelah Rules mengevaluasi request berikutnya.
+- **Hapus:** pilih **Hapus**, review identitas, lalu konfirmasi dengan tombol **Hapus akses admin**. Penghapusan hanya menghapus dokumen `admins/{uid}`; panel tidak menghapus akun Google atau Firebase Authentication.
+
+Owner yang sedang digunakan tidak dapat dinonaktifkan, diturunkan rolenya, dihapus, atau ditimpa melalui form tambah. UI menonaktifkan kontrol tersebut dan Rules menolak request bila UI dimanipulasi.
+
+Panel membedakan `permission-denied`, gangguan jaringan, timeout, duplicate UID, dokumen yang sudah hilang, sesi tidak valid, dan error tidak dikenal. Pesan UI tidak menampilkan stack trace, isi dokumen lengkap, atau credential.
 
 ## Perbedaan owner dan admin
 
@@ -114,10 +143,11 @@ Pengujian otomatis memakai project ID demo dan data palsu; tidak ada koneksi ke 
 
 ```bash
 npm ci
+npm run test:admin-management
 npm run test:firestore-rules
 ```
 
-Perintah tersebut menjalankan Firestore Emulator lalu menguji self-read, batas owner/admin, validasi field, perlindungan owner sendiri, akses konten, public read, dan penolakan data privat. Emulator memerlukan Java yang kompatibel dengan versi Firebase CLI pada `package-lock.json`.
+Test logika panel menguji otorisasi owner, validasi input, perlindungan akun sendiri, sorting, dan pemetaan error tanpa membuka koneksi produksi. Test Rules menjalankan Firestore Emulator untuk menguji self-read, batas owner/admin, validasi field, perlindungan owner sendiri, akses konten, public read, dan penolakan data privat. Emulator memerlukan Java yang kompatibel dengan versi Firebase CLI pada `package-lock.json`.
 
 ## Mengenali hasil pemeriksaan
 
@@ -147,13 +177,17 @@ Konfigurasi sumber juga harus memakai `authDomain: vitanusa-ai.firebaseapp.com`.
 
 ## Menonaktifkan admin
 
-Hanya owner aktif yang boleh menonaktifkan admin lain melalui aplikasi. Sampai UI pengelolaan admin tersedia, project owner dapat mengubah field berikut secara manual setelah memverifikasi UID target:
+Hanya owner aktif yang boleh menonaktifkan admin lain. Buka **Kelola Admin**, cari UID target yang sudah diverifikasi, pilih status `Inactive`, tekan **Simpan**, lalu konfirmasi perubahan:
 
 ```text
 status: inactive
 ```
 
 Owner tidak boleh menonaktifkan dirinya sendiri. Setelah **Periksa Ulang** atau login berikutnya, akun target tidak boleh membuka dashboard dan operasi Firestore yang memerlukan admin aktif harus ditolak.
+
+## Menghapus akses admin
+
+Owner aktif dapat menghapus dokumen admin lain melalui **Kelola Admin > Hapus > Hapus akses admin**. Periksa email dan UID singkat pada dialog sebelum mengonfirmasi. Owner tidak dapat menghapus dokumen dirinya sendiri. Penghapusan dokumen admin tidak menghapus akun Google atau Firebase Authentication; bila akses perlu dikembalikan, owner harus membuat ulang dokumen dengan UID yang sama setelah verifikasi.
 
 ## Cache GitHub Pages dan service worker
 
@@ -199,6 +233,9 @@ GitHub Pages dapat memberi header `cache-control: max-age=600`. Versi query pada
 - Admin aktif tidak dapat membaca daftar atau mengubah akun admin lain.
 - Owner aktif dapat mengelola akun admin lain dengan data valid.
 - Owner tidak dapat menghapus, menonaktifkan, atau menurunkan role dirinya sendiri.
+- Menu **Kelola Admin** hanya terlihat untuk owner aktif dan pembukaan panel owner ditolak untuk admin biasa.
+- Duplicate UID menampilkan pesan bahwa akun sudah tersedia dan tidak menimpa dokumen lama.
+- Dialog konfirmasi muncul sebelum nonaktifkan, promosi, demosi, atau delete.
 
 ### F. Firestore permission denied
 
@@ -222,11 +259,12 @@ Pengujian login nyata harus dilakukan manual oleh owner. Jangan mengirim token, 
 
 ## Rollback
 
-1. Identifikasi commit Rules terakhir yang diketahui aman.
+1. Identifikasi commit frontend atau Rules terakhir yang diketahui aman.
 2. Revert commit perubahan melalui pull request baru; jangan force push ke `main`.
-3. Jalankan `npm run test:firestore-rules`, `npm run test:admin-auth`, dan build frontend terhadap hasil revert.
-4. Review bahwa versi rollback tetap menolak akses publik dan tidak mengembalikan hak pengelolaan admin kepada role `admin`.
-5. Setelah persetujuan owner, publikasikan `firestore.rules` dan `storage.rules` yang telah direview melalui proses Firebase resmi.
-6. Bersihkan site data dan ulangi checklist manual.
+3. Jalankan `npm run check`, `npm run test:admin-auth`, `npm run test:admin-management`, dan `npm run test:firestore-rules` terhadap hasil revert.
+4. Review bahwa rollback UI tidak menampilkan panel kepada admin biasa dan rollback Rules tetap menolak akses publik serta pengelolaan admin oleh role `admin`.
+5. Jika hanya frontend yang berubah, merge atau rollback frontend tidak memublikasikan Rules Firebase.
+6. Jika Rules memang perlu di-rollback, setelah persetujuan owner publikasikan Rules yang telah direview melalui proses Firebase resmi; jangan menjalankan deployment dari workflow pengembangan ini.
+7. Bersihkan site data dan ulangi checklist manual.
 
 Rollback frontend tidak otomatis mengubah Rules produksi, dan merge GitHub tidak sama dengan deployment Rules. Keduanya harus ditinjau sebagai langkah terpisah.

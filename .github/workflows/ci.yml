@@ -140,6 +140,9 @@ jobs:
       - name: Test admin access logic
         run: npm run test:admin-auth
 
+      - name: Test admin management logic
+        run: npm run test:admin-management
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -147,6 +150,7 @@ jobs:
         run: |
           node --check admin/admin-access.js
           node --check admin/firebase-auth.js
+          node --check admin/admin-management.js
           node --check admin/admin.js
           node --check service-worker.js
           node --check assets/js/modules/nusa-chat.js
