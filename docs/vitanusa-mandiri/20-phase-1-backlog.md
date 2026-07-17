@@ -15,6 +15,7 @@ Status: **Calon issue; jangan dibuat otomatis di GitHub**. Urutan mengikuti depe
 | VM-F1-013 | Backup JSON ter-scope dan restore preview-only diimplementasikan pada PR 5; selesai setelah PR 5 direview dan merge. Restore commit tetap belum dibuat. |
 | VM-F1-015 | Local security boundary tests diimplementasikan pada PR 5; test ini tidak menggantikan Firestore Rules masa depan. |
 | VM-F1-016 | Dokumen implementasi dan runbook dibuat pada PR 5; status final berlaku setelah review dan merge. |
+| VM-F1-017 | Dashboard product blueprint tersedia pada working tree; belum selesai sampai seluruh acceptance gate lulus. |
 
 Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Setelah PR 5 merge dan seluruh Actions hijau, Fase 1 selesai sebagai fondasi local-only. Status tersebut tidak berarti aplikasi kasir, learning, cloud sync, atau kesiapan produksi telah selesai.
 
@@ -75,7 +76,7 @@ Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Setelah PR 5 merge 
 - **Acceptance criteria:** upgrade repeat safe; interrupted migration does not expose partial version; no destructive cleanup in first migration.
 - **Tests:** v0→v1, retry, failure/quarantine, newer version reject.
 - **Security notes:** migration never crosses accountScope or performs network.
-- **Out of scope:** production data migration or downgrade writes.
+- **Out of scope:** production data migration atau downgrade writes.
 - **Complexity:** Medium.
 
 ## VM-F1-006 — Local repository abstraction
@@ -210,6 +211,18 @@ Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Setelah PR 5 merge 
 - **Out of scope:** deployment or Rules publication.
 - **Complexity:** Small.
 
+## VM-F1-017 — Dashboard product blueprint
+
+- **Goal:** dashboard tenang, responsif, aksesibel, dan jujur yang menghubungkan Tanya Nusa, workspace lokal, backup/recovery, dan modul planned.
+- **Scope:** sidebar desktop/drawer mobile, header status, hero Tanya Nusa, module grid empat kartu, workspace panel existing, backup summary, batas aman, test, dan dokumentasi.
+- **Files affected:** `mandiri/index.html`, CSS Mandiri, app shell, targeted dashboard test, package script, dan dokumen dashboard.
+- **Dependencies:** VM-F1-002, VM-F1-007, VM-F1-013, VM-F1-015, VM-F1-016.
+- **Acceptance criteria:** Tanya Nusa satu-satunya modul aktif; tiga modul lain planned tanpa navigasi palsu; keyboard/mobile/desktop bekerja; seluruh test dan build lulus; security boundary tidak berubah.
+- **Tests:** dashboard render/status/navigation/responsiveness plus seluruh regression test Mandiri.
+- **Security notes:** UI tidak menambah Firestore, backend, cloud sync, unscoped read, restore write, atau HTML tidak tepercaya.
+- **Out of scope:** commit, push, PR, deployment, POS, learning engine, laporan produksi, atau restore commit.
+- **Complexity:** Medium.
+
 ## Dependency order
 
 ```text
@@ -229,7 +242,7 @@ all → 016
 | --- | --- | --- |
 | PR 1 — Feature flag + shell | 001, 002, 012 | Flag off reverts UX; no DB |
 | PR 2 — Domain types, money, dan IDs | 003, 009, 010, part of 014 | Pure modules; no storage atau user-facing data |
-| PR 3 — IndexedDB foundation | 004, 005, 006 | No user-facing domain; revert before real data or keep read-only migration |
+| PR 3 — IndexedDB foundation | 004, 005, 006 | No user-facing domain; revert before real data atau keep read-only migration |
 | PR 4 — Audit dan workspace local | 011, 007, 008 | Local-only; atomic workspace/owner/audit; flag off dan export recovery |
 | PR 5 — Backup, boundary, integration docs | 013, 015, remainder 014, 016 | No cloud/deploy; phase acceptance and recovery |
 
