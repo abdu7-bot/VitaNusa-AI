@@ -17,6 +17,10 @@ Dashboard menyatukan hubungan antara pengguna, Tanya Nusa, workspace lokal, back
 
 Status `Aktif` pada Tanya Nusa tidak berarti jawaban selalu benar atau menggantikan tenaga ahli. Tiga modul planned selalu memakai teks `Direncanakan` dan `Belum tersedia`.
 
+### Status paket konten dan modul NusaBelajar
+
+Paket konten awal NusaBelajar sudah dipublikasikan di repository setelah PR #58. Publikasi paket tersebut adalah kesiapan aset konten, bukan aktivasi pengalaman aplikasi untuk pengguna. Dashboard tetap menandai NusaBelajar sebagai `Direncanakan`, tanpa link atau tombol aktif, sampai UI modul, alur pengguna, penyimpanan progres, dan pemeriksaan manualnya memenuhi gate tersendiri.
+
 ## Struktur UI
 
 - sidebar desktop berisi identitas `Mandiri • Local-only`, Beranda, Tanya Nusa, Backup & Recovery, dan Pengaturan;
@@ -43,6 +47,14 @@ Repository saat ini memakai HTML statis, CSS tokens, ES Modules, dan `node:test`
 - `ProductBoundaryCard` — `.vn-mandiri-boundary`.
 
 Pemecahan ini mengikuti fondasi repository dan menghindari abstraksi DOM baru yang tidak dibutuhkan.
+
+## Audit CSS dan shared shell
+
+Source CSS disimpan dalam bentuk terformat agar diff dapat ditinjau manusia. Urutan selector dan nilai visual dipertahankan dari dashboard yang telah di-merge, dengan dua pembatasan aman: reset `box-sizing` dibatasi ke `body.vn-mandiri-page` beserta turunannya, dan state scroll-lock wajib membawa kelas halaman Mandiri.
+
+Selector `:root` dan `html` tetap dipertahankan karena stylesheet hanya dimuat pada halaman Mandiri dan recovery, sementara keduanya memiliki tanggung jawab page-level untuk token, background, batas viewport, overflow horizontal, dan anchor scrolling.
+
+Penggunaan `!important` dibatasi untuk menetralkan padding/right rail shared shell, menjaga atribut `hidden`, dan menghormati `prefers-reduced-motion`. Shared shell memakai lapisan `9000`–`10000`; dashboard mempertahankan tombol menu pada `10000`, overlay `11000`, sidebar `12000`, dan skip link `20000` agar urutan interaksi tetap aman.
 
 ## Responsivitas
 

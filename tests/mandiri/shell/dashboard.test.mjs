@@ -32,6 +32,15 @@ function createEventTarget(properties = {}) {
   });
 }
 
+function getModuleCard(moduleId) {
+  const match = html.match(new RegExp(
+    String.raw`<article[^>]*data-mandiri-module="${moduleId}"[\s\S]*?<\/article>`,
+    'i',
+  ));
+  assert.ok(match, `Kartu modul ${moduleId} harus tersedia`);
+  return match[0];
+}
+
 function createNavigationFixture() {
   const attributes = new Map();
   const focused = [];
@@ -127,7 +136,44 @@ test('markup menampilkan status modul secara jujur dan tidak memberi aksi palsu'
   assert.equal((html.match(/>Direncanakan</g) || []).length, 3);
   assert.equal((html.match(/>Belum tersedia pada Fase 1</g) || []).length, 3);
   assert.match(html, /data-mandiri-module="tanya-nusa"[\s\S]*href="\.\.\/index\.html"[\s\S]*>Buka modul</);
-  assert.doesNotMatch(html, /data-mandiri-module="(?:nusakasir|nusabelajar|vitasheet)"[\s\S]{0,500}<a\b/i);
+
+  for (const moduleId of ['nusakasir', 'nusabelajar', 'vitasheet']) {
+    assert.doesNotMatch(getModuleCard(moduleId), /<(?:a|button)\b/i);
+  }
+});
+
+test('NusaBelajar membedakan paket konten published dari kesiapan modul aplikasi', () => {
+  const card = getModuleCard('nusabelajar');
+  assert.match(card, /Paket konten awal sudah tersedia di repository/);
+  assert.match(card, /pengalaman aplikasi NusaBelajar belum diaktifkan untuk pengguna/);
+  assert.match(card, />Direncanakan</);
+  assert.doesNotMatch(card, /<(?:a|button)\b/i);
+  assert.equal(
+    MANDIRI_MODULES.find(({ id }) => id === 'nusabelajar')?.status,
+    MANDIRI_MODULE_STATUSES.PLANNED,
+  );
+});
+
+test('selector workspace dan backup yang dipakai controller tetap tersedia', () => {
+  for (const selector of [
+    'data-mandiri-workspace-panel',
+    'data-workspace-status',
+    'data-workspace-login',
+    'data-workspace-form',
+    'data-workspace-summary',
+    'data-workspace-error',
+    'data-mandiri-backup-panel',
+    'data-backup-download',
+    'data-backup-status',
+  ]) {
+    assert.ok(html.includes(selector), `Selector ${selector} harus tersedia`);
+  }
+});
+
+test('stylesheet tetap berupa source yang dapat ditinjau manusia', () => {
+  assert.ok(css.split(/\r?\n/).length > 100, 'CSS tidak boleh kembali menjadi satu baris minified');
+  assert.match(css, /Token halaman Mandiri/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test('status local-only, backup scope, checksum, dan preview-only terlihat', () => {
