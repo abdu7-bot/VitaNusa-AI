@@ -6,8 +6,8 @@
       "packageId": "money-basics-id-v1",
       "manifestPath": "packages/money-basics-id-v1/manifest.json",
       "locale": "id-ID",
-      "status": "draft",
-      "reviewStatus": "pending_human_review"
+      "status": "published",
+      "reviewStatus": "approved"
     }
   ]
 }

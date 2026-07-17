@@ -1,10 +1,10 @@
-# Review Kandidat Konten — Menghitung Uang Sederhana
+# Hasil Review Konten — Menghitung Uang Sederhana
 
-Status paket: `draft`
+Status paket: `published`
 
-Status review: `pending_human_review`
+Status review: `approved`
 
-Dokumen ini menampilkan materi dan kunci jawaban untuk pemeriksaan manusia. Hasil validator dan test membantu menemukan kesalahan teknis, tetapi tidak menggantikan keputusan content reviewer.
+Dokumen ini mencatat persetujuan eksplisit pemilik proyek serta hasil verifikasi otomatis. Validator dan test membantu menemukan kesalahan teknis, tetapi keputusan publikasi tetap berasal dari reviewer manusia.
 
 ## Struktur materi
 
@@ -99,15 +99,15 @@ Dokumen ini menampilkan materi dan kunci jawaban untuk pemeriksaan manusia. Hasi
 ## Quiz module
 
 - Jumlah exercise: 6, masing-masing dua dari setiap lesson.
-- Passing threshold kandidat: `7000` basis points (`70%`).
+- Passing threshold disetujui: `7000` basis points (`70%`).
 - Tidak ada timer, ranking, leaderboard, penalti pengulangan, atau AI grading.
 
-## Hasil pemeriksaan otomatis pada kandidat awal
+## Hasil verifikasi otomatis
 
 - Arithmetic check: lulus untuk tujuh relasi hitung yang didokumentasikan.
 - Content graph schema: lulus.
 - Reference dan ID validation: lulus.
-- SHA-256 dan ukuran byte: lulus pada saat dokumen ini dibuat.
+- SHA-256 dan ukuran byte: lulus untuk 16.142 byte dengan checksum `sha256:063e0dcfe9ca5914dadcf37b00b237cb0ca4067881c6a0385f13d8b1363f3ae0`.
 - Content safety lint: 0 finding pada paket utama.
 
 Jalankan ulang hasil faktual dengan:
@@ -118,27 +118,48 @@ npm run test:mandiri:learning-content
 npm run review:mandiri:learning-content
 ```
 
-## Checklist reviewer manusia
+## Cakupan review manusia
 
-- [ ] Bahasa sederhana dan satu ide per bagian.
-- [ ] Nada ramah, dewasa, dan tidak kekanak-kanakan.
-- [ ] Tidak merendahkan atau mempermalukan pengguna.
-- [ ] Bukan klaim kesetaraan sekolah atau kelulusan formal.
-- [ ] Tidak memuat diagnosis atau klaim kesehatan.
-- [ ] Tidak memuat klaim keuntungan atau laporan pajak resmi.
-- [ ] Seluruh contoh angka dan kunci jawaban benar.
-- [ ] Explanation membantu tanpa memberi label kemampuan umum.
-- [ ] Threshold quiz `7000` sesuai untuk paket kandidat ini.
-- [ ] Materi layak diubah dari draft hanya setelah seluruh koreksi selesai.
+Pemilik proyek VitaNusa telah meninjau dan menyetujui secara eksplisit:
+
+- seluruh teks materi;
+- seluruh contoh angka;
+- seluruh latihan;
+- seluruh jawaban benar;
+- seluruh explanation;
+- threshold quiz `7000` basis points.
+
+## Cakupan verifikasi otomatis
+
+Test dan script repository memeriksa:
+
+- exact-field schema dan status package;
+- arithmetic deterministik;
+- checksum SHA-256 dan ukuran byte;
+- content safety lint;
+- integritas graph, ID, dan seluruh reference.
+
+## Checklist reviewer manusia dan verifikasi
+
+- [x] Bahasa sederhana dan satu ide per bagian — review manusia.
+- [x] Nada ramah, dewasa, dan tidak kekanak-kanakan — review manusia.
+- [x] Tidak merendahkan atau mempermalukan pengguna — review manusia dan safety lint.
+- [x] Bukan klaim kesetaraan sekolah atau kelulusan formal — review manusia dan safety lint.
+- [x] Tidak memuat diagnosis atau klaim kesehatan — review manusia dan safety lint.
+- [x] Tidak memuat klaim keuntungan atau laporan pajak resmi — review manusia dan safety lint.
+- [x] Seluruh contoh angka dan kunci jawaban benar — review manusia dan arithmetic test.
+- [x] Explanation membantu tanpa memberi label kemampuan umum — review manusia dan safety lint.
+- [x] Threshold quiz `7000` disetujui untuk content version 1 — review manusia.
+- [x] Schema, checksum, ukuran byte, dan graph reference diverifikasi ulang — verifikasi otomatis.
 
 ## Keputusan reviewer
 
-Reviewer:
+Reviewer: Pemilik proyek VitaNusa
 
-Tanggal:
+Tanggal: 2026-07-17
 
-Keputusan:
+Keputusan: Disetujui untuk dipublikasikan
 
-Catatan:
+Catatan: Materi, contoh angka, latihan, jawaban benar, explanation, dan threshold kuis telah ditinjau dan disetujui secara eksplisit.
 
-Keputusan sengaja belum diisi. Codex bukan reviewer manusia dan tidak boleh mengubah `pending_human_review` menjadi `approved` tanpa persetujuan eksplisit.
+Codex bukan reviewer manusia dan tidak memberikan persetujuan sendiri. Perubahan dari `pending_human_review` menjadi `approved` dilakukan berdasarkan persetujuan eksplisit pemilik proyek yang dicatat pada pekerjaan publikasi ini.

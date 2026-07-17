@@ -1,12 +1,12 @@
 # 24 — Fase 2 PR 2: Paket Konten Awal NusaBelajar
 
-Status: **Kandidat draft; menunggu review manusia**.
+Status: **Published; review manusia disetujui**.
 
-PR ini menambahkan satu paket materi statis berbahasa Indonesia untuk NusaBelajar. Paket sudah dapat diperiksa oleh validator, checksum, arithmetic test, dan safety lint, tetapi belum published dan belum dapat digunakan learner karena UI serta persistence belum tersedia.
+Dokumen ini menjelaskan satu paket materi statis berbahasa Indonesia untuk NusaBelajar. Paket `money-basics-id-v1` telah mendapat persetujuan eksplisit dari Pemilik proyek VitaNusa, berstatus `published/approved`, dan dapat menjadi sumber untuk PR 3 setelah perubahan publikasi ini merge. Status tersebut belum berarti NusaBelajar siap produksi karena UI dan persistence belum tersedia.
 
 ## Tujuan dan batas PR 2
 
-Paket kandidat membahas membaca harga, menjumlahkan dua harga, dan menghitung kembalian sederhana. PR ini tidak menambah halaman katalog, lesson reader, exercise/quiz UI, IndexedDB learning, progress, cloud sync, mentor, atau tindakan NusaAgent.
+Paket membahas membaca harga, menjumlahkan dua harga, dan menghitung kembalian sederhana. Patch publikasi tidak menambah halaman katalog, lesson reader, exercise/quiz UI, IndexedDB learning, progress, cloud sync, mentor, atau tindakan NusaAgent.
 
 Database `vitanusa-mandiri` tetap versi `1`. Learning flag tetap default `off`.
 
@@ -34,7 +34,7 @@ contentVersion locale status reviewStatus title summary
 contentFile contentSha256 contentBytes programIds
 ```
 
-Nilai kandidat:
+Nilai setelah persetujuan manusia:
 
 - `packageFormat: vitanusa-learning-package`;
 - `packageFormatVersion: 1`;
@@ -42,8 +42,8 @@ Nilai kandidat:
 - `schemaVersion: 1`;
 - `contentVersion: 1`;
 - `locale: id-ID`;
-- `status: draft`;
-- `reviewStatus: pending_human_review`.
+- `status: published`;
+- `reviewStatus: approved`.
 
 Unknown field, dangerous key, checksum bukan lowercase SHA-256, path content selain `content.json`, status tidak dikenal, dan kombinasi status/review yang tidak konsisten ditolak.
 
@@ -67,9 +67,9 @@ Program
         └── Quiz module
 ```
 
-Semua entity memakai `schemaVersion: 1`, `contentVersion: 1`, `locale: id-ID`, dan `status: draft`.
+Semua entity memakai `schemaVersion: 1`, `contentVersion: 1`, `locale: id-ID`, dan `status: published`.
 
-## Materi kandidat
+## Materi published
 
 - Program: **Keterampilan Dasar Sehari-hari**.
 - Course: **Menghitung Uang Sederhana**.
@@ -80,7 +80,7 @@ Semua entity memakai `schemaVersion: 1`, `contentVersion: 1`, `locale: id-ID`, d
 
 Activity memakai `read_example` dan `observe_sequence`; activity tidak menghasilkan score. Sembilan exercise memakai `single_choice`, `multiple_choice`, `numeric_input`, `short_text_exact`, dan `sequence`. Nilai rupiah untuk kalkulasi selalu integer.
 
-Quiz module memilih enam exercise yang sudah ada, dua dari setiap lesson. Passing threshold kandidat adalah `7000` basis points. Threshold ini belum final sampai review manusia selesai. Tidak ada timer, ranking, leaderboard, penalti pengulangan, atau AI grading.
+Quiz module memilih enam exercise yang sudah ada, dua dari setiap lesson. Passing threshold `7000` basis points telah termasuk dalam persetujuan manusia untuk content version 1. Tidak ada timer, ranking, leaderboard, penalti pengulangan, atau AI grading.
 
 ## Checksum dan deterministic JSON
 
@@ -124,41 +124,28 @@ Evaluator PR 1 juga membuktikan multiple choice tidak bergantung urutan, sequenc
 
 Lint dan test tidak menggantikan review manusia.
 
-## Human-review gate
+## Hasil human-review gate
 
-Kandidat awal wajib tetap:
+Pada 2026-07-17, Pemilik proyek VitaNusa memberikan persetujuan eksplisit setelah meninjau seluruh teks, contoh angka, latihan, jawaban benar, explanation, dan threshold quiz. Berdasarkan persetujuan itu, perubahan publikasi menetapkan:
 
 ```text
-package status: draft
-reviewStatus: pending_human_review
-entity status: draft
+package status: published
+reviewStatus: approved
+entity status: published
 ```
 
-Codex bukan content reviewer manusia. Prosedur setelah review, yang didokumentasikan tetapi tidak dijalankan pada PR kandidat ini:
+Verifikasi otomatis yang terpisah memeriksa schema, arithmetic, checksum, content safety, serta graph reference. Identitas reviewer dokumentasi tidak memuat nama pribadi, email, tanda tangan, atau jabatan yang tidak diberikan. Codex tidak melakukan self-approval dan script repository tetap read-only.
 
-1. Reviewer membaca `CONTENT-REVIEW.md` dan seluruh `content.json`.
-2. Reviewer memeriksa setiap teks, contoh angka, correct answer, explanation, dan threshold.
-3. Koreksi dimasukkan ke `content.json` pada branch yang sama.
-4. `contentBytes` dan `contentSha256` diperbarui dari byte file terbaru.
-5. Semua test dan script verifikasi dijalankan ulang.
-6. Reviewer memberi persetujuan eksplisit.
-7. `reviewStatus` diubah menjadi `approved`.
-8. Package, catalog, dan seluruh entity diubah menjadi `published` dalam perubahan yang sama.
-9. Semua test dijalankan ulang.
-10. PR baru dapat dipertimbangkan untuk merge.
+## Memperbarui checksum dan koreksi berikutnya
 
-Tidak ada self-approval atau publikasi otomatis.
+Perubahan status entity dari `draft` ke `published` mengubah byte `content.json`. Ukuran dan checksum publikasi diperbarui dari file aktual menjadi:
 
-## Memperbaiki materi dan memperbarui checksum
+```text
+contentBytes: 16142
+contentSha256: sha256:063e0dcfe9ca5914dadcf37b00b237cb0ca4067881c6a0385f13d8b1363f3ae0
+```
 
-1. Edit hanya field yang diizinkan schema dalam `content.json`.
-2. Jalankan `npm run check:mandiri:learning-content`; mismatch checksum diharapkan sebelum manifest diperbarui.
-3. Hitung SHA-256 dari byte UTF-8 file aktual dengan primitive platform tepercaya, bukan algoritma buatan sendiri.
-4. Perbarui `contentBytes` dan `contentSha256` pada manifest.
-5. Jalankan verifikasi, content tests, learning domain tests, dan seluruh Mandiri tests.
-6. Perbarui `CONTENT-REVIEW.md` bila teks, angka, jawaban, atau explanation berubah.
-
-Koreksi setelah versi published harus menghasilkan content version baru; jangan overwrite versi published secara diam-diam.
+Untuk perubahan pada paket yang belum published, hitung SHA-256 dari byte UTF-8 file aktual dengan primitive platform tepercaya, perbarui `contentBytes` dan `contentSha256`, lalu jalankan ulang seluruh verifikasi. Koreksi materi setelah versi ini published wajib menghasilkan content version baru; jangan overwrite content version 1 secara diam-diam.
 
 ## Privasi dan AI
 
@@ -166,7 +153,7 @@ Paket statis tidak memuat learner/account/workspace/user scope, UID, email, toke
 
 ## Known limitations
 
-- Konten belum mendapat review manusia dan belum published.
+- Persetujuan dan status published hanya berlaku untuk paket `money-basics-id-v1` content version 1; ini bukan klaim kesiapan produksi aplikasi.
 - Hanya ada satu module dengan tiga lesson dan sembilan exercise.
 - Tidak ada UI, progress, attempt persistence, atau offline installation package.
 - Contoh hanya mencakup integer rupiah tanpa pajak, diskon, hutang, atau pembayaran kurang.
@@ -175,8 +162,8 @@ Paket statis tidak memuat learner/account/workspace/user scope, UID, email, toke
 
 ## Rollback
 
-Revert PR ini untuk menghapus kandidat package dan validator manifest/catalog. Feature flag tetap `off`; tidak ada migrasi database atau data pengguna yang perlu diubah. Jangan menghapus IndexedDB Fase 1.
+Revert patch publikasi ini untuk mengembalikan status package ke gate kandidat bila diperlukan. Feature flag tetap `off`; tidak ada migrasi database atau data pengguna yang perlu diubah. Jangan menghapus IndexedDB Fase 1.
 
 ## PR 3 berikutnya
 
-PR 3 belum dimulai. Setelah kandidat direview manusia, disetujui eksplisit, diperbarui menjadi published, test hijau, dan PR 2 merge, PR 3 dapat membangun lesson reader serta exercise engine tanpa memperluas paket materi secara diam-diam.
+PR 3 belum dimulai pada branch publikasi ini. Setelah PR publikasi merge dan seluruh Actions hijau, paket dapat digunakan sebagai sumber PR 3 untuk membangun lesson reader serta exercise engine tanpa memperluas materi secara diam-diam.

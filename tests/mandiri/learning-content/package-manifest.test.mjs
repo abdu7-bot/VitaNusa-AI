@@ -22,14 +22,20 @@ function clone(value) {
   return structuredClone(value);
 }
 
-test('manifest kandidat valid, normalized, dan immutable', async () => {
+test('manifest published valid, normalized, immutable, dan draft fixture tetap didukung', async () => {
   const input = await loadManifest();
   const before = clone(input);
   const manifest = normalizeLearningPackageManifest(input);
+  const draftFixture = clone(input);
+  draftFixture.status = 'draft';
+  draftFixture.reviewStatus = 'pending_human_review';
 
   assert.equal(validateLearningPackageManifest(input), true);
+  assert.equal(validateLearningPackageManifest(draftFixture), true);
   assert.equal(manifest.packageFormat, LEARNING_PACKAGE_FORMAT);
   assert.equal(manifest.packageFormatVersion, LEARNING_PACKAGE_FORMAT_VERSION);
+  assert.equal(manifest.status, 'published');
+  assert.equal(manifest.reviewStatus, 'approved');
   assert.equal(Object.isFrozen(manifest), true);
   assert.equal(Object.isFrozen(manifest.programIds), true);
   assert.deepEqual(input, before);
@@ -81,6 +87,7 @@ test('manifest menolak reviewStatus tidak dikenal dan pasangan review gate inval
   });
 
   const bypass = await loadManifest();
+  bypass.status = 'draft';
   bypass.reviewStatus = 'approved';
   assert.throws(() => normalizeLearningPackageManifest(bypass), {
     code: 'review_gate_mismatch',

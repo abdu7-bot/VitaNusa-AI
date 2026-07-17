@@ -11,7 +11,7 @@
       "courseIds": [
         "course-money-basics-id"
       ],
-      "status": "draft"
+      "status": "published"
     }
   ],
   "courses": [
@@ -28,7 +28,7 @@
         "module-shopping-change-id"
       ],
       "prerequisiteCourseIds": [],
-      "status": "draft"
+      "status": "published"
     }
   ],
   "modules": [
@@ -46,7 +46,7 @@
         "lesson-add-prices-id",
         "lesson-calculate-change-id"
       ],
-      "status": "draft"
+      "status": "published"
     }
   ],
   "lessons": [
@@ -111,7 +111,7 @@
         "exercise-read-currency-text-id"
       ],
       "quizId": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -163,7 +163,7 @@
         "exercise-add-prices-multiple-id"
       ],
       "quizId": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -221,7 +221,7 @@
         "exercise-change-sequence-id"
       ],
       "quizId": null,
-      "status": "draft"
+      "status": "published"
     }
   ],
   "activities": [
@@ -248,7 +248,7 @@
         }
       ],
       "explanation": "Setiap label memasangkan satu nama barang dengan satu harga rupiah.",
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -277,7 +277,7 @@
         }
       ],
       "explanation": "Urutan ini membantu memastikan kedua harga sudah dihitung dan hasilnya diperiksa.",
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -306,7 +306,7 @@
         }
       ],
       "explanation": "Kembalian diperoleh setelah total belanja dikurangi dari uang yang dibayar.",
-      "status": "draft"
+      "status": "published"
     }
   ],
   "exercises": [
@@ -335,7 +335,7 @@
       "correctAnswer": "choice-read-price-8000-id",
       "explanation": "Rp8.000 berarti delapan ribu rupiah.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -349,7 +349,7 @@
       "correctAnswer": 3000,
       "explanation": "Rp3.000 ditulis sebagai angka 3000 untuk perhitungan.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -368,7 +368,7 @@
       },
       "explanation": "Rp adalah tanda untuk mata uang rupiah.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -382,7 +382,7 @@
       "correctAnswer": 11000,
       "explanation": "Delapan ribu ditambah tiga ribu adalah sebelas ribu.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -409,7 +409,7 @@
       "correctAnswer": "choice-add-price-12000-id",
       "explanation": "Lima ribu ditambah tujuh ribu adalah dua belas ribu.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -439,7 +439,7 @@
       ],
       "explanation": "Empat ribu ditambah enam ribu dan tiga ribu ditambah tujuh ribu sama-sama berjumlah sepuluh ribu.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -453,7 +453,7 @@
       "correctAnswer": 7000,
       "explanation": "Kembalian dihitung dengan Rp20.000 - Rp13.000 = Rp7.000.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -467,7 +467,7 @@
       "correctAnswer": 5000,
       "explanation": "Kembalian dihitung dengan Rp15.000 - Rp10.000 = Rp5.000.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     },
     {
       "schemaVersion": 1,
@@ -503,7 +503,7 @@
       ],
       "explanation": "Baca kedua nilai sebelum mengurangi, lalu periksa hasil kembalian.",
       "maxAttempts": null,
-      "status": "draft"
+      "status": "published"
     }
   ],
   "quizzes": [
@@ -523,7 +523,7 @@
         "exercise-change-second-number-id"
       ],
       "passingThresholdBasisPoints": 7000,
-      "status": "draft"
+      "status": "published"
     }
   ]
 }
