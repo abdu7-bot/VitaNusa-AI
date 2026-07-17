@@ -206,6 +206,14 @@ CI juga mempertahankan admin, public auth, VitaCheck, Android PWA, Firestore Rul
 - Backup di atas batas record perlu rancangan pagination/format fase berikutnya.
 - Pengujian perangkat Android fisik harus dicatat terpisah bila tersedia.
 
+## Dashboard product blueprint
+
+Dashboard utama memakai sidebar desktop dan drawer mobile, header status local-only, hero Tanya Nusa, empat kartu modul, workspace lokal, backup JSON, recovery preview-only, dan panel batas aman. Tanya Nusa adalah satu-satunya modul aktif; NusaKasir, NusaBelajar, dan VitaSheet tetap `Direncanakan` serta tidak mempunyai tindakan yang menjalankan fungsi palsu.
+
+Konfigurasi modul berada di `MANDIRI_MODULES` dalam `assets/js/mandiri/shell/app-shell.js`. Navigasi mobile dikelola `initMandiriDashboardNavigation` dengan `aria-expanded`, Escape, pengembalian fokus, focus trap, dan cleanup listener. Markup workspace dan backup mempertahankan seluruh data attribute yang dipakai controller Fase 1.
+
+Keputusan responsivitas memakai breakpoint repository yang sudah ada: empat kolom di desktop lebar, dua kolom sampai `1180px`, satu kolom sampai `820px`, dan target sentuh/lebar penuh pada `420px`. Detail desain, keamanan, pengujian, dan perbedaan implementasi dicatat di `23-dashboard-product-blueprint.md`.
+
 ## Gate sebelum Fase 2
 
 Fase 2 hanya boleh dimulai setelah PR 5 direview dan merge, seluruh GitHub Actions hijau, main bersih, `npm run test:mandiri` lulus, dokumentasi sesuai implementasi, dan batas local-only tetap diterima owner. Fase 2 tidak boleh mengubah keputusan Fase 1 secara diam-diam.
