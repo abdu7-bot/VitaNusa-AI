@@ -214,6 +214,27 @@ export function normalizeListOptions(options = {}) {
   return Object.freeze({ limit, beforeCreatedAt });
 }
 
+export function normalizeExportListOptions(options, maximumLimit = 5001) {
+  try {
+    assertExactFields(options, ['limit'], {
+      requiredFields: ['limit'],
+      path: 'exportOptions',
+    });
+  } catch (error) {
+    throw asStorageValidationError(error);
+  }
+  if (
+    !Number.isSafeInteger(maximumLimit)
+    || maximumLimit < 1
+    || !Number.isSafeInteger(options.limit)
+    || options.limit < 1
+    || options.limit > maximumLimit
+  ) {
+    throw storageError('data_invalid');
+  }
+  return Object.freeze({ limit: options.limit });
+}
+
 export function compareNewest(left, right, timestampField, idField) {
   const timeOrder = right[timestampField].localeCompare(left[timestampField]);
   return timeOrder || left[idField].localeCompare(right[idField]);

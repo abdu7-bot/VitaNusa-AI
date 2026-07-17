@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Periksa Backup VitaNusa Mandiri</title>
+  <meta name="description" content="Pemeriksaan lokal file backup VitaNusa Mandiri. Halaman ini tidak menulis data ke perangkat.">
+  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-f1-backup-v1">
+</head>
+<body class="vn-mandiri-page">
+  <a class="vn-mandiri-skip" href="#recoveryMain">Lewati ke konten utama</a>
+
+  <main
+    id="recoveryMain"
+    class="vn-mandiri-main"
+    data-mandiri-recovery
+    data-recovery-state="feature-off"
+    aria-busy="false"
+  >
+    <section class="vn-mandiri-unavailable" data-recovery-unavailable aria-labelledby="recoveryUnavailableTitle">
+      <p class="vn-mandiri-kicker">VitaNusa Mandiri</p>
+      <h1 id="recoveryUnavailableTitle">Pemeriksaan backup belum tersedia</h1>
+      <p>Fitur masih dimatikan. File tidak dibaca dan penyimpanan lokal tidak dibuka.</p>
+      <a class="vn-mandiri-link vn-mandiri-link-primary" href="./index.html">Kembali ke Mandiri</a>
+    </section>
+
+    <section class="vn-mandiri-shell vn-mandiri-recovery-shell" data-recovery-shell aria-labelledby="recoveryTitle" hidden>
+      <header class="vn-mandiri-hero">
+        <div>
+          <p class="vn-mandiri-kicker">Preview-only · local-first</p>
+          <h1 id="recoveryTitle">Periksa Backup VitaNusa Mandiri</h1>
+          <p class="vn-mandiri-lead">Halaman ini hanya memeriksa isi file. Data belum akan dimasukkan ke perangkat.</p>
+        </div>
+        <span class="vn-mandiri-phase-badge">Fase 1 · internal</span>
+      </header>
+
+      <p class="vn-mandiri-workspace-status" data-recovery-status role="status" aria-live="polite">
+        Pemeriksaan backup belum tersedia pada build ini.
+      </p>
+
+      <section class="vn-mandiri-recovery-panel" data-recovery-signed-out hidden aria-labelledby="recoveryLoginTitle">
+        <h2 id="recoveryLoginTitle">Login diperlukan</h2>
+        <p>Login dipakai untuk memastikan file berasal dari scope akun yang sama. File tetap diperiksa secara lokal.</p>
+        <div class="vn-mandiri-workspace-actions">
+          <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-recovery-login>
+            Login dengan Google
+          </button>
+          <a class="vn-mandiri-link" href="../account.html">Buka halaman akun</a>
+        </div>
+      </section>
+
+      <section class="vn-mandiri-recovery-panel" data-recovery-file-panel hidden aria-labelledby="recoveryFileTitle">
+        <h2 id="recoveryFileTitle">Pilih file yang akan diperiksa</h2>
+        <p>Maksimum 5 MiB. Ekstensi JSON hanya indikator; format, scope, dan checksum tetap diperiksa.</p>
+        <form class="vn-mandiri-recovery-form" data-recovery-form>
+          <label for="recoveryFile">Pilih File JSON</label>
+          <input id="recoveryFile" name="recoveryFile" type="file" accept=".json,application/json" data-recovery-file disabled>
+          <button class="vn-mandiri-button vn-mandiri-button-primary" type="submit" data-recovery-submit disabled>
+            Periksa File
+          </button>
+        </form>
+      </section>
+
+      <section class="vn-mandiri-recovery-panel" data-recovery-preview hidden aria-labelledby="recoveryPreviewTitle">
+        <h2 id="recoveryPreviewTitle">Ringkasan file</h2>
+        <p>Ringkasan ini tidak memasukkan data ke IndexedDB.</p>
+        <dl class="vn-mandiri-recovery-summary">
+          <div><dt>Nama workspace</dt><dd data-preview-workspace-name></dd></div>
+          <div><dt>Zona waktu</dt><dd data-preview-timezone></dd></div>
+          <div><dt>Mata uang</dt><dd data-preview-currency></dd></div>
+          <div><dt>Status workspace</dt><dd data-preview-status></dd></div>
+          <div><dt>Jumlah membership</dt><dd data-preview-memberships></dd></div>
+          <div><dt>Jumlah audit event</dt><dd data-preview-audit-events></dd></div>
+          <div><dt>Jumlah operation receipt</dt><dd data-preview-operation-receipts></dd></div>
+          <div><dt>Tanggal backup</dt><dd data-preview-created-at></dd></div>
+          <div><dt>Versi format</dt><dd data-preview-format-version></dd></div>
+          <div><dt>Versi database</dt><dd data-preview-schema-version></dd></div>
+          <div><dt>Status checksum</dt><dd data-preview-checksum-status></dd></div>
+          <div><dt>Status scope</dt><dd data-preview-scope-status></dd></div>
+        </dl>
+      </section>
+
+      <section class="vn-mandiri-recovery-panel vn-mandiri-workspace-error" data-recovery-error hidden>
+        <h2>File belum dapat diperiksa</h2>
+        <p data-recovery-error-message role="alert"></p>
+      </section>
+
+      <aside class="vn-mandiri-boundary">
+        <h2>Checksum bukan tanda tangan</h2>
+        <p>Checksum hanya mendeteksi perubahan atau kerusakan. Checksum bukan jaminan keaslian atau enkripsi.</p>
+      </aside>
+
+      <footer class="vn-mandiri-footer">
+        <a class="vn-mandiri-link vn-mandiri-link-primary" href="./index.html">Kembali ke Mandiri</a>
+        <p>Tidak ada tombol pemulihan pada Fase 1.</p>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="../assets/js/mandiri/shell/recovery-page.js?v=20260717-mandiri-f1-backup-v1"></script>
+</body>
+</html>

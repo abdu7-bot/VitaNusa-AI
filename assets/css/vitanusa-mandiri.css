@@ -249,6 +249,104 @@ body.vn-mandiri-page {
   padding: clamp(18px, 4vw, 28px);
 }
 
+.vn-mandiri-backup,
+.vn-mandiri-recovery-panel {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--vn-mandiri-line);
+  border-radius: 24px;
+  background: #fbfefc;
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.vn-mandiri-backup-warning {
+  margin: 0;
+  border-left: 4px solid #b45309;
+  color: #69400f;
+  line-height: 1.6;
+  padding-left: 12px;
+}
+
+.vn-mandiri-backup > p:last-child,
+.vn-mandiri-recovery-panel > p,
+.vn-mandiri-recovery-panel h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.vn-mandiri-recovery-panel h2 {
+  color: var(--vn-mandiri-green-950);
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+}
+
+.vn-mandiri-recovery-panel > p {
+  color: var(--vn-mandiri-muted);
+  line-height: 1.6;
+}
+
+.vn-mandiri-recovery-form {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.vn-mandiri-recovery-form label {
+  color: var(--vn-mandiri-green-950);
+  font-weight: 750;
+}
+
+.vn-mandiri-recovery-form input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(20, 83, 45, .35);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--vn-mandiri-ink);
+  font: inherit;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.vn-mandiri-recovery-form input[type="file"]:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, .3);
+  outline-offset: 3px;
+}
+
+.vn-mandiri-recovery-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.vn-mandiri-recovery-summary > div {
+  min-width: 0;
+  border: 1px solid var(--vn-mandiri-line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.vn-mandiri-recovery-summary dt,
+.vn-mandiri-recovery-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.vn-mandiri-recovery-summary dt {
+  color: var(--vn-mandiri-muted);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.vn-mandiri-recovery-summary dd {
+  margin-top: 4px;
+  color: var(--vn-mandiri-green-950);
+  font-weight: 850;
+}
+
 .vn-mandiri-workspace-status,
 .vn-mandiri-workspace-user,
 .vn-mandiri-workspace-panel p,
@@ -505,7 +603,8 @@ body.vn-mandiri-page {
 @media (max-width: 820px) {
   .vn-mandiri-status-grid,
   .vn-mandiri-module-grid,
-  .vn-mandiri-workspace-summary {
+  .vn-mandiri-workspace-summary,
+  .vn-mandiri-recovery-summary {
     grid-template-columns: 1fr;
   }
 
@@ -552,7 +651,9 @@ body.vn-mandiri-page {
 
   .vn-mandiri-status-card,
   .vn-mandiri-module-card,
-  .vn-mandiri-workspace {
+  .vn-mandiri-workspace,
+  .vn-mandiri-backup,
+  .vn-mandiri-recovery-panel {
     border-radius: 18px;
     padding: 16px;
   }
@@ -563,7 +664,8 @@ body.vn-mandiri-page {
 
   .vn-mandiri-workspace-actions,
   .vn-mandiri-workspace-form .vn-mandiri-button,
-  .vn-mandiri-workspace-actions .vn-mandiri-button {
+  .vn-mandiri-workspace-actions .vn-mandiri-button,
+  .vn-mandiri-recovery-form .vn-mandiri-button {
     width: 100%;
   }
 }

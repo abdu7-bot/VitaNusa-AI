@@ -170,6 +170,15 @@ jobs:
       - name: Test VitaNusa Mandiri workspace UI
         run: npm run test:mandiri:workspace-ui
 
+      - name: Test VitaNusa Mandiri backup
+        run: npm run test:mandiri:backup
+
+      - name: Test VitaNusa Mandiri security boundaries
+        run: npm run test:mandiri:security
+
+      - name: Test VitaNusa Mandiri recovery UI
+        run: npm run test:mandiri:recovery-ui
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -215,6 +224,13 @@ jobs:
           node --check assets/js/mandiri/services/account-scope.js
           node --check assets/js/mandiri/services/workspace-errors.js
           node --check assets/js/mandiri/services/workspace-service.js
+          node --check assets/js/mandiri/export/backup-schema.js
+          node --check assets/js/mandiri/export/backup-errors.js
+          node --check assets/js/mandiri/export/backup.js
+          node --check assets/js/mandiri/export/backup-download.js
+          node --check assets/js/mandiri/export/restore-preview.js
+          node --check assets/js/mandiri/shell/backup-panel.js
+          node --check assets/js/mandiri/shell/recovery-page.js
 
   backend:
     name: Backend
