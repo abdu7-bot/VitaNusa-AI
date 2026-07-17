@@ -179,6 +179,9 @@ jobs:
       - name: Test VitaNusa Mandiri recovery UI
         run: npm run test:mandiri:recovery-ui
 
+      - name: Test NusaBelajar domain
+        run: npm run test:mandiri:learning-domain
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -231,6 +234,22 @@ jobs:
           node --check assets/js/mandiri/export/restore-preview.js
           node --check assets/js/mandiri/shell/backup-panel.js
           node --check assets/js/mandiri/shell/recovery-page.js
+          node --check assets/js/mandiri/learning/config/learning-flags.js
+          node --check assets/js/mandiri/learning/domain/learning-errors.js
+          node --check assets/js/mandiri/learning/domain/learning-validation.js
+          node --check assets/js/mandiri/learning/domain/program.js
+          node --check assets/js/mandiri/learning/domain/course.js
+          node --check assets/js/mandiri/learning/domain/module.js
+          node --check assets/js/mandiri/learning/domain/lesson.js
+          node --check assets/js/mandiri/learning/domain/activity.js
+          node --check assets/js/mandiri/learning/domain/exercise.js
+          node --check assets/js/mandiri/learning/domain/quiz.js
+          node --check assets/js/mandiri/learning/domain/attempt.js
+          node --check assets/js/mandiri/learning/domain/progress.js
+          node --check assets/js/mandiri/learning/content/content-schema.js
+          node --check assets/js/mandiri/learning/content/content-validator.js
+          node --check assets/js/mandiri/learning/content/content-safety.js
+          node --check assets/js/mandiri/learning/engine/answer-evaluator.js
 
   backend:
     name: Backend
