@@ -19,7 +19,7 @@
     "test:share-target": "node --test tests/share-target.test.mjs",
     "test:service-worker": "node --test tests/service-worker.test.mjs",
     "test:android-pwa": "node --test tests/pwa-manifest.test.mjs tests/pwa-install.test.mjs tests/nusa-agent.test.mjs tests/share-target.test.mjs tests/service-worker.test.mjs",
-    "test:mandiri:shell": "node --test tests/mandiri/feature-flags.test.mjs tests/mandiri/app-shell.test.mjs tests/mandiri/offline-status.test.mjs",
+    "test:mandiri:shell": "node --test tests/mandiri/feature-flags.test.mjs tests/mandiri/app-shell.test.mjs tests/mandiri/offline-status.test.mjs tests/mandiri/shell/dashboard.test.mjs",
     "test:mandiri:domain": "node --test tests/mandiri/domain/*.test.mjs",
     "test:mandiri:storage": "node --test tests/mandiri/storage/*.test.mjs",
     "test:mandiri:repositories": "node --test tests/mandiri/repositories/*.test.mjs",

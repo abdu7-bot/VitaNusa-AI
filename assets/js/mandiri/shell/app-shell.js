@@ -10,6 +10,40 @@ import {
 import { initMandiriOfflineStatus } from './offline-status.js';
 
 const MANDIRI_APP_CONTROLLERS = new WeakMap();
+const MANDIRI_MOBILE_SIDEBAR_QUERY = '(max-width: 1180px)';
+
+export const MANDIRI_MODULE_STATUSES = Object.freeze({
+  ACTIVE: 'active',
+  PLANNED: 'planned',
+});
+
+export const MANDIRI_MODULES = Object.freeze([
+  Object.freeze({
+    id: 'tanya-nusa',
+    name: 'Tanya Nusa',
+    description: 'Asisten utama untuk percakapan, langkah kerja, edukasi, dan refleksi berbasis konteks.',
+    status: MANDIRI_MODULE_STATUSES.ACTIVE,
+    href: '../index.html',
+  }),
+  Object.freeze({
+    id: 'nusakasir',
+    name: 'NusaKasir',
+    description: 'Rencana pencatatan usaha. Transaksi dan kasir aktif belum tersedia.',
+    status: MANDIRI_MODULE_STATUSES.PLANNED,
+  }),
+  Object.freeze({
+    id: 'nusabelajar',
+    name: 'NusaBelajar',
+    description: 'Rencana pembelajaran singkat dan terarah pada fase terpisah.',
+    status: MANDIRI_MODULE_STATUSES.PLANNED,
+  }),
+  Object.freeze({
+    id: 'vitasheet',
+    name: 'VitaSheet',
+    description: 'Rencana laporan dan ekspor terstruktur yang belum tersedia pada Fase 1.',
+    status: MANDIRI_MODULE_STATUSES.PLANNED,
+  }),
+]);
 
 export const MANDIRI_PLANNED_MODULES = Object.freeze([
   Object.freeze({ name: 'NusaBelajar', state: 'direncanakan' }),
@@ -33,6 +67,22 @@ export function createMandiriModuleModels({ mandiriState, learningState } = {}) 
   }));
 }
 
+function createMandiriDashboardModules({ mandiriState, learningState }) {
+  const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  return Object.freeze(MANDIRI_MODULES.map((module) => {
+    if (module.id !== 'nusabelajar' || !learningContract.enabled) return module;
+    return Object.freeze({
+      ...module,
+      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
+      status: MANDIRI_MODULE_STATUSES.ACTIVE,
+      statusLabel: 'Internal',
+      href: './belajar/',
+      actionLabel: 'Buka NusaBelajar',
+      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+    });
+  }));
+}
+
 export function createMandiriShellModel(
   value,
   learningValue = getNusaBelajarFeatureState(),
@@ -45,21 +95,28 @@ export function createMandiriShellModel(
       view: 'unavailable',
       title: 'VitaNusa Mandiri belum tersedia',
       activeFeatures: false,
+      activeModuleCount: 0,
       startsStorage: contract.startsStorage,
       modules: Object.freeze([]),
     });
   }
 
-  const modules = createMandiriModuleModels({
+  const modules = createMandiriDashboardModules({
     mandiriState: contract.state,
     learningState: learningValue,
   });
+  const learningEnabled = modules.some(
+    (module) => module.id === 'nusabelajar' && module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
+  );
   return Object.freeze({
     state: contract.state,
     view: 'internal-shell',
     title: 'VitaNusa Mandiri',
     modeLabel: 'Mode fondasi lokal',
-    activeFeatures: modules.some((module) => module.state === 'internal'),
+    activeFeatures: learningEnabled,
+    activeModuleCount: modules.filter(
+      (module) => module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
+    ).length,
     startsStorage: contract.startsStorage,
     modules,
   });
@@ -85,33 +142,156 @@ export function applyMandiriShellModel(documentRef, model) {
       : 'Off — belum tersedia';
   }
 
-  const learningModule = model.modules.find((module) => module.name === 'NusaBelajar');
-  const learningStatus = documentRef.querySelector('[data-mandiri-module-state="nusabelajar"]');
+  const learningModule = model.modules.find((module) => module.id === 'nusabelajar');
+  const learningCard = documentRef.querySelector('[data-mandiri-module="nusabelajar"]');
+  const learningStatus = documentRef.querySelector('[data-mandiri-module-status="nusabelajar"]');
   const learningDescription = documentRef.querySelector('[data-mandiri-module-description="nusabelajar"]');
   const learningNote = documentRef.querySelector('[data-mandiri-module-note="nusabelajar"]');
-  const learningLink = documentRef.querySelector('[data-mandiri-module-link="nusabelajar"]');
-  if (learningModule && learningStatus) {
-    learningStatus.textContent = learningModule.statusLabel || 'Direncanakan';
-    learningStatus.dataset.moduleState = learningModule.state;
+  const existingLink = documentRef.querySelector('[data-mandiri-module-link="nusabelajar"]');
+  const learningEnabled = learningModule?.status === MANDIRI_MODULE_STATUSES.ACTIVE;
+
+  if (learningCard) learningCard.dataset.moduleStatus = learningEnabled ? 'internal' : 'planned';
+  if (learningStatus) {
+    learningStatus.textContent = learningEnabled ? learningModule.statusLabel : 'Direncanakan';
+    learningStatus.className = learningEnabled
+      ? 'vn-mandiri-module-status vn-mandiri-module-status-active'
+      : 'vn-mandiri-module-status vn-mandiri-module-status-planned';
   }
-  if (learningModule?.description && learningDescription) {
-    learningDescription.textContent = learningModule.description;
+  if (learningDescription) {
+    learningDescription.textContent = learningEnabled
+      ? learningModule.description
+      : 'Rencana pembelajaran singkat dan terarah. Materi serta progres belajar belum dibangun pada Fase 1.';
   }
-  if (learningModule && learningNote) {
-    learningNote.textContent = learningModule.note || 'Segera dibangun · Belum tersedia pada Fase 1';
+  if (learningNote) {
+    learningNote.textContent = learningEnabled
+      ? learningModule.note
+      : 'Belum tersedia pada Fase 1';
   }
-  if (learningLink) {
-    const isActive = learningModule?.state === 'internal';
-    learningLink.hidden = !isActive;
-    if (isActive) {
-      learningLink.href = learningModule.href;
-      learningLink.textContent = learningModule.actionLabel;
-    } else {
-      learningLink.removeAttribute?.('href');
-    }
+
+  if (learningEnabled && !existingLink && learningCard && typeof documentRef.createElement === 'function') {
+    const link = documentRef.createElement('a');
+    link.className = 'vn-mandiri-module-action';
+    link.dataset.mandiriModuleLink = 'nusabelajar';
+    link.href = learningModule.href;
+    link.textContent = learningModule.actionLabel;
+    learningCard.append(link);
+  } else if (!learningEnabled) {
+    existingLink?.remove?.();
   }
 
   return model;
+}
+
+function getSidebarFocusableElements(sidebar) {
+  if (!sidebar || typeof sidebar.querySelectorAll !== 'function') return [];
+  return [...sidebar.querySelectorAll('a[href], button:not([disabled])')]
+    .filter((element) => element.hidden !== true);
+}
+
+export function initMandiriDashboardNavigation({
+  documentRef = document,
+  windowRef = documentRef.defaultView || window,
+} = {}) {
+  const root = documentRef.querySelector?.('[data-mandiri-root]');
+  const sidebar = documentRef.querySelector?.('[data-mandiri-sidebar]');
+  const toggle = documentRef.querySelector?.('[data-mandiri-sidebar-toggle]');
+  const closeButton = documentRef.querySelector?.('[data-mandiri-sidebar-close]');
+  const overlay = documentRef.querySelector?.('[data-mandiri-sidebar-overlay]');
+
+  if (!root || !sidebar || !toggle || !closeButton || !overlay) return null;
+
+  const mediaQuery = typeof windowRef.matchMedia === 'function'
+    ? windowRef.matchMedia(MANDIRI_MOBILE_SIDEBAR_QUERY)
+    : { matches: false };
+  const listeners = [];
+  let open = false;
+
+  const addListener = (target, type, listener) => {
+    target?.addEventListener?.(type, listener);
+    listeners.push([target, type, listener]);
+  };
+
+  const sync = ({ focusTarget = null } = {}) => {
+    const mobile = mediaQuery.matches === true;
+    const visible = mobile && open;
+
+    root.dataset.sidebarOpen = String(visible);
+    toggle.setAttribute('aria-expanded', String(visible));
+    sidebar.setAttribute('aria-hidden', String(mobile && !visible));
+    overlay.hidden = !visible;
+    overlay.setAttribute('aria-hidden', String(!visible));
+    documentRef.body?.classList?.toggle('vn-mandiri-sidebar-open', visible);
+
+    if ('inert' in sidebar) sidebar.inert = mobile && !visible;
+    focusTarget?.focus?.({ preventScroll: true });
+    return visible;
+  };
+
+  const setOpen = (value, { returnFocus = false } = {}) => {
+    open = mediaQuery.matches === true && value === true;
+    return sync({ focusTarget: open ? closeButton : (returnFocus ? toggle : null) });
+  };
+
+  const handleToggle = () => setOpen(!open);
+  const handleClose = () => setOpen(false, { returnFocus: true });
+  const handleMediaChange = () => {
+    open = false;
+    sync();
+  };
+  const handleKeydown = (event) => {
+    if (event.key === 'Escape' && open) {
+      event.preventDefault?.();
+      handleClose();
+      return;
+    }
+
+    if (event.key !== 'Tab' || !open || mediaQuery.matches !== true) return;
+    const focusable = getSidebarFocusableElements(sidebar);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeElement = documentRef.activeElement;
+
+    if (event.shiftKey && activeElement === first) {
+      event.preventDefault?.();
+      last.focus?.();
+    } else if (!event.shiftKey && activeElement === last) {
+      event.preventDefault?.();
+      first.focus?.();
+    }
+  };
+
+  addListener(toggle, 'click', handleToggle);
+  addListener(closeButton, 'click', handleClose);
+  addListener(overlay, 'click', handleClose);
+  addListener(documentRef, 'keydown', handleKeydown);
+  addListener(mediaQuery, 'change', handleMediaChange);
+
+  const navigationLinks = sidebar.querySelectorAll?.('a[href]') || [];
+  [...navigationLinks].forEach((link) => addListener(link, 'click', () => {
+    if (mediaQuery.matches === true) setOpen(false, { returnFocus: true });
+  }));
+
+  sync();
+
+  return Object.freeze({
+    open() {
+      return setOpen(true);
+    },
+    close() {
+      return setOpen(false, { returnFocus: true });
+    },
+    isOpen() {
+      return open;
+    },
+    destroy() {
+      listeners.splice(0).forEach(([target, type, listener]) => {
+        target?.removeEventListener?.(type, listener);
+      });
+      open = false;
+      sync();
+    },
+  });
 }
 
 async function initializeSharedVitaNusaShell() {
@@ -132,6 +312,7 @@ export async function initializeMandiriApp({
   initializeSharedShell = initializeSharedVitaNusaShell,
   initializeStatus = initMandiriOfflineStatus,
   initializeWorkspacePanel = initializeLocalWorkspacePanel,
+  initializeDashboardNavigation = initMandiriDashboardNavigation,
 } = {}) {
   const model = createMandiriShellModel(featureState, learningFeatureState);
   applyMandiriShellModel(documentRef, model);
@@ -141,11 +322,13 @@ export async function initializeMandiriApp({
       model,
       statusController: null,
       workspaceController: null,
+      dashboardNavigationController: null,
       destroy() {},
     });
   }
 
   const statusController = initializeStatus({ documentRef, windowRef });
+  const dashboardNavigationController = initializeDashboardNavigation({ documentRef, windowRef });
   const hasWorkspacePanel = Boolean(
     documentRef.querySelector('[data-mandiri-workspace-panel]'),
   );
@@ -163,6 +346,7 @@ export async function initializeMandiriApp({
     : null;
   if (sharedShellOutcome.status === 'rejected' || workspaceOutcome.status === 'rejected') {
     workspaceController?.destroy?.();
+    dashboardNavigationController?.destroy?.();
     statusController?.destroy?.();
     throw sharedShellOutcome.status === 'rejected'
       ? sharedShellOutcome.reason
@@ -173,8 +357,10 @@ export async function initializeMandiriApp({
     model,
     statusController,
     workspaceController,
+    dashboardNavigationController,
     destroy() {
       workspaceController?.destroy?.();
+      dashboardNavigationController?.destroy?.();
       statusController?.destroy?.();
     },
   });

@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#14532d">
   <meta name="robots" content="noindex,nofollow">
-  <title>VitaNusa Mandiri | Fondasi Lokal</title>
-  <meta name="description" content="Fondasi lokal VitaNusa Mandiri untuk belajar dan usaha kecil. Belum menjadi aplikasi kasir, pembelajaran, atau sinkronisasi cloud.">
-  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-f1-backup-v1">
+  <title>Dashboard VitaNusa Mandiri | Local-only</title>
+  <meta name="description" content="Dashboard local-only VitaNusa Mandiri untuk Tanya Nusa, workspace lokal, backup JSON, dan recovery preview-only.">
+  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-dashboard-v1">
 </head>
 <body class="vn-mandiri-page">
-  <a class="vn-mandiri-skip" href="#mandiriMain">Lewati ke konten utama</a>
+  <a class="vn-mandiri-skip" href="#mandiriDashboardContent">Lewati ke konten utama</a>
 
-  <main id="mandiriMain" class="vn-mandiri-main" data-mandiri-root data-mandiri-state="off">
+  <main id="mandiriMain" class="vn-mandiri-main" data-mandiri-root data-mandiri-state="off" data-sidebar-open="false">
     <section class="vn-mandiri-unavailable" data-mandiri-unavailable aria-labelledby="mandiriUnavailableTitle">
       <p class="vn-mandiri-kicker">VitaNusa Mandiri</p>
       <h1 id="mandiriUnavailableTitle">VitaNusa Mandiri belum tersedia</h1>
@@ -20,200 +20,313 @@
       <a class="vn-mandiri-link vn-mandiri-link-primary" href="../index.html">Kembali ke VitaNusa</a>
     </section>
 
-    <section class="vn-mandiri-shell" data-mandiri-shell aria-labelledby="mandiriTitle" hidden>
-      <header class="vn-mandiri-hero">
-        <div>
-          <p class="vn-mandiri-kicker">Mode fondasi lokal</p>
-          <h1 id="mandiriTitle">VitaNusa Mandiri</h1>
-          <p class="vn-mandiri-lead">Fondasi lokal untuk belajar dan usaha kecil.</p>
-        </div>
-        <span class="vn-mandiri-phase-badge">Fondasi local-first · internal</span>
-      </header>
-
-      <section class="vn-mandiri-status-grid" aria-label="Status VitaNusa Mandiri">
-        <article class="vn-mandiri-status-card">
-          <p class="vn-mandiri-status-label">Status fitur</p>
-          <strong data-mandiri-feature-state>Off — belum tersedia</strong>
-          <p>Fondasi lokal terbatas. Belum siap produksi.</p>
-        </article>
-
-        <article class="vn-mandiri-status-card">
-          <p class="vn-mandiri-status-label">Penyimpanan</p>
-          <strong>Local-only</strong>
-          <p data-mandiri-local-status role="status" aria-live="polite">Data Mandiri belum disinkronkan ke cloud.</p>
-        </article>
-
-        <article class="vn-mandiri-status-card">
-          <p class="vn-mandiri-status-label">Status koneksi</p>
-          <strong>Koneksi perangkat</strong>
-          <p data-mandiri-connection-status role="status" aria-live="polite">Memeriksa status koneksi perangkat.</p>
-        </article>
-      </section>
-
-      <section
-        class="vn-mandiri-workspace"
-        data-mandiri-workspace-panel
-        data-workspace-panel-state="auth-loading"
-        aria-labelledby="mandiriWorkspaceTitle"
-        aria-busy="true"
+    <section class="vn-mandiri-shell" data-mandiri-shell aria-label="Dashboard VitaNusa Mandiri" hidden>
+      <button
+        class="vn-mandiri-mobile-menu"
+        type="button"
+        data-mandiri-sidebar-toggle
+        aria-controls="mandiriSidebar"
+        aria-expanded="false"
       >
-        <div class="vn-mandiri-section-heading">
-          <p class="vn-mandiri-kicker">Workspace lokal</p>
-          <h2 id="mandiriWorkspaceTitle">Ruang kerja di perangkat ini</h2>
-          <p>Workspace memisahkan fondasi data lokal per akun VitaNusa. Fitur ini belum menjadi aplikasi kasir.</p>
-        </div>
+        <span aria-hidden="true">☰</span>
+        <span>Menu</span>
+      </button>
 
-        <p class="vn-mandiri-workspace-status" data-workspace-status role="status" aria-live="polite">
-          Memeriksa sesi akun VitaNusa.
-        </p>
-
-        <p class="vn-mandiri-workspace-user" data-workspace-user-panel hidden>
-          Akun aktif: <strong data-workspace-user-name></strong>. Nama ini hanya tampil di UI dan tidak disimpan dalam record workspace.
-        </p>
-
-        <div class="vn-mandiri-workspace-panel" data-workspace-loading>
-          <p>Menyiapkan workspace lokal dengan aman.</p>
-        </div>
-
-        <div class="vn-mandiri-workspace-panel" data-workspace-signed-out hidden>
-          <p>Login diperlukan untuk memisahkan workspace lokal antar-akun. Data workspace tetap disimpan hanya di perangkat ini.</p>
-          <div class="vn-mandiri-workspace-actions">
-            <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-workspace-login>
-              Login dengan Google
-            </button>
-            <a class="vn-mandiri-link" href="../account.html">Buka halaman akun</a>
+      <div class="vn-mandiri-dashboard">
+        <aside
+          id="mandiriSidebar"
+          class="vn-mandiri-sidebar"
+          data-mandiri-sidebar
+          aria-label="Navigasi VitaNusa Mandiri"
+        >
+          <div class="vn-mandiri-sidebar-head">
+            <a class="vn-mandiri-brand" href="#beranda" aria-label="VitaNusa Mandiri, kembali ke beranda dashboard">
+              <span class="vn-mandiri-brand-mark" aria-hidden="true">VN</span>
+              <span>
+                <strong>VitaNusa</strong>
+                <small>Mandiri • Local-only</small>
+              </span>
+            </a>
+            <button class="vn-mandiri-sidebar-close" type="button" data-mandiri-sidebar-close aria-label="Tutup menu">×</button>
           </div>
-        </div>
 
-        <div class="vn-mandiri-workspace-panel" data-workspace-form-panel hidden>
-          <form class="vn-mandiri-workspace-form" data-workspace-form novalidate>
-            <fieldset data-workspace-fieldset>
-              <legend>Buat satu workspace lokal</legend>
+          <nav class="vn-mandiri-sidebar-nav" aria-label="Menu utama Mandiri">
+            <a class="vn-mandiri-sidebar-link is-active" href="#beranda" aria-current="page">
+              <span class="vn-mandiri-sidebar-icon" aria-hidden="true">BR</span>
+              <span>Beranda</span>
+            </a>
+            <a class="vn-mandiri-sidebar-link" href="#tanya-nusa">
+              <span class="vn-mandiri-sidebar-icon" aria-hidden="true">TN</span>
+              <span>Tanya Nusa</span>
+            </a>
+            <a class="vn-mandiri-sidebar-link" href="#backup-recovery">
+              <span class="vn-mandiri-sidebar-icon" aria-hidden="true">BR</span>
+              <span>Backup &amp; Recovery</span>
+            </a>
+            <a class="vn-mandiri-sidebar-link" href="#pengaturan">
+              <span class="vn-mandiri-sidebar-icon" aria-hidden="true">PG</span>
+              <span>Pengaturan</span>
+            </a>
+          </nav>
 
-              <label for="workspaceName">Nama usaha atau ruang kerja</label>
-              <input
-                id="workspaceName"
-                name="workspaceName"
-                type="text"
-                maxlength="120"
-                autocomplete="organization"
-                required
-              >
+          <p class="vn-mandiri-sidebar-note">
+            <strong>Data tetap di perangkat.</strong>
+            Fase 1 tidak memakai cloud sync, backend Mandiri, atau database cloud.
+          </p>
+        </aside>
 
-              <label for="workspaceTimezone">Zona waktu</label>
-              <select id="workspaceTimezone" name="workspaceTimezone" required>
-                <option value="Asia/Jakarta" selected>Asia/Jakarta (WIB)</option>
-                <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
-                <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
-              </select>
+        <div class="vn-mandiri-sidebar-overlay" data-mandiri-sidebar-overlay hidden aria-hidden="true"></div>
 
-              <label for="workspaceCurrency">Mata uang</label>
-              <input id="workspaceCurrency" name="workspaceCurrency" value="IDR" readonly>
+        <div id="mandiriDashboardContent" class="vn-mandiri-content" data-mandiri-dashboard-content>
+          <header id="beranda" class="vn-mandiri-header">
+            <div class="vn-mandiri-header-copy">
+              <p class="vn-mandiri-kicker">Ruang kerja pribadi</p>
+              <h1 id="mandiriTitle">Selamat datang di VitaNusa Mandiri</h1>
+              <p>Kelola ruang kerja lokal, gunakan Tanya Nusa, dan jaga cadangan data dengan batas produk yang jelas.</p>
+            </div>
 
-              <button class="vn-mandiri-button vn-mandiri-button-primary" type="submit" data-workspace-submit>
-                Buat workspace lokal
-              </button>
-            </fieldset>
-          </form>
-        </div>
+            <div class="vn-mandiri-header-status" aria-label="Status sistem Mandiri">
+              <span class="vn-mandiri-system-badge">
+                <span class="vn-mandiri-status-dot" aria-hidden="true"></span>
+                Sistem lokal aktif
+              </span>
+              <span class="vn-mandiri-phase-badge">Fondasi local-first · internal</span>
+            </div>
+          </header>
 
-        <div class="vn-mandiri-workspace-panel" data-workspace-summary hidden>
-          <dl class="vn-mandiri-workspace-summary">
-            <div><dt>Nama workspace</dt><dd data-workspace-name></dd></div>
-            <div><dt>Zona waktu</dt><dd data-workspace-timezone></dd></div>
-            <div><dt>Mata uang</dt><dd data-workspace-currency></dd></div>
-            <div><dt>Status</dt><dd data-workspace-record-status></dd></div>
-            <div><dt>Label</dt><dd>Local-only</dd></div>
-            <div><dt>Role</dt><dd data-workspace-role></dd></div>
-          </dl>
-          <p>Workspace ini hanya tersimpan pada perangkat ini. Belum ada sinkronisasi cloud atau pencadangan otomatis.</p>
-        </div>
+          <section class="vn-mandiri-status-strip" aria-label="Ringkasan status VitaNusa Mandiri">
+            <article class="vn-mandiri-status-card">
+              <p class="vn-mandiri-status-label">Status fitur</p>
+              <strong data-mandiri-feature-state>Off — belum tersedia</strong>
+              <p>Mode internal terbatas untuk pengujian dan review.</p>
+            </article>
 
-        <div class="vn-mandiri-workspace-panel vn-mandiri-workspace-error" data-workspace-error hidden>
-          <p data-workspace-error-message role="alert"></p>
-          <button class="vn-mandiri-button" type="button" data-workspace-retry hidden>Coba lagi</button>
-        </div>
-      </section>
+            <article class="vn-mandiri-status-card">
+              <p class="vn-mandiri-status-label">Penyimpanan</p>
+              <strong>Mandiri • Local-only</strong>
+              <p data-mandiri-local-status role="status" aria-live="polite">Data Mandiri belum disinkronkan ke cloud.</p>
+            </article>
 
-      <section
-        class="vn-mandiri-backup"
-        data-mandiri-backup-panel
-        data-backup-panel-state="idle"
-        aria-labelledby="mandiriBackupTitle"
-        aria-busy="false"
-        hidden
-      >
-        <div class="vn-mandiri-section-heading">
-          <p class="vn-mandiri-kicker">Cadangan lokal</p>
-          <h2 id="mandiriBackupTitle">Cadangan Lokal</h2>
-          <p>Buat salinan data fondasi workspace dalam file JSON.</p>
-        </div>
-        <p class="vn-mandiri-backup-warning">
-          File cadangan dapat berisi data usaha pribadi. Simpan di tempat yang aman dan jangan membagikannya sembarangan.
-        </p>
-        <div class="vn-mandiri-workspace-actions">
-          <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-backup-download>
-            Unduh Backup JSON
-          </button>
-          <a class="vn-mandiri-link" href="./recovery.html">Periksa File Backup</a>
-        </div>
-        <p data-backup-status role="status" aria-live="polite">
-          Backup dibuat hanya saat kamu menekan tombol unduh.
-        </p>
-      </section>
+            <article class="vn-mandiri-status-card">
+              <p class="vn-mandiri-status-label">Koneksi perangkat</p>
+              <strong>Status jaringan</strong>
+              <p data-mandiri-connection-status role="status" aria-live="polite">Memeriksa status koneksi perangkat.</p>
+            </article>
+          </section>
 
-      <section class="vn-mandiri-planned" aria-labelledby="mandiriPlannedTitle">
-        <div class="vn-mandiri-section-heading">
-          <p class="vn-mandiri-kicker">Area modul yang direncanakan</p>
-          <h2 id="mandiriPlannedTitle">Peta pengembangan</h2>
-          <p>Semua kartu di bawah ini bersifat penanda rencana, bukan fitur aktif.</p>
-        </div>
+          <section id="tanya-nusa" class="vn-mandiri-tanya-hero" aria-labelledby="tanyaNusaTitle">
+            <div class="vn-mandiri-tanya-copy">
+              <p class="vn-mandiri-hero-label">Asisten utama</p>
+              <h2 id="tanyaNusaTitle">Apa yang ingin Anda pahami hari ini?</h2>
+              <p>Tanya Nusa membantu menyusun jawaban, langkah kerja, dan refleksi berdasarkan konteks yang diberikan pengguna. Jawabannya tetap perlu diperiksa untuk keputusan penting dan tidak menggantikan tenaga ahli.</p>
+            </div>
+            <a class="vn-mandiri-link vn-mandiri-link-on-dark" href="../index.html">Mulai percakapan</a>
+          </section>
 
-        <div class="vn-mandiri-module-grid">
-          <article class="vn-mandiri-module-card" data-mandiri-module="nusabelajar">
-            <span class="vn-mandiri-module-mark" aria-hidden="true">NB</span>
-            <h3>NusaBelajar</h3>
-            <p data-mandiri-module-description="nusabelajar">Pembelajaran singkat dan ramah akan dibangun pada fase terpisah.</p>
-            <strong data-mandiri-module-state="nusabelajar">Direncanakan</strong>
-            <span data-mandiri-module-note="nusabelajar">Segera dibangun · Belum tersedia pada Fase 1</span>
-            <a
-              class="vn-mandiri-link"
-              data-mandiri-module-link="nusabelajar"
-              href="./belajar/"
+          <section class="vn-mandiri-modules" aria-labelledby="mandiriModulesTitle">
+            <div class="vn-mandiri-section-heading">
+              <p class="vn-mandiri-kicker">Modul VitaNusa</p>
+              <h2 id="mandiriModulesTitle">Satu fitur aktif, tiga masih direncanakan</h2>
+              <p>Status ditampilkan secara tegas agar rencana produk tidak terlihat seperti fungsi yang sudah selesai.</p>
+            </div>
+
+            <div class="vn-mandiri-module-grid">
+              <article class="vn-mandiri-module-card vn-mandiri-module-card-active" data-mandiri-module="tanya-nusa" data-module-status="active">
+                <span class="vn-mandiri-module-mark" aria-hidden="true">TN</span>
+                <span class="vn-mandiri-module-status vn-mandiri-module-status-active">Aktif</span>
+                <h3>Tanya Nusa</h3>
+                <p>Asisten utama untuk percakapan, penyusunan langkah kerja, edukasi, dan refleksi berbasis konteks.</p>
+                <a class="vn-mandiri-module-action" href="../index.html">Buka modul</a>
+              </article>
+
+              <article class="vn-mandiri-module-card" data-mandiri-module="nusakasir" data-module-status="planned">
+                <span class="vn-mandiri-module-mark" aria-hidden="true">NK</span>
+                <span class="vn-mandiri-module-status vn-mandiri-module-status-planned">Direncanakan</span>
+                <h3>NusaKasir</h3>
+                <p>Rencana pencatatan usaha. Transaksi, produk, stok, pembayaran, dan kasir aktif belum tersedia.</p>
+                <span class="vn-mandiri-module-unavailable">Belum tersedia pada Fase 1</span>
+              </article>
+
+              <article class="vn-mandiri-module-card" data-mandiri-module="nusabelajar" data-module-status="planned">
+                <span class="vn-mandiri-module-mark" aria-hidden="true">NB</span>
+                <span class="vn-mandiri-module-status vn-mandiri-module-status-planned" data-mandiri-module-status="nusabelajar">Direncanakan</span>
+                <h3>NusaBelajar</h3>
+                <p data-mandiri-module-description="nusabelajar">Rencana pembelajaran singkat dan terarah. Materi serta progres belajar belum dibangun pada Fase 1.</p>
+                <span class="vn-mandiri-module-unavailable" data-mandiri-module-note="nusabelajar">Belum tersedia pada Fase 1</span>
+              </article>
+
+              <article class="vn-mandiri-module-card" data-mandiri-module="vitasheet" data-module-status="planned">
+                <span class="vn-mandiri-module-mark" aria-hidden="true">VS</span>
+                <span class="vn-mandiri-module-status vn-mandiri-module-status-planned">Direncanakan</span>
+                <h3>VitaSheet</h3>
+                <p>Rencana laporan dan ekspor terstruktur. Belum ada laporan XLSX atau pembukuan resmi pada Fase 1.</p>
+                <span class="vn-mandiri-module-unavailable">Belum tersedia pada Fase 1</span>
+              </article>
+            </div>
+          </section>
+
+          <section
+            id="pengaturan"
+            class="vn-mandiri-workspace"
+            data-mandiri-workspace-panel
+            data-workspace-panel-state="auth-loading"
+            aria-labelledby="mandiriWorkspaceTitle"
+            aria-busy="true"
+          >
+            <div class="vn-mandiri-section-heading">
+              <p class="vn-mandiri-kicker">Pengaturan ruang kerja</p>
+              <h2 id="mandiriWorkspaceTitle">Workspace lokal pada perangkat ini</h2>
+              <p>Workspace memisahkan fondasi data per akun VitaNusa. Fitur ini belum menjadi aplikasi kasir dan tidak menyinkronkan data ke cloud.</p>
+            </div>
+
+            <p class="vn-mandiri-workspace-status" data-workspace-status role="status" aria-live="polite">
+              Memeriksa sesi akun VitaNusa.
+            </p>
+
+            <p class="vn-mandiri-workspace-user" data-workspace-user-panel hidden>
+              Akun aktif: <strong data-workspace-user-name></strong>. Nama ini hanya tampil di UI dan tidak disimpan dalam record workspace.
+            </p>
+
+            <div class="vn-mandiri-workspace-panel" data-workspace-loading>
+              <p>Menyiapkan workspace lokal dengan aman.</p>
+            </div>
+
+            <div class="vn-mandiri-workspace-panel" data-workspace-signed-out hidden>
+              <p>Login diperlukan untuk memisahkan workspace lokal antar-akun. Data workspace tetap disimpan hanya di perangkat ini.</p>
+              <div class="vn-mandiri-workspace-actions">
+                <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-workspace-login>
+                  Login dengan Google
+                </button>
+                <a class="vn-mandiri-link" href="../account.html">Buka halaman akun</a>
+              </div>
+            </div>
+
+            <div class="vn-mandiri-workspace-panel" data-workspace-form-panel hidden>
+              <form class="vn-mandiri-workspace-form" data-workspace-form novalidate>
+                <fieldset data-workspace-fieldset>
+                  <legend>Buat satu workspace lokal</legend>
+
+                  <label for="workspaceName">Nama usaha atau ruang kerja</label>
+                  <input
+                    id="workspaceName"
+                    name="workspaceName"
+                    type="text"
+                    maxlength="120"
+                    autocomplete="organization"
+                    required
+                  >
+
+                  <label for="workspaceTimezone">Zona waktu</label>
+                  <select id="workspaceTimezone" name="workspaceTimezone" required>
+                    <option value="Asia/Jakarta" selected>Asia/Jakarta (WIB)</option>
+                    <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                    <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                  </select>
+
+                  <label for="workspaceCurrency">Mata uang</label>
+                  <input id="workspaceCurrency" name="workspaceCurrency" value="IDR" readonly>
+
+                  <button class="vn-mandiri-button vn-mandiri-button-primary" type="submit" data-workspace-submit>
+                    Buat workspace lokal
+                  </button>
+                </fieldset>
+              </form>
+            </div>
+
+            <div class="vn-mandiri-workspace-panel" data-workspace-summary hidden>
+              <dl class="vn-mandiri-workspace-summary">
+                <div><dt>Nama workspace</dt><dd data-workspace-name></dd></div>
+                <div><dt>Zona waktu</dt><dd data-workspace-timezone></dd></div>
+                <div><dt>Mata uang</dt><dd data-workspace-currency></dd></div>
+                <div><dt>Status</dt><dd data-workspace-record-status></dd></div>
+                <div><dt>Label</dt><dd>Local-only</dd></div>
+                <div><dt>Role</dt><dd data-workspace-role></dd></div>
+              </dl>
+              <p>Workspace ini hanya tersimpan pada perangkat ini. Belum ada sinkronisasi cloud atau pencadangan otomatis.</p>
+            </div>
+
+            <div class="vn-mandiri-workspace-panel vn-mandiri-workspace-error" data-workspace-error hidden>
+              <p data-workspace-error-message role="alert"></p>
+              <button class="vn-mandiri-button" type="button" data-workspace-retry hidden>Coba lagi</button>
+            </div>
+          </section>
+
+          <section id="backup-recovery" class="vn-mandiri-backup-summary" aria-labelledby="mandiriBackupSummaryTitle">
+            <div class="vn-mandiri-section-heading vn-mandiri-section-heading-actions">
+              <div>
+                <p class="vn-mandiri-kicker">Backup &amp; Recovery</p>
+                <h2 id="mandiriBackupSummaryTitle">Cadangan lokal dengan pemeriksaan sebelum pemulihan</h2>
+                <p>Fitur Fase 1 bekerja pada account dan workspace aktif. Recovery hanya memeriksa file dan tidak menulis data.</p>
+              </div>
+              <a class="vn-mandiri-link" href="./recovery.html">Buka preview recovery</a>
+            </div>
+
+            <div class="vn-mandiri-backup-facts" aria-label="Batas backup dan recovery">
+              <article>
+                <strong>Scope aktif</strong>
+                <p>Backup hanya berasal dari account dan workspace yang sedang aktif.</p>
+              </article>
+              <article>
+                <strong>Checksum SHA-256</strong>
+                <p>Checksum mendeteksi perubahan atau kerusakan file; bukan enkripsi atau tanda tangan digital.</p>
+              </article>
+              <article>
+                <strong>Preview-only</strong>
+                <p>Pemeriksaan recovery tidak membuka write path dan tidak mengubah IndexedDB.</p>
+              </article>
+            </div>
+
+            <section
+              class="vn-mandiri-backup"
+              data-mandiri-backup-panel
+              data-backup-panel-state="idle"
+              aria-labelledby="mandiriBackupTitle"
+              aria-busy="false"
               hidden
-            >Buka NusaBelajar</a>
-          </article>
+            >
+              <div class="vn-mandiri-section-heading">
+                <p class="vn-mandiri-kicker">Cadangan workspace aktif</p>
+                <h3 id="mandiriBackupTitle">Unduh backup JSON lokal</h3>
+                <p>File dibuat hanya saat pengguna menekan tombol unduh dan setelah scope workspace aktif tersedia.</p>
+              </div>
+              <p class="vn-mandiri-backup-warning">
+                File cadangan dapat berisi data usaha pribadi. Simpan di tempat aman dan jangan membagikannya sembarangan.
+              </p>
+              <div class="vn-mandiri-workspace-actions">
+                <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-backup-download>
+                  Unduh Backup JSON
+                </button>
+              </div>
+              <p data-backup-status role="status" aria-live="polite">
+                Backup dibuat hanya saat kamu menekan tombol unduh.
+              </p>
+            </section>
+          </section>
 
-          <article class="vn-mandiri-module-card" data-mandiri-module="nusakasir">
-            <span class="vn-mandiri-module-mark" aria-hidden="true">NK</span>
-            <h3>NusaKasir</h3>
-            <p>Fondasi pencatatan usaha belum memuat transaksi, produk, atau kasir aktif.</p>
-            <strong>Direncanakan</strong>
-            <span>Segera dibangun · Belum tersedia pada Fase 1</span>
-          </article>
+          <aside class="vn-mandiri-boundary" aria-labelledby="mandiriBoundaryTitle">
+            <div>
+              <p class="vn-mandiri-kicker">Batas aman produk</p>
+              <h2 id="mandiriBoundaryTitle">Yang dijaga pada Fase 1</h2>
+            </div>
+            <ul>
+              <li>Tidak ada cloud sync untuk data VitaNusa Mandiri.</li>
+              <li>Restore preview tidak menulis atau mengganti data.</li>
+              <li>Modul direncanakan tidak diperlakukan sebagai fitur aktif.</li>
+              <li>Data tidak boleh dicampur antar-account atau antar-workspace.</li>
+            </ul>
+            <p>Catatan historis Fase 1: Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Pada mode Fase 2 internal, NusaBelajar hanya membaca paket statis published dan menjalankan jawaban sementara di memori; belum ada attempt, progress, atau sinkronisasi cloud. IndexedDB tetap version 1 untuk fondasi workspace lokal.</p>
+            <p>Nusa Agent tetap informasional dan tidak membaca workspace Mandiri.</p>
+          </aside>
 
-          <article class="vn-mandiri-module-card" data-mandiri-module="vitasheet">
-            <span class="vn-mandiri-module-mark" aria-hidden="true">VS</span>
-            <h3>VitaSheet</h3>
-            <p>Ekspor dan laporan akan mengikuti kontrak data yang belum dibuat pada PR ini.</p>
-            <strong>Direncanakan</strong>
-            <span>Segera dibangun · Belum tersedia pada Fase 1</span>
-          </article>
+          <footer class="vn-mandiri-footer">
+            <a class="vn-mandiri-link" href="../index.html">Kembali ke VitaNusa</a>
+            <p>Fondasi lokal ini belum dapat dipakai untuk pembukuan resmi, keputusan medis, atau pengganti tenaga ahli.</p>
+          </footer>
         </div>
-      </section>
-
-      <aside class="vn-mandiri-boundary" aria-labelledby="mandiriBoundaryTitle">
-        <h2 id="mandiriBoundaryTitle">Batas fondasi local-first</h2>
-        <p>Catatan historis Fase 1: Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Pada mode Fase 2 internal, NusaBelajar hanya membaca paket statis published dan menjalankan jawaban sementara di memori; belum ada attempt, progress, atau sinkronisasi cloud. IndexedDB tetap version 1 untuk fondasi workspace lokal. Nusa Agent tetap informasional dan tidak membaca jawaban.</p>
-      </aside>
-
-      <footer class="vn-mandiri-footer">
-        <a class="vn-mandiri-link vn-mandiri-link-primary" href="../index.html">Kembali ke VitaNusa</a>
-        <p>Fondasi lokal ini belum dapat dipakai untuk pembukuan resmi.</p>
-      </footer>
+      </div>
     </section>
   </main>
 
-  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260717-mandiri-f1-backup-v1"></script>
+  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260717-mandiri-dashboard-v1"></script>
 </body>
 </html>
