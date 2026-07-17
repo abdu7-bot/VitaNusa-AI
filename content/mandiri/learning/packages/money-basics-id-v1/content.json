@@ -1,0 +1,529 @@
+{
+  "schemaVersion": 1,
+  "programs": [
+    {
+      "schemaVersion": 1,
+      "programId": "program-daily-skills-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Keterampilan Dasar Sehari-hari",
+      "summary": "Pelajaran singkat untuk membantu memahami angka, uang, informasi sederhana, dan kebutuhan sehari-hari.",
+      "courseIds": [
+        "course-money-basics-id"
+      ],
+      "status": "draft"
+    }
+  ],
+  "courses": [
+    {
+      "schemaVersion": 1,
+      "courseId": "course-money-basics-id",
+      "programId": "program-daily-skills-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Menghitung Uang Sederhana",
+      "summary": "Belajar membaca harga, menjumlahkan dua harga, dan menghitung kembalian dengan langkah sederhana.",
+      "learningObjective": "Pengguna dapat melakukan perhitungan uang sederhana untuk kebutuhan sehari-hari.",
+      "moduleIds": [
+        "module-shopping-change-id"
+      ],
+      "prerequisiteCourseIds": [],
+      "status": "draft"
+    }
+  ],
+  "modules": [
+    {
+      "schemaVersion": 1,
+      "moduleId": "module-shopping-change-id",
+      "courseId": "course-money-basics-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Belanja dan Kembalian",
+      "summary": "Latihan menggunakan angka rupiah dalam contoh belanja sederhana.",
+      "learningObjective": "Pengguna dapat membaca harga, menjumlahkan dua harga, dan menghitung kembalian sederhana.",
+      "lessonIds": [
+        "lesson-read-prices-id",
+        "lesson-add-prices-id",
+        "lesson-calculate-change-id"
+      ],
+      "status": "draft"
+    }
+  ],
+  "lessons": [
+    {
+      "schemaVersion": 1,
+      "lessonId": "lesson-read-prices-id",
+      "moduleId": "module-shopping-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Membaca Harga",
+      "summary": "Mengenali penulisan rupiah dan membaca label harga sederhana.",
+      "learningObjective": "Pengguna dapat membaca angka rupiah pada label harga sederhana.",
+      "estimatedMinutes": 6,
+      "blocks": [
+        {
+          "blockId": "block-read-heading-id",
+          "type": "heading",
+          "text": "Mari kita lihat label harga.",
+          "items": []
+        },
+        {
+          "blockId": "block-read-rupiah-id",
+          "type": "paragraph",
+          "text": "Tanda Rp berarti rupiah.",
+          "items": []
+        },
+        {
+          "blockId": "block-read-thousands-id",
+          "type": "paragraph",
+          "text": "Titik pada penulisan harga Indonesia memisahkan ribuan.",
+          "items": []
+        },
+        {
+          "blockId": "block-read-eight-id",
+          "type": "example",
+          "text": "Rp8.000 dibaca delapan ribu rupiah. Dalam perhitungan, nilainya ditulis sebagai integer 8000.",
+          "items": []
+        },
+        {
+          "blockId": "block-read-labels-id",
+          "type": "simple_list",
+          "text": null,
+          "items": [
+            "Buku tulis — Rp8.000",
+            "Pensil — Rp3.000",
+            "Penghapus — Rp2.000"
+          ]
+        },
+        {
+          "blockId": "block-read-check-id",
+          "type": "tip",
+          "text": "Perhatikan seluruh angka pada label sebelum menjawab.",
+          "items": []
+        }
+      ],
+      "activityIds": [
+        "activity-read-price-example-id"
+      ],
+      "exerciseIds": [
+        "exercise-read-price-choice-id",
+        "exercise-read-price-number-id",
+        "exercise-read-currency-text-id"
+      ],
+      "quizId": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "lessonId": "lesson-add-prices-id",
+      "moduleId": "module-shopping-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Menjumlahkan Dua Harga",
+      "summary": "Menjumlahkan dua harga rupiah dengan urutan langkah yang jelas.",
+      "learningObjective": "Pengguna dapat menjumlahkan dua harga dalam rupiah.",
+      "estimatedMinutes": 7,
+      "blocks": [
+        {
+          "blockId": "block-add-heading-id",
+          "type": "heading",
+          "text": "Mari kita jumlahkan dua harga.",
+          "items": []
+        },
+        {
+          "blockId": "block-add-example-id",
+          "type": "example",
+          "text": "Harga buku tulis Rp8.000 dan harga pensil Rp3.000. Rp8.000 + Rp3.000 = Rp11.000.",
+          "items": []
+        },
+        {
+          "blockId": "block-add-steps-id",
+          "type": "simple_list",
+          "text": null,
+          "items": [
+            "Tulis angka pertama.",
+            "Tulis angka kedua.",
+            "Jumlahkan kedua angka.",
+            "Periksa hasil."
+          ]
+        },
+        {
+          "blockId": "block-add-tip-id",
+          "type": "tip",
+          "text": "Coba hitung perlahan, lalu periksa kembali hasilnya.",
+          "items": []
+        }
+      ],
+      "activityIds": [
+        "activity-add-price-sequence-id"
+      ],
+      "exerciseIds": [
+        "exercise-add-prices-number-id",
+        "exercise-add-prices-choice-id",
+        "exercise-add-prices-multiple-id"
+      ],
+      "quizId": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "lessonId": "lesson-calculate-change-id",
+      "moduleId": "module-shopping-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "title": "Menghitung Kembalian Sederhana",
+      "summary": "Mengurangi total belanja dari uang yang dibayar untuk mencari kembalian.",
+      "learningObjective": "Pengguna dapat menghitung kembalian dari pembayaran sederhana.",
+      "estimatedMinutes": 8,
+      "blocks": [
+        {
+          "blockId": "block-change-heading-id",
+          "type": "heading",
+          "text": "Mari kita hitung kembalian.",
+          "items": []
+        },
+        {
+          "blockId": "block-change-rule-id",
+          "type": "paragraph",
+          "text": "Kembalian = uang dibayar - total belanja.",
+          "items": []
+        },
+        {
+          "blockId": "block-change-example-id",
+          "type": "example",
+          "text": "Total belanja Rp13.000 dan uang dibayar Rp20.000. Rp20.000 - Rp13.000 = Rp7.000.",
+          "items": []
+        },
+        {
+          "blockId": "block-change-steps-id",
+          "type": "simple_list",
+          "text": null,
+          "items": [
+            "Baca total belanja.",
+            "Baca uang yang dibayar.",
+            "Kurangi total dari uang yang dibayar.",
+            "Periksa hasil."
+          ]
+        },
+        {
+          "blockId": "block-change-tip-id",
+          "type": "tip",
+          "text": "Kita dapat memeriksa kembali dengan menambahkan kembalian pada total belanja.",
+          "items": []
+        }
+      ],
+      "activityIds": [
+        "activity-change-sequence-id"
+      ],
+      "exerciseIds": [
+        "exercise-change-first-number-id",
+        "exercise-change-second-number-id",
+        "exercise-change-sequence-id"
+      ],
+      "quizId": null,
+      "status": "draft"
+    }
+  ],
+  "activities": [
+    {
+      "schemaVersion": 1,
+      "activityId": "activity-read-price-example-id",
+      "lessonId": "lesson-read-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "read_example",
+      "prompt": "Perhatikan tiga label harga. Cocokkan nama barang dengan harga yang tertulis.",
+      "items": [
+        {
+          "itemId": "item-price-book-id",
+          "label": "Buku tulis — Rp8.000"
+        },
+        {
+          "itemId": "item-price-pencil-id",
+          "label": "Pensil — Rp3.000"
+        },
+        {
+          "itemId": "item-price-eraser-id",
+          "label": "Penghapus — Rp2.000"
+        }
+      ],
+      "explanation": "Setiap label memasangkan satu nama barang dengan satu harga rupiah.",
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "activityId": "activity-add-price-sequence-id",
+      "lessonId": "lesson-add-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "observe_sequence",
+      "prompt": "Perhatikan urutan langkah menjumlahkan dua harga.",
+      "items": [
+        {
+          "itemId": "item-add-first-id",
+          "label": "Tulis angka pertama."
+        },
+        {
+          "itemId": "item-add-second-id",
+          "label": "Tulis angka kedua."
+        },
+        {
+          "itemId": "item-add-sum-id",
+          "label": "Jumlahkan kedua angka."
+        },
+        {
+          "itemId": "item-add-check-id",
+          "label": "Periksa hasil."
+        }
+      ],
+      "explanation": "Urutan ini membantu memastikan kedua harga sudah dihitung dan hasilnya diperiksa.",
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "activityId": "activity-change-sequence-id",
+      "lessonId": "lesson-calculate-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "observe_sequence",
+      "prompt": "Perhatikan urutan menghitung kembalian.",
+      "items": [
+        {
+          "itemId": "item-change-total-id",
+          "label": "Baca total belanja."
+        },
+        {
+          "itemId": "item-change-paid-id",
+          "label": "Baca uang yang dibayar."
+        },
+        {
+          "itemId": "item-change-subtract-id",
+          "label": "Kurangi total dari uang yang dibayar."
+        },
+        {
+          "itemId": "item-change-check-id",
+          "label": "Periksa hasil."
+        }
+      ],
+      "explanation": "Kembalian diperoleh setelah total belanja dikurangi dari uang yang dibayar.",
+      "status": "draft"
+    }
+  ],
+  "exercises": [
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-read-price-choice-id",
+      "lessonId": "lesson-read-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "single_choice",
+      "prompt": "Harga buku tulis adalah ...",
+      "choices": [
+        {
+          "choiceId": "choice-read-price-6000-id",
+          "label": "Rp6.000"
+        },
+        {
+          "choiceId": "choice-read-price-8000-id",
+          "label": "Rp8.000"
+        },
+        {
+          "choiceId": "choice-read-price-10000-id",
+          "label": "Rp10.000"
+        }
+      ],
+      "correctAnswer": "choice-read-price-8000-id",
+      "explanation": "Rp8.000 berarti delapan ribu rupiah.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-read-price-number-id",
+      "lessonId": "lesson-read-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "numeric_input",
+      "prompt": "Tuliskan angka untuk harga Rp3.000.",
+      "choices": [],
+      "correctAnswer": 3000,
+      "explanation": "Rp3.000 ditulis sebagai angka 3000 untuk perhitungan.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-read-currency-text-id",
+      "lessonId": "lesson-read-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "short_text_exact",
+      "prompt": "Apa nama mata uang pada contoh ini?",
+      "choices": [],
+      "correctAnswer": {
+        "acceptedAnswers": [
+          "rupiah"
+        ],
+        "caseSensitive": false
+      },
+      "explanation": "Rp adalah tanda untuk mata uang rupiah.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-add-prices-number-id",
+      "lessonId": "lesson-add-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "numeric_input",
+      "prompt": "Rp8.000 + Rp3.000 = ...",
+      "choices": [],
+      "correctAnswer": 11000,
+      "explanation": "Delapan ribu ditambah tiga ribu adalah sebelas ribu.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-add-prices-choice-id",
+      "lessonId": "lesson-add-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "single_choice",
+      "prompt": "Rp5.000 + Rp7.000 = ...",
+      "choices": [
+        {
+          "choiceId": "choice-add-price-10000-id",
+          "label": "Rp10.000"
+        },
+        {
+          "choiceId": "choice-add-price-12000-id",
+          "label": "Rp12.000"
+        },
+        {
+          "choiceId": "choice-add-price-14000-id",
+          "label": "Rp14.000"
+        }
+      ],
+      "correctAnswer": "choice-add-price-12000-id",
+      "explanation": "Lima ribu ditambah tujuh ribu adalah dua belas ribu.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-add-prices-multiple-id",
+      "lessonId": "lesson-add-prices-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "multiple_choice",
+      "prompt": "Pilih semua pasangan yang jumlahnya Rp10.000.",
+      "choices": [
+        {
+          "choiceId": "choice-pair-4000-6000-id",
+          "label": "Rp4.000 + Rp6.000"
+        },
+        {
+          "choiceId": "choice-pair-3000-7000-id",
+          "label": "Rp3.000 + Rp7.000"
+        },
+        {
+          "choiceId": "choice-pair-5000-4000-id",
+          "label": "Rp5.000 + Rp4.000"
+        }
+      ],
+      "correctAnswer": [
+        "choice-pair-4000-6000-id",
+        "choice-pair-3000-7000-id"
+      ],
+      "explanation": "Empat ribu ditambah enam ribu dan tiga ribu ditambah tujuh ribu sama-sama berjumlah sepuluh ribu.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-change-first-number-id",
+      "lessonId": "lesson-calculate-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "numeric_input",
+      "prompt": "Total Rp13.000, dibayar Rp20.000. Berapa kembaliannya?",
+      "choices": [],
+      "correctAnswer": 7000,
+      "explanation": "Kembalian dihitung dengan Rp20.000 - Rp13.000 = Rp7.000.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-change-second-number-id",
+      "lessonId": "lesson-calculate-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "numeric_input",
+      "prompt": "Total Rp10.000, dibayar Rp15.000. Berapa kembaliannya?",
+      "choices": [],
+      "correctAnswer": 5000,
+      "explanation": "Kembalian dihitung dengan Rp15.000 - Rp10.000 = Rp5.000.",
+      "maxAttempts": null,
+      "status": "draft"
+    },
+    {
+      "schemaVersion": 1,
+      "exerciseId": "exercise-change-sequence-id",
+      "lessonId": "lesson-calculate-change-id",
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "type": "sequence",
+      "prompt": "Susun urutan menghitung kembalian.",
+      "choices": [
+        {
+          "choiceId": "choice-change-read-total-id",
+          "label": "Baca total belanja"
+        },
+        {
+          "choiceId": "choice-change-read-paid-id",
+          "label": "Baca uang yang dibayar"
+        },
+        {
+          "choiceId": "choice-change-subtract-id",
+          "label": "Kurangi total dari uang yang dibayar"
+        },
+        {
+          "choiceId": "choice-change-check-id",
+          "label": "Periksa hasil"
+        }
+      ],
+      "correctAnswer": [
+        "choice-change-read-total-id",
+        "choice-change-read-paid-id",
+        "choice-change-subtract-id",
+        "choice-change-check-id"
+      ],
+      "explanation": "Baca kedua nilai sebelum mengurangi, lalu periksa hasil kembalian.",
+      "maxAttempts": null,
+      "status": "draft"
+    }
+  ],
+  "quizzes": [
+    {
+      "schemaVersion": 1,
+      "quizId": "quiz-money-basics-id",
+      "moduleId": "module-shopping-change-id",
+      "lessonId": null,
+      "contentVersion": 1,
+      "locale": "id-ID",
+      "exerciseIds": [
+        "exercise-read-price-choice-id",
+        "exercise-read-price-number-id",
+        "exercise-add-prices-number-id",
+        "exercise-add-prices-choice-id",
+        "exercise-change-first-number-id",
+        "exercise-change-second-number-id"
+      ],
+      "passingThresholdBasisPoints": 7000,
+      "status": "draft"
+    }
+  ]
+}

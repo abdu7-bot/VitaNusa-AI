@@ -182,6 +182,12 @@ jobs:
       - name: Test NusaBelajar domain
         run: npm run test:mandiri:learning-domain
 
+      - name: Verify NusaBelajar content packages
+        run: npm run check:mandiri:learning-content
+
+      - name: Test NusaBelajar content packages
+        run: npm run test:mandiri:learning-content
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -249,7 +255,11 @@ jobs:
           node --check assets/js/mandiri/learning/content/content-schema.js
           node --check assets/js/mandiri/learning/content/content-validator.js
           node --check assets/js/mandiri/learning/content/content-safety.js
+          node --check assets/js/mandiri/learning/content/package-manifest.js
+          node --check assets/js/mandiri/learning/content/package-catalog.js
           node --check assets/js/mandiri/learning/engine/answer-evaluator.js
+          node --check scripts/mandiri/learning/verify-learning-packages.mjs
+          node --check scripts/mandiri/learning/print-content-review.mjs
 
   backend:
     name: Backend
