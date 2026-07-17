@@ -5,13 +5,13 @@
   "schemaVersion": 1,
   "contentVersion": 1,
   "locale": "id-ID",
-  "status": "draft",
-  "reviewStatus": "pending_human_review",
+  "status": "published",
+  "reviewStatus": "approved",
   "title": "Menghitung Uang Sederhana",
   "summary": "Paket kandidat untuk membaca harga, menjumlahkan dua harga, dan menghitung kembalian sederhana.",
   "contentFile": "content.json",
-  "contentSha256": "sha256:eac171a25bc004d93cb986da42bd3789c0fa0a4dac96bff8e650590b3aa5307f",
-  "contentBytes": 16066,
+  "contentSha256": "sha256:063e0dcfe9ca5914dadcf37b00b237cb0ca4067881c6a0385f13d8b1363f3ae0",
+  "contentBytes": 16142,
   "programIds": [
     "program-daily-skills-id"
   ]

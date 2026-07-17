@@ -20,13 +20,13 @@ const reviewScriptPath = new URL(
   import.meta.url,
 );
 
-test('package dan seluruh entity tetap draft dengan pending human review', async () => {
+test('package dan seluruh entity published setelah persetujuan manusia', async () => {
   const [manifest, content] = await Promise.all([
     readFile(manifestPath, 'utf8').then(JSON.parse),
     readFile(contentPath, 'utf8').then(JSON.parse),
   ]);
-  assert.equal(manifest.status, 'draft');
-  assert.equal(manifest.reviewStatus, 'pending_human_review');
+  assert.equal(manifest.status, 'published');
+  assert.equal(manifest.reviewStatus, 'approved');
   for (const collection of [
     content.programs,
     content.courses,
@@ -36,7 +36,7 @@ test('package dan seluruh entity tetap draft dengan pending human review', async
     content.exercises,
     content.quizzes,
   ]) {
-    collection.forEach((entity) => assert.equal(entity.status, 'draft'));
+    collection.forEach((entity) => assert.equal(entity.status, 'published'));
   }
 });
 
@@ -54,21 +54,20 @@ test('CONTENT-REVIEW memuat seluruh exercise, jawaban, explanation, dan threshol
   assert.match(review, /Content safety lint: 0 finding/);
 });
 
-test('field reviewer, tanggal, keputusan, dan catatan tetap kosong', async () => {
+test('review mencatat identitas dokumentasi, tanggal, keputusan, dan catatan faktual', async () => {
   const review = await readFile(reviewPath, 'utf8');
-  assert.match(review, /^Reviewer:\s*$/m);
-  assert.match(review, /^Tanggal:\s*$/m);
-  assert.match(review, /^Keputusan:\s*$/m);
-  assert.match(review, /^Catatan:\s*$/m);
-  assert.doesNotMatch(review, /^Keputusan:\s*approved\b/im);
+  assert.match(review, /^Reviewer: Pemilik proyek VitaNusa$/m);
+  assert.match(review, /^Tanggal: 2026-07-17$/m);
+  assert.match(review, /^Keputusan: Disetujui untuk dipublikasikan$/m);
+  assert.match(review, /^Catatan: Materi, contoh angka, latihan, jawaban benar, explanation, dan threshold kuis telah ditinjau dan disetujui secara eksplisit\.$/m);
+  assert.doesNotMatch(review, /Reviewer:\s*(?:Codex|OpenAI)/i);
 });
 
-test('review script mencetak jawaban dan status tanpa self-approval', async () => {
+test('review script mencetak jawaban dan status approved tanpa melakukan self-approval', async () => {
   const output = await createContentReviewText();
-  assert.match(output, /Review status: pending_human_review/);
+  assert.match(output, /Review status: approved/);
   assert.match(output, /Correct answer: 11000/);
   assert.match(output, /Correct answer: \["choice-change-read-total-id"/);
-  assert.doesNotMatch(output, /Review status: approved/);
 });
 
 test('script verifikasi dan review bersifat read-only', async () => {
@@ -83,8 +82,9 @@ test('script verifikasi dan review bersifat read-only', async () => {
   }
 });
 
-test('review report menegaskan Codex bukan reviewer manusia', async () => {
+test('review report menegaskan persetujuan manusia dan bukan self-approval Codex', async () => {
   const review = await readFile(reviewPath, 'utf8');
   assert.match(review, /Codex bukan reviewer manusia/);
-  assert.match(review, /pending_human_review/);
+  assert.match(review, /Pemilik proyek VitaNusa telah meninjau dan menyetujui secara eksplisit/);
+  assert.match(review, /persetujuan eksplisit pemilik proyek/);
 });

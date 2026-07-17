@@ -28,7 +28,7 @@ function manifestMap(manifest) {
   return new Map([['packages/money-basics-id-v1/manifest.json', manifest]]);
 }
 
-test('catalog valid memakai relative manifest path dan cocok dengan manifest', async () => {
+test('catalog published valid memakai relative manifest path dan cocok dengan manifest', async () => {
   const { catalog, manifest } = await loadFiles();
   const before = structuredClone(catalog);
   const normalized = normalizeLearningPackageCatalog(catalog, {
@@ -83,12 +83,12 @@ test('catalog menolak package yang manifest-nya hilang', async () => {
 
 test('catalog menolak status atau reviewStatus yang berbeda dari manifest', async () => {
   const { catalog, manifest } = await loadFiles();
-  const publishedManifest = structuredClone(manifest);
-  publishedManifest.status = 'published';
-  publishedManifest.reviewStatus = 'approved';
+  const draftManifest = structuredClone(manifest);
+  draftManifest.status = 'draft';
+  draftManifest.reviewStatus = 'pending_human_review';
 
   assert.throws(() => normalizeLearningPackageCatalog(catalog, {
-    manifestsByPath: manifestMap(publishedManifest),
+    manifestsByPath: manifestMap(draftManifest),
   }), { code: 'catalog_manifest_mismatch' });
 });
 
@@ -113,6 +113,7 @@ test('catalog menolak dangerous key dan review gate yang tidak konsisten', async
   assert.throws(() => normalizeLearningPackageCatalog(dangerous), { code: 'dangerous_key' });
 
   const { catalog: bypass } = await loadFiles();
+  bypass.packages[0].status = 'draft';
   bypass.packages[0].reviewStatus = 'approved';
   assert.throws(() => normalizeLearningPackageCatalog(bypass), {
     code: 'review_gate_mismatch',

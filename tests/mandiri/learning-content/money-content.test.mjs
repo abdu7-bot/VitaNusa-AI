@@ -34,7 +34,7 @@ function collectStrings(value, output = []) {
   return output;
 }
 
-test('content graph kandidat valid, tidak dimutasi, dan hasil frozen', async () => {
+test('content graph published valid, tidak dimutasi, dan hasil frozen', async () => {
   const input = await loadContent();
   const before = structuredClone(input);
   const graph = validateContentPackageGraph(input);
@@ -57,10 +57,10 @@ test('paket tepat mempunyai satu Program, Course, Module, tiga Lesson, dan satu 
   assert.equal(graph.modules[0].title, 'Belanja dan Kembalian');
 });
 
-test('seluruh entity draft, contentVersion 1, locale id-ID, dan schemaVersion 1', async () => {
+test('seluruh entity published, contentVersion 1, locale id-ID, dan schemaVersion 1', async () => {
   const graph = validateContentPackageGraph(await loadContent());
   for (const entity of allEntities(graph)) {
-    assert.equal(entity.status, 'draft');
+    assert.equal(entity.status, 'published');
     assert.equal(entity.contentVersion, 1);
     assert.equal(entity.locale, 'id-ID');
     assert.equal(entity.schemaVersion, 1);
