@@ -3,6 +3,7 @@ import {
   MANDIRI_FEATURE_STATES,
 } from '../config/feature-flags.js';
 import { createRepositoryContext } from '../repositories/repository-context.js';
+import { createBackupService } from '../export/backup.js';
 import { createLocalScopesFromUser } from '../services/account-scope.js';
 import {
   getWorkspaceErrorMessage,
@@ -16,6 +17,7 @@ import {
   signInPublicUser,
   subscribeUserAuth,
 } from '../../modules/user-auth.js';
+import { initMandiriBackupPanel } from './backup-panel.js';
 
 export const WORKSPACE_PANEL_STATES = Object.freeze([
   'feature-off',
@@ -193,6 +195,8 @@ export function createWorkspacePanelController({
   openDatabase = openMandiriDatabase,
   createContext = createRepositoryContext,
   createService = createWorkspaceService,
+  createBackup = createBackupService,
+  backupController = null,
 } = {}) {
   if (!view || typeof view.render !== 'function') throw workspaceError('unknown_error');
 
@@ -205,6 +209,7 @@ export function createWorkspacePanelController({
   let unsubscribe = () => {};
   let connection = null;
   let service = null;
+  let backupService = null;
   let scopes = null;
   let activeUid = null;
   let activeUserLabel = null;
@@ -224,13 +229,25 @@ export function createWorkspacePanelController({
 
   const closeConnection = () => {
     const current = connection;
+    backupController?.clear?.();
     connection = null;
     service = null;
+    backupService = null;
     scopes = null;
     current?.close?.();
   };
 
   const isCurrent = (expectedGeneration) => !destroyed && generation === expectedGeneration;
+
+  const configureBackup = (workspace) => {
+    if (!backupController || !backupService || !scopes || !workspace) return;
+    backupController.setWorkspace({
+      backupService,
+      accountScope: scopes.accountScope,
+      workspaceId: workspace.workspaceId,
+      workspaceName: workspace.name,
+    });
+  };
 
   const showError = (error, { retry = isRetryableWorkspaceError(error), mode = null } = {}) => {
     const mapped = mapWorkspaceError(error);
@@ -277,14 +294,21 @@ export function createWorkspacePanelController({
         return;
       }
       connection = nextConnection;
-      const nextService = createService({ repositoryContext: createContext(nextConnection) });
+      const repositoryContext = createContext(nextConnection);
+      const nextService = createService({ repositoryContext });
+      const nextBackupService = backupController
+        ? createBackup({ repositoryContext })
+        : null;
       service = nextService;
+      backupService = nextBackupService;
       scopes = nextScopes;
       const workspaceState = await nextService.getWorkspaceState(
         nextScopes.accountScope,
         nextScopes.userScope,
       );
       if (!isCurrent(currentGeneration)) return;
+      if (workspaceState.status === 'ready') configureBackup(workspaceState.workspace);
+      else backupController?.clear?.();
       render(workspaceModelFromState(workspaceState));
     } catch (error) {
       if (!isCurrent(currentGeneration)) return;
@@ -348,6 +372,7 @@ export function createWorkspacePanelController({
       .then((creationResult) => {
         if (isCurrent(currentGeneration)) {
           activeCommand = null;
+          configureBackup(creationResult.workspace);
           render(createWorkspacePanelModel('ready-with-workspace', {
             workspace: creationResult.workspace,
             membership: creationResult.membership,
@@ -367,6 +392,7 @@ export function createWorkspacePanelController({
             );
             if (isCurrent(currentGeneration) && existingState.status === 'ready') {
               activeCommand = null;
+              configureBackup(existingState.workspace);
               render(workspaceModelFromState(existingState));
               return Object.freeze({
                 status: 'existing',
@@ -412,6 +438,7 @@ export function createWorkspacePanelController({
     creatingPromise = null;
     loginPromise = null;
     retryMode = null;
+    backupController?.destroy?.();
     render(createWorkspacePanelModel('signed-out'));
     view.destroy?.();
   }
@@ -442,9 +469,13 @@ export function initMandiriWorkspacePanel({
 } = {}) {
   const root = documentRef.querySelector('[data-mandiri-workspace-panel]');
   if (!root) throw workspaceError('unknown_error');
+  const backupController = documentRef.querySelector('[data-mandiri-backup-panel]')
+    ? initMandiriBackupPanel({ documentRef })
+    : null;
   return createWorkspacePanelController({
     featureState,
     view: createDomWorkspacePanelView(root),
+    backupController,
     ...dependencies,
   });
 }

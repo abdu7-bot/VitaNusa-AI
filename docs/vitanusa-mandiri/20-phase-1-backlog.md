@@ -9,11 +9,14 @@ Status: **Calon issue; jangan dibuat otomatis di GitHub**. Urutan mengikuti depe
 | VM-F1-004 | IndexedDB wrapper version 1 tersedia di `main` setelah PR 3 merge. |
 | VM-F1-005 | Migration version 1 non-destruktif tersedia di `main` setelah PR 3 merge. |
 | VM-F1-006 | Repository IndexedDB/memory ter-scope dan unit-of-work rollback tersedia di `main` setelah PR 3 merge. |
-| VM-F1-007 | Pembuatan satu workspace lokal, initial owner, audit event, dan operation receipt atomik diimplementasikan dan diuji pada branch PR 4; menunggu review/merge. |
-| VM-F1-008 | PR 4 hanya mengaktifkan initial `merchant_owner` lokal dan menampilkan label local-only; invitation, cashier UI, dan pengelolaan membership belum dibuat. |
-| VM-F1-011 | PR 4 memakai model/repository audit append-only untuk event `workspace_created`; viewer audit belum dibuat. |
+| VM-F1-007 | Selesai di `main` setelah PR 4 merge: satu workspace lokal, initial owner, audit event, dan operation receipt dibuat atomik. |
+| VM-F1-008 | Bagian initial `merchant_owner` lokal selesai di `main`; invitation, cashier UI, dan pengelolaan membership tetap belum dibuat. |
+| VM-F1-011 | Model/repository audit append-only dan event `workspace_created` tersedia di `main`; viewer audit belum dibuat. |
+| VM-F1-013 | Backup JSON ter-scope dan restore preview-only diimplementasikan pada PR 5; selesai setelah PR 5 direview dan merge. Restore commit tetap belum dibuat. |
+| VM-F1-015 | Local security boundary tests diimplementasikan pada PR 5; test ini tidak menggantikan Firestore Rules masa depan. |
+| VM-F1-016 | Dokumen implementasi dan runbook dibuat pada PR 5; status final berlaku setelah review dan merge. |
 
-Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Implementasi PR 4 tetap local-only, berada di balik feature flag `internal`, dan belum menjadi aplikasi kasir.
+Status ini tidak mengubah ADR `Proposed` menjadi `Accepted`. Setelah PR 5 merge dan seluruh Actions hijau, Fase 1 selesai sebagai fondasi local-only. Status tersebut tidak berarti aplikasi kasir, learning, cloud sync, atau kesiapan produksi telah selesai.
 
 ## VM-F1-001 — Feature flag VitaNusa Mandiri
 

@@ -67,7 +67,7 @@ async function initializeSharedVitaNusaShell() {
 }
 
 async function initializeLocalWorkspacePanel(options) {
-  const module = await import('./workspace-panel.js?v=20260717-mandiri-f1-workspace-v1');
+  const module = await import('./workspace-panel.js?v=20260717-mandiri-f1-backup-v1');
   return module.initMandiriWorkspacePanel(options);
 }
 

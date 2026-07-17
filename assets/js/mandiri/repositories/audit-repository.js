@@ -10,6 +10,7 @@ import {
   keyRangeOnly,
   normalizeAccountScope,
   normalizeEntityIdentifier,
+  normalizeExportListOptions,
   normalizeListOptions,
   normalizeWith,
   normalizeWorkspaceScope,
@@ -26,7 +27,7 @@ function normalizeScopedEvent(accountScope, workspaceId, event) {
 export function createAuditRepository(options) {
   const executor = createRepositoryExecutor(options);
 
-  return Object.freeze({
+  const repository = {
     async append(explicitAccountScope, explicitWorkspaceId, event) {
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
@@ -92,5 +93,30 @@ export function createAuditRepository(options) {
           ));
       });
     },
+  };
+
+  // Backup export uses a scoped, bounded cursor. It is intentionally non-enumerable
+  // so the public repository contract stays focused on application reads.
+  Object.defineProperty(repository, 'listForBackup', {
+    configurable: false,
+    enumerable: false,
+    value: async (explicitAccountScope, explicitWorkspaceId, optionsValue) => {
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      return executor.run([STORE_NAME], 'readonly', async (transaction) => {
+        const index = transaction.objectStore(STORE_NAME).index('byWorkspaceCreatedAt');
+        const range = keyRangeBound(
+          transaction,
+          [accountScope, workspaceId, ''],
+          [accountScope, workspaceId, '\uffff'],
+        );
+        const records = await cursorToArray(index, range, { direction: 'next', limit });
+        return records.map((record) => normalizeScopedEvent(accountScope, workspaceId, record));
+      });
+    },
+    writable: false,
   });
+
+  return Object.freeze(repository);
 }

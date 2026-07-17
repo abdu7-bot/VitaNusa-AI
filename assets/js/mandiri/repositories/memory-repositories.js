@@ -22,6 +22,7 @@ import {
   compareNewest,
   normalizeAccountScope,
   normalizeEntityIdentifier,
+  normalizeExportListOptions,
   normalizeListOptions,
   normalizeWith,
   normalizeWorkspaceScope,
@@ -220,7 +221,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     },
   });
 
-  const auditRepository = Object.freeze({
+  const auditRepository = {
     async append(explicitAccountScope, explicitWorkspaceId, event) {
       assertStore(MANDIRI_STORE_NAMES.AUDIT_EVENTS, true);
       const accountScope = normalizeAccountScope(explicitAccountScope);
@@ -282,9 +283,33 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
         || left.eventId.localeCompare(right.eventId)
       ));
     },
-  });
+  };
 
-  const operationReceiptRepository = Object.freeze({
+  Object.defineProperty(auditRepository, 'listForBackup', {
+    configurable: false,
+    enumerable: false,
+    value: async (explicitAccountScope, explicitWorkspaceId, optionsValue) => {
+      assertStore(MANDIRI_STORE_NAMES.AUDIT_EVENTS);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      const workspaceBucket = getBucket(
+        getBucket(getState().auditEvents, accountScope) ?? new Map(),
+        workspaceId,
+      );
+      return [...(workspaceBucket?.values() ?? [])]
+        .map((record) => normalizeScopedEvent(accountScope, workspaceId, record))
+        .sort((left, right) => (
+          left.createdAtLocal.localeCompare(right.createdAtLocal)
+          || left.eventId.localeCompare(right.eventId)
+        ))
+        .slice(0, limit);
+    },
+    writable: false,
+  });
+  Object.freeze(auditRepository);
+
+  const operationReceiptRepository = {
     async append(explicitAccountScope, receipt) {
       assertStore(MANDIRI_STORE_NAMES.OPERATION_RECEIPTS, true);
       const accountScope = normalizeAccountScope(explicitAccountScope);
@@ -326,7 +351,28 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
           || left.operationId.localeCompare(right.operationId)
         ));
     },
+  };
+
+  Object.defineProperty(operationReceiptRepository, 'listForBackup', {
+    configurable: false,
+    enumerable: false,
+    value: async (explicitAccountScope, explicitWorkspaceId, optionsValue) => {
+      assertStore(MANDIRI_STORE_NAMES.OPERATION_RECEIPTS);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      return [...(getBucket(getState().operationReceipts, accountScope)?.values() ?? [])]
+        .map((record) => normalizeScopedReceipt(accountScope, record))
+        .filter((record) => record.workspaceId === workspaceId)
+        .sort((left, right) => (
+          left.createdAtLocal.localeCompare(right.createdAtLocal)
+          || left.operationId.localeCompare(right.operationId)
+        ))
+        .slice(0, limit);
+    },
+    writable: false,
   });
+  Object.freeze(operationReceiptRepository);
 
   return Object.freeze({
     workspaceRepository,

@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>VitaNusa Mandiri | Fondasi Lokal</title>
   <meta name="description" content="Fondasi lokal VitaNusa Mandiri untuk belajar dan usaha kecil. Belum menjadi aplikasi kasir, pembelajaran, atau sinkronisasi cloud.">
-  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-f1-workspace-v1">
+  <link rel="stylesheet" href="../assets/css/vitanusa-mandiri.css?v=20260717-mandiri-f1-backup-v1">
 </head>
 <body class="vn-mandiri-page">
   <a class="vn-mandiri-skip" href="#mandiriMain">Lewati ke konten utama</a>
@@ -135,6 +135,33 @@
         </div>
       </section>
 
+      <section
+        class="vn-mandiri-backup"
+        data-mandiri-backup-panel
+        data-backup-panel-state="idle"
+        aria-labelledby="mandiriBackupTitle"
+        aria-busy="false"
+        hidden
+      >
+        <div class="vn-mandiri-section-heading">
+          <p class="vn-mandiri-kicker">Cadangan lokal</p>
+          <h2 id="mandiriBackupTitle">Cadangan Lokal</h2>
+          <p>Buat salinan data fondasi workspace dalam file JSON.</p>
+        </div>
+        <p class="vn-mandiri-backup-warning">
+          File cadangan dapat berisi data usaha pribadi. Simpan di tempat yang aman dan jangan membagikannya sembarangan.
+        </p>
+        <div class="vn-mandiri-workspace-actions">
+          <button class="vn-mandiri-button vn-mandiri-button-primary" type="button" data-backup-download>
+            Unduh Backup JSON
+          </button>
+          <a class="vn-mandiri-link" href="./recovery.html">Periksa File Backup</a>
+        </div>
+        <p data-backup-status role="status" aria-live="polite">
+          Backup dibuat hanya saat kamu menekan tombol unduh.
+        </p>
+      </section>
+
       <section class="vn-mandiri-planned" aria-labelledby="mandiriPlannedTitle">
         <div class="vn-mandiri-section-heading">
           <p class="vn-mandiri-kicker">Area modul yang direncanakan</p>
@@ -170,8 +197,8 @@
       </section>
 
       <aside class="vn-mandiri-boundary" aria-labelledby="mandiriBoundaryTitle">
-        <h2 id="mandiriBoundaryTitle">Batas Fase 1 PR 4</h2>
-        <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. PR ini hanya menambahkan database lokal workspace yang terbatas. Nusa Agent tetap informasional dan tidak membaca workspace.</p>
+        <h2 id="mandiriBoundaryTitle">Batas Fase 1</h2>
+        <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Yang tersedia hanya IndexedDB version 1 untuk fondasi workspace lokal, backup file lokal, dan pemeriksaan recovery preview-only. Nusa Agent tetap informasional dan tidak membaca workspace.</p>
       </aside>
 
       <footer class="vn-mandiri-footer">
@@ -181,6 +208,6 @@
     </section>
   </main>
 
-  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260717-mandiri-f1-workspace-v1"></script>
+  <script type="module" src="../assets/js/mandiri/shell/app-shell.js?v=20260717-mandiri-f1-backup-v1"></script>
 </body>
 </html>

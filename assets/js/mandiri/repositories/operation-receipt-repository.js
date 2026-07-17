@@ -13,9 +13,12 @@ import {
   assertRecordScope,
   asStorageValidationError,
   createRepositoryExecutor,
+  cursorToArray,
+  keyRangeBound,
   keyRangeOnly,
   normalizeAccountScope,
   normalizeEntityIdentifier,
+  normalizeExportListOptions,
   normalizeWith,
   normalizeWorkspaceScope,
 } from './repository-utils.js';
@@ -100,7 +103,7 @@ function normalizeScopedReceipt(accountScope, receipt) {
 export function createOperationReceiptRepository(options) {
   const executor = createRepositoryExecutor(options);
 
-  return Object.freeze({
+  const repository = {
     async append(explicitAccountScope, receipt) {
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const normalized = normalizeScopedReceipt(accountScope, receipt);
@@ -146,5 +149,33 @@ export function createOperationReceiptRepository(options) {
           ));
       });
     },
+  };
+
+  // The export reader is scoped to one account/workspace and refuses unbounded reads.
+  Object.defineProperty(repository, 'listForBackup', {
+    configurable: false,
+    enumerable: false,
+    value: async (explicitAccountScope, explicitWorkspaceId, optionsValue) => {
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      return executor.run([STORE_NAME], 'readonly', async (transaction) => {
+        const index = transaction.objectStore(STORE_NAME).index('byWorkspaceCreatedAt');
+        const range = keyRangeBound(
+          transaction,
+          [accountScope, workspaceId, ''],
+          [accountScope, workspaceId, '\uffff'],
+        );
+        const records = await cursorToArray(index, range, { direction: 'next', limit });
+        return records.map((record) => {
+          const normalized = normalizeScopedReceipt(accountScope, record);
+          if (normalized.workspaceId !== workspaceId) throw storageError('scope_mismatch');
+          return normalized;
+        });
+      });
+    },
+    writable: false,
   });
+
+  return Object.freeze(repository);
 }
