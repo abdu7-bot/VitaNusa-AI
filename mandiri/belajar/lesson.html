@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="robots" content="noindex,nofollow">
+  <title>NusaBelajar | Pelajaran Internal</title>
+  <meta name="description" content="Lesson reader internal NusaBelajar dengan latihan deterministik yang hanya berada di memori halaman.">
+  <link rel="stylesheet" href="../../assets/css/nusabelajar.css?v=20260718-mandiri-f2-reader-v1">
+</head>
+<body class="vn-learning-page">
+  <a class="vn-learning-skip" href="#learningMain">Lewati ke konten utama</a>
+
+  <main
+    id="learningMain"
+    class="vn-learning-main"
+    data-learning-page
+    data-learning-state="disabled"
+    aria-busy="false"
+  >
+    <section class="vn-learning-unavailable" data-learning-unavailable aria-labelledby="learningUnavailableTitle">
+      <p class="vn-learning-kicker">NusaBelajar</p>
+      <h1 id="learningUnavailableTitle">NusaBelajar belum tersedia</h1>
+      <p>Fitur pembelajaran internal masih dimatikan pada build ini. Tidak ada materi yang dimuat.</p>
+      <a class="vn-learning-button" href="../index.html">Kembali ke VitaNusa Mandiri</a>
+    </section>
+
+    <section class="vn-learning-shell" data-learning-shell hidden aria-label="Pelajaran NusaBelajar">
+      <header class="vn-learning-lesson-page-title">
+        <p class="vn-learning-kicker">Mode Internal</p>
+        <h1>NusaBelajar</h1>
+        <p class="vn-learning-summary">Lesson reader internal. Jawaban tidak disimpan.</p>
+      </header>
+      <p class="vn-learning-status" data-learning-status role="status" aria-live="polite">
+        Memuat materi pembelajaran yang telah dipublikasikan.
+      </p>
+      <button class="vn-learning-button" type="button" data-learning-retry hidden>Coba lagi</button>
+      <div class="vn-learning-reader" data-learning-lesson-content></div>
+    </section>
+  </main>
+
+  <script type="module" src="../../assets/js/mandiri/learning/ui/lesson-page.js?v=20260718-mandiri-f2-reader-v1"></script>
+</body>
+</html>

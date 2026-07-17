@@ -27,7 +27,7 @@
           <h1 id="mandiriTitle">VitaNusa Mandiri</h1>
           <p class="vn-mandiri-lead">Fondasi lokal untuk belajar dan usaha kecil.</p>
         </div>
-        <span class="vn-mandiri-phase-badge">Fase 1 · internal</span>
+        <span class="vn-mandiri-phase-badge">Fondasi local-first · internal</span>
       </header>
 
       <section class="vn-mandiri-status-grid" aria-label="Status VitaNusa Mandiri">
@@ -173,9 +173,15 @@
           <article class="vn-mandiri-module-card" data-mandiri-module="nusabelajar">
             <span class="vn-mandiri-module-mark" aria-hidden="true">NB</span>
             <h3>NusaBelajar</h3>
-            <p>Pembelajaran singkat dan ramah akan dibangun pada fase terpisah.</p>
-            <strong>Direncanakan</strong>
-            <span>Segera dibangun · Belum tersedia pada Fase 1</span>
+            <p data-mandiri-module-description="nusabelajar">Pembelajaran singkat dan ramah akan dibangun pada fase terpisah.</p>
+            <strong data-mandiri-module-state="nusabelajar">Direncanakan</strong>
+            <span data-mandiri-module-note="nusabelajar">Segera dibangun · Belum tersedia pada Fase 1</span>
+            <a
+              class="vn-mandiri-link"
+              data-mandiri-module-link="nusabelajar"
+              href="./belajar/"
+              hidden
+            >Buka NusaBelajar</a>
           </article>
 
           <article class="vn-mandiri-module-card" data-mandiri-module="nusakasir">
@@ -197,8 +203,8 @@
       </section>
 
       <aside class="vn-mandiri-boundary" aria-labelledby="mandiriBoundaryTitle">
-        <h2 id="mandiriBoundaryTitle">Batas Fase 1</h2>
-        <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Yang tersedia hanya IndexedDB version 1 untuk fondasi workspace lokal, backup file lokal, dan pemeriksaan recovery preview-only. Nusa Agent tetap informasional dan tidak membaca workspace.</p>
+        <h2 id="mandiriBoundaryTitle">Batas fondasi local-first</h2>
+        <p>Catatan historis Fase 1: Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Pada mode Fase 2 internal, NusaBelajar hanya membaca paket statis published dan menjalankan jawaban sementara di memori; belum ada attempt, progress, atau sinkronisasi cloud. IndexedDB tetap version 1 untuk fondasi workspace lokal. Nusa Agent tetap informasional dan tidak membaca jawaban.</p>
       </aside>
 
       <footer class="vn-mandiri-footer">

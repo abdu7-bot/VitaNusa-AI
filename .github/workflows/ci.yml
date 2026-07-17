@@ -188,6 +188,9 @@ jobs:
       - name: Test NusaBelajar content packages
         run: npm run test:mandiri:learning-content
 
+      - name: Test NusaBelajar lesson reader
+        run: npm run test:mandiri:learning-reader
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -258,6 +261,23 @@ jobs:
           node --check assets/js/mandiri/learning/content/package-manifest.js
           node --check assets/js/mandiri/learning/content/package-catalog.js
           node --check assets/js/mandiri/learning/engine/answer-evaluator.js
+          node --check assets/js/mandiri/learning/engine/exercise-session.js
+          node --check assets/js/mandiri/learning/data/content-loader-errors.js
+          node --check assets/js/mandiri/learning/data/safe-content-path.js
+          node --check assets/js/mandiri/learning/data/browser-checksum.js
+          node --check assets/js/mandiri/learning/data/static-content-fetch.js
+          node --check assets/js/mandiri/learning/data/catalog-loader.js
+          node --check assets/js/mandiri/learning/data/package-loader.js
+          node --check assets/js/mandiri/learning/services/learning-catalog-service.js
+          node --check assets/js/mandiri/learning/services/lesson-reader-service.js
+          node --check assets/js/mandiri/learning/ui/learning-shell.js
+          node --check assets/js/mandiri/learning/ui/learning-routing.js
+          node --check assets/js/mandiri/learning/ui/catalog-page.js
+          node --check assets/js/mandiri/learning/ui/lesson-page.js
+          node --check assets/js/mandiri/learning/ui/lesson-block-renderer.js
+          node --check assets/js/mandiri/learning/ui/activity-renderer.js
+          node --check assets/js/mandiri/learning/ui/exercise-renderer.js
+          node --check assets/js/mandiri/learning/ui/feedback-messages.js
           node --check scripts/mandiri/learning/verify-learning-packages.mjs
           node --check scripts/mandiri/learning/print-content-review.mjs
 

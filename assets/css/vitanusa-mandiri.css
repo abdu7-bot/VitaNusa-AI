@@ -553,7 +553,7 @@ body.vn-mandiri-page {
 }
 
 .vn-mandiri-module-card p,
-.vn-mandiri-module-card > span:last-child {
+.vn-mandiri-module-card > [data-mandiri-module-note] {
   color: var(--vn-mandiri-muted);
   font-size: .9rem;
   line-height: 1.55;
@@ -567,6 +567,11 @@ body.vn-mandiri-page {
   color: #7a5214;
   font-size: .78rem;
   padding: 7px 10px;
+}
+
+.vn-mandiri-module-card strong[data-module-state="internal"] {
+  background: var(--vn-mandiri-green-100);
+  color: var(--vn-mandiri-green-800);
 }
 
 .vn-mandiri-boundary {

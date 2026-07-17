@@ -3,6 +3,10 @@ import {
   getMandiriFeatureState,
   MANDIRI_FEATURE_STATES,
 } from '../config/feature-flags.js';
+import {
+  getNusaBelajarFeatureContract,
+  getNusaBelajarFeatureState,
+} from '../learning/config/learning-flags.js';
 import { initMandiriOfflineStatus } from './offline-status.js';
 
 const MANDIRI_APP_CONTROLLERS = new WeakMap();
@@ -13,7 +17,26 @@ export const MANDIRI_PLANNED_MODULES = Object.freeze([
   Object.freeze({ name: 'VitaSheet', state: 'direncanakan' }),
 ]);
 
-export function createMandiriShellModel(value) {
+export function createMandiriModuleModels({ mandiriState, learningState } = {}) {
+  const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  return Object.freeze(MANDIRI_PLANNED_MODULES.map((module) => {
+    if (module.name !== 'NusaBelajar' || !learningContract.enabled) return module;
+    return Object.freeze({
+      name: module.name,
+      state: 'internal',
+      statusLabel: 'Internal',
+      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
+      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+      href: './belajar/',
+      actionLabel: 'Buka NusaBelajar',
+    });
+  }));
+}
+
+export function createMandiriShellModel(
+  value,
+  learningValue = getNusaBelajarFeatureState(),
+) {
   const contract = getMandiriFeatureContract(value);
 
   if (contract.state === MANDIRI_FEATURE_STATES.OFF) {
@@ -27,14 +50,18 @@ export function createMandiriShellModel(value) {
     });
   }
 
+  const modules = createMandiriModuleModels({
+    mandiriState: contract.state,
+    learningState: learningValue,
+  });
   return Object.freeze({
     state: contract.state,
     view: 'internal-shell',
     title: 'VitaNusa Mandiri',
     modeLabel: 'Mode fondasi lokal',
-    activeFeatures: false,
+    activeFeatures: modules.some((module) => module.state === 'internal'),
     startsStorage: contract.startsStorage,
-    modules: MANDIRI_PLANNED_MODULES,
+    modules,
   });
 }
 
@@ -58,6 +85,32 @@ export function applyMandiriShellModel(documentRef, model) {
       : 'Off — belum tersedia';
   }
 
+  const learningModule = model.modules.find((module) => module.name === 'NusaBelajar');
+  const learningStatus = documentRef.querySelector('[data-mandiri-module-state="nusabelajar"]');
+  const learningDescription = documentRef.querySelector('[data-mandiri-module-description="nusabelajar"]');
+  const learningNote = documentRef.querySelector('[data-mandiri-module-note="nusabelajar"]');
+  const learningLink = documentRef.querySelector('[data-mandiri-module-link="nusabelajar"]');
+  if (learningModule && learningStatus) {
+    learningStatus.textContent = learningModule.statusLabel || 'Direncanakan';
+    learningStatus.dataset.moduleState = learningModule.state;
+  }
+  if (learningModule?.description && learningDescription) {
+    learningDescription.textContent = learningModule.description;
+  }
+  if (learningModule && learningNote) {
+    learningNote.textContent = learningModule.note || 'Segera dibangun · Belum tersedia pada Fase 1';
+  }
+  if (learningLink) {
+    const isActive = learningModule?.state === 'internal';
+    learningLink.hidden = !isActive;
+    if (isActive) {
+      learningLink.href = learningModule.href;
+      learningLink.textContent = learningModule.actionLabel;
+    } else {
+      learningLink.removeAttribute?.('href');
+    }
+  }
+
   return model;
 }
 
@@ -75,11 +128,12 @@ export async function initializeMandiriApp({
   documentRef = document,
   windowRef = documentRef.defaultView || window,
   featureState = getMandiriFeatureState(),
+  learningFeatureState = getNusaBelajarFeatureState(),
   initializeSharedShell = initializeSharedVitaNusaShell,
   initializeStatus = initMandiriOfflineStatus,
   initializeWorkspacePanel = initializeLocalWorkspacePanel,
 } = {}) {
-  const model = createMandiriShellModel(featureState);
+  const model = createMandiriShellModel(featureState, learningFeatureState);
   applyMandiriShellModel(documentRef, model);
 
   if (model.view === 'unavailable') {
