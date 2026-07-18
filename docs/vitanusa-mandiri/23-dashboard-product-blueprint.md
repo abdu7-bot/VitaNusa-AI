@@ -12,10 +12,16 @@ Dashboard menyatukan hubungan antara pengguna, Tanya Nusa, workspace lokal, back
 | --- | --- | --- |
 | Tanya Nusa | Aktif | Link menuju halaman percakapan VitaNusa yang sudah tersedia. |
 | NusaKasir | Direncanakan | Tidak mempunyai navigasi atau fungsi kasir palsu. |
-| NusaBelajar | Direncanakan | Tidak mempunyai navigasi atau materi belajar palsu. |
+| NusaBelajar | Direncanakan | Paket published/approved tersedia; dashboard PR #61 tidak menambahkan navigasi atau fungsi lesson reader. |
 | VitaSheet | Direncanakan | Tidak mempunyai navigasi atau laporan palsu. |
 
 Status `Aktif` pada Tanya Nusa tidak berarti jawaban selalu benar atau menggantikan tenaga ahli. Tiga modul planned selalu memakai teks `Direncanakan` dan `Belum tersedia`.
+
+### Status paket konten dan modul NusaBelajar
+
+Paket `money-basics-id-v1` sudah berstatus `published` dan `approved` di repository setelah persetujuan manusia. Publikasi paket tersebut adalah kesiapan aset konten, bukan aktivasi antarmuka NusaBelajar dalam perubahan efektif PR #61. Dashboard tetap menandai NusaBelajar sebagai `Direncanakan` tanpa link atau tombol aktif.
+
+PR #61 bukan implementasi lesson reader dan tidak menambah halaman belajar, latihan, attempt, progress, penyimpanan jawaban, atau cloud sync. Implementasi Fase 2 PR 3 ditangani pada PR terpisah dan bukan bagian dari scope dashboard-reviewability ini.
 
 ## Struktur UI
 
@@ -43,6 +49,14 @@ Repository saat ini memakai HTML statis, CSS tokens, ES Modules, dan `node:test`
 - `ProductBoundaryCard` — `.vn-mandiri-boundary`.
 
 Pemecahan ini mengikuti fondasi repository dan menghindari abstraksi DOM baru yang tidak dibutuhkan.
+
+## Audit CSS dan shared shell
+
+Source CSS disimpan dalam bentuk terformat agar diff dapat ditinjau manusia. Urutan selector dan nilai visual dipertahankan dari dashboard yang telah di-merge, dengan dua pembatasan aman: reset `box-sizing` dibatasi ke `body.vn-mandiri-page` beserta turunannya, dan state scroll-lock wajib membawa kelas halaman Mandiri.
+
+Selector `:root` dan `html` tetap dipertahankan karena stylesheet hanya dimuat pada halaman Mandiri dan recovery, sementara keduanya memiliki tanggung jawab page-level untuk token, background, batas viewport, overflow horizontal, dan anchor scrolling.
+
+Penggunaan `!important` dibatasi untuk menetralkan padding/right rail shared shell, menjaga atribut `hidden`, dan menghormati `prefers-reduced-motion`. Shared shell memakai lapisan `9000`–`10000`; dashboard mempertahankan tombol menu pada `10000`, overlay `11000`, sidebar `12000`, dan skip link `20000` agar urutan interaksi tetap aman.
 
 ## Responsivitas
 
