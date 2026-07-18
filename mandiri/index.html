@@ -90,7 +90,7 @@
                 <span class="vn-mandiri-status-dot" aria-hidden="true"></span>
                 Sistem lokal aktif
               </span>
-              <span class="vn-mandiri-phase-badge">Fase 1 · internal</span>
+              <span class="vn-mandiri-phase-badge">Fondasi local-first · internal</span>
             </div>
           </header>
 
@@ -149,10 +149,10 @@
 
               <article class="vn-mandiri-module-card" data-mandiri-module="nusabelajar" data-module-status="planned">
                 <span class="vn-mandiri-module-mark" aria-hidden="true">NB</span>
-                <span class="vn-mandiri-module-status vn-mandiri-module-status-planned">Direncanakan</span>
+                <span class="vn-mandiri-module-status vn-mandiri-module-status-planned" data-mandiri-module-status="nusabelajar">Direncanakan</span>
                 <h3>NusaBelajar</h3>
-                <p>Rencana pembelajaran singkat dan terarah. Materi serta progres belajar belum dibangun pada Fase 1.</p>
-                <span class="vn-mandiri-module-unavailable">Belum tersedia pada Fase 1</span>
+                <p data-mandiri-module-description="nusabelajar">Rencana pembelajaran singkat dan terarah. Materi serta progres belajar belum dibangun pada Fase 1.</p>
+                <span class="vn-mandiri-module-unavailable" data-mandiri-module-note="nusabelajar">Belum tersedia pada Fase 1</span>
               </article>
 
               <article class="vn-mandiri-module-card" data-mandiri-module="vitasheet" data-module-status="planned">
@@ -314,7 +314,7 @@
               <li>Modul direncanakan tidak diperlakukan sebagai fitur aktif.</li>
               <li>Data tidak boleh dicampur antar-account atau antar-workspace.</li>
             </ul>
-            <p>Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap.</p>
+            <p>Catatan historis Fase 1: Belum ada kasir, transaksi, laporan, materi belajar, database, atau sinkronisasi cloud untuk aplikasi lengkap. Pada mode Fase 2 internal, NusaBelajar hanya membaca paket statis published dan menjalankan jawaban sementara di memori; belum ada attempt, progress, atau sinkronisasi cloud. IndexedDB tetap version 1 untuk fondasi workspace lokal.</p>
             <p>Nusa Agent tetap informasional dan tidak membaca workspace Mandiri.</p>
           </aside>
 
