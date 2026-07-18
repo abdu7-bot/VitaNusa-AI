@@ -12,14 +12,16 @@ Dashboard menyatukan hubungan antara pengguna, Tanya Nusa, workspace lokal, back
 | --- | --- | --- |
 | Tanya Nusa | Aktif | Link menuju halaman percakapan VitaNusa yang sudah tersedia. |
 | NusaKasir | Direncanakan | Tidak mempunyai navigasi atau fungsi kasir palsu. |
-| NusaBelajar | Direncanakan | Tidak mempunyai navigasi atau materi belajar palsu. |
+| NusaBelajar | Direncanakan | Paket published/approved tersedia; dashboard PR #61 tidak menambahkan navigasi atau fungsi lesson reader. |
 | VitaSheet | Direncanakan | Tidak mempunyai navigasi atau laporan palsu. |
 
 Status `Aktif` pada Tanya Nusa tidak berarti jawaban selalu benar atau menggantikan tenaga ahli. Tiga modul planned selalu memakai teks `Direncanakan` dan `Belum tersedia`.
 
 ### Status paket konten dan modul NusaBelajar
 
-Paket konten awal NusaBelajar sudah dipublikasikan di repository setelah PR #58. Publikasi paket tersebut adalah kesiapan aset konten, bukan aktivasi pengalaman aplikasi untuk pengguna. Dashboard tetap menandai NusaBelajar sebagai `Direncanakan`, tanpa link atau tombol aktif, sampai UI modul, alur pengguna, penyimpanan progres, dan pemeriksaan manualnya memenuhi gate tersendiri.
+Paket `money-basics-id-v1` sudah berstatus `published` dan `approved` di repository setelah persetujuan manusia. Publikasi paket tersebut adalah kesiapan aset konten, bukan aktivasi antarmuka NusaBelajar dalam perubahan efektif PR #61. Dashboard tetap menandai NusaBelajar sebagai `Direncanakan` tanpa link atau tombol aktif.
+
+PR #61 bukan implementasi lesson reader dan tidak menambah halaman belajar, latihan, attempt, progress, penyimpanan jawaban, atau cloud sync. Implementasi Fase 2 PR 3 ditangani pada PR terpisah dan bukan bagian dari scope dashboard-reviewability ini.
 
 ## Struktur UI
 

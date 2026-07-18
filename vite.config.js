@@ -10,6 +10,26 @@ const PWA_STATIC_FILES = [
   'assets/css/nusa-agent.css',
 ];
 
+const LEARNING_STATIC_FILES = [
+  'content/mandiri/learning/catalog.json',
+  'content/mandiri/learning/packages/money-basics-id-v1/manifest.json',
+  'content/mandiri/learning/packages/money-basics-id-v1/content.json',
+];
+
+function copyLearningStaticContent() {
+  return {
+    name: 'copy-nusabelajar-runtime-content',
+    apply: 'build',
+    async closeBundle() {
+      await Promise.all(LEARNING_STATIC_FILES.map(async (file) => {
+        const target = resolve(__dirname, 'dist', file);
+        await mkdir(dirname(target), { recursive: true });
+        await copyFile(resolve(__dirname, file), target);
+      }));
+    },
+  };
+}
+
 function copyPwaStaticFiles() {
   let buildShellAssets = [];
 
@@ -51,7 +71,7 @@ function copyPwaStaticFiles() {
 export default defineConfig({
   base: './',
   appType: 'mpa',
-  plugins: [copyPwaStaticFiles()],
+  plugins: [copyPwaStaticFiles(), copyLearningStaticContent()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -73,6 +93,8 @@ export default defineConfig({
         komik: resolve(__dirname, 'komik/index.html'),
         mandiri: resolve(__dirname, 'mandiri/index.html'),
         mandiriRecovery: resolve(__dirname, 'mandiri/recovery.html'),
+        mandiriBelajar: resolve(__dirname, 'mandiri/belajar/index.html'),
+        mandiriBelajarLesson: resolve(__dirname, 'mandiri/belajar/lesson.html'),
         admin: resolve(__dirname, 'admin/index.html')
       }
     }

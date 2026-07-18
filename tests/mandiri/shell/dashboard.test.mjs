@@ -142,10 +142,12 @@ test('markup menampilkan status modul secara jujur dan tidak memberi aksi palsu'
   }
 });
 
-test('NusaBelajar membedakan paket konten published dari kesiapan modul aplikasi', () => {
+test('NusaBelajar membedakan paket published dan approved dari antarmuka dashboard', () => {
   const card = getModuleCard('nusabelajar');
-  assert.match(card, /Paket konten awal sudah tersedia di repository/);
-  assert.match(card, /pengalaman aplikasi NusaBelajar belum diaktifkan untuk pengguna/);
+  assert.match(card, /money-basics-id-v1/);
+  assert.match(card, /published/);
+  assert.match(card, /approved/);
+  assert.match(card, /antarmuka NusaBelajar belum diaktifkan pada dashboard ini/);
   assert.match(card, />Direncanakan</);
   assert.doesNotMatch(card, /<(?:a|button)\b/i);
   assert.equal(
@@ -165,6 +167,9 @@ test('selector workspace dan backup yang dipakai controller tetap tersedia', () 
     'data-mandiri-backup-panel',
     'data-backup-download',
     'data-backup-status',
+    'data-mandiri-module-status="nusabelajar"',
+    'data-mandiri-module-description="nusabelajar"',
+    'data-mandiri-module-note="nusabelajar"',
   ]) {
     assert.ok(html.includes(selector), `Selector ${selector} harus tersedia`);
   }

@@ -3,6 +3,10 @@ import {
   getMandiriFeatureState,
   MANDIRI_FEATURE_STATES,
 } from '../config/feature-flags.js';
+import {
+  getNusaBelajarFeatureContract,
+  getNusaBelajarFeatureState,
+} from '../learning/config/learning-flags.js';
 import { initMandiriOfflineStatus } from './offline-status.js';
 
 const MANDIRI_APP_CONTROLLERS = new WeakMap();
@@ -47,7 +51,42 @@ export const MANDIRI_PLANNED_MODULES = Object.freeze([
   Object.freeze({ name: 'VitaSheet', state: 'direncanakan' }),
 ]);
 
-export function createMandiriShellModel(value) {
+export function createMandiriModuleModels({ mandiriState, learningState } = {}) {
+  const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  return Object.freeze(MANDIRI_PLANNED_MODULES.map((module) => {
+    if (module.name !== 'NusaBelajar' || !learningContract.enabled) return module;
+    return Object.freeze({
+      name: module.name,
+      state: 'internal',
+      statusLabel: 'Internal',
+      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
+      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+      href: './belajar/',
+      actionLabel: 'Buka NusaBelajar',
+    });
+  }));
+}
+
+function createMandiriDashboardModules({ mandiriState, learningState }) {
+  const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  return Object.freeze(MANDIRI_MODULES.map((module) => {
+    if (module.id !== 'nusabelajar' || !learningContract.enabled) return module;
+    return Object.freeze({
+      ...module,
+      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
+      status: MANDIRI_MODULE_STATUSES.ACTIVE,
+      statusLabel: 'Internal',
+      href: './belajar/',
+      actionLabel: 'Buka NusaBelajar',
+      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+    });
+  }));
+}
+
+export function createMandiriShellModel(
+  value,
+  learningValue = getNusaBelajarFeatureState(),
+) {
   const contract = getMandiriFeatureContract(value);
 
   if (contract.state === MANDIRI_FEATURE_STATES.OFF) {
@@ -62,17 +101,24 @@ export function createMandiriShellModel(value) {
     });
   }
 
+  const modules = createMandiriDashboardModules({
+    mandiriState: contract.state,
+    learningState: learningValue,
+  });
+  const learningEnabled = modules.some(
+    (module) => module.id === 'nusabelajar' && module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
+  );
   return Object.freeze({
     state: contract.state,
     view: 'internal-shell',
     title: 'VitaNusa Mandiri',
     modeLabel: 'Mode fondasi lokal',
-    activeFeatures: false,
-    activeModuleCount: MANDIRI_MODULES.filter(
+    activeFeatures: learningEnabled,
+    activeModuleCount: modules.filter(
       (module) => module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
     ).length,
     startsStorage: contract.startsStorage,
-    modules: MANDIRI_MODULES,
+    modules,
   });
 }
 
@@ -94,6 +140,43 @@ export function applyMandiriShellModel(documentRef, model) {
     featureState.textContent = model.state === MANDIRI_FEATURE_STATES.INTERNAL
       ? 'Internal — terbatas untuk review'
       : 'Off — belum tersedia';
+  }
+
+  const learningModule = model.modules.find((module) => module.id === 'nusabelajar');
+  const learningCard = documentRef.querySelector('[data-mandiri-module="nusabelajar"]');
+  const learningStatus = documentRef.querySelector('[data-mandiri-module-status="nusabelajar"]');
+  const learningDescription = documentRef.querySelector('[data-mandiri-module-description="nusabelajar"]');
+  const learningNote = documentRef.querySelector('[data-mandiri-module-note="nusabelajar"]');
+  const existingLink = documentRef.querySelector('[data-mandiri-module-link="nusabelajar"]');
+  const learningEnabled = learningModule?.status === MANDIRI_MODULE_STATUSES.ACTIVE;
+
+  if (learningCard) learningCard.dataset.moduleStatus = learningEnabled ? 'internal' : 'planned';
+  if (learningStatus) {
+    learningStatus.textContent = learningEnabled ? learningModule.statusLabel : 'Direncanakan';
+    learningStatus.className = learningEnabled
+      ? 'vn-mandiri-module-status vn-mandiri-module-status-active'
+      : 'vn-mandiri-module-status vn-mandiri-module-status-planned';
+  }
+  if (learningDescription) {
+    learningDescription.textContent = learningEnabled
+      ? learningModule.description
+      : 'Rencana pembelajaran singkat dan terarah. Materi serta progres belajar belum dibangun pada Fase 1.';
+  }
+  if (learningNote) {
+    learningNote.textContent = learningEnabled
+      ? learningModule.note
+      : 'Belum tersedia pada Fase 1';
+  }
+
+  if (learningEnabled && !existingLink && learningCard && typeof documentRef.createElement === 'function') {
+    const link = documentRef.createElement('a');
+    link.className = 'vn-mandiri-module-action';
+    link.dataset.mandiriModuleLink = 'nusabelajar';
+    link.href = learningModule.href;
+    link.textContent = learningModule.actionLabel;
+    learningCard.append(link);
+  } else if (!learningEnabled) {
+    existingLink?.remove?.();
   }
 
   return model;
@@ -225,12 +308,13 @@ export async function initializeMandiriApp({
   documentRef = document,
   windowRef = documentRef.defaultView || window,
   featureState = getMandiriFeatureState(),
+  learningFeatureState = getNusaBelajarFeatureState(),
   initializeSharedShell = initializeSharedVitaNusaShell,
   initializeStatus = initMandiriOfflineStatus,
   initializeWorkspacePanel = initializeLocalWorkspacePanel,
   initializeDashboardNavigation = initMandiriDashboardNavigation,
 } = {}) {
-  const model = createMandiriShellModel(featureState);
+  const model = createMandiriShellModel(featureState, learningFeatureState);
   applyMandiriShellModel(documentRef, model);
 
   if (model.view === 'unavailable') {
