@@ -20,8 +20,9 @@ import {
   evaluateAdminAccess,
   getAdminRetryAction,
   getFirebaseConfigError,
+  inspectAdminDocumentShape,
   normalizeFirebaseErrorCode
-} from "./admin-access.js";
+} from "./admin-access.js?v=20260718-admin-document-diagnostic-v1";
 
 const EXPECTED_FIREBASE_CONFIG = Object.freeze({
   projectId: "vitanusa-ai",
@@ -29,6 +30,7 @@ const EXPECTED_FIREBASE_CONFIG = Object.freeze({
 });
 const ADMIN_CHECK_TIMEOUT_MS = 10000;
 const ADMIN_AUTH_BOOT_KEY = "__vitaNusaAdminAuthBooted";
+const FIRESTORE_DATABASE_ID = "(default)";
 
 let auth = null;
 let db = null;
@@ -81,6 +83,7 @@ const documentStatusTargets = document.querySelectorAll("[data-admin-document-st
 const documentRoleTargets = document.querySelectorAll("[data-admin-role]");
 const uidCards = document.querySelectorAll("[data-uid-card]");
 const copyUidButtons = document.querySelectorAll("[data-copy-uid]");
+const documentDiagnostics = document.querySelectorAll("[data-admin-document-diagnostics]");
 
 let adminCheckInFlight = null;
 
@@ -186,6 +189,49 @@ function updateDiagnostics(user, result) {
   uidCards.forEach((card) => {
     card.hidden = !showCard;
   });
+
+  renderDocumentShapeDiagnostics(user, result);
+}
+
+function formatYesNo(value) {
+  return value ? "Ya" : "Tidak";
+}
+
+function formatFieldDescriptors(descriptors) {
+  if (!Array.isArray(descriptors) || descriptors.length === 0) return "Tidak ada field";
+
+  return descriptors.map((descriptor, index) => [
+    `${index + 1}. ${descriptor.classification}`,
+    `nama=${descriptor.maskedName}`,
+    `panjang=${descriptor.nameLength}`,
+    `codePoints=${descriptor.unicodeCodePoints || "-"}`
+  ].join(" | ")).join("\n");
+}
+
+function renderDocumentShapeDiagnostics(user, result) {
+  const diagnostic = result?.documentDiagnostic;
+  const shouldShow = Boolean(user && !result?.allowed && diagnostic);
+
+  documentDiagnostics.forEach((container) => {
+    container.hidden = !shouldShow;
+    if (!shouldShow) return;
+
+    const values = {
+      documentExists: formatYesNo(diagnostic.documentExists),
+      hasStatusField: formatYesNo(diagnostic.hasStatusField),
+      hasRoleField: formatYesNo(diagnostic.hasRoleField),
+      statusType: diagnostic.statusType,
+      roleType: diagnostic.roleType,
+      projectId: diagnostic.projectId,
+      databaseId: diagnostic.databaseId,
+      fieldDescriptors: formatFieldDescriptors(diagnostic.fieldDescriptors)
+    };
+
+    Object.entries(values).forEach(([name, value]) => {
+      const target = container.querySelector(`[data-admin-document-diagnostic="${name}"]`);
+      if (target) target.textContent = value;
+    });
+  });
 }
 
 function setCheckingState(checking) {
@@ -222,14 +268,18 @@ async function readAdminFromServer(user) {
     const adminRef = doc(db, "admins", user.uid);
     const adminSnapshot = await withRequestTimeout(getDocFromServer(adminRef));
     const adminData = adminSnapshot.exists() ? adminSnapshot.data() : null;
+    const documentDiagnostic = inspectAdminDocumentShape(adminData, {
+      projectId: firebaseConfig.projectId,
+      databaseId: FIRESTORE_DATABASE_ID
+    });
     const result = evaluateAdminAccess({
       user,
       exists: adminSnapshot.exists(),
       data: adminData
     });
 
-    if (!result.allowed) return result;
-    return { ...result, data: selectAdminMetadata(adminData) };
+    if (!result.allowed) return { ...result, documentDiagnostic };
+    return { ...result, data: selectAdminMetadata(adminData), documentDiagnostic };
   } catch (error) {
     return evaluateAdminAccess({
       user,

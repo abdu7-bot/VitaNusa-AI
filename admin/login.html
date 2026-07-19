@@ -65,6 +65,19 @@
         </div>
       </div>
 
+      <section class="admin-uid-card" data-admin-document-diagnostics hidden
+        aria-labelledby="adminDocumentDiagnosticsTitle">
+        <h2 class="admin-uid-title" id="adminDocumentDiagnosticsTitle">Diagnostik struktur dokumen</h2>
+        <div class="admin-identity-row"><span>Dokumen ditemukan</span><code data-admin-document-diagnostic="documentExists">-</code></div>
+        <div class="admin-identity-row"><span>Field status ditemukan</span><code data-admin-document-diagnostic="hasStatusField">-</code></div>
+        <div class="admin-identity-row"><span>Field role ditemukan</span><code data-admin-document-diagnostic="hasRoleField">-</code></div>
+        <div class="admin-identity-row"><span>Tipe status</span><code data-admin-document-diagnostic="statusType">-</code></div>
+        <div class="admin-identity-row"><span>Tipe role</span><code data-admin-document-diagnostic="roleType">-</code></div>
+        <div class="admin-identity-row"><span>Project ID</span><code data-admin-document-diagnostic="projectId">-</code></div>
+        <div class="admin-identity-row"><span>Database ID</span><code data-admin-document-diagnostic="databaseId">-</code></div>
+        <div class="admin-identity-row"><span>Descriptor nama field</span><code data-admin-document-diagnostic="fieldDescriptors">-</code></div>
+      </section>
+
       <button class="admin-button admin-button-primary" type="button" data-login-button>
         Login dengan Google
       </button>
@@ -77,6 +90,6 @@
   </main>
 
   <script src="admin.js?v=20260715-admin-auth-v1"></script>
-  <script type="module" src="firebase-auth.js?v=20260715-admin-auth-v1"></script>
+  <script type="module" src="firebase-auth.js?v=20260718-admin-document-diagnostic-v1"></script>
 </body>
 </html>
