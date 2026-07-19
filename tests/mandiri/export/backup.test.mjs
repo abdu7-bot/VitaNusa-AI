@@ -6,7 +6,10 @@ import {
   createBackupChecksumPayload,
   MANDIRI_BACKUP_CHECKSUM_ALGORITHM,
 } from '../../../assets/js/mandiri/export/backup-schema.js';
-import { ATOMIC_WORKSPACE_STORE_NAMES } from '../../../assets/js/mandiri/repositories/repository-context.js';
+import {
+  ATOMIC_LEARNING_STORE_NAMES,
+  ATOMIC_WORKSPACE_STORE_NAMES,
+} from '../../../assets/js/mandiri/repositories/repository-context.js';
 import {
   ACCOUNT_A,
   ACCOUNT_B,
@@ -20,11 +23,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, empat collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, enam collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 1);
-  assert.equal(backup.databaseSchemaVersion, 1);
+  assert.equal(backup.formatVersion, 2);
+  assert.equal(backup.databaseSchemaVersion, 2);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -32,9 +35,12 @@ test('backup valid memuat manifest, empat collection, dan count yang benar', asy
     memberships: 1,
     auditEvents: 1,
     operationReceipts: 1,
+    learningAttempts: 0,
+    learningProgress: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
+    'learningAttempts', 'learningProgress',
   ]);
 });
 
@@ -95,13 +101,15 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
   const tooMany = Array.from({ length: 101 }, () => backup.data.memberships[0]);
   const repositoryContext = {
     run(storeNames, mode, callback) {
-      assert.deepEqual(storeNames, ATOMIC_WORKSPACE_STORE_NAMES);
+      assert.deepEqual(storeNames, [...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES]);
       assert.equal(mode, 'readonly');
       return callback({
         workspaceRepository: { listByAccount: async () => backup.data.workspaces },
         membershipRepository: { listByWorkspace: async () => tooMany },
         auditRepository: { listForBackup: async () => backup.data.auditEvents },
         operationReceiptRepository: { listForBackup: async () => backup.data.operationReceipts },
+        learningAttemptRepository: { listForBackup: async () => [] },
+        learningProgressRepository: { listForBackup: async () => [] },
       });
     },
   };
@@ -121,7 +129,7 @@ test('backup tidak memuat token, email, UID mentah, atau collection domain lain'
   const json = JSON.stringify(backup);
   assert.doesNotMatch(json, /access.?token|refresh.?token|password|private.?key/i);
   assert.doesNotMatch(json, /@example\.com|firebase-uid-fixture/);
-  assert.doesNotMatch(json, /VitaCheck|conversation|products|sales|learning/i);
+  assert.doesNotMatch(json, /VitaCheck|conversation|products|sales/i);
 });
 
 test('fixture dasar mempertahankan hubungan audit dan receipt ke workspace', async () => {

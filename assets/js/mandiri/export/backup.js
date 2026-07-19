@@ -1,6 +1,7 @@
 import { createPayloadDigest } from '../domain/ids.js';
 import { normalizeIsoTimestamp } from '../domain/validation.js';
 import { ATOMIC_WORKSPACE_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_LEARNING_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -38,7 +39,7 @@ function assertRecordLimit(records, name) {
 
 async function readScopedBackupRecords(repositoryContext, accountScope, workspaceId) {
   return repositoryContext.run(
-    ATOMIC_WORKSPACE_STORE_NAMES,
+    [...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES],
     'readonly',
     async (repositories) => {
       if (
@@ -64,14 +65,29 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         workspaceId,
         { limit: MANDIRI_BACKUP_RECORD_LIMITS.operationReceipts + 1 },
       );
+      const learnerScope = `user:${accountScope.slice('account:'.length)}`;
+      const attemptPromise = repositories.learningAttemptRepository.listForBackup(
+        learnerScope,
+        { limit: MANDIRI_BACKUP_RECORD_LIMITS.learningAttempts + 1 },
+      );
+      const progressPromise = repositories.learningProgressRepository.listForBackup(
+        learnerScope,
+        { limit: MANDIRI_BACKUP_RECORD_LIMITS.learningProgress + 1 },
+      );
 
-      const [workspaces, memberships, auditEvents, operationReceipts] = await Promise.all([
+      const [
+        workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
+      ] = await Promise.all([
         workspacePromise,
         membershipPromise,
         auditPromise,
         receiptPromise,
+        attemptPromise,
+        progressPromise,
       ]);
-      return { workspaces, memberships, auditEvents, operationReceipts };
+      return {
+        workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
+      };
     },
   );
 }
@@ -117,6 +133,12 @@ export function createBackupService({
         memberships: sortedRecords(records.memberships, 'membershipId'),
         auditEvents: sortedRecords(records.auditEvents, 'eventId'),
         operationReceipts: sortedRecords(records.operationReceipts, 'operationId'),
+        learningAttempts: sortedRecords(records.learningAttempts, 'attemptId'),
+        learningProgress: Object.freeze([...records.learningProgress].sort((left, right) => (
+          left.courseId.localeCompare(right.courseId)
+          || left.moduleId.localeCompare(right.moduleId)
+          || left.lessonId.localeCompare(right.lessonId)
+        ))),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),

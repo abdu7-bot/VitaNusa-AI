@@ -53,6 +53,9 @@ function createLessonView(loadedPackage, lesson) {
   const nextId = lessonIndex + 1 < module.lessonIds.length
     ? module.lessonIds[lessonIndex + 1]
     : null;
+  const quiz = nextId === null
+    ? loadedPackage.graph.quizzes.find((candidate) => candidate.moduleId === module.moduleId)
+    : null;
 
   return deepFreezeLearningValue({
     package: {
@@ -82,6 +85,13 @@ function createLessonView(loadedPackage, lesson) {
         createPublicExerciseView(index.getExercise(exerciseId))
       )),
     },
+    quiz: quiz ? {
+      quizId: quiz.quizId,
+      passingThresholdBasisPoints: quiz.passingThresholdBasisPoints,
+      exercises: quiz.exerciseIds.map((exerciseId) => (
+        createPublicExerciseView(index.getExercise(exerciseId))
+      )),
+    } : null,
     navigation: {
       previousLessonId: previousId,
       nextLessonId: nextId,
@@ -145,7 +155,11 @@ export function createLessonReaderService({
       activeExercises = new Map(lesson.exerciseIds.map((exerciseId) => (
         [exerciseId, loadedPackage.index.getExercise(exerciseId)]
       )));
-      return createLessonView(loadedPackage, lesson);
+      const view = createLessonView(loadedPackage, lesson);
+      for (const exercise of view.quiz?.exercises ?? []) {
+        activeExercises.set(exercise.exerciseId, loadedPackage.index.getExercise(exercise.exerciseId));
+      }
+      return view;
     }
     activeExercises = new Map();
     throw learningContentError('lesson_not_found');

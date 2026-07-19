@@ -11,6 +11,8 @@ import {
 } from './learning-shell.js';
 import { renderLessonBlocks } from './lesson-block-renderer.js';
 import { createLessonHref, parseLessonRoute } from './learning-routing.js';
+import { createQuizSession, submitQuizAnswer } from '../engine/quiz-session.js';
+import { createLearningRuntime } from '../services/learning-runtime.js';
 
 function textElement(documentRef, tagName, value, className) {
   const element = documentRef.createElement(tagName);
@@ -39,7 +41,81 @@ function createLessonNavigation(documentRef, navigation) {
   return nav;
 }
 
-export function renderLessonReader(documentRef, viewModel, { evaluateExercise } = {}) {
+function renderQuiz(documentRef, viewModel, { evaluateExercise, completeQuiz, loadProgress }) {
+  if (!viewModel.quiz) return null;
+  const section = documentRef.createElement('section');
+  section.className = 'vn-learning-quiz';
+  section.append(
+    textElement(documentRef, 'h2', 'Kuis akhir modul'),
+    textElement(documentRef, 'p', 'Selesaikan semua soal, lalu simpan hasil di perangkat ini.'),
+  );
+  const progress = textElement(documentRef, 'p', 'Memuat progres lokal…', 'vn-learning-progress');
+  progress.setAttribute('role', 'status');
+  section.append(progress);
+  void loadProgress(viewModel).then((value) => {
+    progress.textContent = value
+      ? `Skor terbaik ${Math.round(value.bestScoreBasisPoints / 100)}% dari ${value.attemptCount} percobaan.`
+      : 'Belum ada percobaan tersimpan untuk pelajaran ini.';
+  }).catch(() => { progress.textContent = 'Progres lokal belum dapat dibaca.'; });
+
+  const controllers = viewModel.quiz.exercises.map((exercise) => {
+    const controller = renderLearningExercise(documentRef, exercise, { evaluateExercise });
+    section.append(controller.element);
+    return controller;
+  });
+  const save = textElement(documentRef, 'button', 'Simpan hasil kuis', 'vn-learning-primary-button');
+  save.type = 'button';
+  const feedback = textElement(documentRef, 'p', '', 'vn-learning-feedback');
+  feedback.setAttribute('role', 'status');
+  section.append(save, feedback);
+  const startedAtLocal = new Date().toISOString();
+  let saving = false;
+  const onSave = async () => {
+    if (saving) return;
+    const states = controllers.map((controller) => controller.getSession());
+    if (states.some((state) => !state.lastEvaluation || state.status === 'invalid')) {
+      feedback.textContent = 'Periksa satu jawaban valid untuk setiap soal sebelum menyimpan.';
+      return;
+    }
+    let quizSession = createQuizSession({
+      quizId: viewModel.quiz.quizId,
+      exerciseIds: viewModel.quiz.exercises.map((exercise) => exercise.exerciseId),
+    });
+    states.forEach((state) => {
+      quizSession = submitQuizAnswer(quizSession, {
+        exerciseId: state.exerciseId,
+        answer: state.answer,
+        correct: state.lastEvaluation.correct,
+      });
+    });
+    saving = true;
+    save.disabled = true;
+    try {
+      const result = await completeQuiz({ viewModel, quizSession, startedAtLocal });
+      progress.textContent = `Skor terbaik ${Math.round(result.progress.bestScoreBasisPoints / 100)}% dari ${result.progress.attemptCount} percobaan.`;
+      feedback.textContent = `Hasil ${Math.round(quizSession.scoreBasisPoints / 100)}% tersimpan di perangkat ini.`;
+    } catch {
+      feedback.textContent = 'Hasil belum dapat disimpan. Coba lagi tanpa menutup halaman.';
+      save.disabled = false;
+    } finally {
+      saving = false;
+    }
+  };
+  save.addEventListener('click', onSave);
+  return Object.freeze({
+    element: section,
+    destroy() {
+      save.removeEventListener('click', onSave);
+      controllers.forEach((controller) => controller.destroy());
+    },
+  });
+}
+
+export function renderLessonReader(
+  documentRef,
+  viewModel,
+  { evaluateExercise, completeQuiz, loadProgress } = {},
+) {
   const fragment = documentRef.createDocumentFragment();
   const breadcrumb = documentRef.createElement('nav');
   breadcrumb.className = 'vn-learning-breadcrumb';
@@ -94,6 +170,8 @@ export function renderLessonReader(documentRef, viewModel, { evaluateExercise } 
     controllers.push(controller);
     exercises.append(controller.element);
   });
+  const quiz = renderQuiz(documentRef, viewModel, { evaluateExercise, completeQuiz, loadProgress });
+  if (quiz) controllers.push(quiz);
 
   fragment.append(
     breadcrumb,
@@ -101,6 +179,7 @@ export function renderLessonReader(documentRef, viewModel, { evaluateExercise } 
     article,
     activities,
     exercises,
+    ...(quiz ? [quiz.element] : []),
     textElement(documentRef, 'p', viewModel.localOnlyNotice, 'vn-learning-memory-notice'),
     createLessonNavigation(documentRef, viewModel.navigation),
   );
@@ -122,6 +201,8 @@ export function createLessonPageView(documentRef) {
   }
   let retryHandler = null;
   let evaluateExercise = null;
+  let completeQuiz = null;
+  let loadProgress = null;
   let rendered = null;
   const onRetry = () => retryHandler?.();
 
@@ -130,7 +211,11 @@ export function createLessonPageView(documentRef) {
       retryHandler = handler;
       retry.addEventListener('click', onRetry);
     },
-    configure({ evaluator }) { evaluateExercise = evaluator; },
+    configure({ evaluator, quizCompleter, progressLoader }) {
+      evaluateExercise = evaluator;
+      completeQuiz = quizCompleter;
+      loadProgress = progressLoader;
+    },
     render(model) {
       rendered?.destroy();
       rendered = null;
@@ -142,7 +227,9 @@ export function createLessonPageView(documentRef) {
       status.textContent = model.message;
       retry.hidden = !model.retryable;
       if (model.state === 'ready' && model.data && evaluateExercise) {
-        rendered = renderLessonReader(documentRef, model.data, { evaluateExercise });
+        rendered = renderLessonReader(documentRef, model.data, {
+          evaluateExercise, completeQuiz, loadProgress,
+        });
         content.append(rendered.fragment);
       }
     },
@@ -152,6 +239,8 @@ export function createLessonPageView(documentRef) {
       rendered = null;
       retryHandler = null;
       evaluateExercise = null;
+      completeQuiz = null;
+      loadProgress = null;
       content.replaceChildren();
     },
   });
@@ -171,6 +260,7 @@ export function createLessonPageController({
   serviceFactory,
 } = {}) {
   let service = null;
+  let runtime = null;
   const controller = createLearningPageController({
     contract,
     view,
@@ -178,10 +268,13 @@ export function createLessonPageController({
       const route = parseLessonRoute(search);
       if (!route.ok) throw learningContentError('lesson_not_found');
       service ||= serviceFactory();
+      runtime ||= createLearningRuntime();
       view.configure?.({
         evaluator: (exerciseId, answer, options) => (
           service.evaluateExercise(exerciseId, answer, options)
         ),
+        quizCompleter: (input) => runtime.completeQuiz(input),
+        progressLoader: (viewModel) => runtime.getProgress(viewModel),
       });
       return { state: 'ready', data: await service.getLessonView(route.lessonId, { force }) };
     },
@@ -193,7 +286,9 @@ export function createLessonPageController({
     destroy() {
       controller.destroy();
       service?.destroy?.();
+      void runtime?.close?.();
       service = null;
+      runtime = null;
     },
   });
 }

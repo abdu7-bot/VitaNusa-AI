@@ -42,6 +42,6 @@ export function getNusaBelajarFeatureContract({ mandiriState, learningState } = 
     learningState: resolvedLearningState,
     enabled,
     grantsPermission: false,
-    startsStorage: false,
+    startsStorage: enabled,
   });
 }

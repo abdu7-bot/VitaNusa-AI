@@ -395,6 +395,25 @@ h1 {
   padding-left: 12px;
 }
 
+.vn-learning-quiz {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  border: 2px solid var(--vn-learning-green-600);
+  border-radius: 18px;
+  padding: clamp(16px, 4vw, 24px);
+  background: #f0fdf4;
+}
+
+.vn-learning-progress {
+  margin: 0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  color: var(--vn-learning-green-800);
+  font-weight: 800;
+}
+
 .vn-learning-lesson-navigation {
   display: flex;
   flex-wrap: wrap;

@@ -29,9 +29,11 @@ test('file valid menghasilkan ringkasan tanpa identifier internal atau raw JSON'
     membershipCount: 1,
     auditEventCount: 1,
     operationReceiptCount: 1,
+    learningAttemptCount: 0,
+    learningProgressCount: 0,
     createdAt: '2026-07-17T01:00:00.000Z',
-    formatVersion: 1,
-    databaseSchemaVersion: 1,
+    formatVersion: 2,
+    databaseSchemaVersion: 2,
     checksumStatus: 'valid',
     scopeStatus: 'matched',
   });
@@ -45,6 +47,24 @@ test('JSON rusak dan file kosong ditolak', async () => {
   await assert.rejects(previewBackupText({ text: '', expectedAccountScope: ACCOUNT_A }), {
     code: 'backup_invalid',
   });
+});
+
+test('backup format version 1 tetap dapat dipreview tanpa operasi restore', async () => {
+  const { backup } = await createValidBackup();
+  const legacy = await resignBackup(backup, (value) => {
+    value.formatVersion = 1;
+    value.databaseSchemaVersion = 1;
+    delete value.recordCounts.learningAttempts;
+    delete value.recordCounts.learningProgress;
+    delete value.data.learningAttempts;
+    delete value.data.learningProgress;
+  });
+  const preview = await previewBackupText({
+    text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
+  });
+  assert.equal(preview.formatVersion, 1);
+  assert.equal(preview.learningAttemptCount, 0);
+  assert.equal(preview.learningProgressCount, 0);
 });
 
 test('file lebih dari 5 MiB ditolak sebelum file.text dipanggil', async () => {
@@ -63,8 +83,8 @@ test('format, formatVersion, dan databaseSchemaVersion tidak didukung ditolak', 
   const { backup } = await createValidBackup();
   const cases = [
     [(value) => { value.format = 'other'; }, 'format_unknown'],
-    [(value) => { value.formatVersion = 2; }, 'format_version_unsupported'],
-    [(value) => { value.databaseSchemaVersion = 2; }, 'schema_version_unsupported'],
+    [(value) => { value.formatVersion = 3; }, 'format_version_unsupported'],
+    [(value) => { value.databaseSchemaVersion = 3; }, 'schema_version_unsupported'],
   ];
   for (const [mutate, code] of cases) {
     const invalid = await resignBackup(backup, mutate);

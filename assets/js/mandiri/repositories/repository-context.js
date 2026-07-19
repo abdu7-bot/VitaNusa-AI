@@ -4,12 +4,19 @@ import { createAuditRepository } from './audit-repository.js';
 import { createMembershipRepository } from './membership-repository.js';
 import { createOperationReceiptRepository } from './operation-receipt-repository.js';
 import { createWorkspaceRepository } from './workspace-repository.js';
+import { createLearningAttemptRepository } from '../learning/repositories/learning-attempt-repository.js';
+import { createLearningProgressRepository } from '../learning/repositories/learning-progress-repository.js';
 
 export const ATOMIC_WORKSPACE_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.WORKSPACES,
   MANDIRI_STORE_NAMES.MEMBERSHIPS,
   MANDIRI_STORE_NAMES.AUDIT_EVENTS,
   MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
+]);
+
+export const ATOMIC_LEARNING_STORE_NAMES = Object.freeze([
+  MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS,
+  MANDIRI_STORE_NAMES.LEARNING_PROGRESS,
 ]);
 
 export function createRepositoryContext(connection) {
@@ -26,6 +33,8 @@ export function createRepositoryContext(connection) {
           membershipRepository: createMembershipRepository({ transactionContext }),
           auditRepository: createAuditRepository({ transactionContext }),
           operationReceiptRepository: createOperationReceiptRepository({ transactionContext }),
+          learningAttemptRepository: createLearningAttemptRepository({ transactionContext }),
+          learningProgressRepository: createLearningProgressRepository({ transactionContext }),
         });
         return callback(repositories);
       });

@@ -64,10 +64,10 @@ async function readRecords(context, command) {
   );
 }
 
-test('membuka IndexedDB schema version 1', async (t) => {
+test('membuka IndexedDB schema version 2', async (t) => {
   const harness = await openHarness('workspace-service-open-v1');
   t.after(() => harness.connection.close());
-  assert.equal(harness.connection.schemaVersion, 1);
+  assert.equal(harness.connection.schemaVersion, 2);
 });
 
 test('create workspace menulis empat store dalam satu operasi', async (t) => {

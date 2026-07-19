@@ -1,5 +1,5 @@
 export const MANDIRI_DATABASE_NAME = 'vitanusa-mandiri';
-export const MANDIRI_DATABASE_VERSION = 1;
+export const MANDIRI_DATABASE_VERSION = 2;
 
 export const MANDIRI_STORE_NAMES = Object.freeze({
   METADATA: 'metadata',
@@ -7,6 +7,8 @@ export const MANDIRI_STORE_NAMES = Object.freeze({
   MEMBERSHIPS: 'memberships',
   AUDIT_EVENTS: 'auditEvents',
   OPERATION_RECEIPTS: 'operationReceipts',
+  LEARNING_ATTEMPTS: 'learningAttempts',
+  LEARNING_PROGRESS: 'learningProgress',
 });
 
 function index(keyPath, options = {}) {
@@ -50,7 +52,27 @@ export const MANDIRI_SCHEMA_V1 = Object.freeze({
   }),
 });
 
-export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V1));
+export const MANDIRI_SCHEMA_V2 = Object.freeze({
+  ...MANDIRI_SCHEMA_V1,
+  [MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS]: store(['learnerScope', 'attemptId'], {
+    byLearnerCompletedAt: index(['learnerScope', 'completedAtLocal']),
+    byLearnerQuiz: index(['learnerScope', 'quizId']),
+    byLearnerLesson: index(['learnerScope', 'lessonId']),
+    byLearnerOperation: index(['learnerScope', 'operationId'], { unique: true }),
+  }),
+  [MANDIRI_STORE_NAMES.LEARNING_PROGRESS]: store([
+    'learnerScope',
+    'courseId',
+    'moduleId',
+    'lessonId',
+  ], {
+    byLearnerCourse: index(['learnerScope', 'courseId']),
+    byLearnerModule: index(['learnerScope', 'moduleId']),
+    byLearnerPracticedAt: index(['learnerScope', 'lastPracticedAtLocal']),
+  }),
+});
+
+export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V2));
 
 export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
   'products',
@@ -60,7 +82,6 @@ export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
   'expenses',
   'stockMovements',
   'cashSessions',
-  'learningProgress',
   'syncOutbox',
   'syncConflicts',
 ]);

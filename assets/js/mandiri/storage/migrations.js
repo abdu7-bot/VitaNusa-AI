@@ -1,6 +1,7 @@
 import {
   MANDIRI_DATABASE_VERSION,
   MANDIRI_SCHEMA_V1,
+  MANDIRI_SCHEMA_V2,
   MANDIRI_STORE_NAMES,
 } from './schema.js';
 import {
@@ -82,14 +83,20 @@ export function applyMigrations({
       for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V1)) {
         ensureStore(database, transaction, storeName, definition);
       }
-
-      const metadataStore = transaction.objectStore(MANDIRI_STORE_NAMES.METADATA);
-      metadataStore.put({
-        key: 'schema',
-        schemaVersion: MANDIRI_DATABASE_VERSION,
-        updatedAtLocal: now(),
-      });
     }
+
+    if (newVersion >= 2) {
+      for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
+        ensureStore(database, transaction, storeName, definition);
+      }
+    }
+
+    const metadataStore = transaction.objectStore(MANDIRI_STORE_NAMES.METADATA);
+    metadataStore.put({
+      key: 'schema',
+      schemaVersion: Math.min(newVersion, MANDIRI_DATABASE_VERSION),
+      updatedAtLocal: now(),
+    });
   } catch (error) {
     if (error instanceof MandiriStorageError && error.code === 'schema_too_new') throw error;
     if (error instanceof MandiriStorageError && error.code === 'migration_failed') throw error;
