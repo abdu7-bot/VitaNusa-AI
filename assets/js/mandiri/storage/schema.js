@@ -1,5 +1,5 @@
 export const MANDIRI_DATABASE_NAME = 'vitanusa-mandiri';
-export const MANDIRI_DATABASE_VERSION = 2;
+export const MANDIRI_DATABASE_VERSION = 3;
 
 export const MANDIRI_STORE_NAMES = Object.freeze({
   METADATA: 'metadata',
@@ -9,6 +9,8 @@ export const MANDIRI_STORE_NAMES = Object.freeze({
   OPERATION_RECEIPTS: 'operationReceipts',
   LEARNING_ATTEMPTS: 'learningAttempts',
   LEARNING_PROGRESS: 'learningProgress',
+  CATEGORIES: 'categories',
+  PRODUCTS: 'products',
 });
 
 function index(keyPath, options = {}) {
@@ -72,10 +74,29 @@ export const MANDIRI_SCHEMA_V2 = Object.freeze({
   }),
 });
 
-export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V2));
+export const MANDIRI_SCHEMA_V3 = Object.freeze({
+  ...MANDIRI_SCHEMA_V2,
+  [MANDIRI_STORE_NAMES.CATEGORIES]: store(
+    ['accountScope', 'workspaceId', 'categoryId'],
+    {
+      byWorkspace: index(['accountScope', 'workspaceId']),
+      byWorkspaceActive: index(['accountScope', 'workspaceId', 'active']),
+    },
+  ),
+  [MANDIRI_STORE_NAMES.PRODUCTS]: store(
+    ['accountScope', 'workspaceId', 'productId'],
+    {
+      byWorkspace: index(['accountScope', 'workspaceId']),
+      byWorkspaceActive: index(['accountScope', 'workspaceId', 'active']),
+      byWorkspaceSku: index(['accountScope', 'workspaceId', 'sku'], { unique: true }),
+      byWorkspaceCategory: index(['accountScope', 'workspaceId', 'categoryId']),
+    },
+  ),
+});
+
+export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V3));
 
 export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
-  'products',
   'sales',
   'saleLines',
   'payments',

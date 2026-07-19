@@ -7,14 +7,15 @@ import {
   MANDIRI_FUTURE_STORE_NAMES,
   MANDIRI_SCHEMA_V1,
   MANDIRI_SCHEMA_V2,
+  MANDIRI_SCHEMA_V3,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 test('nama dan version database Mandiri benar', () => {
   assert.equal(MANDIRI_DATABASE_NAME, 'vitanusa-mandiri');
-  assert.equal(MANDIRI_DATABASE_VERSION, 2);
+  assert.equal(MANDIRI_DATABASE_VERSION, 3);
 });
 
-test('schema version 2 menambah dua learning store tanpa mengubah schema version 1', () => {
+test('schema version 3 menambah category dan product tanpa mengubah schema lama', () => {
   assert.deepEqual(MANDIRI_ALLOWED_STORE_NAMES, [
     'metadata',
     'workspaces',
@@ -23,10 +24,12 @@ test('schema version 2 menambah dua learning store tanpa mengubah schema version
     'operationReceipts',
     'learningAttempts',
     'learningProgress',
+    'categories',
+    'products',
   ]);
   assert.equal(Object.keys(MANDIRI_SCHEMA_V1).length, 5);
   for (const futureStore of MANDIRI_FUTURE_STORE_NAMES) {
-    assert.equal(Object.hasOwn(MANDIRI_SCHEMA_V2, futureStore), false);
+    assert.equal(Object.hasOwn(MANDIRI_SCHEMA_V3, futureStore), false);
   }
 });
 
@@ -51,6 +54,13 @@ test('seluruh primary key mengandung scope yang diwajibkan', () => {
   assert.deepEqual(MANDIRI_SCHEMA_V2.learningProgress.keyPath, [
     'learnerScope', 'courseId', 'moduleId', 'lessonId',
   ]);
+  assert.deepEqual(MANDIRI_SCHEMA_V3.categories.keyPath, [
+    'accountScope', 'workspaceId', 'categoryId',
+  ]);
+  assert.deepEqual(MANDIRI_SCHEMA_V3.products.keyPath, [
+    'accountScope', 'workspaceId', 'productId',
+  ]);
+  assert.equal(MANDIRI_SCHEMA_V3.products.indexes.byWorkspaceSku.unique, true);
 });
 
 test('seluruh index version 1 sesuai kontrak scoped', () => {

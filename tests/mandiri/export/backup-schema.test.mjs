@@ -10,10 +10,10 @@ import {
 } from '../../../assets/js/mandiri/export/backup-schema.js';
 import { createValidBackup, resignBackup } from './fixtures.mjs';
 
-test('schema backup menetapkan format, version, schema, dan batas Fase 2', () => {
+test('schema backup menetapkan format, version, schema, dan batas Fase 3', () => {
   assert.equal(MANDIRI_BACKUP_FORMAT, 'vitanusa-mandiri-backup');
-  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 2);
-  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 2);
+  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 3);
+  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 3);
   assert.deepEqual(MANDIRI_BACKUP_RECORD_LIMITS, {
     workspaces: 1,
     memberships: 100,
@@ -21,6 +21,8 @@ test('schema backup menetapkan format, version, schema, dan batas Fase 2', () =>
     operationReceipts: 5000,
     learningAttempts: 5000,
     learningProgress: 2000,
+    categories: 1000,
+    products: 10000,
   });
 });
 
@@ -37,7 +39,7 @@ test('field root, recordCounts, dan data tambahan ditolak', async () => {
   for (const mutate of [
     (value) => { value.token = 'fixture'; },
     (value) => { value.recordCounts.extra = 1; },
-    (value) => { value.data.products = []; },
+    (value) => { value.data.extra = []; },
   ]) {
     const invalid = await resignBackup(backup, mutate);
     assert.throws(() => normalizeBackupDocument(invalid), { code: 'backup_invalid' });

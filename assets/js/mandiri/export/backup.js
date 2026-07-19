@@ -1,7 +1,7 @@
 import { createPayloadDigest } from '../domain/ids.js';
 import { normalizeIsoTimestamp } from '../domain/validation.js';
 import { ATOMIC_WORKSPACE_STORE_NAMES } from '../repositories/repository-context.js';
-import { ATOMIC_LEARNING_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -39,7 +39,7 @@ function assertRecordLimit(records, name) {
 
 async function readScopedBackupRecords(repositoryContext, accountScope, workspaceId) {
   return repositoryContext.run(
-    [...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES],
+    [...new Set([...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES, ...ATOMIC_PRODUCT_STORE_NAMES])],
     'readonly',
     async (repositories) => {
       if (
@@ -74,9 +74,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         learnerScope,
         { limit: MANDIRI_BACKUP_RECORD_LIMITS.learningProgress + 1 },
       );
+      const categoryPromise = repositories.categoryRepository.list(accountScope, workspaceId);
+      const productPromise = repositories.productRepository.list(accountScope, workspaceId);
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
+        categories, products,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -84,9 +87,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         receiptPromise,
         attemptPromise,
         progressPromise,
+        categoryPromise,
+        productPromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
+        categories, products,
       };
     },
   );
@@ -139,6 +145,8 @@ export function createBackupService({
           || left.moduleId.localeCompare(right.moduleId)
           || left.lessonId.localeCompare(right.lessonId)
         ))),
+        categories: sortedRecords(records.categories, 'categoryId'),
+        products: sortedRecords(records.products, 'productId'),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),

@@ -5,14 +5,14 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../../../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('Fase 2 berhenti pada IndexedDB v2 dan rollback tidak destruktif', async () => {
+test('schema Fase 2 tetap dipertahankan setelah migrasi v3 non-destruktif', async () => {
   const [schema, migrations, docs] = await Promise.all([
     read('assets/js/mandiri/storage/schema.js'),
     read('assets/js/mandiri/storage/migrations.js'),
     read('docs/vitanusa-mandiri/27-phase-2-exit.md'),
   ]);
-  assert.match(schema, /MANDIRI_DATABASE_VERSION = 2/);
-  assert.doesNotMatch(schema, /MANDIRI_SCHEMA_V3|DATABASE_VERSION = 3/);
+  assert.match(schema, /MANDIRI_DATABASE_VERSION = 3/);
+  assert.match(schema, /MANDIRI_SCHEMA_V2/);
   assert.doesNotMatch(migrations, /deleteObjectStore|deleteIndex|\.clear\s*\(/u);
   assert.match(docs, /tidak menurunkan IndexedDB v2/iu);
   assert.match(docs, /tidak menghapus data/iu);
@@ -67,8 +67,9 @@ test('restore tetap preview-only dan backup menerima v1 serta v2', async () => {
   ]);
   assert.doesNotMatch(preview, /openMandiriDatabase|runTransaction|\.put\s*\(|\.add\s*\(/u);
   assert.doesNotMatch(recovery, /restoreCommit|commitRestore|importBackup/u);
-  assert.match(backupSchema, /\[1, MANDIRI_BACKUP_FORMAT_VERSION\]/);
-  assert.match(backupSchema, /MANDIRI_BACKUP_FORMAT_VERSION = 2/);
+  assert.match(backupSchema, /\[1, 2, MANDIRI_BACKUP_FORMAT_VERSION\]/);
+  assert.match(backupSchema, /MANDIRI_BACKUP_FORMAT_VERSION = 3/);
+  assert.match(backupSchema, /!\[1, 2, MANDIRI_BACKUP_FORMAT_VERSION\]\.includes/);
 });
 
 test('aksesibilitas dan responsive hardening tersedia', async () => {
