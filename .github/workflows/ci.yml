@@ -191,6 +191,9 @@ jobs:
       - name: Test NusaBelajar lesson reader
         run: npm run test:mandiri:learning-reader
 
+      - name: Test NusaKasir product domain
+        run: npm run test:mandiri:pos-domain
+
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
 
@@ -278,6 +281,10 @@ jobs:
           node --check assets/js/mandiri/learning/ui/activity-renderer.js
           node --check assets/js/mandiri/learning/ui/exercise-renderer.js
           node --check assets/js/mandiri/learning/ui/feedback-messages.js
+          node --check assets/js/mandiri/pos/config/nusakasir-flags.js
+          node --check assets/js/mandiri/pos/domain/product-validation.js
+          node --check assets/js/mandiri/pos/domain/category.js
+          node --check assets/js/mandiri/pos/domain/product.js
           node --check scripts/mandiri/learning/verify-learning-packages.mjs
           node --check scripts/mandiri/learning/print-content-review.mjs
 
