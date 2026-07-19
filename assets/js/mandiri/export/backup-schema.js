@@ -8,11 +8,13 @@ import {
 } from '../domain/validation.js';
 import { normalizeWorkspace } from '../domain/workspace.js';
 import { normalizeOperationReceipt } from '../repositories/operation-receipt-repository.js';
+import { normalizeAttempt } from '../learning/domain/attempt.js';
+import { normalizeProgress } from '../learning/domain/progress.js';
 import { backupError, mapBackupError } from './backup-errors.js';
 
 export const MANDIRI_BACKUP_FORMAT = 'vitanusa-mandiri-backup';
-export const MANDIRI_BACKUP_FORMAT_VERSION = 1;
-export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 1;
+export const MANDIRI_BACKUP_FORMAT_VERSION = 2;
+export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 2;
 export const MANDIRI_BACKUP_CHECKSUM_ALGORITHM = 'SHA-256';
 export const MAX_BACKUP_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_BACKUP_VALIDATION_DEPTH = 32;
@@ -22,7 +24,12 @@ export const MANDIRI_BACKUP_RECORD_LIMITS = Object.freeze({
   memberships: 100,
   auditEvents: 5000,
   operationReceipts: 5000,
+  learningAttempts: 5000,
+  learningProgress: 2000,
 });
+const V1_COLLECTION_FIELDS = Object.freeze([
+  'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
+]);
 
 const ROOT_FIELDS = Object.freeze([
   'format',
@@ -111,10 +118,14 @@ function exact(value, fields, path) {
   }
 }
 
-function normalizeCounts(value) {
-  exact(value, COLLECTION_FIELDS, 'backup.recordCounts');
+function fieldsForVersion(formatVersion) {
+  return formatVersion === 1 ? V1_COLLECTION_FIELDS : COLLECTION_FIELDS;
+}
+
+function normalizeCounts(value, collectionFields) {
+  exact(value, collectionFields, 'backup.recordCounts');
   const output = {};
-  for (const field of COLLECTION_FIELDS) {
+  for (const field of collectionFields) {
     if (!Number.isSafeInteger(value[field]) || value[field] < 0) {
       throw backupError('backup_invalid');
     }
@@ -133,15 +144,17 @@ function assertCollection(value, name) {
   return value;
 }
 
-function normalizeRecords(data, accountScope, workspaceId) {
-  exact(data, COLLECTION_FIELDS, 'backup.data');
-  for (const field of COLLECTION_FIELDS) assertCollection(data[field], field);
+function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
+  exact(data, collectionFields, 'backup.data');
+  for (const field of collectionFields) assertCollection(data[field], field);
   if (data.workspaces.length !== 1) throw backupError('integrity_error');
 
   let workspaces;
   let memberships;
   let auditEvents;
   let operationReceipts;
+  let learningAttempts = [];
+  let learningProgress = [];
   try {
     workspaces = data.workspaces.map((record) => normalizeWorkspace(record));
     memberships = data.memberships.map((record) => normalizeMembership(record, {
@@ -150,6 +163,10 @@ function normalizeRecords(data, accountScope, workspaceId) {
     }));
     auditEvents = data.auditEvents.map((record) => normalizeAuditEvent(record));
     operationReceipts = data.operationReceipts.map((record) => normalizeOperationReceipt(record));
+    if (collectionFields.includes('learningAttempts')) {
+      learningAttempts = data.learningAttempts.map((record) => normalizeAttempt(record));
+      learningProgress = data.learningProgress.map((record) => normalizeProgress(record));
+    }
   } catch (error) {
     if (['cross_account_scope', 'cross_workspace_scope', 'scope_mismatch'].includes(error?.code)) {
       throw backupError('integrity_error', error);
@@ -200,11 +217,30 @@ function normalizeRecords(data, accountScope, workspaceId) {
     }
   }
 
+  const expectedLearnerScope = `user:${accountScope.slice('account:'.length)}`;
+  if (
+    learningAttempts.some((record) => record.learnerScope !== expectedLearnerScope)
+    || learningProgress.some((record) => record.learnerScope !== expectedLearnerScope)
+  ) {
+    throw backupError('integrity_error');
+  }
+  if (new Set(learningAttempts.map((record) => record.attemptId)).size !== learningAttempts.length) {
+    throw backupError('integrity_error');
+  }
+  const progressKeys = learningProgress.map((record) => (
+    `${record.courseId}\u0000${record.moduleId}\u0000${record.lessonId}`
+  ));
+  if (new Set(progressKeys).size !== progressKeys.length) throw backupError('integrity_error');
+
   return Object.freeze({
     workspaces: Object.freeze(workspaces),
     memberships: Object.freeze(memberships),
     auditEvents: Object.freeze(auditEvents),
     operationReceipts: Object.freeze(operationReceipts),
+    ...(collectionFields.includes('learningAttempts') ? {
+      learningAttempts: Object.freeze(learningAttempts),
+      learningProgress: Object.freeze(learningProgress),
+    } : {}),
   });
 }
 
@@ -226,10 +262,16 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
   assertSafeBackupValue(input);
   exact(input, ROOT_FIELDS, 'backup');
   if (input.format !== MANDIRI_BACKUP_FORMAT) throw backupError('format_unknown');
-  if (input.formatVersion !== MANDIRI_BACKUP_FORMAT_VERSION) {
+  if (![1, MANDIRI_BACKUP_FORMAT_VERSION].includes(input.formatVersion)) {
     throw backupError('format_version_unsupported');
   }
-  if (input.databaseSchemaVersion !== MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION) {
+  if (
+    !Number.isSafeInteger(input.databaseSchemaVersion)
+    || input.databaseSchemaVersion < 1
+    || input.databaseSchemaVersion > MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION
+    || (input.formatVersion === 1 && input.databaseSchemaVersion !== 1)
+    || (input.formatVersion === 2 && input.databaseSchemaVersion !== 2)
+  ) {
     throw backupError('schema_version_unsupported');
   }
   if (input.checksumAlgorithm !== MANDIRI_BACKUP_CHECKSUM_ALGORITHM) {
@@ -251,17 +293,18 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
     if (accountScope !== expected) throw backupError('scope_mismatch');
   }
   const workspaceId = normalizeBackupWorkspaceId(input.workspaceId);
-  const recordCounts = normalizeCounts(input.recordCounts);
-  const data = normalizeRecords(input.data, accountScope, workspaceId);
+  const collectionFields = fieldsForVersion(input.formatVersion);
+  const recordCounts = normalizeCounts(input.recordCounts, collectionFields);
+  const data = normalizeRecords(input.data, accountScope, workspaceId, collectionFields);
 
-  for (const field of COLLECTION_FIELDS) {
+  for (const field of collectionFields) {
     if (recordCounts[field] !== data[field].length) throw backupError('integrity_error');
   }
 
   return deepFreezeBackup({
     format: MANDIRI_BACKUP_FORMAT,
-    formatVersion: MANDIRI_BACKUP_FORMAT_VERSION,
-    databaseSchemaVersion: MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION,
+    formatVersion: input.formatVersion,
+    databaseSchemaVersion: input.databaseSchemaVersion,
     createdAt,
     accountScope,
     workspaceId,

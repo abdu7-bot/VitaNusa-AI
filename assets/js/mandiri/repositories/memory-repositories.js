@@ -15,6 +15,9 @@ import {
   storageError,
 } from '../storage/storage-errors.js';
 import { normalizeOperationReceipt } from './operation-receipt-repository.js';
+import { normalizeAttempt } from '../learning/domain/attempt.js';
+import { normalizeProgress } from '../learning/domain/progress.js';
+import { normalizeLearnerScope } from '../learning/domain/learning-validation.js';
 import {
   assertRecordScope,
   asStorageValidationError,
@@ -34,6 +37,8 @@ function createEmptyState() {
     memberships: new Map(),
     auditEvents: new Map(),
     operationReceipts: new Map(),
+    learningAttempts: new Map(),
+    learningProgress: new Map(),
   };
 }
 
@@ -51,6 +56,8 @@ function cloneState(state) {
     memberships: cloneNestedMap(state.memberships),
     auditEvents: cloneNestedMap(state.auditEvents),
     operationReceipts: cloneNestedMap(state.operationReceipts),
+    learningAttempts: cloneNestedMap(state.learningAttempts),
+    learningProgress: cloneNestedMap(state.learningProgress),
   };
 }
 
@@ -88,6 +95,24 @@ function normalizeScopedEvent(accountScope, workspaceId, event) {
 function normalizeScopedReceipt(accountScope, receipt) {
   const normalized = normalizeWith(normalizeOperationReceipt, receipt);
   assertRecordScope(normalized, accountScope);
+  return normalized;
+}
+
+function normalizeLearningScope(value) {
+  try { return normalizeLearnerScope(value); } catch (error) {
+    throw asStorageValidationError(error);
+  }
+}
+
+function normalizeScopedAttempt(learnerScope, attempt) {
+  const normalized = normalizeWith(normalizeAttempt, attempt);
+  if (normalized.learnerScope !== learnerScope) throw storageError('scope_mismatch');
+  return normalized;
+}
+
+function normalizeScopedProgress(learnerScope, progress) {
+  const normalized = normalizeWith(normalizeProgress, progress);
+  if (normalized.learnerScope !== learnerScope) throw storageError('scope_mismatch');
   return normalized;
 }
 
@@ -374,11 +399,98 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
   });
   Object.freeze(operationReceiptRepository);
 
+  const learningAttemptRepository = {
+    async addCompleted(explicitScope, attempt) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS, true);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const normalized = normalizeScopedAttempt(learnerScope, attempt);
+      if (normalized.status !== 'completed') throw storageError('data_invalid');
+      const bucket = ensureBucket(getState().learningAttempts, learnerScope);
+      if (
+        bucket.has(normalized.attemptId)
+        || [...bucket.values()].some((record) => record.operationId === normalized.operationId)
+      ) throw storageError('constraint_violation');
+      bucket.set(normalized.attemptId, clonePlainRecord(normalized));
+      return normalizeScopedAttempt(learnerScope, normalized);
+    },
+    async getById(explicitScope, attemptId) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const record = getBucket(getState().learningAttempts, learnerScope)?.get(attemptId);
+      return record === undefined ? null : normalizeScopedAttempt(learnerScope, record);
+    },
+    async getByOperationId(explicitScope, operationId) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const record = [...(getBucket(getState().learningAttempts, learnerScope)?.values() ?? [])]
+        .find((candidate) => candidate.operationId === operationId);
+      return record === undefined ? null : normalizeScopedAttempt(learnerScope, record);
+    },
+    async listByLesson(explicitScope, lessonId) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      return [...(getBucket(getState().learningAttempts, learnerScope)?.values() ?? [])]
+        .filter((record) => record.lessonId === lessonId)
+        .map((record) => normalizeScopedAttempt(learnerScope, record));
+    },
+  };
+  Object.defineProperty(learningAttemptRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (explicitScope, optionsValue) => {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_ATTEMPTS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      return [...(getBucket(getState().learningAttempts, learnerScope)?.values() ?? [])]
+        .map((record) => normalizeScopedAttempt(learnerScope, record))
+        .slice(0, limit);
+    },
+  });
+  Object.freeze(learningAttemptRepository);
+
+  const learningProgressRepository = {
+    async get(explicitScope, key) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_PROGRESS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const id = `${key.courseId}\u0000${key.moduleId}\u0000${key.lessonId}`;
+      const record = getBucket(getState().learningProgress, learnerScope)?.get(id);
+      return record === undefined ? null : normalizeScopedProgress(learnerScope, record);
+    },
+    async put(explicitScope, progress) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_PROGRESS, true);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const normalized = normalizeScopedProgress(learnerScope, progress);
+      const id = `${normalized.courseId}\u0000${normalized.moduleId}\u0000${normalized.lessonId}`;
+      ensureBucket(getState().learningProgress, learnerScope).set(id, clonePlainRecord(normalized));
+      return normalizeScopedProgress(learnerScope, normalized);
+    },
+    async listByCourse(explicitScope, courseId) {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_PROGRESS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      return [...(getBucket(getState().learningProgress, learnerScope)?.values() ?? [])]
+        .filter((record) => record.courseId === courseId)
+        .map((record) => normalizeScopedProgress(learnerScope, record));
+    },
+  };
+  Object.defineProperty(learningProgressRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (explicitScope, optionsValue) => {
+      assertStore(MANDIRI_STORE_NAMES.LEARNING_PROGRESS);
+      const learnerScope = normalizeLearningScope(explicitScope);
+      const { limit } = normalizeExportListOptions(optionsValue);
+      return [...(getBucket(getState().learningProgress, learnerScope)?.values() ?? [])]
+        .map((record) => normalizeScopedProgress(learnerScope, record))
+        .slice(0, limit);
+    },
+  });
+  Object.freeze(learningProgressRepository);
+
   return Object.freeze({
     workspaceRepository,
     membershipRepository,
     auditRepository,
     operationReceiptRepository,
+    learningAttemptRepository,
+    learningProgressRepository,
   });
 }
 

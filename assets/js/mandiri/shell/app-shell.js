@@ -59,8 +59,8 @@ export function createMandiriModuleModels({ mandiriState, learningState } = {}) 
       name: module.name,
       state: 'internal',
       statusLabel: 'Internal',
-      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
-      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+      description: 'Baca tiga pelajaran published, selesaikan kuis, dan simpan progres secara lokal.',
+      note: 'Hasil kuis tersimpan lokal; latihan biasa tetap sementara.',
       href: './belajar/',
       actionLabel: 'Buka NusaBelajar',
     });
@@ -73,12 +73,12 @@ function createMandiriDashboardModules({ mandiriState, learningState }) {
     if (module.id !== 'nusabelajar' || !learningContract.enabled) return module;
     return Object.freeze({
       ...module,
-      description: 'Baca tiga pelajaran published dan coba latihan deterministik tanpa penyimpanan progress.',
+      description: 'Baca tiga pelajaran published, selesaikan kuis, dan simpan progres secara lokal.',
       status: MANDIRI_MODULE_STATUSES.ACTIVE,
       statusLabel: 'Internal',
       href: './belajar/',
       actionLabel: 'Buka NusaBelajar',
-      note: 'Lesson reader internal tersedia. Jawaban latihan belum disimpan.',
+      note: 'Hasil kuis tersimpan lokal; latihan biasa tetap sementara.',
     });
   }));
 }

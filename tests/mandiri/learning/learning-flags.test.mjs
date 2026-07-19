@@ -36,4 +36,5 @@ test('dua flag internal mengaktifkan kontrak tanpa memberi permission', () => {
   assert.equal(contract.state, 'internal');
   assert.equal(contract.enabled, true);
   assert.equal(contract.grantsPermission, false);
+  assert.equal(contract.startsStorage, true);
 });

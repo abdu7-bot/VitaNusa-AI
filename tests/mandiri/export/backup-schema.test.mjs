@@ -10,15 +10,17 @@ import {
 } from '../../../assets/js/mandiri/export/backup-schema.js';
 import { createValidBackup, resignBackup } from './fixtures.mjs';
 
-test('schema backup menetapkan format, version, schema, dan batas Fase 1', () => {
+test('schema backup menetapkan format, version, schema, dan batas Fase 2', () => {
   assert.equal(MANDIRI_BACKUP_FORMAT, 'vitanusa-mandiri-backup');
-  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 1);
-  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 1);
+  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 2);
+  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 2);
   assert.deepEqual(MANDIRI_BACKUP_RECORD_LIMITS, {
     workspaces: 1,
     memberships: 100,
     auditEvents: 5000,
     operationReceipts: 5000,
+    learningAttempts: 5000,
+    learningProgress: 2000,
   });
 });
 
