@@ -6,10 +6,101 @@ import {
   evaluateAdminAccess,
   getAdminRetryAction,
   getFirebaseConfigError,
+  inspectAdminDocumentShape,
   normalizeFirebaseErrorCode
 } from "../admin/admin-access.js";
 
 const TEST_USER = Object.freeze({ uid: "test-user-uid" });
+
+test("diagnostik struktur hanya mengembalikan metadata aman", () => {
+  const diagnostic = inspectAdminDocumentShape({
+    email: "private@example.test",
+    role: "admin",
+    status: "active"
+  }, {
+    projectId: "vitanusa-ai",
+    databaseId: "(default)"
+  });
+
+  assert.deepEqual(Object.keys(diagnostic), [
+    "documentExists",
+    "hasStatusField",
+    "hasRoleField",
+    "statusType",
+    "roleType",
+    "projectId",
+    "databaseId",
+    "fieldDescriptors"
+  ]);
+  assert.equal(diagnostic.documentExists, true);
+  assert.equal(diagnostic.hasStatusField, true);
+  assert.equal(diagnostic.hasRoleField, true);
+  assert.equal(diagnostic.statusType, "string");
+  assert.equal(diagnostic.roleType, "string");
+  assert.deepEqual(diagnostic.fieldDescriptors.map((field) => field.classification), [
+    "expected:email",
+    "expected:role",
+    "expected:status"
+  ]);
+  assert.doesNotMatch(JSON.stringify(diagnostic), /private@example\.test|\"active\"|\"admin\"/);
+});
+
+test("diagnostik memakai own property dan membatasi tipe yang ditampilkan", () => {
+  const inherited = Object.create({ status: "active", role: "admin" });
+  inherited.email = null;
+  const diagnostic = inspectAdminDocumentShape(inherited, {});
+
+  assert.equal(diagnostic.hasStatusField, false);
+  assert.equal(diagnostic.hasRoleField, false);
+  assert.equal(diagnostic.statusType, "undefined");
+  assert.equal(diagnostic.roleType, "undefined");
+  assert.equal(diagnostic.fieldDescriptors.length, 1);
+
+  const typed = inspectAdminDocumentShape({ status: null, role: [] });
+  assert.equal(typed.statusType, "null");
+  assert.equal(typed.roleType, "array");
+
+  const unknown = inspectAdminDocumentShape({ status: Symbol("hidden"), role() {} });
+  assert.equal(unknown.statusType, "unknown");
+  assert.equal(unknown.roleType, "unknown");
+});
+
+test("diagnostik menyamarkan field asing dan menunjukkan Unicode code point", () => {
+  const diagnostic = inspectAdminDocumentShape({
+    "status\u200B": "active",
+    "role\u00A0": "admin",
+    Status: "active",
+    "st\u0430tus": "active",
+    rule: "admin",
+    profile: { status: "active", role: "admin" }
+  });
+
+  assert.equal(diagnostic.hasStatusField, false);
+  assert.equal(diagnostic.hasRoleField, false);
+  assert.ok(diagnostic.fieldDescriptors.every((field) => field.classification === "unexpected"));
+  assert.ok(diagnostic.fieldDescriptors.every((field) => field.maskedName === "[masked]"));
+  assert.equal(diagnostic.fieldDescriptors[0].nameLength, 7);
+  assert.match(diagnostic.fieldDescriptors[0].unicodeCodePoints, /U\+200B/);
+  assert.match(diagnostic.fieldDescriptors[1].unicodeCodePoints, /U\+00A0/);
+  assert.match(diagnostic.fieldDescriptors[3].unicodeCodePoints, /U\+0430/);
+
+  const rendered = JSON.stringify(diagnostic);
+  assert.doesNotMatch(rendered, /\"active\"|\"admin\"/);
+});
+
+test("diagnostik dokumen hilang tidak mengarang field", () => {
+  const diagnostic = inspectAdminDocumentShape(null, {
+    projectId: "vitanusa-ai",
+    databaseId: "(default)"
+  });
+
+  assert.equal(diagnostic.documentExists, false);
+  assert.equal(diagnostic.hasStatusField, false);
+  assert.equal(diagnostic.hasRoleField, false);
+  assert.equal(diagnostic.statusType, "undefined");
+  assert.equal(diagnostic.roleType, "undefined");
+  assert.deepEqual(diagnostic.fieldDescriptors, []);
+});
 
 test("admin aktif diizinkan", () => {
   const result = evaluateAdminAccess({
@@ -208,6 +299,31 @@ test("pemeriksaan admin memakai server Firestore dan tidak memakai getDoc cache"
 
   assert.match(authSource, /getDocFromServer\(adminRef\)/);
   assert.doesNotMatch(authSource, /\bgetDoc\(adminRef\)/);
+});
+
+test("diagnostik diintegrasikan setelah server read tanpa memengaruhi evaluasi akses", async () => {
+  const authSource = await readFile(new URL("../admin/firebase-auth.js", import.meta.url), "utf8");
+
+  assert.ok(authSource.indexOf("getDocFromServer(adminRef)") < authSource.indexOf("inspectAdminDocumentShape(adminData"));
+  assert.match(authSource, /const FIRESTORE_DATABASE_ID = "\(default\)";/);
+  assert.match(authSource, /if \(!result\.allowed\) return \{ \.\.\.result, documentDiagnostic \};/);
+  assert.match(authSource, /target\.textContent = value/);
+  assert.doesNotMatch(authSource, /innerHTML|insertAdjacentHTML/);
+  assert.match(authSource, /admin-access\.js\?v=20260718-admin-document-diagnostic-v1/);
+});
+
+test("login dan dashboard memuat diagnostik hidden dengan cache version baru", async () => {
+  const [loginHtml, dashboardHtml] = await Promise.all([
+    readFile(new URL("../admin/login.html", import.meta.url), "utf8"),
+    readFile(new URL("../admin/index.html", import.meta.url), "utf8")
+  ]);
+
+  for (const html of [loginHtml, dashboardHtml]) {
+    assert.match(html, /data-admin-document-diagnostics hidden/);
+    assert.match(html, /data-admin-document-diagnostic="documentExists"/);
+    assert.match(html, /data-admin-document-diagnostic="fieldDescriptors"/);
+    assert.match(html, /firebase-auth\.js\?v=20260718-admin-document-diagnostic-v1/);
+  }
 });
 
 test("service worker membuat path admin network-only tanpa menghapus PWA publik", async () => {

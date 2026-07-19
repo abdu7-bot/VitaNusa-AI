@@ -70,6 +70,61 @@ const CONFIG_ERROR_CODES = new Set([
   "auth/unauthorized-domain"
 ]);
 
+const EXPECTED_ADMIN_FIELDS = new Set(["email", "role", "status"]);
+const SAFE_DIAGNOSTIC_TYPES = new Set([
+  "string",
+  "number",
+  "boolean",
+  "object",
+  "array",
+  "null",
+  "undefined"
+]);
+
+function getDiagnosticType(value) {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+
+  const valueType = typeof value;
+  return SAFE_DIAGNOSTIC_TYPES.has(valueType) ? valueType : "unknown";
+}
+
+function getUnicodeCodePoints(fieldName) {
+  return Array.from(fieldName, (character) => {
+    const codePoint = character.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+    return `U+${codePoint}`;
+  }).join(" ");
+}
+
+function describeAdminField(fieldName) {
+  const expected = EXPECTED_ADMIN_FIELDS.has(fieldName);
+
+  return {
+    classification: expected ? `expected:${fieldName}` : "unexpected",
+    maskedName: expected ? fieldName : "[masked]",
+    nameLength: Array.from(fieldName).length,
+    unicodeCodePoints: getUnicodeCodePoints(fieldName)
+  };
+}
+
+export function inspectAdminDocumentShape(data, { projectId, databaseId } = {}) {
+  const documentExists = Boolean(data && typeof data === "object" && !Array.isArray(data));
+  const documentData = documentExists ? data : {};
+  const hasStatusField = Object.hasOwn(documentData, "status");
+  const hasRoleField = Object.hasOwn(documentData, "role");
+
+  return {
+    documentExists,
+    hasStatusField,
+    hasRoleField,
+    statusType: getDiagnosticType(hasStatusField ? documentData.status : undefined),
+    roleType: getDiagnosticType(hasRoleField ? documentData.role : undefined),
+    projectId: typeof projectId === "string" ? projectId : "unknown",
+    databaseId: typeof databaseId === "string" ? databaseId : "unknown",
+    fieldDescriptors: Object.keys(documentData).map(describeAdminField)
+  };
+}
+
 function makeResult(reason, overrides = {}) {
   const copy = RESULT_COPY[reason] || RESULT_COPY["unknown-error"];
 
