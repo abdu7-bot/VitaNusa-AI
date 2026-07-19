@@ -227,10 +227,39 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
   if (new Set(learningAttempts.map((record) => record.attemptId)).size !== learningAttempts.length) {
     throw backupError('integrity_error');
   }
+  if (
+    learningAttempts.some((record) => record.status !== 'completed')
+    || new Set(learningAttempts.map((record) => record.operationId)).size !== learningAttempts.length
+  ) {
+    throw backupError('integrity_error');
+  }
   const progressKeys = learningProgress.map((record) => (
     `${record.courseId}\u0000${record.moduleId}\u0000${record.lessonId}`
   ));
   if (new Set(progressKeys).size !== progressKeys.length) throw backupError('integrity_error');
+  const attemptsById = new Map(learningAttempts.map((attempt) => [attempt.attemptId, attempt]));
+  for (const progress of learningProgress) {
+    const matchingAttempts = learningAttempts.filter((attempt) => (
+      attempt.courseId === progress.courseId
+      && attempt.moduleId === progress.moduleId
+      && attempt.lessonId === progress.lessonId
+      && attempt.contentVersion === progress.contentVersion
+    ));
+    const lastAttempt = attemptsById.get(progress.lastAttemptId);
+    const bestScore = matchingAttempts.reduce(
+      (best, attempt) => Math.max(best, attempt.scoreBasisPoints),
+      -1,
+    );
+    if (
+      !lastAttempt
+      || !matchingAttempts.includes(lastAttempt)
+      || progress.attemptCount !== matchingAttempts.length
+      || progress.bestScoreBasisPoints !== bestScore
+      || progress.lastPracticedAtLocal !== lastAttempt.completedAtLocal
+    ) {
+      throw backupError('integrity_error');
+    }
+  }
 
   return Object.freeze({
     workspaces: Object.freeze(workspaces),

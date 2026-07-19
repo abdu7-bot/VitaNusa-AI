@@ -33,7 +33,9 @@
     "review:mandiri:learning-content": "node scripts/mandiri/learning/print-content-review.mjs",
     "test:mandiri:learning-content": "node --test tests/mandiri/learning-content/*.test.mjs",
     "test:mandiri:learning-reader": "node --test tests/mandiri/learning-reader/*.test.mjs",
-    "test:mandiri": "npm run test:mandiri:shell && npm run test:mandiri:domain && npm run test:mandiri:storage && npm run test:mandiri:repositories && npm run test:mandiri:services && npm run test:mandiri:workspace-ui && npm run test:mandiri:backup && npm run test:mandiri:security && npm run test:mandiri:recovery-ui && npm run test:mandiri:learning-domain && npm run test:mandiri:learning-content && npm run test:mandiri:learning-reader",
+    "test:mandiri:offline": "node --test tests/mandiri/offline/*.test.mjs",
+    "test:mandiri:phase-2-exit": "node --test tests/mandiri/phase-2-exit/*.test.mjs",
+    "test:mandiri": "npm run test:mandiri:shell && npm run test:mandiri:domain && npm run test:mandiri:storage && npm run test:mandiri:repositories && npm run test:mandiri:services && npm run test:mandiri:workspace-ui && npm run test:mandiri:backup && npm run test:mandiri:security && npm run test:mandiri:recovery-ui && npm run test:mandiri:learning-domain && npm run test:mandiri:learning-content && npm run test:mandiri:learning-reader && npm run test:mandiri:offline && npm run test:mandiri:phase-2-exit",
     "test:firestore-rules": "firebase emulators:exec --project demo-vitanusa-rules --only firestore \"node --test tests/firestore-rules.test.mjs\""
   },
   "devDependencies": {
