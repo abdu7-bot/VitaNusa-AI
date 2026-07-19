@@ -88,3 +88,32 @@ test('learnerScope lain tidak dapat membaca attempt atau progress', async () => 
   assert.deepEqual(values, { attempt: null, progress: null });
   connection.close();
 });
+
+test('contentVersion baru tidak mewarisi best score atau attemptCount versi lama', async () => {
+  const connection = await openMandiriDatabase({
+    indexedDBFactory: new IDBFactory(), keyRangeFactory: IDBKeyRange, databaseName: 'learning-version',
+  });
+  const service = createLearningProgressService({
+    repositoryContext: createRepositoryContext(connection),
+  });
+  await service.completeAttempt({
+    attempt: attempt({ correctCount: 2, scoreBasisPoints: 10000 }),
+    passingThresholdBasisPoints: 7000,
+  });
+  const nextVersion = attempt({
+    attemptId: ids.secondAttempt,
+    operationId: ids.secondOperation,
+    contentVersion: 2,
+    correctCount: 1,
+    scoreBasisPoints: 5000,
+    completedAtLocal: '2026-07-19T00:02:00.000Z',
+  });
+  const result = await service.completeAttempt({
+    attempt: nextVersion,
+    passingThresholdBasisPoints: 7000,
+  });
+  assert.equal(result.progress.contentVersion, 2);
+  assert.equal(result.progress.bestScoreBasisPoints, 5000);
+  assert.equal(result.progress.attemptCount, 1);
+  connection.close();
+});

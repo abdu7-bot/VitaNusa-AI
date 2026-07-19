@@ -22,6 +22,7 @@ export function createLearningRuntime({
   now = () => new Date().toISOString(),
 } = {}) {
   let connectionPromise = null;
+  const preparedAttempts = new WeakMap();
   const learnerScope = getOrCreateGuestLearnerScope({ storage, cryptoRef });
   const service = async () => {
     connectionPromise ||= openMandiriDatabase({ indexedDBFactory, keyRangeFactory });
@@ -33,8 +34,10 @@ export function createLearningRuntime({
     learnerScope,
     async completeQuiz({ viewModel, quizSession, startedAtLocal }) {
       const progressService = await service();
-      const completedAtLocal = now();
-      const attempt = createAttempt({
+      let attempt = preparedAttempts.get(quizSession);
+      if (!attempt) {
+        const completedAtLocal = now();
+        attempt = createAttempt({
         schemaVersion: 1,
         attemptId: createEntityId('attempt', cryptoRef),
         learnerScope,
@@ -51,7 +54,9 @@ export function createLearningRuntime({
         startedAtLocal,
         completedAtLocal,
         operationId: createOperationId(cryptoRef),
-      });
+        });
+      }
+      preparedAttempts.set(quizSession, attempt);
       return progressService.completeAttempt({
         attempt,
         passingThresholdBasisPoints: viewModel.quiz.passingThresholdBasisPoints,
@@ -65,6 +70,10 @@ export function createLearningRuntime({
         moduleId: viewModel.module.moduleId,
         lessonId: viewModel.lesson.lessonId,
       });
+    },
+    async listCourseProgress(courseId) {
+      const progressService = await service();
+      return progressService.listCourseProgress({ learnerScope, courseId });
     },
     async close() {
       const connection = await connectionPromise;

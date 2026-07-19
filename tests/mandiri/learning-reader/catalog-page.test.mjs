@@ -31,18 +31,25 @@ const catalogView = Object.freeze({
     }],
   }]),
 });
+const runtimeFactory = () => ({
+  async listCourseProgress() { return []; },
+  async close() {},
+});
 
 test('disabled tidak memanggil service dan tidak bind listener', async () => {
   const view = createSpyView();
   let calls = 0;
+  let runtimeCalls = 0;
   const controller = createCatalogPageController({
     contract: { enabled: false },
     view,
     serviceFactory() { calls += 1; },
+    runtimeFactory() { runtimeCalls += 1; },
   });
   await controller.whenSettled();
   assert.equal(controller.getState().state, 'disabled');
   assert.equal(calls, 0);
+  assert.equal(runtimeCalls, 0);
   assert.equal(view.callbacks, null);
 });
 
@@ -52,10 +59,15 @@ test('loading menjadi ready dengan catalog public model', async () => {
     contract: { enabled: true },
     view,
     serviceFactory: () => ({ async getCatalogView() { return catalogView; } }),
+    runtimeFactory,
   });
   await controller.whenSettled();
   assert.deepEqual(view.models.map((model) => model.state), ['loading', 'loading', 'ready']);
-  assert.equal(controller.getState().data, catalogView);
+  assert.equal(
+    controller.getState().data.packages[0].programs[0].courses[0].modules[0]
+      .recommendation.lessonId,
+    'lesson-read-prices-id',
+  );
 });
 
 test('catalog kosong menghasilkan empty', async () => {
@@ -63,6 +75,7 @@ test('catalog kosong menghasilkan empty', async () => {
     contract: { enabled: true },
     view: createSpyView(),
     serviceFactory: () => ({ async getCatalogView() { return { packages: [] }; } }),
+    runtimeFactory,
   });
   await controller.whenSettled();
   assert.equal(controller.getState().state, 'empty');
@@ -80,6 +93,7 @@ test('checksum error aman dan retry dapat berhasil', async () => {
         return catalogView;
       },
     }),
+    runtimeFactory,
   });
   await controller.whenSettled();
   assert.equal(controller.getState().state, 'error');
@@ -97,6 +111,7 @@ test('error asing tidak membocorkan URL atau payload mentah', async () => {
         throw new Error('https://evil.test/secret?answer=3000');
       },
     }),
+    runtimeFactory,
   });
   await controller.whenSettled();
   assert.equal(controller.getState().state, 'error');
@@ -109,6 +124,7 @@ test('destroy melepas view listener', async () => {
     contract: { enabled: true },
     view,
     serviceFactory: () => ({ async getCatalogView() { return catalogView; } }),
+    runtimeFactory,
   });
   await controller.whenSettled();
   controller.destroy();

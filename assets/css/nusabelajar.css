@@ -241,6 +241,22 @@ h1 {
   padding: 18px;
 }
 
+.vn-learning-lesson-card[data-recommended="true"] {
+  border-color: var(--vn-learning-green-600);
+  box-shadow: 0 0 0 2px rgba(21, 128, 61, .12);
+}
+
+.vn-learning-recommendation {
+  width: fit-content;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--vn-learning-green-100);
+  color: var(--vn-learning-green-950) !important;
+  font-size: .9rem;
+  font-weight: 850;
+  padding: 6px 10px;
+}
+
 .vn-learning-breadcrumb ol {
   display: flex;
   flex-wrap: wrap;
@@ -467,5 +483,17 @@ h1 {
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .vn-learning-lesson-card[data-recommended="true"],
+  .vn-learning-quiz {
+    border: 2px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .vn-learning-page :where(a, button, input):focus-visible {
+    outline-color: Highlight;
   }
 }

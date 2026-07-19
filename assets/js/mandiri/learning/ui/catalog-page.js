@@ -2,6 +2,8 @@ import { createLearningCatalogLoader } from '../data/catalog-loader.js';
 import { createLearningPackageLoader } from '../data/package-loader.js';
 import { resolveLearningCatalogUrl } from '../data/safe-content-path.js';
 import { createLearningCatalogService } from '../services/learning-catalog-service.js';
+import { createLearningRuntime } from '../services/learning-runtime.js';
+import { applyCatalogRecommendations } from '../services/lesson-recommendation.js';
 import {
   createLearningPageController,
   getBuildLearningFeatureContract,
@@ -59,6 +61,18 @@ export function renderCatalogHierarchy(documentRef, model) {
               ),
               link,
             );
+            if (module.recommendation?.lessonId === lesson.lessonId) {
+              card.dataset.recommended = 'true';
+              const recommendation = textElement(
+                documentRef,
+                'p',
+                module.recommendation.label,
+                'vn-learning-recommendation',
+              );
+              recommendation.id = `recommendation-${lesson.lessonId}`;
+              card.append(recommendation);
+              link.setAttribute('aria-describedby', `recommendation-${lesson.lessonId}`);
+            }
             item.append(card);
             lessonList.append(item);
           });
@@ -123,19 +137,31 @@ export function createCatalogPageController({
   contract,
   view,
   serviceFactory,
+  runtimeFactory = () => createLearningRuntime(),
 } = {}) {
   let service = null;
+  let runtime = null;
   const controller = createLearningPageController({
     contract,
     view,
     async load({ force }) {
       service ||= serviceFactory();
-      const data = await service.getCatalogView({ force });
+      runtime ||= runtimeFactory();
+      const catalog = await service.getCatalogView({ force });
+      const data = await applyCatalogRecommendations(
+        catalog,
+        (courseId) => runtime.listCourseProgress(courseId),
+      );
       return { state: data.packages.length > 0 ? 'ready' : 'empty', data };
     },
   });
   return Object.freeze({
-    destroy: controller.destroy,
+    destroy() {
+      controller.destroy();
+      void runtime?.close?.();
+      runtime = null;
+      service = null;
+    },
     getState: controller.getState,
     retry: controller.retry,
     whenSettled: controller.whenSettled,
@@ -148,11 +174,13 @@ export function initLearningCatalogPage({
   contract = getBuildLearningFeatureContract(),
   fetchImpl = windowRef.fetch?.bind(windowRef),
   serviceFactory = () => createDefaultLearningCatalogService({ windowRef, fetchImpl }),
+  runtimeFactory = () => createLearningRuntime(),
 } = {}) {
   return createCatalogPageController({
     contract,
     view: createCatalogPageView(documentRef),
     serviceFactory,
+    runtimeFactory,
   });
 }
 

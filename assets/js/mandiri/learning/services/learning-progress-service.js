@@ -6,8 +6,9 @@ import { normalizeSafeInteger } from '../domain/learning-validation.js';
 import { normalizeProgress } from '../domain/progress.js';
 
 function createNextProgress(attempt, current, passingThresholdBasisPoints) {
+  const compatibleCurrent = current?.contentVersion === attempt.contentVersion ? current : null;
   const bestScoreBasisPoints = Math.max(
-    current?.bestScoreBasisPoints ?? 0,
+    compatibleCurrent?.bestScoreBasisPoints ?? 0,
     attempt.scoreBasisPoints,
   );
   return normalizeProgress({
@@ -22,7 +23,7 @@ function createNextProgress(attempt, current, passingThresholdBasisPoints) {
       : 'needs_practice',
     bestScoreBasisPoints,
     lastAttemptId: attempt.attemptId,
-    attemptCount: (current?.attemptCount ?? 0) + 1,
+    attemptCount: (compatibleCurrent?.attemptCount ?? 0) + 1,
     lastPracticedAtLocal: attempt.completedAtLocal,
   });
 }
@@ -81,5 +82,15 @@ export function createLearningProgressService({ repositoryContext } = {}) {
     );
   }
 
-  return Object.freeze({ completeAttempt, getLessonProgress });
+  async function listCourseProgress({ learnerScope, courseId } = {}) {
+    return repositoryContext.run(
+      [ATOMIC_LEARNING_STORE_NAMES[1]],
+      'readonly',
+      ({ learningProgressRepository }) => (
+        learningProgressRepository.listByCourse(learnerScope, courseId)
+      ),
+    );
+  }
+
+  return Object.freeze({ completeAttempt, getLessonProgress, listCourseProgress });
 }

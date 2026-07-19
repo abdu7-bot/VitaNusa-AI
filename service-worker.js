@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'vitanusa-ai-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v15-android-agent`;
+const CACHE_NAME = `${CACHE_PREFIX}v16-nusabelajar-phase2-exit`;
 const SCOPE_URL = new URL(self.registration.scope);
 const BASE_PATH = SCOPE_URL.pathname.replace(/\/$/, '');
 const ADMIN_PATH = `${BASE_PATH}/admin`;
@@ -15,6 +15,12 @@ function scopedPath(path = '') {
 
 const SHARE_TARGET_PATH = scopedPath('share-target.html');
 const OFFLINE_URL = scopedUrl('offline.html');
+const LEARNING_STATIC_PATHS = Object.freeze([
+  'content/mandiri/learning/catalog.json',
+  'content/mandiri/learning/packages/money-basics-id-v1/manifest.json',
+  'content/mandiri/learning/packages/money-basics-id-v1/content.json',
+]);
+const LEARNING_STATIC_URLS = new Set(LEARNING_STATIC_PATHS.map((path) => scopedUrl(path)));
 const NETWORK_FIRST_PUBLIC_PATHS = new Set([
   scopedPath('account.html'),
   scopedPath('settings.html'),
@@ -39,10 +45,13 @@ const APP_SHELL = [
   scopedUrl('share-target.html'),
   scopedUrl('vitacheck.html'),
   scopedUrl('manifest.webmanifest'),
+  scopedUrl('mandiri/belajar/index.html'),
+  scopedUrl('mandiri/belajar/lesson.html'),
   scopedUrl('assets/css/nusa-app-shell.css'),
   scopedUrl('assets/css/vitanusa-public.css'),
   scopedUrl('assets/css/android-pwa.css'),
   scopedUrl('assets/css/nusa-agent.css'),
+  scopedUrl('assets/css/nusabelajar.css'),
   scopedUrl('assets/js/main.js'),
   scopedUrl('assets/js/modules/nusa-ui-shell.js'),
   scopedUrl('assets/js/modules/nusa-agent.js'),
@@ -54,6 +63,7 @@ const APP_SHELL = [
   scopedUrl('404.html'),
   scopedUrl('images/icon-192.png'),
   scopedUrl('images/icon-512.png'),
+  ...LEARNING_STATIC_PATHS.map((path) => scopedUrl(path)),
   ...BUILD_ASSETS.map((path) => scopedUrl(path)),
 ];
 
@@ -140,6 +150,13 @@ function isNetworkFirstPublicRequest(request) {
 function isShareTargetRequest(request) {
   const url = new URL(request.url);
   return url.origin === self.location.origin && url.pathname === SHARE_TARGET_PATH;
+}
+
+function isLearningStaticRequest(request) {
+  const url = new URL(request.url);
+  url.search = '';
+  url.hash = '';
+  return request.method === 'GET' && LEARNING_STATIC_URLS.has(url.href);
 }
 
 function isExternalDataHost(hostname) {
@@ -247,6 +264,23 @@ async function staleWhileRevalidate(request, event) {
   return networkUpdate.catch(() => Response.error());
 }
 
+async function cacheFirstLearningStatic(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const url = new URL(request.url);
+  url.search = '';
+  url.hash = '';
+  const cacheKey = url.href;
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (canCache(response)) await cache.put(cacheKey, response.clone()).catch(() => null);
+    return response;
+  } catch {
+    return Response.error();
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -267,6 +301,11 @@ self.addEventListener('fetch', (event) => {
       fallbackKey: shareTargetShell,
       allowOfflineFallback: true,
     }));
+    return;
+  }
+
+  if (isLearningStaticRequest(request)) {
+    event.respondWith(cacheFirstLearningStatic(request));
     return;
   }
 
