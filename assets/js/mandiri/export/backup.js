@@ -2,6 +2,7 @@ import { createPayloadDigest } from '../domain/ids.js';
 import { normalizeIsoTimestamp } from '../domain/validation.js';
 import { ATOMIC_WORKSPACE_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_INVENTORY_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -39,7 +40,10 @@ function assertRecordLimit(records, name) {
 
 async function readScopedBackupRecords(repositoryContext, accountScope, workspaceId) {
   return repositoryContext.run(
-    [...new Set([...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES, ...ATOMIC_PRODUCT_STORE_NAMES])],
+    [...new Set([
+      ...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES,
+      ...ATOMIC_PRODUCT_STORE_NAMES, ...ATOMIC_INVENTORY_STORE_NAMES,
+    ])],
     'readonly',
     async (repositories) => {
       if (
@@ -76,10 +80,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       );
       const categoryPromise = repositories.categoryRepository.list(accountScope, workspaceId);
       const productPromise = repositories.productRepository.list(accountScope, workspaceId);
+      const movementPromise = repositories.inventoryRepository.listForBackup(accountScope, workspaceId);
+      const balancePromise = repositories.inventoryRepository.listBalances(accountScope, workspaceId);
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
-        categories, products,
+        categories, products, stockMovements, inventoryBalances,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -89,10 +95,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         progressPromise,
         categoryPromise,
         productPromise,
+        movementPromise,
+        balancePromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
-        categories, products,
+        categories, products, stockMovements, inventoryBalances,
       };
     },
   );
@@ -147,6 +155,8 @@ export function createBackupService({
         ))),
         categories: sortedRecords(records.categories, 'categoryId'),
         products: sortedRecords(records.products, 'productId'),
+        stockMovements: sortedRecords(records.stockMovements, 'movementId'),
+        inventoryBalances: sortedRecords(records.inventoryBalances, 'productId'),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),

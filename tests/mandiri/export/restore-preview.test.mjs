@@ -33,9 +33,11 @@ test('file valid menghasilkan ringkasan tanpa identifier internal atau raw JSON'
     learningProgressCount: 0,
     categoryCount: 0,
     productCount: 0,
+    stockMovementCount: 0,
+    inventoryBalanceCount: 0,
     createdAt: '2026-07-17T01:00:00.000Z',
-    formatVersion: 3,
-    databaseSchemaVersion: 3,
+    formatVersion: 4,
+    databaseSchemaVersion: 4,
     checksumStatus: 'valid',
     scopeStatus: 'matched',
   });
@@ -64,6 +66,10 @@ test('backup format version 1 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.products;
     delete value.data.categories;
     delete value.data.products;
+    delete value.recordCounts.stockMovements;
+    delete value.recordCounts.inventoryBalances;
+    delete value.data.stockMovements;
+    delete value.data.inventoryBalances;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -94,6 +100,10 @@ test('backup format version 2 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.products;
     delete value.data.categories;
     delete value.data.products;
+    delete value.recordCounts.stockMovements;
+    delete value.recordCounts.inventoryBalances;
+    delete value.data.stockMovements;
+    delete value.data.inventoryBalances;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -104,12 +114,31 @@ test('backup format version 2 tetap dapat dipreview tanpa operasi restore', asyn
   assert.equal(preview.productCount, 0);
 });
 
+test('backup format version 3 tetap dapat dipreview tanpa operasi restore', async () => {
+  const { backup } = await createValidBackup();
+  const legacy = await resignBackup(backup, (value) => {
+    value.formatVersion = 3;
+    value.databaseSchemaVersion = 3;
+    delete value.recordCounts.stockMovements;
+    delete value.recordCounts.inventoryBalances;
+    delete value.data.stockMovements;
+    delete value.data.inventoryBalances;
+  });
+  const preview = await previewBackupText({
+    text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
+  });
+  assert.equal(preview.formatVersion, 3);
+  assert.equal(preview.categoryCount, 0);
+  assert.equal(preview.stockMovementCount, 0);
+  assert.equal(preview.inventoryBalanceCount, 0);
+});
+
 test('format, formatVersion, dan databaseSchemaVersion tidak didukung ditolak', async () => {
   const { backup } = await createValidBackup();
   const cases = [
     [(value) => { value.format = 'other'; }, 'format_unknown'],
-    [(value) => { value.formatVersion = 4; }, 'format_version_unsupported'],
-    [(value) => { value.databaseSchemaVersion = 4; }, 'schema_version_unsupported'],
+    [(value) => { value.formatVersion = 5; }, 'format_version_unsupported'],
+    [(value) => { value.databaseSchemaVersion = 5; }, 'schema_version_unsupported'],
   ];
   for (const [mutate, code] of cases) {
     const invalid = await resignBackup(backup, mutate);

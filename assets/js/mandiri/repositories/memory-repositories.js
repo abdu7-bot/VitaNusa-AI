@@ -19,6 +19,7 @@ import { normalizeAttempt } from '../learning/domain/attempt.js';
 import { normalizeProgress } from '../learning/domain/progress.js';
 import { normalizeCategory } from '../pos/domain/category.js';
 import { normalizeProduct } from '../pos/domain/product.js';
+import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
 import { normalizeLearnerScope } from '../learning/domain/learning-validation.js';
 import {
   assertRecordScope,
@@ -43,6 +44,8 @@ function createEmptyState() {
     learningProgress: new Map(),
     categories: new Map(),
     products: new Map(),
+    stockMovements: new Map(),
+    inventoryBalances: new Map(),
   };
 }
 
@@ -64,6 +67,8 @@ function cloneState(state) {
     learningProgress: cloneNestedMap(state.learningProgress),
     categories: cloneNestedMap(state.categories),
     products: cloneNestedMap(state.products),
+    stockMovements: cloneNestedMap(state.stockMovements),
+    inventoryBalances: cloneNestedMap(state.inventoryBalances),
   };
 }
 
@@ -130,6 +135,17 @@ function normalizeScopedCategory(accountScope, workspaceId, category) {
 function normalizeScopedProduct(accountScope, workspaceId, product) {
   const normalized = normalizeWith(normalizeProduct, product, { workspaceId });
   return Object.freeze({ accountScope, ...normalized });
+}
+
+function scopedInventory(normalizer, accountScope, workspaceId, input) {
+  const normalized = normalizeWith(normalizer, input, { workspaceId });
+  return Object.freeze({ accountScope, ...normalized });
+}
+
+function publicInventory(normalizer, record) {
+  const copy = clonePlainRecord(record);
+  delete copy.accountScope;
+  return normalizeWith(normalizer, copy, { workspaceId: record.workspaceId });
 }
 
 function publicCategory(record) {
@@ -626,6 +642,88 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     },
   });
 
+  const inventoryRepository = {
+    async appendMovement(accountValue, workspaceValue, movementInput, balanceInput, expectedVersion) {
+      assertStore(MANDIRI_STORE_NAMES.PRODUCTS);
+      assertStore(MANDIRI_STORE_NAMES.STOCK_MOVEMENTS, true);
+      assertStore(MANDIRI_STORE_NAMES.INVENTORY_BALANCES, true);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      const movement = scopedInventory(normalizeStockMovement, accountScope, workspaceId, movementInput);
+      const balance = scopedInventory(normalizeInventoryBalance, accountScope, workspaceId, balanceInput);
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0) throw storageError('data_invalid');
+      if (movement.productId !== balance.productId || movement.movementId !== balance.lastMovementId) {
+        throw storageError('data_invalid');
+      }
+      const product = getBucket(getBucket(getState().products, accountScope) ?? new Map(), workspaceId)
+        ?.get(movement.productId);
+      if (!product) throw storageError('invalid_reference');
+      if (!product.stockTracking) throw storageError('stock_tracking_disabled');
+      const movementBucket = ensureBucket(ensureBucket(getState().stockMovements, accountScope), workspaceId);
+      if (
+        movementBucket.has(movement.movementId)
+        || [...movementBucket.values()].some((item) => item.operationId === movement.operationId)
+      ) throw storageError('constraint_violation');
+      const balanceBucket = ensureBucket(ensureBucket(getState().inventoryBalances, accountScope), workspaceId);
+      const current = balanceBucket.get(movement.productId);
+      const currentVersion = current?.version ?? 0;
+      const currentQuantity = current?.quantityOnHand ?? 0;
+      if (
+        currentVersion !== expectedVersion
+        || balance.version !== expectedVersion + 1
+        || !Number.isSafeInteger(currentQuantity + movement.quantityDelta)
+        || balance.quantityOnHand !== currentQuantity + movement.quantityDelta
+      ) throw storageError('version_conflict');
+      movementBucket.set(movement.movementId, clonePlainRecord(movement));
+      balanceBucket.set(balance.productId, clonePlainRecord(balance));
+      return Object.freeze({
+        movement: publicInventory(normalizeStockMovement, movement),
+        balance: publicInventory(normalizeInventoryBalance, balance),
+      });
+    },
+    async getBalance(accountValue, workspaceValue, productValue) {
+      assertStore(MANDIRI_STORE_NAMES.INVENTORY_BALANCES);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      const productId = normalizeEntityIdentifier(productValue, 'product');
+      const record = getBucket(getBucket(getState().inventoryBalances, accountScope) ?? new Map(), workspaceId)
+        ?.get(productId);
+      return record ? publicInventory(normalizeInventoryBalance, record) : null;
+    },
+    async listBalances(accountValue, workspaceValue) {
+      assertStore(MANDIRI_STORE_NAMES.INVENTORY_BALANCES);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      return Object.freeze([...(getBucket(
+        getBucket(getState().inventoryBalances, accountScope) ?? new Map(), workspaceId,
+      )?.values() ?? [])].map((record) => publicInventory(normalizeInventoryBalance, record)));
+    },
+    async listMovements(accountValue, workspaceValue, productValue) {
+      assertStore(MANDIRI_STORE_NAMES.STOCK_MOVEMENTS);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      const productId = normalizeEntityIdentifier(productValue, 'product');
+      return Object.freeze([...(getBucket(
+        getBucket(getState().stockMovements, accountScope) ?? new Map(), workspaceId,
+      )?.values() ?? [])]
+        .filter((record) => record.productId === productId)
+        .map((record) => publicInventory(normalizeStockMovement, record))
+        .sort((a, b) => a.createdAtLocal.localeCompare(b.createdAtLocal)));
+    },
+  };
+  Object.defineProperty(inventoryRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (accountValue, workspaceValue) => {
+      assertStore(MANDIRI_STORE_NAMES.STOCK_MOVEMENTS);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      return Object.freeze([...(getBucket(
+        getBucket(getState().stockMovements, accountScope) ?? new Map(), workspaceId,
+      )?.values() ?? [])].map((record) => publicInventory(normalizeStockMovement, record)));
+    },
+  });
+  Object.freeze(inventoryRepository);
+
   return Object.freeze({
     workspaceRepository,
     membershipRepository,
@@ -635,6 +733,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     learningProgressRepository,
     categoryRepository,
     productRepository,
+    inventoryRepository,
   });
 }
 

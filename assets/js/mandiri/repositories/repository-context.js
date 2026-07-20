@@ -8,6 +8,7 @@ import { createLearningAttemptRepository } from '../learning/repositories/learni
 import { createLearningProgressRepository } from '../learning/repositories/learning-progress-repository.js';
 import { createCategoryRepository } from '../pos/repositories/category-repository.js';
 import { createProductRepository } from '../pos/repositories/product-repository.js';
+import { createInventoryRepository } from '../pos/repositories/inventory-repository.js';
 
 export const ATOMIC_WORKSPACE_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.WORKSPACES,
@@ -24,6 +25,15 @@ export const ATOMIC_LEARNING_STORE_NAMES = Object.freeze([
 export const ATOMIC_PRODUCT_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.CATEGORIES,
   MANDIRI_STORE_NAMES.PRODUCTS,
+  MANDIRI_STORE_NAMES.MEMBERSHIPS,
+  MANDIRI_STORE_NAMES.AUDIT_EVENTS,
+  MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
+]);
+
+export const ATOMIC_INVENTORY_STORE_NAMES = Object.freeze([
+  MANDIRI_STORE_NAMES.PRODUCTS,
+  MANDIRI_STORE_NAMES.STOCK_MOVEMENTS,
+  MANDIRI_STORE_NAMES.INVENTORY_BALANCES,
   MANDIRI_STORE_NAMES.MEMBERSHIPS,
   MANDIRI_STORE_NAMES.AUDIT_EVENTS,
   MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
@@ -47,6 +57,7 @@ export function createRepositoryContext(connection) {
           learningProgressRepository: createLearningProgressRepository({ transactionContext }),
           categoryRepository: createCategoryRepository({ transactionContext }),
           productRepository: createProductRepository({ transactionContext }),
+          inventoryRepository: createInventoryRepository({ transactionContext }),
         });
         return callback(repositories);
       });
