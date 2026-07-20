@@ -13,6 +13,28 @@ const PRODUCT_B = 'product_55555555-5555-4555-8555-555555555555';
 const AT = '2026-07-20T00:00:00.000Z';
 const digestFactory = (value) => createPayloadDigest(value, webcrypto);
 
+async function setup(role = 'merchant_owner') {
+  const memory = createMemoryRepositories();
+  await memory.membershipRepository.add(ACCOUNT, WORKSPACE, {
+    version: 1,
+    membershipId: 'membership_10101010-1010-4010-8010-101010101010',
+    accountScope: ACCOUNT,
+    workspaceId: WORKSPACE,
+    userScope: 'user_scope_owner',
+    role,
+    status: 'active',
+    createdAtLocal: AT,
+    updatedAtLocal: AT,
+  });
+  return {
+    memory,
+    service: createProductPersistenceService({
+      repositoryContext: memory.repositoryContext,
+      digestFactory,
+    }),
+  };
+}
+
 function command(operationType, entity, overrides = {}) {
   return {
     schemaVersion: 1,
@@ -47,8 +69,7 @@ const product = (overrides = {}) => ({
 });
 
 test('create atomik menghasilkan entity, audit, receipt, dan retry idempotent', async () => {
-  const memory = createMemoryRepositories();
-  const service = createProductPersistenceService({ repositoryContext: memory.repositoryContext, digestFactory });
+  const { memory, service } = await setup();
   const categoryCommand = command('category_create', category());
   const first = await service.execute(categoryCommand);
   const retry = await service.execute(categoryCommand);
@@ -59,8 +80,7 @@ test('create atomik menghasilkan entity, audit, receipt, dan retry idempotent', 
 });
 
 test('duplicate SKU dan reference invalid rollback tanpa audit atau receipt parsial', async () => {
-  const memory = createMemoryRepositories();
-  const service = createProductPersistenceService({ repositoryContext: memory.repositoryContext, digestFactory });
+  const { memory, service } = await setup();
   await service.execute(command('category_create', category()));
   const first = command('product_create', product(), {
     operationId: 'op_88888888-8888-4888-8888-888888888888',
@@ -88,8 +108,7 @@ test('duplicate SKU dan reference invalid rollback tanpa audit atau receipt pars
 });
 
 test('update version conflict rollback dan operationId payload berbeda ditolak', async () => {
-  const memory = createMemoryRepositories();
-  const service = createProductPersistenceService({ repositoryContext: memory.repositoryContext, digestFactory });
+  const { memory, service } = await setup();
   const create = command('category_create', category());
   await service.execute(create);
   await assert.rejects(service.execute({ ...create, entity: { ...category(), name: 'Berbeda' } }), {
@@ -103,4 +122,12 @@ test('update version conflict rollback dan operationId payload berbeda ditolak',
   await assert.rejects(service.execute(update), { code: 'version_conflict' });
   assert.equal((await memory.categoryRepository.get(ACCOUNT, WORKSPACE, CATEGORY)).name, 'Minuman');
   assert.equal(await memory.operationReceiptRepository.getByOperationId(ACCOUNT, update.operationId), null);
+});
+
+test('cashier dan membership inactive ditolak tanpa write parsial', async () => {
+  const { memory, service } = await setup('cashier');
+  const value = command('category_create', category(), { actorRole: 'cashier' });
+  await assert.rejects(service.execute(value), { code: 'permission_denied' });
+  assert.equal(await memory.categoryRepository.get(ACCOUNT, WORKSPACE, CATEGORY), null);
+  assert.equal(await memory.operationReceiptRepository.getByOperationId(ACCOUNT, value.operationId), null);
 });

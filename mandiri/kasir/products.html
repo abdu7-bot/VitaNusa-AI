@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Produk NusaKasir | VitaNusa Mandiri</title>
+  <meta name="description" content="Pengelolaan kategori dan produk NusaKasir secara lokal pada workspace aktif.">
+  <link rel="stylesheet" href="../../assets/css/nusakasir-products.css?v=20260720-f3-pr3">
+</head>
+<body class="vn-pos-page">
+  <a class="vn-pos-skip" href="#posContent">Lewati ke konten utama</a>
+  <main id="posContent" class="vn-pos-main" data-pos-root data-pos-state="disabled" aria-busy="false">
+    <header class="vn-pos-header">
+      <div>
+        <p class="vn-pos-kicker">NusaKasir • Local-only</p>
+        <h1>Kategori dan Produk</h1>
+        <p>Kelola data produk workspace aktif. Tidak ada transaksi, stok, atau sinkronisasi cloud pada halaman ini.</p>
+      </div>
+      <a class="vn-pos-link" href="../index.html">Kembali ke Mandiri</a>
+    </header>
+
+    <p class="vn-pos-status" data-pos-status role="status" aria-live="polite" tabindex="-1">
+      NusaKasir belum tersedia pada build ini.
+    </p>
+
+    <section class="vn-pos-panel" data-pos-disabled aria-labelledby="posDisabledTitle">
+      <h2 id="posDisabledTitle">NusaKasir belum tersedia</h2>
+      <p>Feature flag internal belum aktif. Halaman ini tidak membuka IndexedDB atau repository.</p>
+    </section>
+
+    <section class="vn-pos-panel" data-pos-signed-out hidden aria-labelledby="posSignedOutTitle">
+      <h2 id="posSignedOutTitle">Login diperlukan</h2>
+      <p>Gunakan halaman akun untuk login, lalu kembali ke halaman ini.</p>
+      <a class="vn-pos-link" href="../../account.html">Buka halaman akun</a>
+    </section>
+
+    <section class="vn-pos-panel" data-pos-loading hidden aria-label="Memuat data">
+      <p>Menyiapkan data lokal dengan aman…</p>
+    </section>
+
+    <div class="vn-pos-content" data-pos-content hidden>
+      <p class="vn-pos-read-note" data-pos-write-note hidden>
+        Role workspace ini memiliki akses baca saja. Perubahan kategori dan produk hanya untuk merchant owner aktif.
+      </p>
+
+      <section class="vn-pos-panel" aria-labelledby="categoryTitle">
+        <div class="vn-pos-section-heading">
+          <div><p class="vn-pos-kicker">Pengelompokan</p><h2 id="categoryTitle">Kategori</h2></div>
+        </div>
+        <ul class="vn-pos-list" data-pos-category-list aria-label="Daftar kategori"></ul>
+        <form class="vn-pos-form" data-pos-category-form novalidate>
+          <fieldset>
+            <legend data-pos-form-title>Tambah kategori</legend>
+            <label for="categoryName">Nama kategori</label>
+            <input id="categoryName" name="name" type="text" maxlength="80" required autocomplete="off">
+            <label class="vn-pos-check"><input name="active" type="checkbox" checked> Kategori aktif</label>
+            <div class="vn-pos-actions">
+              <button type="submit">Simpan kategori</button>
+              <button type="button" data-pos-action="cancel-category">Batal edit</button>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+
+      <section class="vn-pos-panel" aria-labelledby="productTitle">
+        <div class="vn-pos-section-heading">
+          <div><p class="vn-pos-kicker">Katalog lokal</p><h2 id="productTitle">Produk</h2></div>
+          <button type="button" data-pos-action="reload-data">Muat ulang data</button>
+        </div>
+
+        <div class="vn-pos-filters" role="search" aria-label="Cari dan filter produk">
+          <label for="productSearch">Cari nama atau SKU</label>
+          <input id="productSearch" data-pos-search type="search" autocomplete="off">
+          <label for="categoryFilter">Kategori</label>
+          <select id="categoryFilter" data-pos-category-filter><option value="all">Semua kategori</option></select>
+          <label for="activeFilter">Status</label>
+          <select id="activeFilter" data-pos-active-filter>
+            <option value="all">Semua status</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+          </select>
+        </div>
+
+        <ul class="vn-pos-list vn-pos-product-list" data-pos-product-list aria-label="Daftar produk"></ul>
+
+        <form class="vn-pos-form" data-pos-product-form novalidate>
+          <fieldset>
+            <legend data-pos-form-title>Tambah produk</legend>
+            <div class="vn-pos-form-grid">
+              <div><label for="productName">Nama produk</label><input id="productName" name="name" type="text" maxlength="160" required autocomplete="off"></div>
+              <div><label for="productSku">SKU opsional</label><input id="productSku" name="sku" type="text" maxlength="80" autocomplete="off"></div>
+              <div><label for="productCategory">Kategori</label><select id="productCategory" name="categoryId"><option value="none">Tanpa kategori</option></select></div>
+              <div><label for="sellingPrice">Harga jual rupiah</label><input id="sellingPrice" name="sellingPrice" type="text" inputmode="numeric" placeholder="15000 atau Rp15.000" required autocomplete="off"></div>
+              <div><label for="purchasePrice">Harga beli opsional</label><input id="purchasePrice" name="purchasePrice" type="text" inputmode="numeric" placeholder="Kosongkan bila tidak ada" autocomplete="off"></div>
+            </div>
+            <label class="vn-pos-check"><input name="stockTracking" type="checkbox"> Tandai untuk pelacakan stok di fase berikutnya</label>
+            <label class="vn-pos-check"><input name="active" type="checkbox" checked> Produk aktif</label>
+            <div class="vn-pos-actions">
+              <button type="submit">Simpan produk</button>
+              <button type="button" data-pos-action="cancel-product">Batal edit</button>
+            </div>
+          </fieldset>
+        </form>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="../../assets/js/mandiri/pos/ui/product-management-page.js?v=20260720-f3-pr3"></script>
+</body>
+</html>

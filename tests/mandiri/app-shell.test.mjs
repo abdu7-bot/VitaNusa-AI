@@ -95,6 +95,19 @@ test('mode internal menampilkan application shell', async () => {
   assert.equal(statusCalls, 1);
 });
 
+test('entrypoint NusaKasir hanya aktif saat feature flag internal', () => {
+  const disabled = createMandiriShellModel('internal', 'off', 'off');
+  const enabled = createMandiriShellModel('internal', 'off', 'internal');
+  const disabledModule = disabled.modules.find((module) => module.id === 'nusakasir');
+  const enabledModule = enabled.modules.find((module) => module.id === 'nusakasir');
+
+  assert.equal(disabledModule.status, 'planned');
+  assert.equal(disabledModule.href, undefined);
+  assert.equal(enabledModule.status, 'active');
+  assert.equal(enabledModule.href, './kasir/products.html');
+  assert.equal(enabled.activeFeatures, true);
+});
+
 test('semua modul planned diberi label direncanakan', () => {
   assert.deepEqual(
     MANDIRI_PLANNED_MODULES.map((module) => [module.name, module.state]),

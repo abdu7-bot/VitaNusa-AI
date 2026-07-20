@@ -7,6 +7,10 @@ import {
   getNusaBelajarFeatureContract,
   getNusaBelajarFeatureState,
 } from '../learning/config/learning-flags.js';
+import {
+  getNusaKasirFeatureContract,
+  getNusaKasirFeatureState,
+} from '../pos/config/nusakasir-flags.js';
 import { initMandiriOfflineStatus } from './offline-status.js';
 
 const MANDIRI_APP_CONTROLLERS = new WeakMap();
@@ -51,9 +55,21 @@ export const MANDIRI_PLANNED_MODULES = Object.freeze([
   Object.freeze({ name: 'VitaSheet', state: 'direncanakan' }),
 ]);
 
-export function createMandiriModuleModels({ mandiriState, learningState } = {}) {
+export function createMandiriModuleModels({ mandiriState, learningState, nusakasirState } = {}) {
   const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  const kasirContract = getNusaKasirFeatureContract({ mandiriState, nusakasirState });
   return Object.freeze(MANDIRI_PLANNED_MODULES.map((module) => {
+    if (module.name === 'NusaKasir' && kasirContract.enabled) {
+      return Object.freeze({
+        name: module.name,
+        state: 'internal',
+        statusLabel: 'Internal',
+        description: 'Kelola kategori dan produk workspace secara lokal.',
+        note: 'Belum mencakup transaksi, inventori, atau laporan.',
+        href: './kasir/products.html',
+        actionLabel: 'Kelola produk',
+      });
+    }
     if (module.name !== 'NusaBelajar' || !learningContract.enabled) return module;
     return Object.freeze({
       name: module.name,
@@ -67,9 +83,21 @@ export function createMandiriModuleModels({ mandiriState, learningState } = {}) 
   }));
 }
 
-function createMandiriDashboardModules({ mandiriState, learningState }) {
+function createMandiriDashboardModules({ mandiriState, learningState, nusakasirState }) {
   const learningContract = getNusaBelajarFeatureContract({ mandiriState, learningState });
+  const kasirContract = getNusaKasirFeatureContract({ mandiriState, nusakasirState });
   return Object.freeze(MANDIRI_MODULES.map((module) => {
+    if (module.id === 'nusakasir' && kasirContract.enabled) {
+      return Object.freeze({
+        ...module,
+        description: 'Kelola kategori dan produk workspace secara lokal.',
+        status: MANDIRI_MODULE_STATUSES.ACTIVE,
+        statusLabel: 'Internal',
+        href: './kasir/products.html',
+        actionLabel: 'Kelola produk',
+        note: 'Belum mencakup transaksi, inventori, atau laporan.',
+      });
+    }
     if (module.id !== 'nusabelajar' || !learningContract.enabled) return module;
     return Object.freeze({
       ...module,
@@ -86,6 +114,7 @@ function createMandiriDashboardModules({ mandiriState, learningState }) {
 export function createMandiriShellModel(
   value,
   learningValue = getNusaBelajarFeatureState(),
+  nusakasirValue = getNusaKasirFeatureState(),
 ) {
   const contract = getMandiriFeatureContract(value);
 
@@ -104,16 +133,18 @@ export function createMandiriShellModel(
   const modules = createMandiriDashboardModules({
     mandiriState: contract.state,
     learningState: learningValue,
+    nusakasirState: nusakasirValue,
   });
-  const learningEnabled = modules.some(
-    (module) => module.id === 'nusabelajar' && module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
+  const internalModuleEnabled = modules.some(
+    (module) => ['nusabelajar', 'nusakasir'].includes(module.id)
+      && module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
   );
   return Object.freeze({
     state: contract.state,
     view: 'internal-shell',
     title: 'VitaNusa Mandiri',
     modeLabel: 'Mode fondasi lokal',
-    activeFeatures: learningEnabled,
+    activeFeatures: internalModuleEnabled,
     activeModuleCount: modules.filter(
       (module) => module.status === MANDIRI_MODULE_STATUSES.ACTIVE,
     ).length,
@@ -149,6 +180,34 @@ export function applyMandiriShellModel(documentRef, model) {
   const learningNote = documentRef.querySelector('[data-mandiri-module-note="nusabelajar"]');
   const existingLink = documentRef.querySelector('[data-mandiri-module-link="nusabelajar"]');
   const learningEnabled = learningModule?.status === MANDIRI_MODULE_STATUSES.ACTIVE;
+
+  const kasirModule = model.modules.find((module) => module.id === 'nusakasir');
+  const kasirCard = documentRef.querySelector('[data-mandiri-module="nusakasir"]');
+  const kasirStatus = documentRef.querySelector('[data-mandiri-module-status="nusakasir"]');
+  const kasirDescription = documentRef.querySelector('[data-mandiri-module-description="nusakasir"]');
+  const kasirNote = documentRef.querySelector('[data-mandiri-module-note="nusakasir"]');
+  const kasirLink = documentRef.querySelector('[data-mandiri-module-link="nusakasir"]');
+  const kasirEnabled = kasirModule?.status === MANDIRI_MODULE_STATUSES.ACTIVE;
+
+  if (kasirCard) kasirCard.dataset.moduleStatus = kasirEnabled ? 'internal' : 'planned';
+  if (kasirStatus) {
+    kasirStatus.textContent = kasirEnabled ? kasirModule.statusLabel : 'Direncanakan';
+    kasirStatus.className = kasirEnabled
+      ? 'vn-mandiri-module-status vn-mandiri-module-status-active'
+      : 'vn-mandiri-module-status vn-mandiri-module-status-planned';
+  }
+  if (kasirDescription) kasirDescription.textContent = kasirEnabled
+    ? kasirModule.description
+    : 'Rencana pencatatan usaha. Transaksi, produk, stok, pembayaran, dan kasir aktif belum tersedia.';
+  if (kasirNote) kasirNote.textContent = kasirEnabled ? kasirModule.note : 'Belum tersedia pada Fase 1';
+  if (kasirEnabled && !kasirLink && kasirCard && typeof documentRef.createElement === 'function') {
+    const link = documentRef.createElement('a');
+    link.className = 'vn-mandiri-module-action';
+    link.dataset.mandiriModuleLink = 'nusakasir';
+    link.href = kasirModule.href;
+    link.textContent = kasirModule.actionLabel;
+    kasirCard.append(link);
+  } else if (!kasirEnabled) kasirLink?.remove?.();
 
   if (learningCard) learningCard.dataset.moduleStatus = learningEnabled ? 'internal' : 'planned';
   if (learningStatus) {
@@ -309,12 +368,13 @@ export async function initializeMandiriApp({
   windowRef = documentRef.defaultView || window,
   featureState = getMandiriFeatureState(),
   learningFeatureState = getNusaBelajarFeatureState(),
+  nusakasirFeatureState = getNusaKasirFeatureState(),
   initializeSharedShell = initializeSharedVitaNusaShell,
   initializeStatus = initMandiriOfflineStatus,
   initializeWorkspacePanel = initializeLocalWorkspacePanel,
   initializeDashboardNavigation = initMandiriDashboardNavigation,
 } = {}) {
-  const model = createMandiriShellModel(featureState, learningFeatureState);
+  const model = createMandiriShellModel(featureState, learningFeatureState, nusakasirFeatureState);
   applyMandiriShellModel(documentRef, model);
 
   if (model.view === 'unavailable') {

@@ -14,6 +14,7 @@ const SAFE_MESSAGES = Object.freeze({
   version_conflict: 'Data telah berubah. Muat ulang sebelum mencoba kembali.',
   invalid_reference: 'Referensi data tidak valid untuk workspace ini.',
   idempotency_mismatch: 'Operation ID telah digunakan dengan payload berbeda.',
+  permission_denied: 'Role workspace aktif tidak memiliki izin untuk perubahan ini.',
   storage_unknown: 'Penyimpanan lokal mengalami masalah yang tidak dikenal.',
 });
 
