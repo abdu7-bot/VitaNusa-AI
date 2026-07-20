@@ -12,11 +12,12 @@ import { normalizeAttempt } from '../learning/domain/attempt.js';
 import { normalizeProgress } from '../learning/domain/progress.js';
 import { normalizeCategory } from '../pos/domain/category.js';
 import { normalizeProduct } from '../pos/domain/product.js';
+import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
 import { backupError, mapBackupError } from './backup-errors.js';
 
 export const MANDIRI_BACKUP_FORMAT = 'vitanusa-mandiri-backup';
-export const MANDIRI_BACKUP_FORMAT_VERSION = 3;
-export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 3;
+export const MANDIRI_BACKUP_FORMAT_VERSION = 4;
+export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 4;
 export const MANDIRI_BACKUP_CHECKSUM_ALGORITHM = 'SHA-256';
 export const MAX_BACKUP_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_BACKUP_VALIDATION_DEPTH = 32;
@@ -30,12 +31,17 @@ export const MANDIRI_BACKUP_RECORD_LIMITS = Object.freeze({
   learningProgress: 2000,
   categories: 1000,
   products: 10000,
+  stockMovements: 50000,
+  inventoryBalances: 10000,
 });
 const V1_COLLECTION_FIELDS = Object.freeze([
   'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
 ]);
 const V2_COLLECTION_FIELDS = Object.freeze([
   ...V1_COLLECTION_FIELDS, 'learningAttempts', 'learningProgress',
+]);
+const V3_COLLECTION_FIELDS = Object.freeze([
+  ...V2_COLLECTION_FIELDS, 'categories', 'products',
 ]);
 
 const ROOT_FIELDS = Object.freeze([
@@ -128,6 +134,7 @@ function exact(value, fields, path) {
 function fieldsForVersion(formatVersion) {
   if (formatVersion === 1) return V1_COLLECTION_FIELDS;
   if (formatVersion === 2) return V2_COLLECTION_FIELDS;
+  if (formatVersion === 3) return V3_COLLECTION_FIELDS;
   return COLLECTION_FIELDS;
 }
 
@@ -166,6 +173,8 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
   let learningProgress = [];
   let categories = [];
   let products = [];
+  let stockMovements = [];
+  let inventoryBalances = [];
   try {
     workspaces = data.workspaces.map((record) => normalizeWorkspace(record));
     memberships = data.memberships.map((record) => normalizeMembership(record, {
@@ -181,6 +190,10 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
     if (collectionFields.includes('categories')) {
       categories = data.categories.map((record) => normalizeCategory(record, { workspaceId }));
       products = data.products.map((record) => normalizeProduct(record, { workspaceId }));
+    }
+    if (collectionFields.includes('stockMovements')) {
+      stockMovements = data.stockMovements.map((record) => normalizeStockMovement(record, { workspaceId }));
+      inventoryBalances = data.inventoryBalances.map((record) => normalizeInventoryBalance(record, { workspaceId }));
     }
   } catch (error) {
     if (['cross_account_scope', 'cross_workspace_scope', 'scope_mismatch'].includes(error?.code)) {
@@ -289,6 +302,31 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
     || products.some((record) => record.categoryId !== null && !categoryIds.has(record.categoryId))
   ) throw backupError('integrity_error');
 
+  const productsById = new Map(products.map((record) => [record.productId, record]));
+  const movementIds = stockMovements.map((record) => record.movementId);
+  if (
+    new Set(movementIds).size !== movementIds.length
+    || new Set(stockMovements.map((record) => record.operationId)).size !== stockMovements.length
+    || new Set(inventoryBalances.map((record) => record.productId)).size !== inventoryBalances.length
+    || stockMovements.some((record) => !productsById.get(record.productId)?.stockTracking)
+    || inventoryBalances.some((record) => !productsById.get(record.productId)?.stockTracking)
+  ) throw backupError('integrity_error');
+  for (const balance of inventoryBalances) {
+    const ledger = stockMovements.filter((record) => record.productId === balance.productId);
+    const total = ledger.reduce((sum, record) => sum + record.quantityDelta, 0);
+    const lastMovement = ledger.find((record) => record.movementId === balance.lastMovementId);
+    if (
+      !Number.isSafeInteger(total)
+      || ledger.length !== balance.version
+      || total !== balance.quantityOnHand
+      || !lastMovement
+      || lastMovement.createdAtLocal !== balance.updatedAtLocal
+    ) throw backupError('integrity_error');
+  }
+  if (stockMovements.some((record) => (
+    !inventoryBalances.some((balance) => balance.productId === record.productId)
+  ))) throw backupError('integrity_error');
+
   return Object.freeze({
     workspaces: Object.freeze(workspaces),
     memberships: Object.freeze(memberships),
@@ -301,6 +339,10 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
     ...(collectionFields.includes('categories') ? {
       categories: Object.freeze(categories),
       products: Object.freeze(products),
+    } : {}),
+    ...(collectionFields.includes('stockMovements') ? {
+      stockMovements: Object.freeze(stockMovements),
+      inventoryBalances: Object.freeze(inventoryBalances),
     } : {}),
   });
 }
@@ -323,7 +365,7 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
   assertSafeBackupValue(input);
   exact(input, ROOT_FIELDS, 'backup');
   if (input.format !== MANDIRI_BACKUP_FORMAT) throw backupError('format_unknown');
-  if (![1, 2, MANDIRI_BACKUP_FORMAT_VERSION].includes(input.formatVersion)) {
+  if (![1, 2, 3, MANDIRI_BACKUP_FORMAT_VERSION].includes(input.formatVersion)) {
     throw backupError('format_version_unsupported');
   }
   if (
@@ -333,6 +375,7 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
     || (input.formatVersion === 1 && input.databaseSchemaVersion !== 1)
     || (input.formatVersion === 2 && input.databaseSchemaVersion !== 2)
     || (input.formatVersion === 3 && input.databaseSchemaVersion !== 3)
+    || (input.formatVersion === 4 && input.databaseSchemaVersion !== 4)
   ) {
     throw backupError('schema_version_unsupported');
   }

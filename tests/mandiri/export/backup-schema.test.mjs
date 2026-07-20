@@ -10,10 +10,10 @@ import {
 } from '../../../assets/js/mandiri/export/backup-schema.js';
 import { createValidBackup, resignBackup } from './fixtures.mjs';
 
-test('schema backup menetapkan format, version, schema, dan batas Fase 3', () => {
+test('schema backup menetapkan format, version, schema, dan batas Fase 4', () => {
   assert.equal(MANDIRI_BACKUP_FORMAT, 'vitanusa-mandiri-backup');
-  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 3);
-  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 3);
+  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 4);
+  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 4);
   assert.deepEqual(MANDIRI_BACKUP_RECORD_LIMITS, {
     workspaces: 1,
     memberships: 100,
@@ -23,6 +23,8 @@ test('schema backup menetapkan format, version, schema, dan batas Fase 3', () =>
     learningProgress: 2000,
     categories: 1000,
     products: 10000,
+    stockMovements: 50000,
+    inventoryBalances: 10000,
   });
 });
 

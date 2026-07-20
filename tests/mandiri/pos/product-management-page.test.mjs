@@ -222,9 +222,9 @@ test('markup dan CSS memenuhi loading, empty/error status, keyboard, motion, for
   assert.match(css, /max-width: 680px/u);
 });
 
-test('schema IndexedDB tetap version 3 dan UI tidak menyediakan hard delete', async () => {
+test('UI tidak menyediakan perubahan schema atau hard delete', async () => {
   const schema = await readFile(new URL('assets/js/mandiri/storage/schema.js', rootUrl), 'utf8');
-  assert.match(schema, /MANDIRI_DATABASE_VERSION = 3/u);
+  assert.match(schema, /MANDIRI_DATABASE_VERSION = 4/u);
   assert.doesNotMatch(source, /\.delete\s*\(|hardDelete|listAll|getAll/u);
   assert.doesNotMatch(html, /Hapus produk|Hapus kategori/u);
 });

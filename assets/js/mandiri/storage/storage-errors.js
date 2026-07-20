@@ -15,6 +15,7 @@ const SAFE_MESSAGES = Object.freeze({
   invalid_reference: 'Referensi data tidak valid untuk workspace ini.',
   idempotency_mismatch: 'Operation ID telah digunakan dengan payload berbeda.',
   permission_denied: 'Role workspace aktif tidak memiliki izin untuk perubahan ini.',
+  stock_tracking_disabled: 'Produk ini tidak mengaktifkan pencatatan stok.',
   storage_unknown: 'Penyimpanan lokal mengalami masalah yang tidak dikenal.',
 });
 

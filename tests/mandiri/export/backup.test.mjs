@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEntityId } from '../../../assets/js/mandiri/domain/ids.js';
 import { createBackupService } from '../../../assets/js/mandiri/export/backup.js';
+import { createInventoryService } from '../../../assets/js/mandiri/pos/services/inventory-service.js';
 import {
   createBackupChecksumPayload,
   MANDIRI_BACKUP_CHECKSUM_ALGORITHM,
@@ -9,6 +10,7 @@ import {
 import {
   ATOMIC_LEARNING_STORE_NAMES,
   ATOMIC_PRODUCT_STORE_NAMES,
+  ATOMIC_INVENTORY_STORE_NAMES,
   ATOMIC_WORKSPACE_STORE_NAMES,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 import {
@@ -24,11 +26,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, delapan collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, sepuluh collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 3);
-  assert.equal(backup.databaseSchemaVersion, 3);
+  assert.equal(backup.formatVersion, 4);
+  assert.equal(backup.databaseSchemaVersion, 4);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -40,11 +42,13 @@ test('backup valid memuat manifest, delapan collection, dan count yang benar', a
     learningProgress: 0,
     categories: 0,
     products: 0,
+    stockMovements: 0,
+    inventoryBalances: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
-    'categories', 'products',
+    'categories', 'products', 'stockMovements', 'inventoryBalances',
   ]);
 });
 
@@ -126,6 +130,57 @@ test('backup v3 memuat category dan product publik tanpa accountScope persistenc
   assert.equal('accountScope' in backup.data.products[0], false);
 });
 
+test('backup v4 mencakup ledger movement dan balance yang konsisten', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const product = {
+    version: 1,
+    productId: 'product_51515151-5151-4151-8151-515151515151',
+    workspaceId: WORKSPACE_A,
+    name: 'Produk tracked',
+    sku: null,
+    categoryId: null,
+    sellingPriceMinor: 1000,
+    purchasePriceMinor: null,
+    stockTracking: true,
+    active: true,
+  };
+  await fixture.memory.productRepository.create(ACCOUNT_A, WORKSPACE_A, product);
+  const service = createInventoryService({
+    repositoryContext: fixture.memory.repositoryContext,
+    digestFactory: digest,
+  });
+  await service.recordMovement({
+    schemaVersion: 1,
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+    actorScope: USER_A,
+    actorRole: 'merchant_owner',
+    expectedVersion: 0,
+    eventId: 'audit_52525252-5252-4252-8252-525252525252',
+    movement: {
+      schemaVersion: 1,
+      movementId: 'movement_53535353-5353-4353-8353-535353535353',
+      workspaceId: WORKSPACE_A,
+      productId: product.productId,
+      movementType: 'opening_stock',
+      quantityDelta: 7,
+      reason: null,
+      actorScope: USER_A,
+      actorRole: 'merchant_owner',
+      sourceReference: 'opening-test',
+      operationId: 'op_54545454-5454-4454-8454-545454545454',
+      createdAtLocal: BACKUP_CREATED_AT,
+    },
+  });
+  const backup = await fixture.backupService.createWorkspaceBackup({
+    accountScope: ACCOUNT_A, workspaceId: WORKSPACE_A,
+  });
+  assert.equal(backup.data.stockMovements.length, 1);
+  assert.equal(backup.data.inventoryBalances.length, 1);
+  assert.equal(backup.data.inventoryBalances[0].quantityOnHand, 7);
+  assert.equal(Object.hasOwn(backup.data.stockMovements[0], 'accountScope'), false);
+});
+
 test('output dan collection backup immutable serta tidak membuka referensi input', async () => {
   const { backup } = await createValidBackup();
   assert.equal(Object.isFrozen(backup), true);
@@ -143,6 +198,10 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         ...ATOMIC_WORKSPACE_STORE_NAMES,
         ...ATOMIC_LEARNING_STORE_NAMES,
         ...ATOMIC_PRODUCT_STORE_NAMES.slice(0, 2),
+        ...ATOMIC_INVENTORY_STORE_NAMES.filter((store) => ![
+          ...ATOMIC_WORKSPACE_STORE_NAMES,
+          ...ATOMIC_PRODUCT_STORE_NAMES.slice(0, 2),
+        ].includes(store)),
       ]);
       assert.equal(mode, 'readonly');
       return callback({
@@ -154,6 +213,7 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         learningProgressRepository: { listForBackup: async () => [] },
         categoryRepository: { list: async () => [] },
         productRepository: { list: async () => [] },
+        inventoryRepository: { listForBackup: async () => [], listBalances: async () => [] },
       });
     },
   };

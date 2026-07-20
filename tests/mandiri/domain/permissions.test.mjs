@@ -143,3 +143,12 @@ test('produk dan kategori mengikuti policy existing owner-write member-read', ()
     assert.equal(canPerformWorkspaceAction(cashier, action, context()), false);
   }
 });
+
+test('inventory mengikuti policy existing owner-write member-read', () => {
+  const owner = actor();
+  const cashier = actor({ role: 'cashier' });
+  assert.equal(canPerformWorkspaceAction(owner, 'inventory.read', context()), true);
+  assert.equal(canPerformWorkspaceAction(cashier, 'inventory.read', context()), true);
+  assert.equal(canPerformWorkspaceAction(owner, 'inventory.update', context()), true);
+  assert.equal(canPerformWorkspaceAction(cashier, 'inventory.update', context()), false);
+});
