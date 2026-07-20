@@ -48,7 +48,7 @@ function backupService(repositoryContext) {
   });
 }
 
-test('backup aktual memakai database version 2 dan memuat learning collection', async () => {
+test('backup aktual memakai database version 3 dan memuat collection Fase 2-3', async () => {
   const fixture = await setup('backup-indexeddb-basic');
   assert.equal(fixture.connection.schemaVersion, MANDIRI_DATABASE_VERSION);
   const backup = await backupService(fixture.repositoryContext).createWorkspaceBackup({
@@ -62,6 +62,8 @@ test('backup aktual memakai database version 2 dan memuat learning collection', 
     operationReceipts: 1,
     learningAttempts: 0,
     learningProgress: 0,
+    categories: 0,
+    products: 0,
   });
   fixture.connection.close();
 });
@@ -100,6 +102,7 @@ test('backup menggunakan satu repository context readonly', async () => {
   assert.deepEqual(modes[0].stores, [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
+    'categories', 'products',
   ]);
   fixture.connection.close();
 });

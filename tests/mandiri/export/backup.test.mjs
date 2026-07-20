@@ -8,6 +8,7 @@ import {
 } from '../../../assets/js/mandiri/export/backup-schema.js';
 import {
   ATOMIC_LEARNING_STORE_NAMES,
+  ATOMIC_PRODUCT_STORE_NAMES,
   ATOMIC_WORKSPACE_STORE_NAMES,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 import {
@@ -23,11 +24,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, enam collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, delapan collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 2);
-  assert.equal(backup.databaseSchemaVersion, 2);
+  assert.equal(backup.formatVersion, 3);
+  assert.equal(backup.databaseSchemaVersion, 3);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -37,10 +38,13 @@ test('backup valid memuat manifest, enam collection, dan count yang benar', asyn
     operationReceipts: 1,
     learningAttempts: 0,
     learningProgress: 0,
+    categories: 0,
+    products: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
+    'categories', 'products',
   ]);
 });
 
@@ -88,6 +92,40 @@ test('record diurutkan deterministik tanpa memutasi input repository', async () 
   );
 });
 
+test('backup v3 memuat category dan product publik tanpa accountScope persistence', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const category = {
+    version: 1,
+    categoryId: 'category_33333333-3333-4333-8333-333333333333',
+    workspaceId: WORKSPACE_A,
+    name: 'Minuman',
+    active: true,
+  };
+  const product = {
+    version: 1,
+    productId: 'product_44444444-4444-4444-8444-444444444444',
+    workspaceId: WORKSPACE_A,
+    name: 'Teh',
+    sku: 'teh-1',
+    categoryId: category.categoryId,
+    sellingPriceMinor: 5000,
+    purchasePriceMinor: null,
+    stockTracking: true,
+    active: true,
+  };
+  await fixture.memory.categoryRepository.create(ACCOUNT_A, WORKSPACE_A, category);
+  await fixture.memory.productRepository.create(ACCOUNT_A, WORKSPACE_A, product);
+  const backup = await fixture.backupService.createWorkspaceBackup({
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+  });
+  assert.equal(backup.recordCounts.categories, 1);
+  assert.equal(backup.recordCounts.products, 1);
+  assert.equal(backup.data.products[0].sku, 'TEH-1');
+  assert.equal('accountScope' in backup.data.categories[0], false);
+  assert.equal('accountScope' in backup.data.products[0], false);
+});
+
 test('output dan collection backup immutable serta tidak membuka referensi input', async () => {
   const { backup } = await createValidBackup();
   assert.equal(Object.isFrozen(backup), true);
@@ -101,7 +139,11 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
   const tooMany = Array.from({ length: 101 }, () => backup.data.memberships[0]);
   const repositoryContext = {
     run(storeNames, mode, callback) {
-      assert.deepEqual(storeNames, [...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES]);
+      assert.deepEqual(storeNames, [
+        ...ATOMIC_WORKSPACE_STORE_NAMES,
+        ...ATOMIC_LEARNING_STORE_NAMES,
+        ...ATOMIC_PRODUCT_STORE_NAMES.slice(0, 2),
+      ]);
       assert.equal(mode, 'readonly');
       return callback({
         workspaceRepository: { listByAccount: async () => backup.data.workspaces },
@@ -110,6 +152,8 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         operationReceiptRepository: { listForBackup: async () => backup.data.operationReceipts },
         learningAttemptRepository: { listForBackup: async () => [] },
         learningProgressRepository: { listForBackup: async () => [] },
+        categoryRepository: { list: async () => [] },
+        productRepository: { list: async () => [] },
       });
     },
   };
@@ -129,7 +173,7 @@ test('backup tidak memuat token, email, UID mentah, atau collection domain lain'
   const json = JSON.stringify(backup);
   assert.doesNotMatch(json, /access.?token|refresh.?token|password|private.?key/i);
   assert.doesNotMatch(json, /@example\.com|firebase-uid-fixture/);
-  assert.doesNotMatch(json, /VitaCheck|conversation|products|sales/i);
+  assert.doesNotMatch(json, /VitaCheck|conversation|sales/i);
 });
 
 test('fixture dasar mempertahankan hubungan audit dan receipt ke workspace', async () => {

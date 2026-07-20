@@ -73,6 +73,8 @@ export async function previewBackupText({
       operationReceiptCount: backup.recordCounts.operationReceipts,
       learningAttemptCount: backup.recordCounts.learningAttempts ?? 0,
       learningProgressCount: backup.recordCounts.learningProgress ?? 0,
+      categoryCount: backup.recordCounts.categories ?? 0,
+      productCount: backup.recordCounts.products ?? 0,
       createdAt: backup.createdAt,
       formatVersion: backup.formatVersion,
       databaseSchemaVersion: backup.databaseSchemaVersion,

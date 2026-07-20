@@ -8,6 +8,7 @@ import {
   MANDIRI_ALLOWED_STORE_NAMES,
   MANDIRI_SCHEMA_V1,
   MANDIRI_SCHEMA_V2,
+  MANDIRI_SCHEMA_V3,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 function openRaw(factory, name, version, upgrade) {
@@ -19,7 +20,7 @@ function openRaw(factory, name, version, upgrade) {
   });
 }
 
-test('migration version 2 membuat tujuh store, seluruh index, dan metadata schema', async () => {
+test('database baru version 3 membuat sembilan store, seluruh index, dan metadata schema', async () => {
   const factory = new IDBFactory();
   const connection = await openMandiriDatabase({
     indexedDBFactory: factory,
@@ -33,12 +34,12 @@ test('migration version 2 membuat tujuh store, seluruh index, dan metadata schem
 
   await connection.runTransaction(['metadata'], 'readonly', async (transaction) => {
     const metadata = await transaction.request(transaction.objectStore('metadata').get('schema'));
-    assert.equal(metadata.schemaVersion, 2);
+    assert.equal(metadata.schemaVersion, 3);
     assert.match(metadata.updatedAtLocal, /^\d{4}-\d{2}-\d{2}T/);
   });
 
   await connection.runTransaction(MANDIRI_ALLOWED_STORE_NAMES, 'readonly', (transaction) => {
-    for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
+    for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V3)) {
       const store = transaction.objectStore(storeName);
       assert.deepEqual(store.keyPath, definition.keyPath);
       assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
@@ -88,6 +89,45 @@ test('upgrade version 1 ke 2 mempertahankan record lama dan menambah learning st
   assert.deepEqual(legacyRecord, { key: 'legacy', value: 7 });
   assert.ok(upgraded.database.objectStoreNames.contains('learningAttempts'));
   assert.ok(upgraded.database.objectStoreNames.contains('learningProgress'));
+  upgraded.close();
+});
+
+test('upgrade version 2 ke 3 mempertahankan seluruh store dan record Fase 1–2', async () => {
+  const factory = new IDBFactory();
+  const databaseName = 'migration-v2-v3';
+  const legacy = await openRaw(factory, databaseName, 2, (database, transaction, event) => {
+    applyMigrations({ database, transaction, oldVersion: event.oldVersion, newVersion: 2 });
+  });
+  const legacyStores = Object.keys(MANDIRI_SCHEMA_V2);
+  const write = legacy.transaction(legacyStores, 'readwrite');
+  for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
+    const keyPath = Array.isArray(definition.keyPath) ? definition.keyPath : [definition.keyPath];
+    const record = Object.fromEntries(keyPath.map((field, index) => [field, `${storeName}-${index}`]));
+    write.objectStore(storeName).put(record);
+  }
+  await new Promise((resolve, reject) => {
+    write.oncomplete = resolve;
+    write.onabort = () => reject(write.error);
+  });
+  legacy.close();
+
+  const upgraded = await openMandiriDatabase({
+    indexedDBFactory: factory,
+    keyRangeFactory: IDBKeyRange,
+    databaseName,
+  });
+  assert.equal(upgraded.database.version, 3);
+  assert.deepEqual([...upgraded.database.objectStoreNames], [...MANDIRI_ALLOWED_STORE_NAMES].sort());
+  await upgraded.runTransaction(legacyStores, 'readonly', async (transaction) => {
+    for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
+      const key = (Array.isArray(definition.keyPath) ? definition.keyPath : [definition.keyPath])
+        .map((_field, index) => `${storeName}-${index}`);
+      const value = await transaction.request(
+        transaction.objectStore(storeName).get(Array.isArray(definition.keyPath) ? key : key[0]),
+      );
+      assert.ok(value, `${storeName} record harus tetap tersedia`);
+    }
+  });
   upgraded.close();
 });
 

@@ -2,6 +2,7 @@ import {
   MANDIRI_DATABASE_VERSION,
   MANDIRI_SCHEMA_V1,
   MANDIRI_SCHEMA_V2,
+  MANDIRI_SCHEMA_V3,
   MANDIRI_STORE_NAMES,
 } from './schema.js';
 import {
@@ -87,6 +88,12 @@ export function applyMigrations({
 
     if (newVersion >= 2) {
       for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
+        ensureStore(database, transaction, storeName, definition);
+      }
+    }
+
+    if (newVersion >= 3) {
+      for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V3)) {
         ensureStore(database, transaction, storeName, definition);
       }
     }

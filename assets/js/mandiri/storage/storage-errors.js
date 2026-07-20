@@ -10,6 +10,10 @@ const SAFE_MESSAGES = Object.freeze({
   data_invalid: 'Data lokal tidak valid dan tidak disimpan.',
   scope_mismatch: 'Data berada di luar akun atau workspace yang dipilih.',
   record_not_found: 'Data yang diminta tidak ditemukan pada scope ini.',
+  duplicate_sku: 'SKU sudah digunakan oleh produk lain pada workspace ini.',
+  version_conflict: 'Data telah berubah. Muat ulang sebelum mencoba kembali.',
+  invalid_reference: 'Referensi data tidak valid untuk workspace ini.',
+  idempotency_mismatch: 'Operation ID telah digunakan dengan payload berbeda.',
   storage_unknown: 'Penyimpanan lokal mengalami masalah yang tidak dikenal.',
 });
 

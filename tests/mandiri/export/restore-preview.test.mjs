@@ -31,9 +31,11 @@ test('file valid menghasilkan ringkasan tanpa identifier internal atau raw JSON'
     operationReceiptCount: 1,
     learningAttemptCount: 0,
     learningProgressCount: 0,
+    categoryCount: 0,
+    productCount: 0,
     createdAt: '2026-07-17T01:00:00.000Z',
-    formatVersion: 2,
-    databaseSchemaVersion: 2,
+    formatVersion: 3,
+    databaseSchemaVersion: 3,
     checksumStatus: 'valid',
     scopeStatus: 'matched',
   });
@@ -58,6 +60,10 @@ test('backup format version 1 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.learningProgress;
     delete value.data.learningAttempts;
     delete value.data.learningProgress;
+    delete value.recordCounts.categories;
+    delete value.recordCounts.products;
+    delete value.data.categories;
+    delete value.data.products;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -79,12 +85,31 @@ test('file lebih dari 5 MiB ditolak sebelum file.text dipanggil', async () => {
   assert.equal(read, false);
 });
 
+test('backup format version 2 tetap dapat dipreview tanpa operasi restore', async () => {
+  const { backup } = await createValidBackup();
+  const legacy = await resignBackup(backup, (value) => {
+    value.formatVersion = 2;
+    value.databaseSchemaVersion = 2;
+    delete value.recordCounts.categories;
+    delete value.recordCounts.products;
+    delete value.data.categories;
+    delete value.data.products;
+  });
+  const preview = await previewBackupText({
+    text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
+  });
+  assert.equal(preview.formatVersion, 2);
+  assert.equal(preview.learningAttemptCount, 0);
+  assert.equal(preview.categoryCount, 0);
+  assert.equal(preview.productCount, 0);
+});
+
 test('format, formatVersion, dan databaseSchemaVersion tidak didukung ditolak', async () => {
   const { backup } = await createValidBackup();
   const cases = [
     [(value) => { value.format = 'other'; }, 'format_unknown'],
-    [(value) => { value.formatVersion = 3; }, 'format_version_unsupported'],
-    [(value) => { value.databaseSchemaVersion = 3; }, 'schema_version_unsupported'],
+    [(value) => { value.formatVersion = 4; }, 'format_version_unsupported'],
+    [(value) => { value.databaseSchemaVersion = 4; }, 'schema_version_unsupported'],
   ];
   for (const [mutate, code] of cases) {
     const invalid = await resignBackup(backup, mutate);
