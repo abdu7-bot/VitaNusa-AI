@@ -1,0 +1,70 @@
+:root {
+  color-scheme: light;
+  --pos-green-950: #0b3324;
+  --pos-green-800: #14532d;
+  --pos-green-600: #15803d;
+  --pos-green-50: #f0fdf4;
+  --pos-cream: #fbf7ed;
+  --pos-muted: #566b61;
+  --pos-line: rgba(20, 83, 45, .2);
+  --pos-focus: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; max-width: 100%; overflow-x: hidden; background: #f6fbf7; }
+body.vn-pos-page {
+  min-height: 100svh;
+  margin: 0;
+  overflow-x: hidden;
+  padding: max(18px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: radial-gradient(circle at 8% 4%, #dcfce7, transparent 30rem), linear-gradient(145deg, #f6fbf7, var(--pos-cream));
+  color: var(--pos-green-950);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+.vn-pos-main { width: min(1080px, 100%); min-width: 0; margin-inline: auto; display: grid; gap: 20px; }
+.vn-pos-main [hidden] { display: none !important; }
+.vn-pos-skip { position: fixed; z-index: 10; top: 8px; left: 8px; transform: translateY(-180%); background: #fff; padding: 10px 14px; }
+.vn-pos-skip:focus { transform: none; }
+.vn-pos-header, .vn-pos-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.vn-pos-header { padding: clamp(22px, 5vw, 42px); border-radius: 28px; background: var(--pos-green-950); color: #fff; }
+.vn-pos-header h1 { color: #fff; font-size: clamp(2rem, 7vw, 3.4rem); margin: 0; }
+.vn-pos-header p, .vn-pos-panel :where(h2, p), .vn-pos-section-heading :where(h2, p) { margin-block: 0; }
+.vn-pos-kicker { color: #4ade80; font-size: .78rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.vn-pos-panel, .vn-pos-status, .vn-pos-read-note { min-width: 0; border: 1px solid var(--pos-line); border-radius: 20px; background: rgba(255,255,255,.96); padding: clamp(18px, 4vw, 28px); }
+.vn-pos-content { display: grid; gap: 20px; }
+.vn-pos-status { font-weight: 750; }
+.vn-pos-read-note { border-left: 5px solid #b45309; background: #fffbeb; }
+.vn-pos-list { display: grid; gap: 10px; margin: 18px 0; padding: 0; list-style: none; }
+.vn-pos-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; border: 1px solid var(--pos-line); border-radius: 16px; background: var(--pos-green-50); padding: 14px; }
+.vn-pos-list li strong { flex: 1 1 180px; overflow-wrap: anywhere; }
+.vn-pos-product-list li p { flex: 1 1 100%; color: var(--pos-muted); overflow-wrap: anywhere; }
+.vn-pos-form fieldset { display: grid; gap: 12px; min-width: 0; margin: 0; border: 1px solid var(--pos-line); border-radius: 18px; padding: 18px; }
+.vn-pos-form legend, .vn-pos-form label { font-weight: 800; }
+.vn-pos-form-grid, .vn-pos-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.vn-pos-form-grid > div { display: grid; gap: 6px; min-width: 0; }
+.vn-pos-filters { margin-block: 18px; align-items: end; }
+.vn-pos-filters label { align-self: end; font-weight: 800; }
+input, select, button, .vn-pos-link { min-height: 46px; max-width: 100%; border: 1px solid var(--pos-green-800); border-radius: 12px; background: #fff; color: var(--pos-green-950); font: inherit; padding: 10px 12px; }
+button, .vn-pos-link { width: fit-content; cursor: pointer; color: var(--pos-green-800); font-weight: 800; text-decoration: none; }
+button[type="submit"] { background: var(--pos-green-800); color: #fff; }
+.vn-pos-check { display: flex; align-items: center; gap: 10px; }
+.vn-pos-check input { min-height: 24px; width: 24px; }
+.vn-pos-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+:where(a, button, input, select):focus-visible { outline: 3px solid var(--pos-focus); outline-offset: 3px; }
+button:disabled, fieldset:disabled { cursor: not-allowed; opacity: .65; }
+
+@media (max-width: 680px) {
+  .vn-pos-header, .vn-pos-section-heading { flex-direction: column; }
+  .vn-pos-form-grid, .vn-pos-filters { grid-template-columns: minmax(0, 1fr); }
+  input, select, button, .vn-pos-link { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media (forced-colors: active) {
+  .vn-pos-header, .vn-pos-panel, .vn-pos-status, .vn-pos-list li, input, select, button { border: 2px solid CanvasText; }
+  :where(a, button, input, select):focus-visible { outline: 3px solid Highlight; }
+}

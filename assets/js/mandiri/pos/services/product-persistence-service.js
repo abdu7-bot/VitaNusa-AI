@@ -8,6 +8,7 @@ import {
   normalizeScope,
 } from '../../domain/validation.js';
 import { isWorkspaceRole } from '../../domain/membership.js';
+import { canPerformWorkspaceAction } from '../../domain/permissions.js';
 import { normalizeOperationReceipt } from '../../repositories/operation-receipt-repository.js';
 import { ATOMIC_PRODUCT_STORE_NAMES } from '../../repositories/repository-context.js';
 import { MandiriStorageError, mapStorageError, storageError } from '../../storage/storage-errors.js';
@@ -132,6 +133,26 @@ export function createProductPersistenceService({
         ATOMIC_PRODUCT_STORE_NAMES,
         'readwrite',
         async (repositories) => {
+          const membership = await repositories.membershipRepository.getByUserScope(
+            command.accountScope,
+            command.workspaceId,
+            command.actorScope,
+          );
+          const permitted = membership && canPerformWorkspaceAction(
+            {
+              accountScope: membership.accountScope,
+              workspaceId: membership.workspaceId,
+              userScope: membership.userScope,
+              role: membership.role,
+              status: membership.status,
+            },
+            `${descriptor.entityType}.update`,
+            { accountScope: command.accountScope, workspaceId: command.workspaceId },
+          );
+          if (!permitted || membership.role !== command.actorRole) {
+            throw storageError('permission_denied');
+          }
+
           const oldReceipt = await repositories.operationReceiptRepository.getByOperationId(
             command.accountScope,
             command.operationId,

@@ -95,6 +95,7 @@ export default defineConfig({
         mandiriRecovery: resolve(__dirname, 'mandiri/recovery.html'),
         mandiriBelajar: resolve(__dirname, 'mandiri/belajar/index.html'),
         mandiriBelajarLesson: resolve(__dirname, 'mandiri/belajar/lesson.html'),
+        mandiriKasirProducts: resolve(__dirname, 'mandiri/kasir/products.html'),
         admin: resolve(__dirname, 'admin/index.html')
       }
     }

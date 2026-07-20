@@ -130,3 +130,16 @@ test('owner mengelola anggota non-owner dan membaca audit', () => {
   assert.equal(canPerformWorkspaceAction(actor(), 'member.update', context({ target: target() })), true);
   assert.equal(canPerformWorkspaceAction(actor(), 'audit.read', context()), true);
 });
+
+test('produk dan kategori mengikuti policy existing owner-write member-read', () => {
+  const owner = actor();
+  const cashier = actor({ role: 'cashier' });
+  for (const action of ['category.read', 'product.read']) {
+    assert.equal(canPerformWorkspaceAction(owner, action, context()), true);
+    assert.equal(canPerformWorkspaceAction(cashier, action, context()), true);
+  }
+  for (const action of ['category.update', 'product.update']) {
+    assert.equal(canPerformWorkspaceAction(owner, action, context()), true);
+    assert.equal(canPerformWorkspaceAction(cashier, action, context()), false);
+  }
+});

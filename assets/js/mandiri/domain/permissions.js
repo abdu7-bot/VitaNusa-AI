@@ -18,6 +18,10 @@ export const WORKSPACE_ACTIONS = Object.freeze([
   'member.deactivate',
   'member.change_role',
   'audit.read',
+  'category.read',
+  'category.update',
+  'product.read',
+  'product.update',
 ]);
 
 const OWNER_ACTIONS = new Set(WORKSPACE_ACTIONS);
@@ -98,6 +102,8 @@ export function canPerformWorkspaceAction(actor, action, context) {
   if (actor.role === 'cashier') {
     return (
       action === 'workspace.read'
+      || action === 'category.read'
+      || action === 'product.read'
       || (
         action === 'member.read'
         && context.target?.userScope === actor.userScope
