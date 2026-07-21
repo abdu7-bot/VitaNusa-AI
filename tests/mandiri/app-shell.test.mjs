@@ -105,7 +105,12 @@ test('entrypoint NusaKasir hanya aktif saat feature flag internal', () => {
   assert.equal(disabledModule.href, undefined);
   assert.equal(enabledModule.status, 'active');
   assert.equal(enabledModule.href, './kasir/products.html');
+  assert.match(enabledModule.description, /produk, kategori, stok, dan riwayat lokal/u);
   assert.equal(enabled.activeFeatures, true);
+  assert.match(
+    disabledModule.description,
+    /pengelolaan produk, kategori, stok, dan riwayat lokal/u,
+  );
 });
 
 test('semua modul planned diberi label direncanakan', () => {

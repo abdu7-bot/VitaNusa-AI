@@ -26,11 +26,34 @@ body.vn-pos-page {
 .vn-pos-main [hidden] { display: none !important; }
 .vn-pos-skip { position: fixed; z-index: 10; top: 8px; left: 8px; transform: translateY(-180%); background: #fff; padding: 10px 14px; }
 .vn-pos-skip:focus { transform: none; }
+.vn-pos-header-copy { display: grid; gap: 8px; min-width: 0; flex: 1 1 320px; }
 .vn-pos-header, .vn-pos-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .vn-pos-header { padding: clamp(22px, 5vw, 42px); border-radius: 28px; background: var(--pos-green-950); color: #fff; }
 .vn-pos-header h1 { color: #fff; font-size: clamp(2rem, 7vw, 3.4rem); margin: 0; }
 .vn-pos-header p, .vn-pos-panel :where(h2, p), .vn-pos-section-heading :where(h2, p) { margin-block: 0; }
 .vn-pos-kicker { color: #4ade80; font-size: .78rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.vn-pos-nav { display: grid; gap: 10px; min-width: 0; flex: 0 1 360px; }
+.vn-pos-nav-label { margin: 0; color: #4ade80; font-size: .78rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.vn-pos-nav-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vn-pos-nav-link {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pos-green-800);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--pos-green-950);
+  text-decoration: none;
+  font-weight: 800;
+  width: 100%;
+}
+.vn-pos-nav-link[aria-current="page"] {
+  border-width: 2px;
+  background: var(--pos-green-50);
+}
+.vn-pos-nav-title, .vn-pos-nav-state { overflow-wrap: anywhere; }
+.vn-pos-nav-state { color: var(--pos-muted); font-size: .82rem; font-weight: 700; }
 .vn-pos-panel, .vn-pos-status, .vn-pos-read-note { min-width: 0; border: 1px solid var(--pos-line); border-radius: 20px; background: rgba(255,255,255,.96); padding: clamp(18px, 4vw, 28px); }
 .vn-pos-content { display: grid; gap: 20px; }
 .vn-pos-status { font-weight: 750; }
@@ -56,6 +79,8 @@ button:disabled, fieldset:disabled { cursor: not-allowed; opacity: .65; }
 
 @media (max-width: 680px) {
   .vn-pos-header, .vn-pos-section-heading { flex-direction: column; }
+  .vn-pos-nav, .vn-pos-header-copy { width: 100%; }
+  .vn-pos-nav-links { grid-template-columns: minmax(0, 1fr); }
   .vn-pos-form-grid, .vn-pos-filters { grid-template-columns: minmax(0, 1fr); }
   input, select, button, .vn-pos-link { width: 100%; }
 }

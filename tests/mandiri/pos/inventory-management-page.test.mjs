@@ -41,12 +41,13 @@ async function harness({ accountScope = ACCOUNT_A, userScope = USER_A } = {}) {
   const fixture = await seedMemoryWorkspace();
   const view = fakeView();
   let authListener;
+  let openCalls = 0;
   const controller = createInventoryManagementController({
     contract: { enabled: true },
     view,
     subscribeAuth(listener) { authListener = listener; return () => {}; },
     createScopes: async () => ({ accountScope, userScope }),
-    openDatabase: async () => ({ close() {} }),
+    openDatabase: async () => { openCalls += 1; return { close() {} }; },
     createContext: () => fixture.memory.repositoryContext,
     createService: ({ repositoryContext }) => createInventoryService({
       repositoryContext,
@@ -57,7 +58,7 @@ async function harness({ accountScope = ACCOUNT_A, userScope = USER_A } = {}) {
   });
   authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
   await settle();
-  return { ...fixture, controller, view };
+  return { ...fixture, controller, view, openCalls };
 }
 
 async function seedTrackedProduct(fixture, accountScope = ACCOUNT_A) {
@@ -80,15 +81,24 @@ async function seedTrackedProduct(fixture, accountScope = ACCOUNT_A) {
 
 test('feature flag off tidak subscribe auth atau bind repository', () => {
   let authCalls = 0;
+  let openCalls = 0;
   const view = fakeView();
   const controller = createInventoryManagementController({
     contract: { enabled: false }, view,
     subscribeAuth() { authCalls += 1; },
-    openDatabase() {},
+    openDatabase() { openCalls += 1; },
   });
   assert.equal(controller.getState().state, 'disabled');
   assert.equal(authCalls, 0);
+  assert.equal(openCalls, 0);
   assert.equal(view.callbacks, null);
+});
+
+test('halaman inventori menyediakan navigasi aman ke produk dan kembali ke Mandiri', () => {
+  assert.match(html, /aria-label="Navigasi NusaKasir"/u);
+  assert.match(html, /href="\.\/products\.html"/u);
+  assert.match(html, /href="\.\/inventory\.html" aria-current="page"/u);
+  assert.match(html, /href="\.\.\/index\.html"/u);
 });
 
 test('signed-out saat user tidak terautentikasi', async () => {
@@ -234,6 +244,11 @@ test('markup dan CSS memenuhi a11y, keyboard, motion, forced colors, dan mobile'
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /type="search"/u);
   assert.match(html, /<label/u);
+  assert.match(html, /Produk dan Kategori/u);
+  assert.match(html, /Stok dan Riwayat/u);
+  assert.match(css, /\.inventory-nav/u);
+  assert.match(css, /\.inventory-nav-link\[aria-current="page"\]/u);
+  assert.match(css, /min-width:\s*320px/u);
   assert.match(css, /:focus-visible/u);
   assert.match(css, /prefers-reduced-motion/u);
   assert.match(css, /forced-colors: active/u);
