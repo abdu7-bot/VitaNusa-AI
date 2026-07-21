@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stok dan Riwayat — NusaKasir</title>
+    <link rel="stylesheet" href="../../assets/css/nusakasir-inventory.css">
+    <link rel="stylesheet" href="../../assets/css/base.css">
+</head>
+<body>
+    <div id="root" class="inventory-container">
+        <header class="inventory-header" role="banner">
+            <h1>Stok dan Riwayat</h1>
+            <div class="inventory-status" aria-live="polite" aria-busy="false"></div>
+        </header>
+
+        <nav class="inventory-controls">
+            <div class="search-group">
+                <label for="search-input">Cari produk:</label>
+                <input
+                    id="search-input"
+                    type="search"
+                    placeholder="Nama atau SKU"
+                    aria-label="Cari produk berdasarkan nama atau SKU"
+                    autocomplete="off"
+                >
+            </div>
+
+            <fieldset class="filter-group">
+                <legend>Filter</legend>
+
+                <div class="filter-item">
+                    <label for="category-filter">Kategori:</label>
+                    <select id="category-filter" aria-label="Filter berdasarkan kategori">
+                        <option value="all">Semua kategori</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label for="status-filter">Status:</label>
+                    <select id="status-filter" aria-label="Filter berdasarkan status produk">
+                        <option value="all">Semua status</option>
+                        <option value="active">Aktif</option>
+                        <option value="inactive">Tidak aktif</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label for="balance-filter">Saldo stok:</label>
+                    <select id="balance-filter" aria-label="Filter berdasarkan saldo stok">
+                        <option value="all">Semua</option>
+                        <option value="positive">Positif</option>
+                        <option value="zero">Nol</option>
+                        <option value="negative">Negatif</option>
+                    </select>
+                </div>
+            </fieldset>
+        </nav>
+
+        <main class="inventory-main">
+            <section class="inventory-list-section" aria-labelledby="product-list-heading">
+                <h2 id="product-list-heading" class="sr-only">Daftar produk</h2>
+                <div class="inventory-list-container" role="region" aria-live="polite">
+                    <div class="loading-placeholder">
+                        <p>Memuat data stok...</p>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="inventory-detail-section" aria-labelledby="product-detail-heading">
+                <h2 id="product-detail-heading" class="sr-only">Detail dan pergerakan stok</h2>
+                <div class="inventory-detail-container">
+                    <div class="no-selection">
+                        <p>Pilih produk dari daftar untuk melihat detail dan riwayat stok.</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <div class="modal-overlay" id="movement-modal-overlay" hidden>
+            <dialog class="movement-modal" id="movement-modal" aria-labelledby="modal-title">
+                <div class="modal-header">
+                    <h3 id="modal-title">Tambah Pergerakan Stok</h3>
+                    <button class="modal-close" aria-label="Tutup dialog" title="Tutup">×</button>
+                </div>
+                <form class="movement-form" id="movement-form">
+                    <fieldset class="form-section">
+                        <legend>Jenis pergerakan</legend>
+                        <div class="form-group">
+                            <label>
+                                <input type="radio" name="movement-type" value="opening_stock" required>
+                                Stok awal
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="radio" name="movement-type" value="purchase_in" required>
+                                Pembelian
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="radio" name="movement-type" value="adjustment" required>
+                                Penyesuaian
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <div class="form-group">
+                        <label for="movement-quantity">
+                            Kuantitas:
+                            <span class="required-asterisk" aria-label="wajib diisi">*</span>
+                        </label>
+                        <input
+                            id="movement-quantity"
+                            type="number"
+                            name="quantity"
+                            required
+                            inputmode="numeric"
+                            aria-describedby="quantity-help"
+                        >
+                        <small id="quantity-help">Masukkan angka bulat tanpa desimal. Untuk adjustment, negatif untuk mengurangi.</small>
+                    </div>
+
+                    <div class="form-group adjustment-only" style="display: none;">
+                        <label for="adjustment-reason">
+                            Alasan penyesuaian:
+                            <span class="required-asterisk" aria-label="wajib diisi">*</span>
+                        </label>
+                        <input
+                            id="adjustment-reason"
+                            type="text"
+                            name="reason"
+                            placeholder="Contoh: penyetaraan hasil fisik"
+                            maxlength="200"
+                            aria-describedby="reason-help"
+                        >
+                        <small id="reason-help">Deskripsi singkat tentang alasan penyesuaian (wajib untuk adjustment).</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="modal-cancel">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="modal-submit">Simpan</button>
+                    </div>
+                </form>
+            </dialog>
+        </div>
+    </div>
+
+    <script type="module" src="../../assets/js/mandiri/pos/ui/inventory-management-page.js"></script>
+</body>
+</html>
