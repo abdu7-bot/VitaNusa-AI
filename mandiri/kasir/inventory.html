@@ -10,7 +10,25 @@
 <body>
     <div id="root" class="inventory-container">
         <header class="inventory-header" role="banner">
-            <h1>Stok dan Riwayat</h1>
+            <div class="inventory-header-copy">
+                <p class="inventory-kicker">NusaKasir • Local-only</p>
+                <h1>Stok dan Riwayat</h1>
+                <p>Kelola saldo stok dan riwayat pergerakan lokal workspace aktif. Tidak ada transaksi cloud pada halaman ini.</p>
+            </div>
+            <nav class="inventory-nav" aria-label="Navigasi NusaKasir">
+                <p class="inventory-nav-label">NusaKasir</p>
+                <div class="inventory-nav-links">
+                    <a class="inventory-nav-link" href="./products.html">
+                        <span class="inventory-nav-title">Produk dan Kategori</span>
+                        <span class="inventory-nav-state">Buka halaman</span>
+                    </a>
+                    <a class="inventory-nav-link" href="./inventory.html" aria-current="page">
+                        <span class="inventory-nav-title">Stok dan Riwayat</span>
+                        <span class="inventory-nav-state">Halaman aktif</span>
+                    </a>
+                </div>
+                <a class="vn-pos-link" href="../index.html">Kembali ke VitaNusa Mandiri</a>
+            </nav>
             <div class="inventory-status" aria-live="polite" aria-busy="false"></div>
         </header>
 

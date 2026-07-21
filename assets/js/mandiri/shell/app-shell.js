@@ -32,7 +32,7 @@ export const MANDIRI_MODULES = Object.freeze([
   Object.freeze({
     id: 'nusakasir',
     name: 'NusaKasir',
-    description: 'Rencana pencatatan usaha. Transaksi dan kasir aktif belum tersedia.',
+    description: 'Rencana pengelolaan produk, kategori, stok, dan riwayat lokal. Transaksi dan kasir aktif belum tersedia.',
     status: MANDIRI_MODULE_STATUSES.PLANNED,
   }),
   Object.freeze({
@@ -64,8 +64,8 @@ export function createMandiriModuleModels({ mandiriState, learningState, nusakas
         name: module.name,
         state: 'internal',
         statusLabel: 'Internal',
-        description: 'Kelola kategori dan produk workspace secara lokal.',
-        note: 'Belum mencakup transaksi, inventori, atau laporan.',
+        description: 'Kelola produk, kategori, stok, dan riwayat lokal workspace secara aman.',
+        note: 'Belum mencakup transaksi, pembayaran, atau sinkronisasi cloud.',
         href: './kasir/products.html',
         actionLabel: 'Kelola produk',
       });
@@ -90,12 +90,12 @@ function createMandiriDashboardModules({ mandiriState, learningState, nusakasirS
     if (module.id === 'nusakasir' && kasirContract.enabled) {
       return Object.freeze({
         ...module,
-        description: 'Kelola kategori dan produk workspace secara lokal.',
+        description: 'Kelola produk, kategori, stok, dan riwayat lokal workspace secara aman.',
         status: MANDIRI_MODULE_STATUSES.ACTIVE,
         statusLabel: 'Internal',
         href: './kasir/products.html',
         actionLabel: 'Kelola produk',
-        note: 'Belum mencakup transaksi, inventori, atau laporan.',
+        note: 'Belum mencakup transaksi, pembayaran, atau sinkronisasi cloud.',
       });
     }
     if (module.id !== 'nusabelajar' || !learningContract.enabled) return module;

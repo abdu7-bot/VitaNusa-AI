@@ -82,6 +82,13 @@ test('feature flag off tidak subscribe auth, membuka IndexedDB, atau bind reposi
   assert.equal(view.callbacks, null);
 });
 
+test('halaman produk menyediakan navigasi aman ke inventory dan kembali ke Mandiri', () => {
+  assert.match(html, /aria-label="Navigasi NusaKasir"/u);
+  assert.match(html, /href="\.\/products\.html" aria-current="page"/u);
+  assert.match(html, /href="\.\/inventory\.html"/u);
+  assert.match(html, /href="\.\.\/index\.html"/u);
+});
+
 test('owner membuat dan mengedit kategori serta produk dengan harga integer rupiah', async () => {
   const value = await harness();
   assert.equal(value.controller.getState().state, 'empty');
@@ -216,6 +223,11 @@ test('markup dan CSS memenuhi loading, empty/error status, keyboard, motion, for
   assert.match(html, /type="search"/u);
   assert.match(html, /<label/u);
   assert.match(html, /viewport-fit=cover/u);
+  assert.match(html, /Produk dan Kategori/u);
+  assert.match(html, /Stok dan Riwayat/u);
+  assert.match(css, /\.vn-pos-nav/u);
+  assert.match(css, /\.vn-pos-nav-link\[aria-current="page"\]/u);
+  assert.match(css, /min-width:\s*320px/u);
   assert.match(css, /:focus-visible/u);
   assert.match(css, /prefers-reduced-motion/u);
   assert.match(css, /forced-colors: active/u);

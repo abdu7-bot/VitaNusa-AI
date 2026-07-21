@@ -43,6 +43,41 @@ body.inventory-container,
 
 /* Layout */
 #root { width: min(1280px, 100%); min-width: 0; margin-inline: auto; display: grid; gap: 20px; }
+.inventory-header-copy { display: grid; gap: 8px; min-width: 0; flex: 1 1 320px; }
+.inventory-kicker, .inventory-nav-label {
+  margin: 0;
+  color: #4ade80;
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.inventory-nav {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  flex: 0 1 360px;
+}
+.inventory-nav-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.inventory-nav-link {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--inv-green-800);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--inv-green-950);
+  text-decoration: none;
+  font-weight: 800;
+}
+.inventory-nav-link[aria-current="page"] {
+  border-width: 2px;
+  background: var(--inv-green-50);
+}
+.inventory-nav-title, .inventory-nav-state { overflow-wrap: anywhere; }
+.inventory-nav-state { color: var(--inv-muted); font-size: .82rem; font-weight: 700; }
 
 /* Header */
 .inventory-header {
@@ -73,6 +108,21 @@ input[type="search"], select {
   min-height: 44px; border: 1px solid var(--inv-green-800); border-radius: 10px;
   background: #fff; color: var(--inv-green-950); font: inherit; padding: 8px 12px;
   min-width: 0; max-width: 100%;
+}
+.vn-pos-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--inv-green-800);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--inv-green-800);
+  text-decoration: none;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 /* Main two-column */
@@ -197,7 +247,9 @@ button:disabled, fieldset:disabled { cursor: not-allowed; opacity: .65; }
 @media (max-width: 680px) {
   .inventory-main { grid-template-columns: minmax(0, 1fr); }
   .inventory-controls { flex-direction: column; }
-  input[type="search"], select, .btn, .inventory-item-btn { width: 100%; }
+  .inventory-header, .inventory-nav { width: 100%; }
+  .inventory-nav-links { grid-template-columns: minmax(0, 1fr); }
+  input[type="search"], select, .btn, .inventory-item-btn, .vn-pos-link { width: 100%; }
   .filter-group { flex-direction: column; }
 }
 
