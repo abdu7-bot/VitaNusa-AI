@@ -56,7 +56,7 @@ Aturan input:
 
 ## IndexedDB dan rollback
 
-- IndexedDB tetap version 4.
+- IndexedDB tetap version 5.
 - Tidak ada perubahan schema, store, index, atau versi database.
 - Operasi inventory harus rollback aman: jika gagal, tidak boleh ada data parsial.
 

@@ -16,6 +16,18 @@ const SAFE_MESSAGES = Object.freeze({
   idempotency_mismatch: 'Operation ID telah digunakan dengan payload berbeda.',
   permission_denied: 'Role workspace aktif tidak memiliki izin untuk perubahan ini.',
   stock_tracking_disabled: 'Produk ini tidak mengaktifkan pencatatan stok.',
+  empty_cart: 'Keranjang tidak boleh kosong.',
+  invalid_quantity: 'Jumlah item tidak valid.',
+  unsafe_integer: 'Nilai bilangan tidak aman.',
+  inactive_product: 'Produk tidak aktif tidak dapat ditambahkan ke keranjang.',
+  insufficient_local_stock: 'Stok lokal tidak mencukupi.',
+  price_changed: 'Harga produk berubah dan perlu peninjauan ulang.',
+  discount_exceeds_subtotal: 'Diskon melebihi subtotal.',
+  underpayment: 'Pembayaran kurang dari total.',
+  cash_session_required: 'Sesi kas harus dibuka terlebih dahulu.',
+  duplicate_operation: 'Operasi yang sama sudah pernah diproses.',
+  sale_immutable: 'Sale final tidak dapat diubah.',
+  owner_permission_required: 'Hanya merchant owner yang boleh melakukan perubahan ini.',
   storage_unknown: 'Penyimpanan lokal mengalami masalah yang tidak dikenal.',
 });
 

@@ -22,6 +22,8 @@ export const WORKSPACE_ACTIONS = Object.freeze([
   'category.update',
   'product.read',
   'product.update',
+  'cart.read',
+  'cart.update',
   'inventory.read',
   'inventory.update',
 ]);
@@ -106,6 +108,7 @@ export function canPerformWorkspaceAction(actor, action, context) {
       action === 'workspace.read'
       || action === 'category.read'
       || action === 'product.read'
+      || action === 'cart.read'
       || action === 'inventory.read'
       || (
         action === 'member.read'

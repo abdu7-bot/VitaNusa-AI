@@ -10,6 +10,7 @@ import {
   MANDIRI_SCHEMA_V2,
   MANDIRI_SCHEMA_V3,
   MANDIRI_SCHEMA_V4,
+  MANDIRI_SCHEMA_V5,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 function openRaw(factory, name, version, upgrade) {
@@ -21,7 +22,7 @@ function openRaw(factory, name, version, upgrade) {
   });
 }
 
-test('database baru version 4 membuat sebelas store, seluruh index, dan metadata schema', async () => {
+test('database baru version 5 membuat tiga belas store, seluruh index, dan metadata schema', async () => {
   const factory = new IDBFactory();
   const connection = await openMandiriDatabase({
     indexedDBFactory: factory,
@@ -41,6 +42,11 @@ test('database baru version 4 membuat sebelas store, seluruh index, dan metadata
 
   await connection.runTransaction(MANDIRI_ALLOWED_STORE_NAMES, 'readonly', (transaction) => {
     for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V4)) {
+      const store = transaction.objectStore(storeName);
+      assert.deepEqual(store.keyPath, definition.keyPath);
+      assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
+    }
+    for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V5)) {
       const store = transaction.objectStore(storeName);
       assert.deepEqual(store.keyPath, definition.keyPath);
       assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
@@ -117,7 +123,7 @@ test('upgrade version 2 ke 3 mempertahankan seluruh store dan record Fase 1–2'
     keyRangeFactory: IDBKeyRange,
     databaseName,
   });
-  assert.equal(upgraded.database.version, 4);
+  assert.equal(upgraded.database.version, 5);
   assert.deepEqual([...upgraded.database.objectStoreNames], [...MANDIRI_ALLOWED_STORE_NAMES].sort());
   await upgraded.runTransaction(legacyStores, 'readonly', async (transaction) => {
     for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
@@ -132,7 +138,7 @@ test('upgrade version 2 ke 3 mempertahankan seluruh store dan record Fase 1–2'
   upgraded.close();
 });
 
-test('upgrade version 3 ke 4 mempertahankan seluruh store dan record Fase 1–3', async () => {
+test('upgrade version 3 ke 5 mempertahankan seluruh store dan record Fase 1–3', async () => {
   const factory = new IDBFactory();
   const databaseName = 'migration-v3-v4';
   const legacy = await openRaw(factory, databaseName, 3, (database, transaction, event) => {
@@ -150,7 +156,7 @@ test('upgrade version 3 ke 4 mempertahankan seluruh store dan record Fase 1–3'
   const upgraded = await openMandiriDatabase({
     indexedDBFactory: factory, keyRangeFactory: IDBKeyRange, databaseName,
   });
-  assert.equal(upgraded.database.version, 4);
+  assert.equal(upgraded.database.version, 5);
   const legacyProduct = await upgraded.runTransaction(['products'], 'readonly', (transaction) => (
     transaction.request(transaction.objectStore('products').get([
       'account:legacy', 'workspace_legacy', 'product_legacy',
@@ -159,6 +165,26 @@ test('upgrade version 3 ke 4 mempertahankan seluruh store dan record Fase 1–3'
   assert.ok(legacyProduct);
   assert.ok(upgraded.database.objectStoreNames.contains('stockMovements'));
   assert.ok(upgraded.database.objectStoreNames.contains('inventoryBalances'));
+  assert.ok(upgraded.database.objectStoreNames.contains('cartDrafts'));
+  assert.ok(upgraded.database.objectStoreNames.contains('cartLines'));
+  upgraded.close();
+});
+
+test('upgrade version 4 ke 5 menambahkan cart draft dan cart lines', async () => {
+  const factory = new IDBFactory();
+  const databaseName = 'migration-v4-v5';
+  const legacy = await openRaw(factory, databaseName, 4, (database, transaction, event) => {
+    applyMigrations({ database, transaction, oldVersion: event.oldVersion, newVersion: 4 });
+  });
+  legacy.close();
+  const upgraded = await openMandiriDatabase({
+    indexedDBFactory: factory,
+    keyRangeFactory: IDBKeyRange,
+    databaseName,
+  });
+  assert.equal(upgraded.database.version, 5);
+  assert.ok(upgraded.database.objectStoreNames.contains('cartDrafts'));
+  assert.ok(upgraded.database.objectStoreNames.contains('cartLines'));
   upgraded.close();
 });
 

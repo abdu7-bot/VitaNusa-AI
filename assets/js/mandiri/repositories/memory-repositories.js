@@ -18,6 +18,7 @@ import { normalizeOperationReceipt } from './operation-receipt-repository.js';
 import { normalizeAttempt } from '../learning/domain/attempt.js';
 import { normalizeProgress } from '../learning/domain/progress.js';
 import { normalizeCategory } from '../pos/domain/category.js';
+import { normalizeCartDraft, normalizeCartLine } from '../pos/domain/cart.js';
 import { normalizeProduct } from '../pos/domain/product.js';
 import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
 import { normalizeLearnerScope } from '../learning/domain/learning-validation.js';
@@ -46,6 +47,8 @@ function createEmptyState() {
     products: new Map(),
     stockMovements: new Map(),
     inventoryBalances: new Map(),
+    cartDrafts: new Map(),
+    cartLines: new Map(),
   };
 }
 
@@ -69,6 +72,8 @@ function cloneState(state) {
     products: cloneNestedMap(state.products),
     stockMovements: cloneNestedMap(state.stockMovements),
     inventoryBalances: cloneNestedMap(state.inventoryBalances),
+    cartDrafts: cloneNestedMap(state.cartDrafts),
+    cartLines: cloneNestedMap(state.cartLines),
   };
 }
 
@@ -156,6 +161,44 @@ function publicCategory(record) {
 function publicProduct(record) {
   const { accountScope: _accountScope, ...product } = record;
   return normalizeWith(normalizeProduct, product, { workspaceId: record.workspaceId });
+}
+
+function normalizeScopedCartDraft(accountScope, workspaceId, draft) {
+  const normalized = normalizeWith(normalizeCartDraft, draft, { workspaceId });
+  return Object.freeze({ accountScope, ...normalized });
+}
+
+function normalizeScopedCartLine(accountScope, workspaceId, line) {
+  const normalized = normalizeWith(normalizeCartLine, line, { workspaceId });
+  return Object.freeze({ accountScope, ...normalized });
+}
+
+function publicCartDraft(record) {
+  const { accountScope: _accountScope, ...draft } = record;
+  return normalizeWith(normalizeCartDraft, draft, { workspaceId: record.workspaceId });
+}
+
+function publicCartLine(record) {
+  const { accountScope: _accountScope, ...line } = record;
+  return normalizeWith(normalizeCartLine, line, { workspaceId: record.workspaceId });
+}
+
+function sortCartDrafts(records) {
+  return records.sort((left, right) => (
+    right.updatedAtLocal.localeCompare(left.updatedAtLocal)
+    || left.cartId.localeCompare(right.cartId)
+  ));
+}
+
+function sortCartLines(records) {
+  return records.sort((left, right) => left.lineNo - right.lineNo);
+}
+
+function composeCart(draft, lines) {
+  return Object.freeze({
+    ...publicCartDraft(draft),
+    lines: Object.freeze(sortCartLines(lines.map(publicCartLine))),
+  });
 }
 
 function sortWorkspaces(records) {
@@ -642,6 +685,110 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     },
   });
 
+  const cartRepository = Object.freeze({
+    async create(explicitAccountScope, explicitWorkspaceId, draftInput, lineInputs) {
+      assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS, true);
+      assertStore(MANDIRI_STORE_NAMES.CART_LINES, true);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
+      if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) throw storageError('data_invalid');
+      const draftsBucket = ensureBucket(ensureBucket(getState().cartDrafts, accountScope), workspaceId);
+      if (draftsBucket.has(draft.cartId)) throw storageError('constraint_violation');
+      draftsBucket.set(draft.cartId, clonePlainRecord(draft));
+      const linesBucket = ensureBucket(ensureBucket(getState().cartLines, accountScope), workspaceId);
+      for (const line of lines) {
+        const cartBucket = ensureBucket(linesBucket, draft.cartId);
+        if (cartBucket.has(line.lineNo)) throw storageError('constraint_violation');
+        cartBucket.set(line.lineNo, clonePlainRecord(line));
+      }
+      return composeCart(draft, lines);
+    },
+
+    async update(explicitAccountScope, explicitWorkspaceId, draftInput, lineInputs, expectedVersion) {
+      assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS, true);
+      assertStore(MANDIRI_STORE_NAMES.CART_LINES, true);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
+      if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw storageError('data_invalid');
+      if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) throw storageError('data_invalid');
+      const draftsBucket = getBucket(getBucket(getState().cartDrafts, accountScope) ?? new Map(), workspaceId);
+      const current = draftsBucket?.get(draft.cartId);
+      if (!current) throw storageError('record_not_found');
+      if (current.version !== expectedVersion || draft.version !== expectedVersion + 1) {
+        throw storageError('version_conflict');
+      }
+      draftsBucket.set(draft.cartId, clonePlainRecord(draft));
+      const workspaceBucket = ensureBucket(ensureBucket(getState().cartLines, accountScope), workspaceId);
+      workspaceBucket.set(draft.cartId, new Map());
+      const cartBucket = workspaceBucket.get(draft.cartId);
+      for (const line of lines) {
+        cartBucket.set(line.lineNo, clonePlainRecord(line));
+      }
+      return composeCart(draft, lines);
+    },
+
+    async get(explicitAccountScope, explicitWorkspaceId, cartIdValue) {
+      assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS);
+      assertStore(MANDIRI_STORE_NAMES.CART_LINES);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const cartId = normalizeEntityIdentifier(cartIdValue, 'cart');
+      const draft = getBucket(getBucket(getState().cartDrafts, accountScope) ?? new Map(), workspaceId)
+        ?.get(cartId);
+      if (!draft) return null;
+      const lines = [...(getBucket(
+        getBucket(getState().cartLines, accountScope) ?? new Map(),
+        workspaceId,
+      )?.get(cartId)?.values() ?? [])];
+      return composeCart(draft, lines);
+    },
+
+    async list(explicitAccountScope, explicitWorkspaceId) {
+      assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      return Object.freeze(sortCartDrafts([...(getBucket(
+        getBucket(getState().cartDrafts, accountScope) ?? new Map(),
+        workspaceId,
+      )?.values() ?? [])].map(publicCartDraft)));
+    },
+
+    async listLines(explicitAccountScope, explicitWorkspaceId, cartIdValue) {
+      assertStore(MANDIRI_STORE_NAMES.CART_LINES);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      const cartId = normalizeEntityIdentifier(cartIdValue, 'cart');
+      const records = [...(getBucket(
+        getBucket(getState().cartLines, accountScope) ?? new Map(),
+        workspaceId,
+      )?.get(cartId)?.values() ?? [])];
+      return Object.freeze(sortCartLines(records.map(publicCartLine)));
+    },
+  });
+  Object.defineProperty(cartRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (explicitAccountScope, explicitWorkspaceId) => {
+      assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS);
+      assertStore(MANDIRI_STORE_NAMES.CART_LINES);
+      const accountScope = normalizeAccountScope(explicitAccountScope);
+      const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
+      return {
+      cartDrafts: Object.freeze(sortCartDrafts([...(getBucket(
+        getBucket(getState().cartDrafts, accountScope) ?? new Map(),
+        workspaceId,
+      )?.values() ?? [])].map(publicCartDraft))),
+      cartLines: Object.freeze([...(getBucket(
+        getBucket(getState().cartLines, accountScope) ?? new Map(),
+        workspaceId,
+      )?.values() ?? [])].flatMap((cartBucket) => [...cartBucket.values()].map(publicCartLine))),
+      };
+    },
+  });
+
   const inventoryRepository = {
     async appendMovement(accountValue, workspaceValue, movementInput, balanceInput, expectedVersion) {
       assertStore(MANDIRI_STORE_NAMES.PRODUCTS);
@@ -733,6 +880,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     learningProgressRepository,
     categoryRepository,
     productRepository,
+    cartRepository,
     inventoryRepository,
   });
 }

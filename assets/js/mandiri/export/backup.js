@@ -3,6 +3,7 @@ import { normalizeIsoTimestamp } from '../domain/validation.js';
 import { ATOMIC_WORKSPACE_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_INVENTORY_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_CART_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -43,6 +44,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
     [...new Set([
       ...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES,
       ...ATOMIC_PRODUCT_STORE_NAMES, ...ATOMIC_INVENTORY_STORE_NAMES,
+      ...ATOMIC_CART_STORE_NAMES,
     ])],
     'readonly',
     async (repositories) => {
@@ -82,10 +84,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       const productPromise = repositories.productRepository.list(accountScope, workspaceId);
       const movementPromise = repositories.inventoryRepository.listForBackup(accountScope, workspaceId);
       const balancePromise = repositories.inventoryRepository.listBalances(accountScope, workspaceId);
+      const cartBackupPromise = repositories.cartRepository.listForBackup(accountScope, workspaceId);
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
+        cartBackup,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -97,10 +101,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         productPromise,
         movementPromise,
         balancePromise,
+        cartBackupPromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
+        ...cartBackup,
       };
     },
   );
@@ -157,6 +163,11 @@ export function createBackupService({
         products: sortedRecords(records.products, 'productId'),
         stockMovements: sortedRecords(records.stockMovements, 'movementId'),
         inventoryBalances: sortedRecords(records.inventoryBalances, 'productId'),
+        cartDrafts: sortedRecords(records.cartDrafts, 'cartId'),
+        cartLines: Object.freeze([...records.cartLines].sort((left, right) => (
+          left.cartId.localeCompare(right.cartId)
+          || left.lineNo - right.lineNo
+        ))),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),
