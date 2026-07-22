@@ -14,6 +14,7 @@ import { normalizeCategory } from '../pos/domain/category.js';
 import { normalizeCartDraft, normalizeCartLine } from '../pos/domain/cart.js';
 import { normalizeProduct } from '../pos/domain/product.js';
 import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
+import { addMoney, subtractMoney } from '../domain/money.js';
 import { backupError, mapBackupError } from './backup-errors.js';
 
 export const MANDIRI_BACKUP_FORMAT = 'vitanusa-mandiri-backup';
@@ -329,11 +330,20 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
     ) throw backupError('integrity_error');
     for (const draft of cartDrafts) {
       const linesForCart = cartLines.filter((record) => record.cartId === draft.cartId);
-      const subtotal = linesForCart.reduce((sum, record) => sum + record.lineSubtotalMinor, 0);
+      let subtotal;
+      try {
+        subtotal = linesForCart.reduce((sum, record) => addMoney(sum, record.lineSubtotalMinor), 0);
+      } catch (error) {
+        throw backupError('integrity_error', error);
+      }
+      const grandTotal = draft.discountMinor <= subtotal
+        ? subtractMoney(subtotal, draft.discountMinor)
+        : null;
       if (
         draft.lineCount !== linesForCart.length
         || draft.subtotalMinor !== subtotal
-        || draft.grandTotalMinor !== subtotal - draft.discountMinor
+        || grandTotal === null
+        || draft.grandTotalMinor !== grandTotal
       ) {
         throw backupError('integrity_error');
       }

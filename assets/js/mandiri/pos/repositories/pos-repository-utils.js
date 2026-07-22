@@ -13,6 +13,12 @@ function stripAccountScope(record) {
   return copy;
 }
 
+function stripCartLineScope(record) {
+  const copy = stripAccountScope(record);
+  delete copy.workspaceId;
+  return copy;
+}
+
 function scopedRecord(accountScope, normalized) {
   return Object.freeze({ accountScope, ...normalized });
 }
@@ -34,7 +40,11 @@ export function normalizeScopedCartDraft(accountScope, workspaceId, input) {
 
 export function normalizeScopedCartLine(accountScope, workspaceId, input) {
   const normalized = normalizeWith(normalizeCartLine, input, { workspaceId });
-  return scopedRecord(accountScope, normalized);
+  return Object.freeze({
+    accountScope,
+    workspaceId,
+    ...normalized,
+  });
 }
 
 export function publicCategory(record) {
@@ -56,7 +66,7 @@ export function publicCartDraft(record) {
 }
 
 export function publicCartLine(record) {
-  return normalizeWith(normalizeCartLine, stripAccountScope(record), {
+  return normalizeWith(normalizeCartLine, stripCartLineScope(record), {
     workspaceId: record.workspaceId,
   });
 }

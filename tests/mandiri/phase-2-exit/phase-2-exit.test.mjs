@@ -67,7 +67,7 @@ test('restore tetap preview-only dan backup menerima v1 serta v2', async () => {
   ]);
   assert.doesNotMatch(preview, /openMandiriDatabase|runTransaction|\.put\s*\(|\.add\s*\(/u);
   assert.doesNotMatch(recovery, /restoreCommit|commitRestore|importBackup/u);
-  assert.match(backupSchema, /\[1, 2, 3, MANDIRI_BACKUP_FORMAT_VERSION\]/);
+  assert.match(backupSchema, /\[1, 2, 3, 4, MANDIRI_BACKUP_FORMAT_VERSION\]/);
   assert.match(backupSchema, /MANDIRI_BACKUP_FORMAT_VERSION = 5/);
   assert.match(backupSchema, /!\[1, 2, 3, 4, MANDIRI_BACKUP_FORMAT_VERSION\]\.includes/);
 });

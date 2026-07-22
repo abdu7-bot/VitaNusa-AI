@@ -35,9 +35,11 @@ test('file valid menghasilkan ringkasan tanpa identifier internal atau raw JSON'
     productCount: 0,
     stockMovementCount: 0,
     inventoryBalanceCount: 0,
+    cartDraftCount: 0,
+    cartLineCount: 0,
     createdAt: '2026-07-17T01:00:00.000Z',
-    formatVersion: 4,
-    databaseSchemaVersion: 4,
+    formatVersion: 5,
+    databaseSchemaVersion: 5,
     checksumStatus: 'valid',
     scopeStatus: 'matched',
   });
@@ -70,6 +72,10 @@ test('backup format version 1 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.inventoryBalances;
     delete value.data.stockMovements;
     delete value.data.inventoryBalances;
+    delete value.recordCounts.cartDrafts;
+    delete value.recordCounts.cartLines;
+    delete value.data.cartDrafts;
+    delete value.data.cartLines;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -104,6 +110,10 @@ test('backup format version 2 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.inventoryBalances;
     delete value.data.stockMovements;
     delete value.data.inventoryBalances;
+    delete value.recordCounts.cartDrafts;
+    delete value.recordCounts.cartLines;
+    delete value.data.cartDrafts;
+    delete value.data.cartLines;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -123,6 +133,10 @@ test('backup format version 3 tetap dapat dipreview tanpa operasi restore', asyn
     delete value.recordCounts.inventoryBalances;
     delete value.data.stockMovements;
     delete value.data.inventoryBalances;
+    delete value.recordCounts.cartDrafts;
+    delete value.recordCounts.cartLines;
+    delete value.data.cartDrafts;
+    delete value.data.cartLines;
   });
   const preview = await previewBackupText({
     text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
@@ -133,12 +147,31 @@ test('backup format version 3 tetap dapat dipreview tanpa operasi restore', asyn
   assert.equal(preview.inventoryBalanceCount, 0);
 });
 
+test('backup format version 4 tetap dapat dipreview tanpa operasi restore', async () => {
+  const { backup } = await createValidBackup();
+  const legacy = await resignBackup(backup, (value) => {
+    value.formatVersion = 4;
+    value.databaseSchemaVersion = 4;
+    delete value.recordCounts.cartDrafts;
+    delete value.recordCounts.cartLines;
+    delete value.data.cartDrafts;
+    delete value.data.cartLines;
+  });
+  const preview = await previewBackupText({
+    text: JSON.stringify(legacy), expectedAccountScope: ACCOUNT_A,
+  });
+  assert.equal(preview.formatVersion, 4);
+  assert.equal(preview.stockMovementCount, 0);
+  assert.equal(preview.cartDraftCount, 0);
+  assert.equal(preview.cartLineCount, 0);
+});
+
 test('format, formatVersion, dan databaseSchemaVersion tidak didukung ditolak', async () => {
   const { backup } = await createValidBackup();
   const cases = [
     [(value) => { value.format = 'other'; }, 'format_unknown'],
-    [(value) => { value.formatVersion = 5; }, 'format_version_unsupported'],
-    [(value) => { value.databaseSchemaVersion = 5; }, 'schema_version_unsupported'],
+    [(value) => { value.formatVersion = 6; }, 'format_version_unsupported'],
+    [(value) => { value.databaseSchemaVersion = 6; }, 'schema_version_unsupported'],
   ];
   for (const [mutate, code] of cases) {
     const invalid = await resignBackup(backup, mutate);

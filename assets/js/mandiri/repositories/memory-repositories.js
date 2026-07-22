@@ -685,7 +685,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     },
   });
 
-  const cartRepository = Object.freeze({
+  const cartRepository = {
     async create(explicitAccountScope, explicitWorkspaceId, draftInput, lineInputs) {
       assertStore(MANDIRI_STORE_NAMES.CART_DRAFTS, true);
       assertStore(MANDIRI_STORE_NAMES.CART_LINES, true);
@@ -768,7 +768,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       )?.get(cartId)?.values() ?? [])];
       return Object.freeze(sortCartLines(records.map(publicCartLine)));
     },
-  });
+  };
   Object.defineProperty(cartRepository, 'listForBackup', {
     enumerable: false,
     value: async (explicitAccountScope, explicitWorkspaceId) => {
@@ -777,17 +777,19 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
       return {
-      cartDrafts: Object.freeze(sortCartDrafts([...(getBucket(
-        getBucket(getState().cartDrafts, accountScope) ?? new Map(),
-        workspaceId,
-      )?.values() ?? [])].map(publicCartDraft))),
-      cartLines: Object.freeze([...(getBucket(
-        getBucket(getState().cartLines, accountScope) ?? new Map(),
-        workspaceId,
-      )?.values() ?? [])].flatMap((cartBucket) => [...cartBucket.values()].map(publicCartLine))),
+        cartDrafts: Object.freeze(sortCartDrafts([...(getBucket(
+          getBucket(getState().cartDrafts, accountScope) ?? new Map(),
+          workspaceId,
+        )?.values() ?? [])].map(publicCartDraft))),
+        cartLines: Object.freeze([...(getBucket(
+          getBucket(getState().cartLines, accountScope) ?? new Map(),
+          workspaceId,
+        )?.values() ?? [])].flatMap((cartBucket) => [...cartBucket.values()].map(publicCartLine))),
       };
     },
   });
+
+  Object.freeze(cartRepository);
 
   const inventoryRepository = {
     async appendMovement(accountValue, workspaceValue, movementInput, balanceInput, expectedVersion) {

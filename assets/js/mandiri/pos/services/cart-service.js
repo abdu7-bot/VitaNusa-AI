@@ -1,5 +1,5 @@
 import { createPayloadDigest, isValidEntityId } from '../../domain/ids.js';
-import { assertMoney, multiplyMoney } from '../../domain/money.js';
+import { addMoney, assertMoney, multiplyMoney, subtractMoney } from '../../domain/money.js';
 import {
   assertExactFields,
   MandiriDomainError,
@@ -107,10 +107,10 @@ function normalizeLineSnapshot(line, cartId, lineNo, product) {
   const unitPriceMinor = product.sellingPriceMinor;
   const lineDiscountMinor = line.lineDiscountMinor;
   const lineGrossMinor = multiplyMoney(unitPriceMinor, quantityScaled);
-  const lineSubtotalMinor = lineGrossMinor - lineDiscountMinor;
-  if (lineSubtotalMinor < 0) {
+  if (lineDiscountMinor > lineGrossMinor) {
     throw new MandiriDomainError('discount_exceeds_subtotal', 'diskon line tidak boleh melebihi subtotal');
   }
+  const lineSubtotalMinor = subtractMoney(lineGrossMinor, lineDiscountMinor);
   return {
     schemaVersion: 1,
     cartId,
@@ -134,19 +134,27 @@ function mergeRequestLines(lines) {
     if (!byProductId.has(line.productId)) order.push(line.productId);
     const current = byProductId.get(line.productId) ?? { quantity: 0, lineDiscountMinor: 0 };
     byProductId.set(line.productId, {
-      quantity: current.quantity + line.quantity,
-      lineDiscountMinor: current.lineDiscountMinor + line.lineDiscountMinor,
+      quantity: addSafeQuantity(current.quantity, line.quantity),
+      lineDiscountMinor: addMoney(current.lineDiscountMinor, line.lineDiscountMinor),
     });
   }
-
-  function currentLinePriceChanged(currentCart, productsById) {
-    for (const line of currentCart.lines) {
-      const product = productsById.get(line.productId);
-      if (product && product.sellingPriceMinor !== line.unitPriceMinor) return true;
-    }
-    return false;
-  }
   return order.map((productId) => ({ productId, ...byProductId.get(productId) }));
+}
+
+function addSafeQuantity(left, right) {
+  const total = left + right;
+  if (!Number.isSafeInteger(total) || total < 1) {
+    throw new MandiriDomainError('invalid_quantity', 'jumlah quantity melewati safe integer');
+  }
+  return total;
+}
+
+function currentLinePriceChanged(currentCart, productsById) {
+  for (const line of currentCart.lines) {
+    const product = productsById.get(line.productId);
+    if (product && product.sellingPriceMinor !== line.unitPriceMinor) return true;
+  }
+  return false;
 }
 
 function buildAudit(command) {
@@ -158,7 +166,7 @@ function buildAudit(command) {
     actorScope: command.actorScope,
     actorRole: command.actorRole,
     action: command.operationType,
-    entityType: 'cartDraft',
+    entityType: 'cart_draft',
     entityId: command.entity.cartId,
     operationId: command.operationId,
     result: 'success',
@@ -219,7 +227,7 @@ export function createCartService({
               oldReceipt.payloadDigest !== digest
               || oldReceipt.operationType !== command.operationType
               || oldReceipt.workspaceId !== command.workspaceId
-              || oldReceipt.entityType !== 'cartDraft'
+              || oldReceipt.entityType !== 'cart_draft'
               || oldReceipt.entityId !== command.entity.cartId
               || oldReceipt.result !== 'committed'
             ) throw storageError('idempotency_mismatch');
@@ -271,7 +279,10 @@ export function createCartService({
             throw storageError('price_changed');
           }
 
-          const subtotalMinor = productSnapshots.reduce((sum, line) => sum + line.lineSubtotalMinor, 0);
+          const subtotalMinor = productSnapshots.reduce(
+            (sum, line) => addMoney(sum, line.lineSubtotalMinor),
+            0,
+          );
           if (command.entity.discountMinor > subtotalMinor) {
             throw storageError('discount_exceeds_subtotal');
           }
@@ -284,9 +295,9 @@ export function createCartService({
             currencyCode: 'IDR',
             discountMinor: command.entity.discountMinor,
             subtotalMinor,
-            grandTotalMinor: subtotalMinor - command.entity.discountMinor,
+            grandTotalMinor: subtractMoney(subtotalMinor, command.entity.discountMinor),
             lineCount: productSnapshots.length,
-            createdAtLocal: command.createdAtLocal,
+            createdAtLocal: currentCart?.createdAtLocal ?? command.createdAtLocal,
             updatedAtLocal: command.createdAtLocal,
           };
 
@@ -313,7 +324,7 @@ export function createCartService({
               operationId: command.operationId,
               operationType: command.operationType,
               payloadDigest: digest,
-              entityType: 'cartDraft',
+              entityType: 'cart_draft',
               entityId: command.entity.cartId,
               result: 'committed',
               createdAtLocal: command.createdAtLocal,

@@ -2,6 +2,7 @@ import { createEntityId, isValidEntityId } from '../../domain/ids.js';
 import {
   addMoney,
   assertMoney,
+  divideAndRoundMoney,
   multiplyMoney,
   subtractMoney,
 } from '../../domain/money.js';
@@ -118,7 +119,7 @@ export function normalizeCartLine(input, { workspaceId: expectedWorkspaceId } = 
   if (lineGrossMinor % quantityScale !== 0) {
     throw new MandiriDomainError('unsafe_integer', 'subtotal line tidak presisi', 'cartLine.lineGrossMinor');
   }
-  const exactGrossMinor = lineGrossMinor / quantityScale;
+  const exactGrossMinor = divideAndRoundMoney(lineGrossMinor, quantityScale, 'floor');
   const lineSubtotalMinor = normalizeLineSubtotal(exactGrossMinor, lineDiscountMinor);
   if (input.lineGrossMinor !== exactGrossMinor || input.lineSubtotalMinor !== lineSubtotalMinor) {
     throw new MandiriDomainError('data_invalid', 'snapshot line tidak konsisten', 'cartLine');
@@ -144,7 +145,13 @@ export function normalizeCartDraft(input, { workspaceId: expectedWorkspaceId } =
     requiredFields: CART_DRAFT_FIELDS,
     path: 'cartDraft',
   });
-  if (input.grandTotalMinor !== input.subtotalMinor - input.discountMinor) {
+  const subtotalMinor = assertMoney(input.subtotalMinor);
+  const discountMinor = assertMoney(input.discountMinor);
+  if (discountMinor > subtotalMinor) {
+    throw new MandiriDomainError('discount_exceeds_subtotal', 'diskon cart melebihi subtotal', 'cartDraft.discountMinor');
+  }
+  const grandTotalMinor = subtractMoney(subtotalMinor, discountMinor);
+  if (input.grandTotalMinor !== grandTotalMinor) {
     throw new MandiriDomainError('data_invalid', 'snapshot cart tidak konsisten', 'cartDraft.grandTotalMinor');
   }
   return Object.freeze({
@@ -154,9 +161,9 @@ export function normalizeCartDraft(input, { workspaceId: expectedWorkspaceId } =
     workspaceId: normalizeWorkspaceEntityId(input.workspaceId, 'workspace', 'cartDraft.workspaceId'),
     status: normalizeStatus(input.status),
     currencyCode: normalizeCurrencyCode(input.currencyCode),
-    discountMinor: assertMoney(input.discountMinor),
-    subtotalMinor: assertMoney(input.subtotalMinor),
-    grandTotalMinor: assertMoney(input.grandTotalMinor),
+    discountMinor,
+    subtotalMinor,
+    grandTotalMinor,
     lineCount: assertSafeCount(input.lineCount, 'cartDraft.lineCount'),
     createdAtLocal: normalizeIsoTimestamp(input.createdAtLocal, 'cartDraft.createdAtLocal'),
     updatedAtLocal: normalizeIsoTimestamp(input.updatedAtLocal, 'cartDraft.updatedAtLocal'),
