@@ -9,6 +9,7 @@ import {
 } from '../../../assets/js/mandiri/export/backup-schema.js';
 import {
   ATOMIC_LEARNING_STORE_NAMES,
+  ATOMIC_CART_STORE_NAMES,
   ATOMIC_PRODUCT_STORE_NAMES,
   ATOMIC_INVENTORY_STORE_NAMES,
   ATOMIC_WORKSPACE_STORE_NAMES,
@@ -26,11 +27,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, sepuluh collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, dua belas collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 4);
-  assert.equal(backup.databaseSchemaVersion, 4);
+  assert.equal(backup.formatVersion, 5);
+  assert.equal(backup.databaseSchemaVersion, 5);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -44,11 +45,14 @@ test('backup valid memuat manifest, sepuluh collection, dan count yang benar', a
     products: 0,
     stockMovements: 0,
     inventoryBalances: 0,
+    cartDrafts: 0,
+    cartLines: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
     'categories', 'products', 'stockMovements', 'inventoryBalances',
+    'cartDrafts', 'cartLines',
   ]);
 });
 
@@ -194,15 +198,13 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
   const tooMany = Array.from({ length: 101 }, () => backup.data.memberships[0]);
   const repositoryContext = {
     run(storeNames, mode, callback) {
-      assert.deepEqual(storeNames, [
+      assert.deepEqual(storeNames, [...new Set([
         ...ATOMIC_WORKSPACE_STORE_NAMES,
         ...ATOMIC_LEARNING_STORE_NAMES,
-        ...ATOMIC_PRODUCT_STORE_NAMES.slice(0, 2),
-        ...ATOMIC_INVENTORY_STORE_NAMES.filter((store) => ![
-          ...ATOMIC_WORKSPACE_STORE_NAMES,
-          ...ATOMIC_PRODUCT_STORE_NAMES.slice(0, 2),
-        ].includes(store)),
-      ]);
+        ...ATOMIC_PRODUCT_STORE_NAMES,
+        ...ATOMIC_INVENTORY_STORE_NAMES,
+        ...ATOMIC_CART_STORE_NAMES,
+      ])]);
       assert.equal(mode, 'readonly');
       return callback({
         workspaceRepository: { listByAccount: async () => backup.data.workspaces },
@@ -214,6 +216,7 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         categoryRepository: { list: async () => [] },
         productRepository: { list: async () => [] },
         inventoryRepository: { listForBackup: async () => [], listBalances: async () => [] },
+        cartRepository: { listForBackup: async () => ({ cartDrafts: [], cartLines: [] }) },
       });
     },
   };

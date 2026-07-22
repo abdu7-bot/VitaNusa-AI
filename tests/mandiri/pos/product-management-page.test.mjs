@@ -236,7 +236,7 @@ test('markup dan CSS memenuhi loading, empty/error status, keyboard, motion, for
 
 test('UI tidak menyediakan perubahan schema atau hard delete', async () => {
   const schema = await readFile(new URL('assets/js/mandiri/storage/schema.js', rootUrl), 'utf8');
-  assert.match(schema, /MANDIRI_DATABASE_VERSION = 4/u);
+  assert.match(schema, /MANDIRI_DATABASE_VERSION = 5/u);
   assert.doesNotMatch(source, /\.delete\s*\(|hardDelete|listAll|getAll/u);
   assert.doesNotMatch(html, /Hapus produk|Hapus kategori/u);
 });

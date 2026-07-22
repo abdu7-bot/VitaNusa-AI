@@ -11,13 +11,14 @@ import { normalizeOperationReceipt } from '../repositories/operation-receipt-rep
 import { normalizeAttempt } from '../learning/domain/attempt.js';
 import { normalizeProgress } from '../learning/domain/progress.js';
 import { normalizeCategory } from '../pos/domain/category.js';
+import { normalizeCartDraft, normalizeCartLine } from '../pos/domain/cart.js';
 import { normalizeProduct } from '../pos/domain/product.js';
 import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
 import { backupError, mapBackupError } from './backup-errors.js';
 
 export const MANDIRI_BACKUP_FORMAT = 'vitanusa-mandiri-backup';
-export const MANDIRI_BACKUP_FORMAT_VERSION = 4;
-export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 4;
+export const MANDIRI_BACKUP_FORMAT_VERSION = 5;
+export const MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION = 5;
 export const MANDIRI_BACKUP_CHECKSUM_ALGORITHM = 'SHA-256';
 export const MAX_BACKUP_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_BACKUP_VALIDATION_DEPTH = 32;
@@ -33,6 +34,8 @@ export const MANDIRI_BACKUP_RECORD_LIMITS = Object.freeze({
   products: 10000,
   stockMovements: 50000,
   inventoryBalances: 10000,
+  cartDrafts: 10000,
+  cartLines: 50000,
 });
 const V1_COLLECTION_FIELDS = Object.freeze([
   'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
@@ -42,6 +45,12 @@ const V2_COLLECTION_FIELDS = Object.freeze([
 ]);
 const V3_COLLECTION_FIELDS = Object.freeze([
   ...V2_COLLECTION_FIELDS, 'categories', 'products',
+]);
+const V4_COLLECTION_FIELDS = Object.freeze([
+  ...V3_COLLECTION_FIELDS, 'stockMovements', 'inventoryBalances',
+]);
+const V5_COLLECTION_FIELDS = Object.freeze([
+  ...V4_COLLECTION_FIELDS, 'cartDrafts', 'cartLines',
 ]);
 
 const ROOT_FIELDS = Object.freeze([
@@ -135,7 +144,8 @@ function fieldsForVersion(formatVersion) {
   if (formatVersion === 1) return V1_COLLECTION_FIELDS;
   if (formatVersion === 2) return V2_COLLECTION_FIELDS;
   if (formatVersion === 3) return V3_COLLECTION_FIELDS;
-  return COLLECTION_FIELDS;
+  if (formatVersion === 4) return V4_COLLECTION_FIELDS;
+  return V5_COLLECTION_FIELDS;
 }
 
 function normalizeCounts(value, collectionFields) {
@@ -175,6 +185,8 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
   let products = [];
   let stockMovements = [];
   let inventoryBalances = [];
+  let cartDrafts = [];
+  let cartLines = [];
   try {
     workspaces = data.workspaces.map((record) => normalizeWorkspace(record));
     memberships = data.memberships.map((record) => normalizeMembership(record, {
@@ -194,6 +206,10 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
     if (collectionFields.includes('stockMovements')) {
       stockMovements = data.stockMovements.map((record) => normalizeStockMovement(record, { workspaceId }));
       inventoryBalances = data.inventoryBalances.map((record) => normalizeInventoryBalance(record, { workspaceId }));
+    }
+    if (collectionFields.includes('cartDrafts')) {
+      cartDrafts = data.cartDrafts.map((record) => normalizeCartDraft(record, { workspaceId }));
+      cartLines = data.cartLines.map((record) => normalizeCartLine(record, { workspaceId }));
     }
   } catch (error) {
     if (['cross_account_scope', 'cross_workspace_scope', 'scope_mismatch'].includes(error?.code)) {
@@ -303,6 +319,26 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
   ) throw backupError('integrity_error');
 
   const productsById = new Map(products.map((record) => [record.productId, record]));
+  const cartDraftsById = new Map(cartDrafts.map((record) => [record.cartId, record]));
+  if (collectionFields.includes('cartDrafts')) {
+    if (
+      new Set(cartDrafts.map((record) => record.cartId)).size !== cartDrafts.length
+      || new Set(cartLines.map((record) => `${record.cartId}\u0000${record.lineNo}`)).size !== cartLines.length
+      || cartLines.some((record) => !cartDraftsById.has(record.cartId))
+      || cartLines.some((record) => !productsById.get(record.productId))
+    ) throw backupError('integrity_error');
+    for (const draft of cartDrafts) {
+      const linesForCart = cartLines.filter((record) => record.cartId === draft.cartId);
+      const subtotal = linesForCart.reduce((sum, record) => sum + record.lineSubtotalMinor, 0);
+      if (
+        draft.lineCount !== linesForCart.length
+        || draft.subtotalMinor !== subtotal
+        || draft.grandTotalMinor !== subtotal - draft.discountMinor
+      ) {
+        throw backupError('integrity_error');
+      }
+    }
+  }
   const movementIds = stockMovements.map((record) => record.movementId);
   if (
     new Set(movementIds).size !== movementIds.length
@@ -344,6 +380,10 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
       stockMovements: Object.freeze(stockMovements),
       inventoryBalances: Object.freeze(inventoryBalances),
     } : {}),
+    ...(collectionFields.includes('cartDrafts') ? {
+      cartDrafts: Object.freeze(cartDrafts),
+      cartLines: Object.freeze(cartLines),
+    } : {}),
   });
 }
 
@@ -365,7 +405,7 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
   assertSafeBackupValue(input);
   exact(input, ROOT_FIELDS, 'backup');
   if (input.format !== MANDIRI_BACKUP_FORMAT) throw backupError('format_unknown');
-  if (![1, 2, 3, MANDIRI_BACKUP_FORMAT_VERSION].includes(input.formatVersion)) {
+  if (![1, 2, 3, 4, MANDIRI_BACKUP_FORMAT_VERSION].includes(input.formatVersion)) {
     throw backupError('format_version_unsupported');
   }
   if (
@@ -376,6 +416,7 @@ export function normalizeBackupDocument(input, { expectedAccountScope } = {}) {
     || (input.formatVersion === 2 && input.databaseSchemaVersion !== 2)
     || (input.formatVersion === 3 && input.databaseSchemaVersion !== 3)
     || (input.formatVersion === 4 && input.databaseSchemaVersion !== 4)
+    || (input.formatVersion === 5 && input.databaseSchemaVersion !== 5)
   ) {
     throw backupError('schema_version_unsupported');
   }

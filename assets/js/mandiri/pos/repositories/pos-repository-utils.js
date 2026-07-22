@@ -1,4 +1,5 @@
 import { normalizeCategory } from '../domain/category.js';
+import { normalizeCartDraft, normalizeCartLine } from '../domain/cart.js';
 import { normalizeProduct } from '../domain/product.js';
 import { normalizeInventoryBalance, normalizeStockMovement } from '../domain/inventory.js';
 import {
@@ -26,6 +27,16 @@ export function normalizeScopedProduct(accountScope, workspaceId, input) {
   return scopedRecord(accountScope, normalized);
 }
 
+export function normalizeScopedCartDraft(accountScope, workspaceId, input) {
+  const normalized = normalizeWith(normalizeCartDraft, input, { workspaceId });
+  return scopedRecord(accountScope, normalized);
+}
+
+export function normalizeScopedCartLine(accountScope, workspaceId, input) {
+  const normalized = normalizeWith(normalizeCartLine, input, { workspaceId });
+  return scopedRecord(accountScope, normalized);
+}
+
 export function publicCategory(record) {
   return normalizeWith(normalizeCategory, stripAccountScope(record), {
     workspaceId: record.workspaceId,
@@ -34,6 +45,18 @@ export function publicCategory(record) {
 
 export function publicProduct(record) {
   return normalizeWith(normalizeProduct, stripAccountScope(record), {
+    workspaceId: record.workspaceId,
+  });
+}
+
+export function publicCartDraft(record) {
+  return normalizeWith(normalizeCartDraft, stripAccountScope(record), {
+    workspaceId: record.workspaceId,
+  });
+}
+
+export function publicCartLine(record) {
+  return normalizeWith(normalizeCartLine, stripAccountScope(record), {
     workspaceId: record.workspaceId,
   });
 }

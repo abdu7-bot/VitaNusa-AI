@@ -1,5 +1,5 @@
 export const MANDIRI_DATABASE_NAME = 'vitanusa-mandiri';
-export const MANDIRI_DATABASE_VERSION = 4;
+export const MANDIRI_DATABASE_VERSION = 5;
 
 export const MANDIRI_STORE_NAMES = Object.freeze({
   METADATA: 'metadata',
@@ -13,6 +13,8 @@ export const MANDIRI_STORE_NAMES = Object.freeze({
   PRODUCTS: 'products',
   STOCK_MOVEMENTS: 'stockMovements',
   INVENTORY_BALANCES: 'inventoryBalances',
+  CART_DRAFTS: 'cartDrafts',
+  CART_LINES: 'cartLines',
 });
 
 function index(keyPath, options = {}) {
@@ -114,7 +116,24 @@ export const MANDIRI_SCHEMA_V4 = Object.freeze({
   ),
 });
 
-export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V4));
+export const MANDIRI_SCHEMA_V5 = Object.freeze({
+  ...MANDIRI_SCHEMA_V4,
+  [MANDIRI_STORE_NAMES.CART_DRAFTS]: store(
+    ['accountScope', 'workspaceId', 'cartId'],
+    {
+      byWorkspaceUpdatedAt: index(['accountScope', 'workspaceId', 'updatedAtLocal']),
+    },
+  ),
+  [MANDIRI_STORE_NAMES.CART_LINES]: store(
+    ['accountScope', 'workspaceId', 'cartId', 'lineNo'],
+    {
+      byCart: index(['accountScope', 'workspaceId', 'cartId']),
+      byWorkspaceProduct: index(['accountScope', 'workspaceId', 'productId']),
+    },
+  ),
+});
+
+export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V5));
 
 export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
   'sales',

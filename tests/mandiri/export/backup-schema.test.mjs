@@ -12,8 +12,8 @@ import { createValidBackup, resignBackup } from './fixtures.mjs';
 
 test('schema backup menetapkan format, version, schema, dan batas Fase 4', () => {
   assert.equal(MANDIRI_BACKUP_FORMAT, 'vitanusa-mandiri-backup');
-  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 4);
-  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 4);
+  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 5);
+  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 5);
   assert.deepEqual(MANDIRI_BACKUP_RECORD_LIMITS, {
     workspaces: 1,
     memberships: 100,
@@ -25,6 +25,8 @@ test('schema backup menetapkan format, version, schema, dan batas Fase 4', () =>
     products: 10000,
     stockMovements: 50000,
     inventoryBalances: 10000,
+    cartDrafts: 10000,
+    cartLines: 50000,
   });
 });
 
