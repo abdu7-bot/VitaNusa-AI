@@ -2,6 +2,7 @@ import { MANDIRI_STORE_NAMES } from '../../storage/schema.js';
 import { storageError } from '../../storage/storage-errors.js';
 import {
   createRepositoryExecutor,
+  keyRangeBound,
   keyRangeOnly,
   normalizeAccountScope,
   normalizeEntityIdentifier,
@@ -17,6 +18,14 @@ import {
 const DRAFTS = MANDIRI_STORE_NAMES.CART_DRAFTS;
 const LINES = MANDIRI_STORE_NAMES.CART_LINES;
 const STORES = Object.freeze([DRAFTS, LINES]);
+
+function workspaceUpdatedRange(transaction, accountScope, workspaceId) {
+  return keyRangeBound(
+    transaction,
+    [accountScope, workspaceId, ''],
+    [accountScope, workspaceId, '\uffff'],
+  );
+}
 
 function sortDrafts(records) {
   return records.sort((left, right) => (
@@ -56,7 +65,7 @@ async function replaceLines(transaction, accountScope, workspaceId, cartId, line
 export function createCartRepository(options) {
   const executor = createRepositoryExecutor(options);
 
-  return Object.freeze({
+  const repository = {
     async create(explicitAccountScope, explicitWorkspaceId, draftInput, lineInputs) {
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
@@ -126,7 +135,7 @@ export function createCartRepository(options) {
       return executor.run([DRAFTS], 'readonly', async (transaction) => {
         const records = await transaction.request(
           transaction.objectStore(DRAFTS).index('byWorkspaceUpdatedAt').getAll(
-            keyRangeOnly(transaction, [accountScope, workspaceId]),
+            workspaceUpdatedRange(transaction, accountScope, workspaceId),
           ),
         );
         return Object.freeze(sortDrafts(records.map(publicCartDraft)));
@@ -146,7 +155,7 @@ export function createCartRepository(options) {
         return Object.freeze(sortLines(records.map(publicCartLine)));
       });
     },
-  });
+  };
   Object.defineProperty(repository, 'listForBackup', {
     enumerable: false,
     value: async (explicitAccountScope, explicitWorkspaceId) => {
@@ -155,7 +164,7 @@ export function createCartRepository(options) {
       return executor.run(STORES, 'readonly', async (transaction) => {
         const drafts = await transaction.request(
           transaction.objectStore(DRAFTS).index('byWorkspaceUpdatedAt').getAll(
-            keyRangeOnly(transaction, [accountScope, workspaceId]),
+            workspaceUpdatedRange(transaction, accountScope, workspaceId),
           ),
         );
         const cartLines = [];
@@ -174,4 +183,5 @@ export function createCartRepository(options) {
       });
     },
   });
+  return Object.freeze(repository);
 }

@@ -36,7 +36,7 @@ test('database baru version 5 membuat tiga belas store, seluruh index, dan metad
 
   await connection.runTransaction(['metadata'], 'readonly', async (transaction) => {
     const metadata = await transaction.request(transaction.objectStore('metadata').get('schema'));
-    assert.equal(metadata.schemaVersion, 4);
+    assert.equal(metadata.schemaVersion, 5);
     assert.match(metadata.updatedAtLocal, /^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -176,6 +176,16 @@ test('upgrade version 4 ke 5 menambahkan cart draft dan cart lines', async () =>
   const legacy = await openRaw(factory, databaseName, 4, (database, transaction, event) => {
     applyMigrations({ database, transaction, oldVersion: event.oldVersion, newVersion: 4 });
   });
+  const write = legacy.transaction('products', 'readwrite');
+  write.objectStore('products').put({
+    accountScope: 'account:legacy-v4',
+    workspaceId: 'workspace_legacy_v4',
+    productId: 'product_legacy_v4',
+  });
+  await new Promise((resolve, reject) => {
+    write.oncomplete = resolve;
+    write.onabort = () => reject(write.error);
+  });
   legacy.close();
   const upgraded = await openMandiriDatabase({
     indexedDBFactory: factory,
@@ -185,6 +195,12 @@ test('upgrade version 4 ke 5 menambahkan cart draft dan cart lines', async () =>
   assert.equal(upgraded.database.version, 5);
   assert.ok(upgraded.database.objectStoreNames.contains('cartDrafts'));
   assert.ok(upgraded.database.objectStoreNames.contains('cartLines'));
+  const legacyProduct = await upgraded.runTransaction(['products'], 'readonly', (transaction) => (
+    transaction.request(transaction.objectStore('products').get([
+      'account:legacy-v4', 'workspace_legacy_v4', 'product_legacy_v4',
+    ]))
+  ));
+  assert.ok(legacyProduct);
   upgraded.close();
 });
 

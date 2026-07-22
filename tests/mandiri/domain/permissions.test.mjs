@@ -152,3 +152,12 @@ test('inventory mengikuti policy existing owner-write member-read', () => {
   assert.equal(canPerformWorkspaceAction(owner, 'inventory.update', context()), true);
   assert.equal(canPerformWorkspaceAction(cashier, 'inventory.update', context()), false);
 });
+
+test('cart mengikuti policy existing owner-write member-read', () => {
+  const owner = actor();
+  const cashier = actor({ role: 'cashier' });
+  assert.equal(canPerformWorkspaceAction(owner, 'cart.read', context()), true);
+  assert.equal(canPerformWorkspaceAction(cashier, 'cart.read', context()), true);
+  assert.equal(canPerformWorkspaceAction(owner, 'cart.update', context()), true);
+  assert.equal(canPerformWorkspaceAction(cashier, 'cart.update', context()), false);
+});
