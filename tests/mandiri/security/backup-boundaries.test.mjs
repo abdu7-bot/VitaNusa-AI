@@ -19,13 +19,14 @@ test('backup tidak berisi credential, email, UID mentah, VitaCheck, Nusa, atau a
   for (const pattern of forbidden) assert.doesNotMatch(serialized, pattern);
 });
 
-test('backup hanya mempunyai dua belas collection data yang diizinkan', async () => {
+test('backup hanya mempunyai enam belas collection data yang diizinkan', async () => {
   const { backup } = await createValidBackup();
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
     'categories', 'products', 'stockMovements', 'inventoryBalances',
     'cartDrafts', 'cartLines',
+    'sales', 'saleLines', 'payments', 'receipts',
   ]);
 });
 

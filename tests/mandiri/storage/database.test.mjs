@@ -27,8 +27,8 @@ test('database dapat dibuka, mempunyai version benar, dan dapat ditutup', async 
     keyRangeFactory: IDBKeyRange,
     databaseName: 'database-open-close',
   });
-  assert.equal(connection.schemaVersion, 5);
-  assert.equal(connection.database.version, 5);
+  assert.equal(connection.schemaVersion, 6);
+  assert.equal(connection.database.version, 6);
   connection.close();
   connection.close();
   assert.throws(() => connection.runTransaction(['metadata'], 'readonly', () => {}), {
@@ -59,7 +59,7 @@ test('versionchange menutup koneksi lama dan operasi berikutnya ditolak', async 
     keyRangeFactory: IDBKeyRange,
     databaseName: 'database-versionchange',
   });
-  const newer = await openRaw(factory, 'database-versionchange', 6, () => {});
+  const newer = await openRaw(factory, 'database-versionchange', 7, () => {});
   assert.throws(() => connection.runTransaction(['metadata'], 'readonly', () => {}), {
     code: 'schema_too_new',
   });
@@ -68,7 +68,7 @@ test('versionchange menutup koneksi lama dan operasi berikutnya ditolak', async 
 
 test('schema lebih baru ditolak tanpa downgrade atau write', async () => {
   const factory = new IDBFactory();
-  const newer = await openRaw(factory, 'database-newer-schema', 6, (database) => {
+  const newer = await openRaw(factory, 'database-newer-schema', 7, (database) => {
     const store = database.createObjectStore('sentinel', { keyPath: 'key' });
     store.add({ key: 'unchanged', value: 7 });
   });
@@ -78,7 +78,7 @@ test('schema lebih baru ditolak tanpa downgrade atau write', async () => {
     keyRangeFactory: IDBKeyRange,
     databaseName: 'database-newer-schema',
   }), { code: 'schema_too_new' });
-  const reopened = await openRaw(factory, 'database-newer-schema', 6);
+  const reopened = await openRaw(factory, 'database-newer-schema', 7);
   const transaction = reopened.transaction('sentinel', 'readonly');
   assert.deepEqual(await requestToPromise(transaction.objectStore('sentinel').get('unchanged')), {
     key: 'unchanged',

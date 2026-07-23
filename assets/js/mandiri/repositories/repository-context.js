@@ -10,6 +10,7 @@ import { createCategoryRepository } from '../pos/repositories/category-repositor
 import { createCartRepository } from '../pos/repositories/cart-repository.js';
 import { createProductRepository } from '../pos/repositories/product-repository.js';
 import { createInventoryRepository } from '../pos/repositories/inventory-repository.js';
+import { createSaleRepository } from '../pos/repositories/sale-repository.js';
 
 export const ATOMIC_WORKSPACE_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.WORKSPACES,
@@ -50,6 +51,22 @@ export const ATOMIC_INVENTORY_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
 ]);
 
+export const ATOMIC_SALE_STORE_NAMES = Object.freeze([
+  MANDIRI_STORE_NAMES.CART_DRAFTS,
+  MANDIRI_STORE_NAMES.CART_LINES,
+  MANDIRI_STORE_NAMES.CATEGORIES,
+  MANDIRI_STORE_NAMES.PRODUCTS,
+  MANDIRI_STORE_NAMES.SALES,
+  MANDIRI_STORE_NAMES.SALE_LINES,
+  MANDIRI_STORE_NAMES.PAYMENTS,
+  MANDIRI_STORE_NAMES.RECEIPTS,
+  MANDIRI_STORE_NAMES.STOCK_MOVEMENTS,
+  MANDIRI_STORE_NAMES.INVENTORY_BALANCES,
+  MANDIRI_STORE_NAMES.MEMBERSHIPS,
+  MANDIRI_STORE_NAMES.AUDIT_EVENTS,
+  MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
+]);
+
 export function createRepositoryContext(connection) {
   if (!connection || typeof connection.runTransaction !== 'function') {
     throw storageError('data_invalid');
@@ -70,6 +87,7 @@ export function createRepositoryContext(connection) {
           cartRepository: createCartRepository({ transactionContext }),
           productRepository: createProductRepository({ transactionContext }),
           inventoryRepository: createInventoryRepository({ transactionContext }),
+          saleRepository: createSaleRepository({ transactionContext }),
         });
         return callback(repositories);
       });

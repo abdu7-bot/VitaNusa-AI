@@ -176,7 +176,9 @@ test('CartService membuat draft dan sale preview tanpa Sale committed serta retr
   assert.equal(first.salePreview.grandTotalMinor, 8500);
   assert.equal((await memory.cartRepository.list(ACCOUNT, WORKSPACE)).length, 1);
   assert.equal((await memory.auditRepository.listByOperation(ACCOUNT, OPERATION)).length, 1);
-  assert.equal(memory.saleRepository, undefined);
+  assert.equal(await memory.saleRepository.get(
+    ACCOUNT, WORKSPACE, 'sale_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  ), null);
 });
 
 test('CartService update memakai expectedVersion dan mendeteksi perubahan harga', async () => {

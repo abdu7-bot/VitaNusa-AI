@@ -13,6 +13,7 @@ import {
   ATOMIC_PRODUCT_STORE_NAMES,
   ATOMIC_INVENTORY_STORE_NAMES,
   ATOMIC_WORKSPACE_STORE_NAMES,
+  ATOMIC_SALE_STORE_NAMES,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 import {
   ACCOUNT_A,
@@ -27,11 +28,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, dua belas collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, enam belas collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 5);
-  assert.equal(backup.databaseSchemaVersion, 5);
+  assert.equal(backup.formatVersion, 6);
+  assert.equal(backup.databaseSchemaVersion, 6);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -47,12 +48,17 @@ test('backup valid memuat manifest, dua belas collection, dan count yang benar',
     inventoryBalances: 0,
     cartDrafts: 0,
     cartLines: 0,
+    sales: 0,
+    saleLines: 0,
+    payments: 0,
+    receipts: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
     'learningAttempts', 'learningProgress',
     'categories', 'products', 'stockMovements', 'inventoryBalances',
     'cartDrafts', 'cartLines',
+    'sales', 'saleLines', 'payments', 'receipts',
   ]);
 });
 
@@ -204,6 +210,7 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         ...ATOMIC_PRODUCT_STORE_NAMES,
         ...ATOMIC_INVENTORY_STORE_NAMES,
         ...ATOMIC_CART_STORE_NAMES,
+        ...ATOMIC_SALE_STORE_NAMES,
       ])]);
       assert.equal(mode, 'readonly');
       return callback({
@@ -217,6 +224,9 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         productRepository: { list: async () => [] },
         inventoryRepository: { listForBackup: async () => [], listBalances: async () => [] },
         cartRepository: { listForBackup: async () => ({ cartDrafts: [], cartLines: [] }) },
+        saleRepository: {
+          listForBackup: async () => ({ sales: [], saleLines: [], payments: [], receipts: [] }),
+        },
       });
     },
   };
@@ -236,7 +246,7 @@ test('backup tidak memuat token, email, UID mentah, atau collection domain lain'
   const json = JSON.stringify(backup);
   assert.doesNotMatch(json, /access.?token|refresh.?token|password|private.?key/i);
   assert.doesNotMatch(json, /@example\.com|firebase-uid-fixture/);
-  assert.doesNotMatch(json, /VitaCheck|conversation|sales/i);
+  assert.doesNotMatch(json, /VitaCheck|conversation/i);
 });
 
 test('fixture dasar mempertahankan hubungan audit dan receipt ke workspace', async () => {

@@ -11,6 +11,7 @@ import {
   MANDIRI_SCHEMA_V3,
   MANDIRI_SCHEMA_V4,
   MANDIRI_SCHEMA_V5,
+  MANDIRI_SCHEMA_V6,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 function openRaw(factory, name, version, upgrade) {
@@ -22,7 +23,7 @@ function openRaw(factory, name, version, upgrade) {
   });
 }
 
-test('database baru version 5 membuat tiga belas store, seluruh index, dan metadata schema', async () => {
+test('database baru version 6 membuat tujuh belas store, seluruh index, dan metadata schema', async () => {
   const factory = new IDBFactory();
   const connection = await openMandiriDatabase({
     indexedDBFactory: factory,
@@ -36,7 +37,7 @@ test('database baru version 5 membuat tiga belas store, seluruh index, dan metad
 
   await connection.runTransaction(['metadata'], 'readonly', async (transaction) => {
     const metadata = await transaction.request(transaction.objectStore('metadata').get('schema'));
-    assert.equal(metadata.schemaVersion, 5);
+    assert.equal(metadata.schemaVersion, 6);
     assert.match(metadata.updatedAtLocal, /^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -47,6 +48,11 @@ test('database baru version 5 membuat tiga belas store, seluruh index, dan metad
       assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
     }
     for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V5)) {
+      const store = transaction.objectStore(storeName);
+      assert.deepEqual(store.keyPath, definition.keyPath);
+      assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
+    }
+    for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V6)) {
       const store = transaction.objectStore(storeName);
       assert.deepEqual(store.keyPath, definition.keyPath);
       assert.deepEqual([...store.indexNames], Object.keys(definition.indexes).sort());
@@ -123,7 +129,7 @@ test('upgrade version 2 ke 3 mempertahankan seluruh store dan record Fase 1–2'
     keyRangeFactory: IDBKeyRange,
     databaseName,
   });
-  assert.equal(upgraded.database.version, 5);
+  assert.equal(upgraded.database.version, 6);
   assert.deepEqual([...upgraded.database.objectStoreNames], [...MANDIRI_ALLOWED_STORE_NAMES].sort());
   await upgraded.runTransaction(legacyStores, 'readonly', async (transaction) => {
     for (const [storeName, definition] of Object.entries(MANDIRI_SCHEMA_V2)) {
@@ -138,7 +144,7 @@ test('upgrade version 2 ke 3 mempertahankan seluruh store dan record Fase 1–2'
   upgraded.close();
 });
 
-test('upgrade version 3 ke 5 mempertahankan seluruh store dan record Fase 1–3', async () => {
+test('upgrade version 3 ke 6 mempertahankan seluruh store dan record Fase 1–3', async () => {
   const factory = new IDBFactory();
   const databaseName = 'migration-v3-v4';
   const legacy = await openRaw(factory, databaseName, 3, (database, transaction, event) => {
@@ -156,7 +162,7 @@ test('upgrade version 3 ke 5 mempertahankan seluruh store dan record Fase 1–3'
   const upgraded = await openMandiriDatabase({
     indexedDBFactory: factory, keyRangeFactory: IDBKeyRange, databaseName,
   });
-  assert.equal(upgraded.database.version, 5);
+  assert.equal(upgraded.database.version, 6);
   const legacyProduct = await upgraded.runTransaction(['products'], 'readonly', (transaction) => (
     transaction.request(transaction.objectStore('products').get([
       'account:legacy', 'workspace_legacy', 'product_legacy',
@@ -170,7 +176,7 @@ test('upgrade version 3 ke 5 mempertahankan seluruh store dan record Fase 1–3'
   upgraded.close();
 });
 
-test('upgrade version 4 ke 5 menambahkan cart draft dan cart lines', async () => {
+test('upgrade version 4 ke 6 menambahkan cart dan sale foundation', async () => {
   const factory = new IDBFactory();
   const databaseName = 'migration-v4-v5';
   const legacy = await openRaw(factory, databaseName, 4, (database, transaction, event) => {
@@ -192,7 +198,7 @@ test('upgrade version 4 ke 5 menambahkan cart draft dan cart lines', async () =>
     keyRangeFactory: IDBKeyRange,
     databaseName,
   });
-  assert.equal(upgraded.database.version, 5);
+  assert.equal(upgraded.database.version, 6);
   assert.ok(upgraded.database.objectStoreNames.contains('cartDrafts'));
   assert.ok(upgraded.database.objectStoreNames.contains('cartLines'));
   const legacyProduct = await upgraded.runTransaction(['products'], 'readonly', (transaction) => (
@@ -236,8 +242,8 @@ test('migration menolak target schema di atas version aplikasi', () => {
   assert.throws(() => applyMigrations({
     database: {},
     transaction: {},
-    oldVersion: 5,
-    newVersion: 6,
+    oldVersion: 6,
+    newVersion: 7,
   }), { code: 'schema_too_new' });
 });
 
