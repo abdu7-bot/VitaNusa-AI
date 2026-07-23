@@ -3,9 +3,12 @@
 ## Informasi
 
 - Sumber: Google Drive VitaNusa
-- Status: Persiapan unggahan
-- Jumlah episode: 1
+- Folder: `negeri-yang-sengaja-dipadamkan`
+- Jumlah PDF tersedia: 0
+- Status: Belum ada PDF
 
 ## Daftar Episode
 
-1. Episode 01 — belum diunggah
+| Nomor episode | Nama file | Tautan PDF | Status |
+| --- | --- | --- | --- |
+| — | — | — | Belum tersedia |

@@ -3,9 +3,12 @@
 ## Informasi
 
 - Sumber: Google Drive VitaNusa
-- Status: Persiapan unggahan
-- Jumlah episode: 0
+- Folder: `gunung-yang-menggugat-dunia`
+- Jumlah PDF tersedia: 0
+- Status: Belum ada PDF
 
 ## Daftar Episode
 
-Belum ada episode PDF yang terdeteksi pada saat audit.
+| Nomor episode | Nama file | Tautan PDF | Status |
+| --- | --- | --- | --- |
+| — | — | — | Belum tersedia |
