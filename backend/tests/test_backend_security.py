@@ -172,7 +172,7 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         double_encoded = json.dumps(json.dumps({
             "authorization": "double-authorization-canary",
             "items": [{"bearer": "double-bearer-canary"}],
-            "escaped": r"bearer\u003ddouble-unicode-canary",
+            "escaped": r"bearer\\u003ddouble-escaped-json-canary",
         }))
         deeply_encoded = "authorization=depth-limit-canary"
         for _ in range(6):
@@ -191,6 +191,12 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
                 r"authorization\u003dunicode-equals-canary",
                 r"bearer\u003aunicode-colon-canary",
                 r"authoriz\u0061tion = partial-label-unicode-canary",
+                r"be\\u0061rer=double-escaped-bearer-label-canary",
+                r"bearer\\u003ddouble-escaped-bearer-delimiter-canary",
+                (
+                    r'\"authoriz\\u0061tion\" \\u003d '
+                    r'\"quoted-double-escaped-canary\"'
+                ),
                 (
                     r"\u0022be\u0061rer\u0022 \u003d "
                     r"\u0022quoted-unicode-canary\u0022"
@@ -201,6 +207,9 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
                     {"authorization": "nested-authorization-canary"},
                     {"bearer": "nested-bearer-canary"},
                     {r"authoriz\u0061tion": "nested-unicode-label-canary"},
+                    {
+                        r"authoriz\\u0061tion": "nested-double-escaped-label-canary",
+                    },
                 ],
                 "doubleEncoded": double_encoded,
                 "depthLimited": deeply_encoded,
@@ -208,7 +217,11 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         })
         response = await self.client.post(
             "/feedback",
-            json={**FEEDBACK_PAYLOAD, "answer": nested_json},
+            json={
+                **FEEDBACK_PAYLOAD,
+                "question": r"authoriz\\u0061tion=direct-double-escaped-canary",
+                "answer": nested_json,
+            },
         )
         self.assertEqual(response.status_code, 200)
 
@@ -253,7 +266,12 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
             "partial-label-unicode-canary",
             "quoted-unicode-canary",
             "nested-unicode-label-canary",
-            "double-unicode-canary",
+            "direct-double-escaped-canary",
+            "double-escaped-bearer-label-canary",
+            "double-escaped-bearer-delimiter-canary",
+            "quoted-double-escaped-canary",
+            "nested-double-escaped-label-canary",
+            "double-escaped-json-canary",
         ):
             self.assertNotIn(sensitive_value, persisted)
             self.assertNotIn(sensitive_value, displayed)

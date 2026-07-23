@@ -31,7 +31,7 @@ _SENSITIVE_KEYS = frozenset({
 })
 _MAX_JSON_REDACTION_DEPTH = 6
 _MAX_REDACTION_TEXT_LENGTH = 16_384
-_UNICODE_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+_UNICODE_ESCAPE = re.compile(r"\\+u([0-9a-fA-F]{4})")
 _SAFE_UNICODE_ESCAPE_CHARACTERS = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=:'\"\\ \t"
 )
