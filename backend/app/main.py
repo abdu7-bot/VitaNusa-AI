@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .audit_log import log_ask_event
+from .client_identity import resolve_feedback_client
 from .conversation_memory import CONVERSATION_MEMORY, build_history_context
 from .feedback import (
     FEEDBACK_RATE_LIMITER,
@@ -380,7 +381,10 @@ def submit_feedback(feedback: FeedbackRequest, request: Request) -> FeedbackRece
     (see GET /admin/feedback) and applies any resulting change as a normal,
     tested code change.
     """
-    client_key = request.client.host if request.client else "unknown"
+    client_key = resolve_feedback_client(
+        request.client.host if request.client else None,
+        request.headers.get("X-Forwarded-For"),
+    )
     if not FEEDBACK_RATE_LIMITER.allow(client_key):
         raise HTTPException(
             status_code=429,

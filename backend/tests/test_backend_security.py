@@ -1,5 +1,6 @@
 import json
 import logging
+import multiprocessing
 import os
 import tempfile
 import unittest
@@ -8,9 +9,10 @@ from unittest.mock import patch
 
 import httpx
 
-from app.feedback import FEEDBACK_RATE_LIMITER
+from app.client_identity import resolve_feedback_client
+from app.feedback import FEEDBACK_RATE_LIMITER, FeedbackRateLimiter
 from app.main import app
-from app.privacy import SensitiveAccessLogFilter
+from app.privacy import SensitiveAccessLogFilter, redact_sensitive_data
 
 
 FEEDBACK_PAYLOAD = {
@@ -21,6 +23,16 @@ FEEDBACK_PAYLOAD = {
     "rating": "like",
     "reason": "Jelas.",
 }
+
+
+def _record_feedback_batch(store_path: str, reasons: list[str]) -> None:
+    import app.feedback as feedback_module
+
+    feedback_module._STORE_PATH = Path(store_path)
+    for reason in reasons:
+        feedback_module.record_feedback(
+            feedback_module.FeedbackRequest(**{**FEEDBACK_PAYLOAD, "reason": reason})
+        )
 
 
 class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
@@ -153,6 +165,128 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
             "user-private",
         ):
             self.assertNotIn(sensitive_value, raw_queue)
+
+    async def test_nested_and_json_escaped_sensitive_data_is_redacted_on_write_and_read(self) -> None:
+        nested_json = json.dumps({
+            "token": "json-token",
+            "nested": {
+                "uid": "json-uid",
+                "payload": json.dumps({
+                    "api_key": "json-api-key",
+                    "password": "json-password",
+                    "authorization": "Bearer json-bearer",
+                }),
+            },
+        })
+        response = await self.client.post(
+            "/feedback",
+            json={**FEEDBACK_PAYLOAD, "answer": nested_json},
+        )
+        self.assertEqual(response.status_code, 200)
+
+        legacy_entry = {
+            "feedbackId": "legacy",
+            "status": "pending_review",
+            "nested": {"secret": "legacy-secret"},
+        }
+        with self.feedback_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(legacy_entry) + "\n")
+        with patch.dict(os.environ, {"VITANUSA_ADMIN_TOKEN": "admin-secret"}):
+            admin_response = await self.client.get(
+                "/admin/feedback",
+                headers={"Authorization": "Bearer admin-secret"},
+            )
+
+        self.assertEqual(admin_response.status_code, 200)
+        persisted = self.feedback_path.read_text(encoding="utf-8")
+        displayed = admin_response.text
+        for sensitive_value in (
+            "json-token",
+            "json-uid",
+            "json-api-key",
+            "json-password",
+            "json-bearer",
+        ):
+            self.assertNotIn(sensitive_value, persisted)
+            self.assertNotIn(sensitive_value, displayed)
+        self.assertNotIn("legacy-secret", displayed)
+
+    def test_sensitive_redaction_handles_quoted_and_escaped_json(self) -> None:
+        value = (
+            r'{"token":"quoted-token","nested":"{\"uid\":\"escaped-uid\",'
+            r'\"secret\":\"escaped-secret\"}"}'
+        )
+        redacted = redact_sensitive_data(value)
+        self.assertNotIn("quoted-token", redacted)
+        self.assertNotIn("escaped-uid", redacted)
+        self.assertNotIn("escaped-secret", redacted)
+
+    def test_forwarded_header_requires_explicit_trusted_proxy(self) -> None:
+        forwarded = "198.51.100.24"
+        with patch.dict(os.environ, {"VITANUSA_TRUSTED_PROXY_IPS": ""}):
+            self.assertEqual(
+                resolve_feedback_client("203.0.113.10", forwarded),
+                "203.0.113.10",
+            )
+        with patch.dict(os.environ, {"VITANUSA_TRUSTED_PROXY_IPS": "203.0.113.0/24"}):
+            self.assertEqual(
+                resolve_feedback_client("203.0.113.10", forwarded),
+                forwarded,
+            )
+            self.assertEqual(
+                resolve_feedback_client(
+                    "203.0.113.10",
+                    "198.51.100.24, 203.0.113.11",
+                ),
+                forwarded,
+            )
+
+    def test_runtime_disables_implicit_uvicorn_proxy_headers(self) -> None:
+        render_config = (
+            Path(__file__).resolve().parents[2] / "render.yaml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("--no-proxy-headers", render_config)
+
+    def test_rate_limit_state_is_shared_between_worker_instances(self) -> None:
+        environment = {
+            "VITANUSA_FEEDBACK_RATE_LIMIT_REQUESTS": "1",
+            "VITANUSA_FEEDBACK_RATE_LIMIT_WINDOW_SECONDS": "60",
+        }
+        with patch.dict(os.environ, environment):
+            first_worker = FeedbackRateLimiter()
+            second_worker = FeedbackRateLimiter()
+            self.assertTrue(first_worker.allow("198.51.100.24", now=1000))
+            self.assertFalse(second_worker.allow("198.51.100.24", now=1001))
+
+    def test_concurrent_process_compaction_keeps_all_new_feedback(self) -> None:
+        old_reasons = [f"lama-{index}" for index in range(20)]
+        worker_a_reasons = [f"worker-a-{index}" for index in range(10)]
+        worker_b_reasons = [f"worker-b-{index}" for index in range(10)]
+        environment = {"VITANUSA_FEEDBACK_MAX_RECORDS": "30"}
+        with patch.dict(os.environ, environment):
+            _record_feedback_batch(str(self.feedback_path), old_reasons)
+            context = multiprocessing.get_context("fork")
+            processes = [
+                context.Process(
+                    target=_record_feedback_batch,
+                    args=(str(self.feedback_path), reasons),
+                )
+                for reasons in (worker_a_reasons, worker_b_reasons)
+            ]
+            for process in processes:
+                process.start()
+            for process in processes:
+                process.join(timeout=20)
+                self.assertEqual(process.exitcode, 0)
+
+        entries = [
+            json.loads(line)
+            for line in self.feedback_path.read_text(encoding="utf-8").splitlines()
+        ]
+        self.assertEqual(len(entries), 30)
+        retained_reasons = {entry["reasonRedacted"] for entry in entries}
+        self.assertTrue(set(worker_a_reasons).issubset(retained_reasons))
+        self.assertTrue(set(worker_b_reasons).issubset(retained_reasons))
 
     def test_access_log_redacts_entire_query_string(self) -> None:
         record = logging.LogRecord(

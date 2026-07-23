@@ -9,15 +9,25 @@ to the feedback queue or the audit log.
 from __future__ import annotations
 
 import logging
+import json
 import re
+from typing import Any
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _PHONE = re.compile(r"(?<!\d)(?:\+?62|0)8\d{7,12}(?!\d)")
 _LONG_DIGIT_RUN = re.compile(r"(?<!\d)\d{9,}(?!\d)")
 _BEARER_TOKEN = re.compile(r"(?i)\bbearer\s+[^\s,;]+")
 _LABELED_SECRET = re.compile(
-    r"(?i)\b(token|secret|password|api[_ -]?key|uid)\s*[:=]\s*[^\s,;]+"
+    r"""(?ix)
+    (?P<label>token|secret|password|api[_\s-]?key|uid)
+    (?:\\?["'])?\s*[:=]\s*(?:\\?["'])?
+    (?P<value>[^\s,;}\]\\"]+)
+    """
 )
+_SENSITIVE_KEYS = frozenset({
+    "token", "uid", "apikey", "password", "secret", "bearer", "authorization",
+})
+_MAX_JSON_REDACTION_DEPTH = 6
 
 
 class SensitiveAccessLogFilter(logging.Filter):
@@ -41,8 +51,45 @@ def install_sensitive_access_log_filter() -> None:
 
 def redact_pii(text: str) -> str:
     text = _BEARER_TOKEN.sub("Bearer [rahasia dihapus]", text)
-    text = _LABELED_SECRET.sub(r"\1=[rahasia dihapus]", text)
+    text = _LABELED_SECRET.sub(
+        lambda match: f"{match.group('label')}=[rahasia dihapus]",
+        text,
+    )
     text = _EMAIL.sub("[email dihapus]", text)
     text = _PHONE.sub("[nomor telepon dihapus]", text)
     text = _LONG_DIGIT_RUN.sub("[nomor identitas dihapus]", text)
     return text
+
+
+def redact_sensitive_data(value: Any, *, _depth: int = 0) -> Any:
+    """Recursively sanitize mappings, arrays, and JSON encoded as strings."""
+
+    if _depth > _MAX_JSON_REDACTION_DEPTH:
+        return "[data bersarang dihapus]"
+    if isinstance(value, dict):
+        redacted = {}
+        for key, item in value.items():
+            normalized_key = re.sub(r"[^a-z0-9]", "", str(key).lower())
+            redacted[key] = (
+                "[rahasia dihapus]"
+                if normalized_key in _SENSITIVE_KEYS
+                else redact_sensitive_data(item, _depth=_depth + 1)
+            )
+        return redacted
+    if isinstance(value, list):
+        return [redact_sensitive_data(item, _depth=_depth + 1) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_sensitive_data(item, _depth=_depth + 1) for item in value)
+    if not isinstance(value, str):
+        return value
+
+    stripped = value.strip()
+    if stripped.startswith(("{", "[")):
+        try:
+            decoded = json.loads(value)
+        except json.JSONDecodeError:
+            pass
+        else:
+            sanitized = redact_sensitive_data(decoded, _depth=_depth + 1)
+            return json.dumps(sanitized, ensure_ascii=False, separators=(",", ":"))
+    return redact_pii(value)

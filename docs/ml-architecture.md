@@ -92,6 +92,19 @@ angka panjang) sebelum disimpan (`app/privacy.py`).
 Queue dibatasi oleh `VITANUSA_FEEDBACK_MAX_RECORDS` (default 1000) dan endpoint
 dibatasi per alamat klien oleh `VITANUSA_FEEDBACK_RATE_LIMIT_REQUESTS` dalam
 `VITANUSA_FEEDBACK_RATE_LIMIT_WINDOW_SECONDS` (default 10 request per 60 detik).
+Limiter memakai state file dan lock lintas proses; path dapat ditetapkan melalui
+`VITANUSA_FEEDBACK_RATE_LIMIT_STORE_PATH` dan harus berada pada storage bersama
+untuk seluruh worker pada satu deployment.
+
+`X-Forwarded-For` tidak dipercaya secara default. Runtime harus menonaktifkan
+proxy-header implicit Uvicorn (`--no-proxy-headers`), lalu operator dapat
+menetapkan IP/CIDR proxy yang benar-benar dikelola melalui
+`VITANUSA_TRUSTED_PROXY_IPS`. Aplikasi berjalan dari hop paling kanan dan hanya
+melewati proxy yang termasuk allowlist tersebut.
+
+Append dan kompaksi queue memakai lock file lintas proses, temporary file unik,
+`flush`/`fsync`, dan atomic replace. Record serta output admin juga melewati
+redaksi rekursif untuk key sensitif dan JSON yang dikodekan sebagai string.
 
 **Tidak ada jalur otomatis dari feedback ke perubahan aplikasi.** Admin
 membaca antrean lewat `GET /admin/feedback` dengan header
