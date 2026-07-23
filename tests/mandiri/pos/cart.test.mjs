@@ -112,6 +112,18 @@ for (const [label, fixture] of [['IndexedDB', indexed], ['Memory', async () => c
     }
     value.connection?.close();
   });
+
+  test(`${label}: CartLine wajib terikat ke CartDraft pada scope yang sama`, async () => {
+    const value = await fixture(`cart-line-integrity-${label}`);
+    await assert.rejects(value.cartRepository.create(
+      ACCOUNT,
+      WORKSPACE,
+      draft(),
+      [line({ cartId: 'cart_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' })],
+    ), { code: 'data_invalid' });
+    assert.equal(await value.cartRepository.get(ACCOUNT, WORKSPACE, CART), null);
+    value.connection?.close();
+  });
 }
 
 test('CartLine persistence menyimpan scope pada keyPath tetapi public line membuang scope', async () => {
@@ -178,6 +190,18 @@ test('CartService update memakai expectedVersion dan mendeteksi perubahan harga'
     createdAtLocal: '2026-07-23T00:01:00.000Z',
   });
   await assert.rejects(service.execute(update), { code: 'price_changed' });
+  assert.equal((await memory.cartRepository.get(ACCOUNT, WORKSPACE, CART)).version, 1);
+});
+
+test('CartService memeriksa version sebelum membaca product pada update', async () => {
+  const { memory, service } = await serviceFixture();
+  await service.execute(command());
+  await assert.rejects(service.execute(command({
+    operationType: 'cart_update',
+    expectedVersion: 2,
+    operationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    eventId: 'audit_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  })), { code: 'version_conflict' });
   assert.equal((await memory.cartRepository.get(ACCOUNT, WORKSPACE, CART)).version, 1);
 });
 

@@ -232,6 +232,15 @@ test('migration version 1 tetap hanya membuat schema v1', async () => {
   database.close();
 });
 
+test('migration menolak target schema di atas version aplikasi', () => {
+  assert.throws(() => applyMigrations({
+    database: {},
+    transaction: {},
+    oldVersion: 5,
+    newVersion: 6,
+  }), { code: 'schema_too_new' });
+});
+
 test('migration tidak destruktif dan tidak melakukan network', () => {
   const source = fs.readFileSync(
     new URL('../../../assets/js/mandiri/storage/migrations.js', import.meta.url),
