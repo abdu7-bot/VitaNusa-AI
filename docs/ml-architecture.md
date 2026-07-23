@@ -100,7 +100,15 @@ untuk seluruh worker pada satu deployment.
 proxy-header implicit Uvicorn (`--no-proxy-headers`), lalu operator dapat
 menetapkan IP/CIDR proxy yang benar-benar dikelola melalui
 `VITANUSA_TRUSTED_PROXY_IPS`. Aplikasi berjalan dari hop paling kanan dan hanya
-melewati proxy yang termasuk allowlist tersebut.
+melewati proxy yang termasuk allowlist tersebut. Blueprint deployment
+mendeklarasikan variabel ini dengan `sync: false`, tanpa menanam IP/CIDR;
+operator wajib mengisinya dengan IP/CIDR proxy yang telah diverifikasi untuk
+deployment baru. Untuk service Blueprint yang sudah ada, variabel baru
+`sync: false` harus ditambahkan manual melalui Render Dashboard. Saat tidak
+diisi, kosong, salah, atau peer tidak masuk allowlist,
+`X-Forwarded-For` diabaikan (fail-closed). Dampaknya, deployment di belakang
+proxy dapat menerapkan rate limit berdasarkan alamat peer proxy bersama sampai
+operator mengisi allowlist yang benar.
 
 Append dan kompaksi queue memakai lock file lintas proses, temporary file unik,
 `flush`/`fsync`, dan atomic replace. Record serta output admin juga melewati

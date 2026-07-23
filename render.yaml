@@ -9,3 +9,5 @@ services:
     envVars:
       - key: VITANUSA_ALLOWED_ORIGINS
         value: https://abdu7-bot.github.io,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5500
+      - key: VITANUSA_TRUSTED_PROXY_IPS
+        sync: false

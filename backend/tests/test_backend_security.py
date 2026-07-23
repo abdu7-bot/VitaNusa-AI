@@ -181,6 +181,10 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
                 "authorization=authorization-canary",
                 "bearer : bearer-canary",
                 "bearer=bearer-equals-canary",
+                r"authorization\=escaped-equals-authorization-canary",
+                r"authorization\\:escaped-colon-authorization-canary",
+                r"bearer\=escaped-equals-bearer-canary",
+                r'\"bearer\" \= \"escaped-delimiter-quoted-canary\"',
                 r'\"authorization\" = \"escaped-authorization-canary\"',
                 "bearer = 'quoted-bearer-canary'",
             ],
@@ -215,6 +219,11 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(admin_response.status_code, 200)
         persisted = self.feedback_path.read_text(encoding="utf-8")
         displayed = admin_response.text
+        audit_log = (
+            self.audit_path.read_text(encoding="utf-8")
+            if self.audit_path.exists()
+            else ""
+        )
         for sensitive_value in (
             "authorization-canary",
             "bearer-canary",
@@ -226,9 +235,14 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
             "double-authorization-canary",
             "double-bearer-canary",
             "depth-limit-canary",
+            "escaped-equals-authorization-canary",
+            "escaped-colon-authorization-canary",
+            "escaped-equals-bearer-canary",
+            "escaped-delimiter-quoted-canary",
         ):
             self.assertNotIn(sensitive_value, persisted)
             self.assertNotIn(sensitive_value, displayed)
+            self.assertNotIn(sensitive_value, audit_log)
         self.assertNotIn("legacy-secret", displayed)
 
     def test_sensitive_redaction_handles_quoted_and_escaped_json(self) -> None:
@@ -244,6 +258,14 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
     def test_forwarded_header_requires_explicit_trusted_proxy(self) -> None:
         forwarded = "198.51.100.24"
         with patch.dict(os.environ, {"VITANUSA_TRUSTED_PROXY_IPS": ""}):
+            self.assertEqual(
+                resolve_feedback_client("203.0.113.10", forwarded),
+                "203.0.113.10",
+            )
+        with patch.dict(
+            os.environ,
+            {"VITANUSA_TRUSTED_PROXY_IPS": "192.0.2.0/24"},
+        ):
             self.assertEqual(
                 resolve_feedback_client("203.0.113.10", forwarded),
                 "203.0.113.10",
@@ -266,6 +288,11 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
             Path(__file__).resolve().parents[2] / "render.yaml"
         ).read_text(encoding="utf-8")
         self.assertIn("--no-proxy-headers", render_config)
+        self.assertIn("VITANUSA_TRUSTED_PROXY_IPS", render_config)
+        self.assertRegex(
+            render_config,
+            r"VITANUSA_TRUSTED_PROXY_IPS\s*\n\s+sync:\s+false",
+        )
 
     def test_rate_limit_state_is_shared_between_worker_instances(self) -> None:
         environment = {

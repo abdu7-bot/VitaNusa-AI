@@ -23,7 +23,7 @@ _SECRET_ASSIGNMENT_PREFIX = re.compile(
     (?:\\?["'])?
     (?P<label>authorization|bearer|token|secret|password|api[_\s-]?key|uid)
     (?:\\?["'])?
-    \s*[:=]\s*
+    \s*(?:\\+\s*)?[:=]\s*
     """
 )
 _SENSITIVE_KEYS = frozenset({
