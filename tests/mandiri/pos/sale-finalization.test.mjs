@@ -119,6 +119,74 @@ test('finalisasi valid atomik menutup cart dan hanya mengurangi produk tracked',
   assert.equal(await memory.saleRepository.get(ACCOUNT_B, WORKSPACE, SALE), null);
 });
 
+test('dua line produk tracked yang sama diagregasi menjadi satu mutasi dan retry tetap idempotent', async () => {
+  const lines = [
+    line(TRACKED, 1),
+    line(TRACKED, 2, {
+      quantityScaled: 2,
+      lineGrossMinor: 10000,
+      lineSubtotalMinor: 10000,
+    }),
+  ];
+  const { memory, service } = await setup({
+    cart: draft({ subtotalMinor: 15000, grandTotalMinor: 15000 }),
+    lines,
+    stock: 3,
+  });
+  const aggregateCommand = command({
+    payment: { method: 'cash', amountTenderedMinor: 20000 },
+  });
+
+  const result = await service.finalize(aggregateCommand);
+  assert.equal(result.status, 'committed');
+  assert.equal(result.lines.length, 2);
+  assert.equal(result.receipt.lines.length, 2);
+  assert.equal(result.payment.amountAppliedMinor, 15000);
+  assert.equal(result.cart.status, 'finalized');
+  assert.equal((await memory.inventoryRepository.getBalance(
+    ACCOUNT, WORKSPACE, TRACKED,
+  )).quantityOnHand, 0);
+  const movements = await memory.inventoryRepository.listMovements(ACCOUNT, WORKSPACE, TRACKED);
+  assert.equal(movements.length, 2);
+  assert.equal(movements.filter((movement) => movement.movementType === 'sale').length, 1);
+  assert.equal(movements.find((movement) => movement.movementType === 'sale').quantityDelta, -3);
+
+  assert.equal((await service.finalize(aggregateCommand)).status, 'duplicate-safe');
+  assert.equal((await memory.inventoryRepository.listMovements(
+    ACCOUNT, WORKSPACE, TRACKED,
+  )).length, 2);
+});
+
+test('stok agregat tidak cukup me-rollback seluruh finalisasi', async () => {
+  const lines = [
+    line(TRACKED, 1),
+    line(TRACKED, 2, {
+      quantityScaled: 2,
+      lineGrossMinor: 10000,
+      lineSubtotalMinor: 10000,
+    }),
+  ];
+  const { memory, service } = await setup({
+    cart: draft({ subtotalMinor: 15000, grandTotalMinor: 15000 }),
+    lines,
+    stock: 2,
+  });
+
+  await assert.rejects(service.finalize(command({
+    payment: { method: 'cash', amountTenderedMinor: 20000 },
+  })), { code: 'insufficient_local_stock' });
+  assert.equal(await memory.saleRepository.get(ACCOUNT, WORKSPACE, SALE), null);
+  assert.equal((await memory.cartRepository.get(ACCOUNT, WORKSPACE, CART)).status, 'draft');
+  assert.equal((await memory.inventoryRepository.getBalance(
+    ACCOUNT, WORKSPACE, TRACKED,
+  )).quantityOnHand, 2);
+  assert.equal((await memory.inventoryRepository.listMovements(
+    ACCOUNT, WORKSPACE, TRACKED,
+  )).length, 1);
+  assert.equal((await memory.auditRepository.listByOperation(ACCOUNT, OPERATION)).length, 0);
+  assert.equal(await memory.operationReceiptRepository.getByOperationId(ACCOUNT, OPERATION), null);
+});
+
 test('cashier dapat finalisasi; payment kurang atau metode non-MVP ditolak', async () => {
   const cashier = await setup({ role: 'cashier' });
   assert.equal((await cashier.service.finalize(command({ actorRole: 'cashier' }))).status, 'committed');

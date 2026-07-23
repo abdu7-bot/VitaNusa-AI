@@ -143,29 +143,39 @@ export function createSaleFinalizationService({
         if (cart.lines.length === 0) throw storageError('empty_cart');
 
         const products = new Map();
-        const balances = new Map();
+        const trackedQuantities = new Map();
         for (const line of cart.lines) {
-          const product = await repositories.productRepository.get(
-            command.accountScope, command.workspaceId, line.productId,
-          );
+          let product = products.get(line.productId);
+          if (!product) {
+            product = await repositories.productRepository.get(
+              command.accountScope, command.workspaceId, line.productId,
+            );
+          }
           if (!product) throw storageError('invalid_reference');
           if (!product.active) throw storageError('inactive_product');
           if (product.sellingPriceMinor !== line.unitPriceMinor) throw storageError('price_changed');
           products.set(line.productId, product);
           if (product.stockTracking) {
-            const balance = await repositories.inventoryRepository.getBalance(
-              command.accountScope, command.workspaceId, line.productId,
-            );
-            if (!balance || balance.quantityOnHand < line.quantityScaled) {
-              throw storageError('insufficient_local_stock');
-            }
-            balances.set(line.productId, balance);
+            const quantityScaled = (trackedQuantities.get(line.productId) ?? 0) + line.quantityScaled;
+            if (!Number.isSafeInteger(quantityScaled)) throw storageError('data_invalid');
+            trackedQuantities.set(line.productId, quantityScaled);
           }
         }
 
         if (command.payment.amountTenderedMinor < cart.grandTotalMinor) throw storageError('underpayment');
-        const trackedLines = cart.lines.filter((line) => products.get(line.productId).stockTracking);
-        if (trackedLines.length !== command.stockMovementIds.length) throw storageError('data_invalid');
+        const trackedProducts = [...trackedQuantities]
+          .sort(([leftProductId], [rightProductId]) => leftProductId.localeCompare(rightProductId));
+        if (trackedProducts.length !== command.stockMovementIds.length) throw storageError('data_invalid');
+        const balances = new Map();
+        for (const [productId, quantityScaled] of trackedProducts) {
+          const balance = await repositories.inventoryRepository.getBalance(
+            command.accountScope, command.workspaceId, productId,
+          );
+          if (!balance || balance.quantityOnHand < quantityScaled) {
+            throw storageError('insufficient_local_stock');
+          }
+          balances.set(productId, balance);
+        }
         const lines = cart.lines.map((line) => saleLine(line, command.saleId, products.get(line.productId)));
         const sale = {
           schemaVersion: 1,
@@ -224,9 +234,9 @@ export function createSaleFinalizationService({
         const bundle = await repositories.saleRepository.appendFinal(
           command.accountScope, command.workspaceId, sale, lines, payment, receipt,
         );
-        for (const [index, line] of trackedLines.entries()) {
-          const balance = balances.get(line.productId);
-          const quantityOnHand = balance.quantityOnHand - line.quantityScaled;
+        for (const [index, [productId, quantityScaled]] of trackedProducts.entries()) {
+          const balance = balances.get(productId);
+          const quantityOnHand = balance.quantityOnHand - quantityScaled;
           await repositories.inventoryRepository.appendMovement(
             command.accountScope,
             command.workspaceId,
@@ -234,9 +244,9 @@ export function createSaleFinalizationService({
               schemaVersion: 1,
               movementId: command.stockMovementIds[index],
               workspaceId: command.workspaceId,
-              productId: line.productId,
+              productId,
               movementType: 'sale',
-              quantityDelta: -line.quantityScaled,
+              quantityDelta: -quantityScaled,
               reason: null,
               actorScope: command.actorScope,
               actorRole: command.actorRole,
@@ -248,7 +258,7 @@ export function createSaleFinalizationService({
               schemaVersion: 1,
               version: balance.version + 1,
               workspaceId: command.workspaceId,
-              productId: line.productId,
+              productId,
               quantityOnHand,
               lastMovementId: command.stockMovementIds[index],
               updatedAtLocal: command.createdAtLocal,
