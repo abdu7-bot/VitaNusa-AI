@@ -1,5 +1,5 @@
 export const MANDIRI_DATABASE_NAME = 'vitanusa-mandiri';
-export const MANDIRI_DATABASE_VERSION = 5;
+export const MANDIRI_DATABASE_VERSION = 6;
 
 export const MANDIRI_STORE_NAMES = Object.freeze({
   METADATA: 'metadata',
@@ -15,6 +15,10 @@ export const MANDIRI_STORE_NAMES = Object.freeze({
   INVENTORY_BALANCES: 'inventoryBalances',
   CART_DRAFTS: 'cartDrafts',
   CART_LINES: 'cartLines',
+  SALES: 'sales',
+  SALE_LINES: 'saleLines',
+  PAYMENTS: 'payments',
+  RECEIPTS: 'receipts',
 });
 
 function index(keyPath, options = {}) {
@@ -133,12 +137,32 @@ export const MANDIRI_SCHEMA_V5 = Object.freeze({
   ),
 });
 
-export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V5));
+export const MANDIRI_SCHEMA_V6 = Object.freeze({
+  ...MANDIRI_SCHEMA_V5,
+  [MANDIRI_STORE_NAMES.SALES]: store(['accountScope', 'workspaceId', 'saleId'], {
+    byWorkspaceFinalizedAt: index(['accountScope', 'workspaceId', 'finalizedAtLocal']),
+    byCart: index(['accountScope', 'workspaceId', 'cartId'], { unique: true }),
+    byOperation: index(['accountScope', 'workspaceId', 'operationId'], { unique: true }),
+  }),
+  [MANDIRI_STORE_NAMES.SALE_LINES]: store(
+    ['accountScope', 'workspaceId', 'saleId', 'lineNo'],
+    {
+      bySale: index(['accountScope', 'workspaceId', 'saleId']),
+      byWorkspaceProduct: index(['accountScope', 'workspaceId', 'productId']),
+    },
+  ),
+  [MANDIRI_STORE_NAMES.PAYMENTS]: store(['accountScope', 'workspaceId', 'paymentId'], {
+    bySale: index(['accountScope', 'workspaceId', 'saleId'], { unique: true }),
+    byOperation: index(['accountScope', 'workspaceId', 'operationId'], { unique: true }),
+  }),
+  [MANDIRI_STORE_NAMES.RECEIPTS]: store(['accountScope', 'workspaceId', 'receiptId'], {
+    bySale: index(['accountScope', 'workspaceId', 'saleId'], { unique: true }),
+  }),
+});
+
+export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V6));
 
 export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
-  'sales',
-  'saleLines',
-  'payments',
   'expenses',
   'cashSessions',
   'syncOutbox',

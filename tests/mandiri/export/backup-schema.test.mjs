@@ -16,10 +16,10 @@ import {
   resignBackup,
 } from './fixtures.mjs';
 
-test('schema backup menetapkan format, version, schema, dan batas Fase 5', () => {
+test('schema backup menetapkan format, version, schema, dan batas Fase 6', () => {
   assert.equal(MANDIRI_BACKUP_FORMAT, 'vitanusa-mandiri-backup');
-  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 5);
-  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 5);
+  assert.equal(MANDIRI_BACKUP_FORMAT_VERSION, 6);
+  assert.equal(MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION, 6);
   assert.deepEqual(MANDIRI_BACKUP_RECORD_LIMITS, {
     workspaces: 1,
     memberships: 100,
@@ -33,6 +33,10 @@ test('schema backup menetapkan format, version, schema, dan batas Fase 5', () =>
     inventoryBalances: 10000,
     cartDrafts: 10000,
     cartLines: 50000,
+    sales: 50000,
+    saleLines: 250000,
+    payments: 50000,
+    receipts: 50000,
   });
 });
 

@@ -12,6 +12,7 @@ import { isWorkspaceRole } from '../../domain/membership.js';
 export const MANUAL_STOCK_MOVEMENT_TYPES = Object.freeze([
   'opening_stock', 'purchase_in', 'adjustment',
 ]);
+export const STOCK_MOVEMENT_TYPES = Object.freeze([...MANUAL_STOCK_MOVEMENT_TYPES, 'sale']);
 
 const MOVEMENT_FIELDS = Object.freeze([
   'schemaVersion', 'movementId', 'workspaceId', 'productId', 'movementType',
@@ -52,11 +53,11 @@ export function createStockMovementId(cryptoRef = globalThis.crypto) {
 
 export function normalizeStockMovement(input, { workspaceId: expectedWorkspaceId } = {}) {
   assertExactFields(input, MOVEMENT_FIELDS, { path: 'stockMovement' });
-  if (!MANUAL_STOCK_MOVEMENT_TYPES.includes(input.movementType)) {
+  if (!STOCK_MOVEMENT_TYPES.includes(input.movementType)) {
     throw new MandiriDomainError('invalid_movement_type', 'jenis movement tidak didukung', 'stockMovement.movementType');
   }
   const quantityDelta = signedQuantity(input.quantityDelta, 'stockMovement.quantityDelta');
-  if (input.movementType !== 'adjustment' && quantityDelta < 1) {
+  if (['opening_stock', 'purchase_in'].includes(input.movementType) && quantityDelta < 1) {
     throw new MandiriDomainError('invalid_quantity', 'movement masuk harus positif', 'stockMovement.quantityDelta');
   }
   const reason = input.reason === null ? null : normalizeTrimmedString(input.reason, {

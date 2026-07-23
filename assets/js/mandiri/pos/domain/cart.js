@@ -16,7 +16,7 @@ import {
 import { normalizeProductText, normalizeWorkspaceEntityId } from './product-validation.js';
 import { normalizeSku } from './product.js';
 
-const CART_DRAFT_STATUSES = Object.freeze(['draft']);
+const CART_DRAFT_STATUSES = Object.freeze(['draft', 'cancelled', 'finalized']);
 
 const CART_DRAFT_FIELDS = Object.freeze([
   'schemaVersion',

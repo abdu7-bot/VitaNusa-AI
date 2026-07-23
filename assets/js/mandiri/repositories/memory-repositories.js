@@ -21,6 +21,9 @@ import { normalizeCategory } from '../pos/domain/category.js';
 import { normalizeCartDraft, normalizeCartLine } from '../pos/domain/cart.js';
 import { normalizeProduct } from '../pos/domain/product.js';
 import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain/inventory.js';
+import { normalizeSale, normalizeSaleLine, validateFinalSale } from '../pos/domain/sale.js';
+import { normalizePayment } from '../pos/domain/payment.js';
+import { normalizeReceipt } from '../pos/domain/receipt.js';
 import { normalizeLearnerScope } from '../learning/domain/learning-validation.js';
 import {
   assertRecordScope,
@@ -49,6 +52,10 @@ function createEmptyState() {
     inventoryBalances: new Map(),
     cartDrafts: new Map(),
     cartLines: new Map(),
+    sales: new Map(),
+    saleLines: new Map(),
+    payments: new Map(),
+    receipts: new Map(),
   };
 }
 
@@ -74,6 +81,10 @@ function cloneState(state) {
     inventoryBalances: cloneNestedMap(state.inventoryBalances),
     cartDrafts: cloneNestedMap(state.cartDrafts),
     cartLines: cloneNestedMap(state.cartLines),
+    sales: cloneNestedMap(state.sales),
+    saleLines: cloneNestedMap(state.saleLines),
+    payments: cloneNestedMap(state.payments),
+    receipts: cloneNestedMap(state.receipts),
   };
 }
 
@@ -885,6 +896,103 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
   });
   Object.freeze(inventoryRepository);
 
+  function publicSaleBundle(accountScope, workspaceId, saleId) {
+    const saleRecord = getBucket(getBucket(getState().sales, accountScope) ?? new Map(), workspaceId)?.get(saleId);
+    if (!saleRecord) return null;
+    const lineRecords = [...(getBucket(
+      getBucket(getState().saleLines, accountScope) ?? new Map(), workspaceId,
+    )?.get(saleId)?.values() ?? [])];
+    const paymentRecord = [...(getBucket(
+      getBucket(getState().payments, accountScope) ?? new Map(), workspaceId,
+    )?.values() ?? [])].find((record) => record.saleId === saleId);
+    const receiptRecord = [...(getBucket(
+      getBucket(getState().receipts, accountScope) ?? new Map(), workspaceId,
+    )?.values() ?? [])].find((record) => record.saleId === saleId);
+    if (!paymentRecord || !receiptRecord) throw storageError('data_invalid');
+    const strip = (record) => {
+      const value = clonePlainRecord(record);
+      delete value.accountScope;
+      return value;
+    };
+    return Object.freeze({
+      sale: normalizeWith(normalizeSale, strip(saleRecord), { workspaceId }),
+      lines: Object.freeze(lineRecords.map((record) => {
+        const value = strip(record);
+        delete value.workspaceId;
+        return normalizeSaleLine(value);
+      }).sort((a, b) => a.lineNo - b.lineNo)),
+      payment: normalizeWith(normalizePayment, strip(paymentRecord), { workspaceId }),
+      receipt: normalizeWith(normalizeReceipt, strip(receiptRecord), { workspaceId }),
+    });
+  }
+
+  const saleRepository = {
+    async appendFinal(accountValue, workspaceValue, saleInput, lineInputs, paymentInput, receiptInput) {
+      assertStore(MANDIRI_STORE_NAMES.SALES, true);
+      assertStore(MANDIRI_STORE_NAMES.SALE_LINES, true);
+      assertStore(MANDIRI_STORE_NAMES.PAYMENTS, true);
+      assertStore(MANDIRI_STORE_NAMES.RECEIPTS, true);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      const { sale, lines } = validateFinalSale(saleInput, lineInputs);
+      const normalizedSale = normalizeWith(normalizeSale, sale, { workspaceId });
+      const payment = normalizeWith(normalizePayment, paymentInput, { workspaceId });
+      const receipt = normalizeWith(normalizeReceipt, receiptInput, { workspaceId });
+      if (
+        payment.saleId !== sale.saleId || payment.paymentId !== sale.paymentId
+        || receipt.saleId !== sale.saleId || receipt.paymentId !== payment.paymentId
+        || receipt.receiptId !== sale.receiptId
+      ) throw storageError('data_invalid');
+      const salesBucket = ensureBucket(ensureBucket(getState().sales, accountScope), workspaceId);
+      if (
+        salesBucket.has(sale.saleId)
+        || [...salesBucket.values()].some((record) => (
+          record.cartId === sale.cartId || record.operationId === sale.operationId
+        ))
+      ) throw storageError('constraint_violation');
+      const addScope = (record) => clonePlainRecord({ accountScope, ...record });
+      salesBucket.set(sale.saleId, addScope(normalizedSale));
+      const lineBucket = ensureBucket(ensureBucket(ensureBucket(getState().saleLines, accountScope), workspaceId), sale.saleId);
+      for (const line of lines) lineBucket.set(line.lineNo, addScope({ workspaceId, ...line }));
+      ensureBucket(ensureBucket(getState().payments, accountScope), workspaceId)
+        .set(payment.paymentId, addScope(payment));
+      ensureBucket(ensureBucket(getState().receipts, accountScope), workspaceId)
+        .set(receipt.receiptId, addScope(receipt));
+      return publicSaleBundle(accountScope, workspaceId, sale.saleId);
+    },
+    async get(accountValue, workspaceValue, saleValue) {
+      assertStore(MANDIRI_STORE_NAMES.SALES);
+      assertStore(MANDIRI_STORE_NAMES.SALE_LINES);
+      assertStore(MANDIRI_STORE_NAMES.PAYMENTS);
+      assertStore(MANDIRI_STORE_NAMES.RECEIPTS);
+      return publicSaleBundle(
+        normalizeAccountScope(accountValue),
+        normalizeWorkspaceScope(workspaceValue),
+        normalizeEntityIdentifier(saleValue, 'sale'),
+      );
+    },
+  };
+  Object.defineProperty(saleRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (accountValue, workspaceValue) => {
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      for (const name of [
+        MANDIRI_STORE_NAMES.SALES, MANDIRI_STORE_NAMES.SALE_LINES,
+        MANDIRI_STORE_NAMES.PAYMENTS, MANDIRI_STORE_NAMES.RECEIPTS,
+      ]) assertStore(name);
+      const saleIds = [...(getBucket(getBucket(getState().sales, accountScope) ?? new Map(), workspaceId)?.keys() ?? [])];
+      const bundles = saleIds.map((saleId) => publicSaleBundle(accountScope, workspaceId, saleId));
+      return Object.freeze({
+        sales: Object.freeze(bundles.map((bundle) => bundle.sale)),
+        saleLines: Object.freeze(bundles.flatMap((bundle) => bundle.lines)),
+        payments: Object.freeze(bundles.map((bundle) => bundle.payment)),
+        receipts: Object.freeze(bundles.map((bundle) => bundle.receipt)),
+      });
+    },
+  });
+  Object.freeze(saleRepository);
+
   return Object.freeze({
     workspaceRepository,
     membershipRepository,
@@ -896,6 +1004,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     productRepository,
     cartRepository,
     inventoryRepository,
+    saleRepository,
   });
 }
 

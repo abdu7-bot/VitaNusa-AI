@@ -27,6 +27,8 @@ const SAFE_MESSAGES = Object.freeze({
   cash_session_required: 'Sesi kas harus dibuka terlebih dahulu.',
   duplicate_operation: 'Operasi yang sama sudah pernah diproses.',
   sale_immutable: 'Sale final tidak dapat diubah.',
+  cart_cancelled: 'Keranjang telah dibatalkan.',
+  cart_already_finalized: 'Keranjang telah difinalisasi.',
   owner_permission_required: 'Hanya merchant owner yang boleh melakukan perubahan ini.',
   storage_unknown: 'Penyimpanan lokal mengalami masalah yang tidak dikenal.',
 });

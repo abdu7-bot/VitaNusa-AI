@@ -11,7 +11,7 @@ test('schema Fase 2 tetap dipertahankan setelah migrasi lanjutan non-destruktif'
     read('assets/js/mandiri/storage/migrations.js'),
     read('docs/vitanusa-mandiri/27-phase-2-exit.md'),
   ]);
-  assert.match(schema, /MANDIRI_DATABASE_VERSION = 5/);
+  assert.match(schema, /MANDIRI_DATABASE_VERSION = 6/);
   assert.match(schema, /MANDIRI_SCHEMA_V2/);
   assert.doesNotMatch(migrations, /deleteObjectStore|deleteIndex|\.clear\s*\(/u);
   assert.match(docs, /tidak menurunkan IndexedDB v2/iu);
@@ -67,9 +67,9 @@ test('restore tetap preview-only dan backup menerima v1 serta v2', async () => {
   ]);
   assert.doesNotMatch(preview, /openMandiriDatabase|runTransaction|\.put\s*\(|\.add\s*\(/u);
   assert.doesNotMatch(recovery, /restoreCommit|commitRestore|importBackup/u);
-  assert.match(backupSchema, /\[1, 2, 3, 4, MANDIRI_BACKUP_FORMAT_VERSION\]/);
-  assert.match(backupSchema, /MANDIRI_BACKUP_FORMAT_VERSION = 5/);
-  assert.match(backupSchema, /!\[1, 2, 3, 4, MANDIRI_BACKUP_FORMAT_VERSION\]\.includes/);
+  assert.match(backupSchema, /\[1, 2, 3, 4, 5, MANDIRI_BACKUP_FORMAT_VERSION\]/);
+  assert.match(backupSchema, /MANDIRI_BACKUP_FORMAT_VERSION = 6/);
+  assert.match(backupSchema, /!\[1, 2, 3, 4, 5, MANDIRI_BACKUP_FORMAT_VERSION\]\.includes/);
 });
 
 test('aksesibilitas dan responsive hardening tersedia', async () => {

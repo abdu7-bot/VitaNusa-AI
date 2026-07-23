@@ -48,7 +48,7 @@ function backupService(repositoryContext) {
   });
 }
 
-test('backup aktual memakai database version 5 dan memuat collection Fase 2-5', async () => {
+test('backup aktual memakai database version 6 dan memuat collection Fase 2-6', async () => {
   const fixture = await setup('backup-indexeddb-basic');
   assert.equal(fixture.connection.schemaVersion, MANDIRI_DATABASE_VERSION);
   const backup = await backupService(fixture.repositoryContext).createWorkspaceBackup({
@@ -68,6 +68,10 @@ test('backup aktual memakai database version 5 dan memuat collection Fase 2-5', 
     inventoryBalances: 0,
     cartDrafts: 0,
     cartLines: 0,
+    sales: 0,
+    saleLines: 0,
+    payments: 0,
+    receipts: 0,
   });
   fixture.connection.close();
 });
@@ -108,6 +112,7 @@ test('backup menggunakan satu repository context readonly', async () => {
     'learningAttempts', 'learningProgress',
     'categories', 'products', 'stockMovements', 'inventoryBalances',
     'cartDrafts', 'cartLines',
+    'sales', 'saleLines', 'payments', 'receipts',
   ]);
   fixture.connection.close();
 });

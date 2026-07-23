@@ -4,6 +4,7 @@ import { ATOMIC_WORKSPACE_STORE_NAMES } from '../repositories/repository-context
 import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_INVENTORY_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_CART_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_SALE_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -45,6 +46,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       ...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES,
       ...ATOMIC_PRODUCT_STORE_NAMES, ...ATOMIC_INVENTORY_STORE_NAMES,
       ...ATOMIC_CART_STORE_NAMES,
+      ...ATOMIC_SALE_STORE_NAMES,
     ])],
     'readonly',
     async (repositories) => {
@@ -85,11 +87,12 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       const movementPromise = repositories.inventoryRepository.listForBackup(accountScope, workspaceId);
       const balancePromise = repositories.inventoryRepository.listBalances(accountScope, workspaceId);
       const cartBackupPromise = repositories.cartRepository.listForBackup(accountScope, workspaceId);
+      const saleBackupPromise = repositories.saleRepository.listForBackup(accountScope, workspaceId);
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
-        cartBackup,
+        cartBackup, saleBackup,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -101,12 +104,13 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         productPromise,
         movementPromise,
         balancePromise,
-        cartBackupPromise,
+        cartBackupPromise, saleBackupPromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
         ...cartBackup,
+        ...saleBackup,
       };
     },
   );
@@ -168,6 +172,12 @@ export function createBackupService({
           left.cartId.localeCompare(right.cartId)
           || left.lineNo - right.lineNo
         ))),
+        sales: sortedRecords(records.sales, 'saleId'),
+        saleLines: Object.freeze([...records.saleLines].sort((left, right) => (
+          left.saleId.localeCompare(right.saleId) || left.lineNo - right.lineNo
+        ))),
+        payments: sortedRecords(records.payments, 'paymentId'),
+        receipts: sortedRecords(records.receipts, 'receiptId'),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),

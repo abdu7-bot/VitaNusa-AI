@@ -51,7 +51,10 @@ test('quantity nol, pecahan, unsafe, type invalid serta movement type invalid di
   for (const quantityDelta of [0, 1.5, Number.MAX_SAFE_INTEGER + 1, '2']) {
     assert.throws(() => normalizeStockMovement(movement({ quantityDelta })));
   }
-  assert.throws(() => normalizeStockMovement(movement({ movementType: 'sale' })));
+  assert.equal(normalizeStockMovement(movement({
+    movementType: 'sale', quantityDelta: -1, sourceReference: 'sale-local',
+  })).movementType, 'sale');
+  assert.throws(() => normalizeStockMovement(movement({ movementType: 'unknown' })));
   assert.throws(() => normalizeStockMovement(movement({ movementType: 'purchase_in', quantityDelta: -1 })));
 });
 

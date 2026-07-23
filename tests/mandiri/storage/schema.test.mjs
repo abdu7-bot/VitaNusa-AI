@@ -10,14 +10,15 @@ import {
   MANDIRI_SCHEMA_V3,
   MANDIRI_SCHEMA_V4,
   MANDIRI_SCHEMA_V5,
+  MANDIRI_SCHEMA_V6,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 test('nama dan version database Mandiri benar', () => {
   assert.equal(MANDIRI_DATABASE_NAME, 'vitanusa-mandiri');
-  assert.equal(MANDIRI_DATABASE_VERSION, 5);
+  assert.equal(MANDIRI_DATABASE_VERSION, 6);
 });
 
-test('schema version 5 menambah cart tanpa mengubah schema lama', () => {
+test('schema version 6 menambah sale/payment/receipt tanpa mengubah schema lama', () => {
   assert.deepEqual(MANDIRI_ALLOWED_STORE_NAMES, [
     'metadata',
     'workspaces',
@@ -32,8 +33,13 @@ test('schema version 5 menambah cart tanpa mengubah schema lama', () => {
     'inventoryBalances',
     'cartDrafts',
     'cartLines',
+    'sales',
+    'saleLines',
+    'payments',
+    'receipts',
   ]);
   assert.equal(Object.keys(MANDIRI_SCHEMA_V1).length, 5);
+  assert.equal(Object.keys(MANDIRI_SCHEMA_V6).length, 17);
   for (const futureStore of MANDIRI_FUTURE_STORE_NAMES) {
     assert.equal(Object.hasOwn(MANDIRI_SCHEMA_V3, futureStore), false);
   }
