@@ -19,19 +19,19 @@ Migrasi v4→v5 non-destruktif menambahkan:
 - `cartDrafts`, key `[accountScope, workspaceId, cartId]`, dengan index `byWorkspaceUpdatedAt`;
 - `cartLines`, key `[accountScope, workspaceId, cartId, lineNo]`, dengan index `byCart` dan `byWorkspaceProduct`.
 
-Record CartLine di storage menyimpan `accountScope` dan `workspaceId` agar sesuai keyPath. Bentuk publik menghapus kedua field scope. Seluruh store dan data v1–v4 dipertahankan. Database v6 atau lebih baru ditolak tanpa downgrade atau penghapusan.
+Record CartLine di storage menyimpan `accountScope` dan `workspaceId` agar sesuai keyPath pada IndexedDB maupun memory repository. Bentuk publik menghapus kedua field scope. `cartId` setiap line wajib cocok dengan CartDraft pada scope yang sama; line lintas cart ditolak sebelum write. Seluruh store dan data v1–v4 dipertahankan. Target migrasi atau database v6 dan lebih baru ditolak tanpa downgrade atau penghapusan.
 
 Repository menyediakan create, update dengan `expectedVersion`, get/list ter-scope, dan list line. Tidak ada delete, global list, atau dump. Implementasi IndexedDB dan memory mempunyai perilaku setara. Helper backup internal dipasang sebelum repository dibekukan.
 
 ## Operasi atomik dan permission
 
-Create/update cart, line replacement, audit event, dan operation receipt berjalan dalam satu transaksi. `operationId` dan payload yang sama menghasilkan `duplicate-safe`; operation ID sama dengan payload berbeda ditolak. Konflik version, referensi produk, permission, stok, harga, dan kegagalan audit me-rollback tanpa draft atau line parsial.
+Create/update cart, line replacement, audit event, dan operation receipt berjalan dalam satu transaksi. Update memeriksa `expectedVersion` sebelum membaca snapshot produk. `operationId` dan payload yang sama menghasilkan `duplicate-safe`; operation ID sama dengan payload berbeda ditolak. Konflik version, referensi produk, permission, stok, harga, dan kegagalan audit me-rollback tanpa draft atau line parsial.
 
 Policy workspace existing digunakan: merchant owner dapat menulis draft; cashier hanya membaca. Membership aktif dan role command diverifikasi di dalam transaksi.
 
 ## Backup
 
-Backup format v5 menambahkan `cartDrafts` dan `cartLines`, memvalidasi relasi cart-line-product serta seluruh total dengan helper money aman. Format v1, v2, v3, dan v4 tetap dapat divalidasi dan dipreview. Restore tetap preview-only dan tidak memiliki jalur commit.
+Backup format v5 menambahkan `cartDrafts` dan `cartLines`, memvalidasi relasi cart-line-product, identitas cart, nomor line unik, dan seluruh total melalui validasi CartDraft/CartLine yang sama dengan runtime. Format v1, v2, v3, dan v4 tetap dapat divalidasi dan dipreview. Restore tetap preview-only dan tidak memiliki jalur commit.
 
 ## Batasan
 

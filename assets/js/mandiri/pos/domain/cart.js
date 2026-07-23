@@ -171,13 +171,24 @@ export function normalizeCartDraft(input, { workspaceId: expectedWorkspaceId } =
 }
 
 export function previewCartDraft(cartDraft, cartLines = []) {
+  const { lines: _lines, ...draftInput } = cartDraft ?? {};
+  const draft = normalizeCartDraft(draftInput);
+  if (!Array.isArray(cartLines)) {
+    throw new MandiriDomainError('data_invalid', 'line cart harus array', 'cartLines');
+  }
   const lines = Object.freeze(
     [...cartLines]
       .sort((left, right) => left.lineNo - right.lineNo)
-      .map((line) => normalizeCartLine(line, { workspaceId: cartDraft.workspaceId })),
+      .map((line) => normalizeCartLine(line, { workspaceId: draft.workspaceId })),
   );
+  if (
+    new Set(lines.map((line) => line.lineNo)).size !== lines.length
+    || lines.some((line) => line.cartId !== draft.cartId)
+  ) {
+    throw new MandiriDomainError('data_invalid', 'line cart tidak konsisten', 'cartLines');
+  }
   const subtotalMinor = lines.reduce((total, line) => addMoney(total, line.lineSubtotalMinor), 0);
-  const grandTotalMinor = subtractMoney(subtotalMinor, cartDraft.discountMinor);
+  const grandTotalMinor = subtractMoney(subtotalMinor, draft.discountMinor);
   if (grandTotalMinor < 0) {
     throw new MandiriDomainError(
       'discount_exceeds_subtotal',
@@ -185,13 +196,20 @@ export function previewCartDraft(cartDraft, cartLines = []) {
       'cartDraft.discountMinor',
     );
   }
+  if (
+    draft.lineCount !== lines.length
+    || draft.subtotalMinor !== subtotalMinor
+    || draft.grandTotalMinor !== grandTotalMinor
+  ) {
+    throw new MandiriDomainError('data_invalid', 'total cart tidak konsisten', 'cartDraft');
+  }
   return Object.freeze({
-    cartId: cartDraft.cartId,
-    workspaceId: cartDraft.workspaceId,
-    version: cartDraft.version,
-    status: cartDraft.status,
-    currencyCode: cartDraft.currencyCode,
-    discountMinor: cartDraft.discountMinor,
+    cartId: draft.cartId,
+    workspaceId: draft.workspaceId,
+    version: draft.version,
+    status: draft.status,
+    currencyCode: draft.currencyCode,
+    discountMinor: draft.discountMinor,
     subtotalMinor,
     grandTotalMinor,
     lineCount: lines.length,

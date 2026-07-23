@@ -76,7 +76,10 @@ export function applyMigrations({
     if (!Number.isSafeInteger(newVersion) || newVersion < 1) {
       throw storageError('migration_failed');
     }
-    if (oldVersion > MANDIRI_DATABASE_VERSION) {
+    if (
+      oldVersion > MANDIRI_DATABASE_VERSION
+      || newVersion > MANDIRI_DATABASE_VERSION
+    ) {
       throw storageError('schema_too_new');
     }
 

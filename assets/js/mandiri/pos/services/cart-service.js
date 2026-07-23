@@ -250,6 +250,12 @@ export function createCartService({
               command.entity.cartId,
             )
             : null;
+          if (command.operationType === 'cart_update') {
+            if (!currentCart) throw storageError('record_not_found');
+            if (currentCart.version !== command.expectedVersion) {
+              throw storageError('version_conflict');
+            }
+          }
           const productsById = new Map();
           for (const [index, requestLine] of aggregated.entries()) {
             const product = await repositories.productRepository.get(

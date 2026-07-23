@@ -48,6 +48,16 @@ function composeCart(draft, lines) {
   });
 }
 
+function assertCartLinesMatchDraft(draft, lines) {
+  if (
+    !Array.isArray(lines)
+    || new Set(lines.map((line) => line.lineNo)).size !== lines.length
+    || lines.some((line) => line.cartId !== draft.cartId)
+  ) {
+    throw storageError('data_invalid');
+  }
+}
+
 async function replaceLines(transaction, accountScope, workspaceId, cartId, lines) {
   const store = transaction.objectStore(LINES);
   const index = store.index('byCart');
@@ -70,6 +80,7 @@ export function createCartRepository(options) {
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
       const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      if (!Array.isArray(lineInputs)) throw storageError('data_invalid');
       const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
       return executor.run(STORES, 'readwrite', async (transaction) => {
         const draftStore = transaction.objectStore(DRAFTS);
@@ -77,9 +88,7 @@ export function createCartRepository(options) {
           accountScope, workspaceId, draft.cartId,
         ]));
         if (existing !== undefined) throw storageError('constraint_violation');
-        if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) {
-          throw storageError('data_invalid');
-        }
+        assertCartLinesMatchDraft(draft, lines);
         await transaction.request(draftStore.add(draft));
         for (const line of lines) {
           await transaction.request(transaction.objectStore(LINES).add(line));
@@ -92,6 +101,7 @@ export function createCartRepository(options) {
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
       const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      if (!Array.isArray(lineInputs)) throw storageError('data_invalid');
       const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
       if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw storageError('data_invalid');
       return executor.run(STORES, 'readwrite', async (transaction) => {
@@ -102,9 +112,7 @@ export function createCartRepository(options) {
         if (current.version !== expectedVersion || draft.version !== expectedVersion + 1) {
           throw storageError('version_conflict');
         }
-        if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) {
-          throw storageError('data_invalid');
-        }
+        assertCartLinesMatchDraft(draft, lines);
         await transaction.request(draftStore.put(draft));
         await replaceLines(transaction, accountScope, workspaceId, draft.cartId, lines);
         return composeCart(draft, sortLines(lines));

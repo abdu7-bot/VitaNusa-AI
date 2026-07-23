@@ -170,7 +170,7 @@ function normalizeScopedCartDraft(accountScope, workspaceId, draft) {
 
 function normalizeScopedCartLine(accountScope, workspaceId, line) {
   const normalized = normalizeWith(normalizeCartLine, line, { workspaceId });
-  return Object.freeze({ accountScope, ...normalized });
+  return Object.freeze({ accountScope, workspaceId, ...normalized });
 }
 
 function publicCartDraft(record) {
@@ -179,7 +179,7 @@ function publicCartDraft(record) {
 }
 
 function publicCartLine(record) {
-  const { accountScope: _accountScope, ...line } = record;
+  const { accountScope: _accountScope, workspaceId: _workspaceId, ...line } = record;
   return normalizeWith(normalizeCartLine, line, { workspaceId: record.workspaceId });
 }
 
@@ -192,6 +192,16 @@ function sortCartDrafts(records) {
 
 function sortCartLines(records) {
   return records.sort((left, right) => left.lineNo - right.lineNo);
+}
+
+function assertCartLinesMatchDraft(draft, lines) {
+  if (
+    !Array.isArray(lines)
+    || new Set(lines.map((line) => line.lineNo)).size !== lines.length
+    || lines.some((line) => line.cartId !== draft.cartId)
+  ) {
+    throw storageError('data_invalid');
+  }
 }
 
 function composeCart(draft, lines) {
@@ -692,8 +702,9 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
       const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      if (!Array.isArray(lineInputs)) throw storageError('data_invalid');
       const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
-      if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) throw storageError('data_invalid');
+      assertCartLinesMatchDraft(draft, lines);
       const draftsBucket = ensureBucket(ensureBucket(getState().cartDrafts, accountScope), workspaceId);
       if (draftsBucket.has(draft.cartId)) throw storageError('constraint_violation');
       draftsBucket.set(draft.cartId, clonePlainRecord(draft));
@@ -712,9 +723,10 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       const accountScope = normalizeAccountScope(explicitAccountScope);
       const workspaceId = normalizeWorkspaceScope(explicitWorkspaceId);
       const draft = normalizeScopedCartDraft(accountScope, workspaceId, draftInput);
+      if (!Array.isArray(lineInputs)) throw storageError('data_invalid');
       const lines = lineInputs.map((lineInput) => normalizeScopedCartLine(accountScope, workspaceId, lineInput));
       if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw storageError('data_invalid');
-      if (new Set(lines.map((line) => line.lineNo)).size !== lines.length) throw storageError('data_invalid');
+      assertCartLinesMatchDraft(draft, lines);
       const draftsBucket = getBucket(getBucket(getState().cartDrafts, accountScope) ?? new Map(), workspaceId);
       const current = draftsBucket?.get(draft.cartId);
       if (!current) throw storageError('record_not_found');
