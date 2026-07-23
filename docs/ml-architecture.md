@@ -89,9 +89,14 @@ Beberapa catatan penting:
 pertanyaan/jawaban/alasan di-redact dari PII umum (email, nomor telepon,
 angka panjang) sebelum disimpan (`app/privacy.py`).
 
+Queue dibatasi oleh `VITANUSA_FEEDBACK_MAX_RECORDS` (default 1000) dan endpoint
+dibatasi per alamat klien oleh `VITANUSA_FEEDBACK_RATE_LIMIT_REQUESTS` dalam
+`VITANUSA_FEEDBACK_RATE_LIMIT_WINDOW_SECONDS` (default 10 request per 60 detik).
+
 **Tidak ada jalur otomatis dari feedback ke perubahan aplikasi.** Admin
-membaca antrean lewat `GET /admin/feedback?token=...` (butuh env var
-`VITANUSA_ADMIN_TOKEN`; endpoint 404 jika token tidak diset), menilai
+membaca antrean lewat `GET /admin/feedback` dengan header
+`Authorization: Bearer <VITANUSA_ADMIN_TOKEN>` (endpoint 404 jika token tidak
+diset; token query tidak diterima), menilai
 usulan, menerapkannya sebagai perubahan kode biasa (edit keyword, prompt,
 atau knowledge base), lalu diuji ulang lewat test suite sebelum dirilis.
 Sengaja tidak ada online learning atau retraining otomatis dari histori
