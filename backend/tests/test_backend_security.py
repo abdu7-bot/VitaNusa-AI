@@ -166,16 +166,31 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         ):
             self.assertNotIn(sensitive_value, raw_queue)
 
-    async def test_nested_and_json_escaped_sensitive_data_is_redacted_on_write_and_read(self) -> None:
+    async def test_assignment_and_recursive_json_secrets_are_redacted_on_write_and_read(
+        self,
+    ) -> None:
+        double_encoded = json.dumps(json.dumps({
+            "authorization": "double-authorization-canary",
+            "items": [{"bearer": "double-bearer-canary"}],
+        }))
+        deeply_encoded = "authorization=depth-limit-canary"
+        for _ in range(6):
+            deeply_encoded = json.dumps(deeply_encoded)
         nested_json = json.dumps({
-            "token": "json-token",
+            "assignments": [
+                "authorization=authorization-canary",
+                "bearer : bearer-canary",
+                "bearer=bearer-equals-canary",
+                r'\"authorization\" = \"escaped-authorization-canary\"',
+                "bearer = 'quoted-bearer-canary'",
+            ],
             "nested": {
-                "uid": "json-uid",
-                "payload": json.dumps({
-                    "api_key": "json-api-key",
-                    "password": "json-password",
-                    "authorization": "Bearer json-bearer",
-                }),
+                "array": [
+                    {"authorization": "nested-authorization-canary"},
+                    {"bearer": "nested-bearer-canary"},
+                ],
+                "doubleEncoded": double_encoded,
+                "depthLimited": deeply_encoded,
             },
         })
         response = await self.client.post(
@@ -201,11 +216,16 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         persisted = self.feedback_path.read_text(encoding="utf-8")
         displayed = admin_response.text
         for sensitive_value in (
-            "json-token",
-            "json-uid",
-            "json-api-key",
-            "json-password",
-            "json-bearer",
+            "authorization-canary",
+            "bearer-canary",
+            "bearer-equals-canary",
+            "escaped-authorization-canary",
+            "quoted-bearer-canary",
+            "nested-authorization-canary",
+            "nested-bearer-canary",
+            "double-authorization-canary",
+            "double-bearer-canary",
+            "depth-limit-canary",
         ):
             self.assertNotIn(sensitive_value, persisted)
             self.assertNotIn(sensitive_value, displayed)
