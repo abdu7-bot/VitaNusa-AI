@@ -30,6 +30,11 @@ _SENSITIVE_KEYS = frozenset({
     "token", "uid", "apikey", "password", "secret", "bearer", "authorization",
 })
 _MAX_JSON_REDACTION_DEPTH = 6
+_MAX_REDACTION_TEXT_LENGTH = 16_384
+_UNICODE_ESCAPE = re.compile(r"\\u([0-9a-fA-F]{4})")
+_SAFE_UNICODE_ESCAPE_CHARACTERS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-=:'\"\\ \t"
+)
 
 
 class SensitiveAccessLogFilter(logging.Filter):
@@ -88,7 +93,31 @@ def _redact_secret_assignments(text: str) -> str:
     return "".join(output)
 
 
+def _canonicalize_safe_unicode_escapes(text: str) -> str:
+    """Decode only bounded ASCII syntax escapes used by sensitive assignments."""
+
+    canonical = text
+    for _ in range(_MAX_JSON_REDACTION_DEPTH):
+        changed = False
+
+        def replace(match: re.Match[str]) -> str:
+            nonlocal changed
+            character = chr(int(match.group(1), 16))
+            if character not in _SAFE_UNICODE_ESCAPE_CHARACTERS:
+                return match.group(0)
+            changed = True
+            return character
+
+        canonical = _UNICODE_ESCAPE.sub(replace, canonical)
+        if not changed:
+            break
+    return canonical
+
+
 def redact_pii(text: str) -> str:
+    if len(text) > _MAX_REDACTION_TEXT_LENGTH:
+        return "[data terlalu panjang dihapus]"
+    text = _canonicalize_safe_unicode_escapes(text)
     text = _BEARER_TOKEN.sub("Bearer [rahasia dihapus]", text)
     text = _redact_secret_assignments(text)
     text = _EMAIL.sub("[email dihapus]", text)
@@ -105,7 +134,12 @@ def redact_sensitive_data(value: Any, *, _depth: int = 0) -> Any:
     if isinstance(value, dict):
         redacted = {}
         for key, item in value.items():
-            normalized_key = re.sub(r"[^a-z0-9]", "", str(key).lower())
+            key_text = str(key)
+            if len(key_text) > _MAX_REDACTION_TEXT_LENGTH:
+                redacted[key] = "[data terlalu panjang dihapus]"
+                continue
+            canonical_key = _canonicalize_safe_unicode_escapes(key_text)
+            normalized_key = re.sub(r"[^a-z0-9]", "", canonical_key.lower())
             redacted[key] = (
                 "[rahasia dihapus]"
                 if normalized_key in _SENSITIVE_KEYS
@@ -118,6 +152,8 @@ def redact_sensitive_data(value: Any, *, _depth: int = 0) -> Any:
         return tuple(redact_sensitive_data(item, _depth=_depth + 1) for item in value)
     if not isinstance(value, str):
         return value
+    if len(value) > _MAX_REDACTION_TEXT_LENGTH:
+        return "[data terlalu panjang dihapus]"
 
     try:
         decoded = json.loads(value)

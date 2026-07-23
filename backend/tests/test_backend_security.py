@@ -172,6 +172,7 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         double_encoded = json.dumps(json.dumps({
             "authorization": "double-authorization-canary",
             "items": [{"bearer": "double-bearer-canary"}],
+            "escaped": r"bearer\u003ddouble-unicode-canary",
         }))
         deeply_encoded = "authorization=depth-limit-canary"
         for _ in range(6):
@@ -187,11 +188,19 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
                 r'\"bearer\" \= \"escaped-delimiter-quoted-canary\"',
                 r'\"authorization\" = \"escaped-authorization-canary\"',
                 "bearer = 'quoted-bearer-canary'",
+                r"authorization\u003dunicode-equals-canary",
+                r"bearer\u003aunicode-colon-canary",
+                r"authoriz\u0061tion = partial-label-unicode-canary",
+                (
+                    r"\u0022be\u0061rer\u0022 \u003d "
+                    r"\u0022quoted-unicode-canary\u0022"
+                ),
             ],
             "nested": {
                 "array": [
                     {"authorization": "nested-authorization-canary"},
                     {"bearer": "nested-bearer-canary"},
+                    {r"authoriz\u0061tion": "nested-unicode-label-canary"},
                 ],
                 "doubleEncoded": double_encoded,
                 "depthLimited": deeply_encoded,
@@ -239,6 +248,12 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
             "escaped-colon-authorization-canary",
             "escaped-equals-bearer-canary",
             "escaped-delimiter-quoted-canary",
+            "unicode-equals-canary",
+            "unicode-colon-canary",
+            "partial-label-unicode-canary",
+            "quoted-unicode-canary",
+            "nested-unicode-label-canary",
+            "double-unicode-canary",
         ):
             self.assertNotIn(sensitive_value, persisted)
             self.assertNotIn(sensitive_value, displayed)
@@ -254,6 +269,10 @@ class BackendSecurityHttpTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("quoted-token", redacted)
         self.assertNotIn("escaped-uid", redacted)
         self.assertNotIn("escaped-secret", redacted)
+        self.assertEqual(
+            redact_sensitive_data("x" * 20_000),
+            "[data terlalu panjang dihapus]",
+        )
 
     def test_forwarded_header_requires_explicit_trusted_proxy(self) -> None:
         forwarded = "198.51.100.24"
