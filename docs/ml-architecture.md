@@ -89,9 +89,35 @@ Beberapa catatan penting:
 pertanyaan/jawaban/alasan di-redact dari PII umum (email, nomor telepon,
 angka panjang) sebelum disimpan (`app/privacy.py`).
 
+Queue dibatasi oleh `VITANUSA_FEEDBACK_MAX_RECORDS` (default 1000) dan endpoint
+dibatasi per alamat klien oleh `VITANUSA_FEEDBACK_RATE_LIMIT_REQUESTS` dalam
+`VITANUSA_FEEDBACK_RATE_LIMIT_WINDOW_SECONDS` (default 10 request per 60 detik).
+Limiter memakai state file dan lock lintas proses; path dapat ditetapkan melalui
+`VITANUSA_FEEDBACK_RATE_LIMIT_STORE_PATH` dan harus berada pada storage bersama
+untuk seluruh worker pada satu deployment.
+
+`X-Forwarded-For` tidak dipercaya secara default. Runtime harus menonaktifkan
+proxy-header implicit Uvicorn (`--no-proxy-headers`), lalu operator dapat
+menetapkan IP/CIDR proxy yang benar-benar dikelola melalui
+`VITANUSA_TRUSTED_PROXY_IPS`. Aplikasi berjalan dari hop paling kanan dan hanya
+melewati proxy yang termasuk allowlist tersebut. Blueprint deployment
+mendeklarasikan variabel ini dengan `sync: false`, tanpa menanam IP/CIDR;
+operator wajib mengisinya dengan IP/CIDR proxy yang telah diverifikasi untuk
+deployment baru. Untuk service Blueprint yang sudah ada, variabel baru
+`sync: false` harus ditambahkan manual melalui Render Dashboard. Saat tidak
+diisi, kosong, salah, atau peer tidak masuk allowlist,
+`X-Forwarded-For` diabaikan (fail-closed). Dampaknya, deployment di belakang
+proxy dapat menerapkan rate limit berdasarkan alamat peer proxy bersama sampai
+operator mengisi allowlist yang benar.
+
+Append dan kompaksi queue memakai lock file lintas proses, temporary file unik,
+`flush`/`fsync`, dan atomic replace. Record serta output admin juga melewati
+redaksi rekursif untuk key sensitif dan JSON yang dikodekan sebagai string.
+
 **Tidak ada jalur otomatis dari feedback ke perubahan aplikasi.** Admin
-membaca antrean lewat `GET /admin/feedback?token=...` (butuh env var
-`VITANUSA_ADMIN_TOKEN`; endpoint 404 jika token tidak diset), menilai
+membaca antrean lewat `GET /admin/feedback` dengan header
+`Authorization: Bearer <VITANUSA_ADMIN_TOKEN>` (endpoint 404 jika token tidak
+diset; token query tidak diterima), menilai
 usulan, menerapkannya sebagai perubahan kode biasa (edit keyword, prompt,
 atau knowledge base), lalu diuji ulang lewat test suite sebelum dirilis.
 Sengaja tidak ada online learning atau retraining otomatis dari histori

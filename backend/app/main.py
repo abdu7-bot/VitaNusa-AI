@@ -1,12 +1,21 @@
 import os
 import uuid
+from hmac import compare_digest
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .audit_log import log_ask_event
+from .client_identity import resolve_feedback_client
 from .conversation_memory import CONVERSATION_MEMORY, build_history_context
-from .feedback import FeedbackReceipt, FeedbackRequest, list_pending_feedback, record_feedback
+from .feedback import (
+    FEEDBACK_RATE_LIMITER,
+    FeedbackReceipt,
+    FeedbackRequest,
+    feedback_rate_limit_window_seconds,
+    list_pending_feedback,
+    record_feedback,
+)
 from .intent_router import detect_intent, normalize_text
 from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
@@ -19,6 +28,7 @@ from .llm.models import LlmRequest, LlmRouterResponse
 from .llm.prompts import build_system_prompt
 from .llm.router import LocalLlmRouter
 from .policy_engine import POLICY_ENGINE, serialize_policy_decision
+from .privacy import install_sensitive_access_log_filter
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
 from .schemas import AskRequest, AskResponse, LlmPreviewRequest, SearchPreviewRequest
 from .search.config import WebSearchConfig
@@ -40,6 +50,8 @@ DEFAULT_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
     "https://abdu7-bot.github.io",
 ]
+
+install_sensitive_access_log_filter()
 
 
 def get_allowed_origins() -> list[str]:
@@ -342,7 +354,6 @@ async def ask_ai(request: AskRequest) -> AskResponse:
         llm_used=llm_provider is not None,
         llm_provider=llm_provider,
         llm_mode=LocalLlmConfig.from_env().mode,
-        question=question,
     )
 
     return AskResponse(
@@ -363,21 +374,45 @@ async def ask_ai(request: AskRequest) -> AskResponse:
 
 
 @app.post("/feedback", response_model=FeedbackReceipt)
-def submit_feedback(feedback: FeedbackRequest) -> FeedbackReceipt:
+def submit_feedback(feedback: FeedbackRequest, request: Request) -> FeedbackReceipt:
     """Record a like/dislike (+ optional reason) into the review queue.
 
     This never changes app behavior by itself — an admin reviews the queue
     (see GET /admin/feedback) and applies any resulting change as a normal,
     tested code change.
     """
+    client_key = resolve_feedback_client(
+        request.client.host if request.client else None,
+        request.headers.get("X-Forwarded-For"),
+    )
+    if not FEEDBACK_RATE_LIMITER.allow(client_key):
+        raise HTTPException(
+            status_code=429,
+            detail="Terlalu banyak feedback. Coba lagi nanti.",
+            headers={"Retry-After": str(feedback_rate_limit_window_seconds())},
+        )
     return record_feedback(feedback)
 
 
 @app.get("/admin/feedback")
-def admin_feedback(token: str | None = None) -> list[dict]:
+def admin_feedback(request: Request) -> list[dict]:
     expected_token = os.getenv("VITANUSA_ADMIN_TOKEN", "").strip()
     if not expected_token:
         raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
-    if not token or token != expected_token:
-        raise HTTPException(status_code=403, detail="Token admin tidak valid.")
+    if "token" in request.query_params:
+        raise HTTPException(status_code=400, detail="Token query tidak diizinkan.")
+    authorization = request.headers.get("Authorization", "")
+    scheme, separator, credential = authorization.partition(" ")
+    if (
+        not separator
+        or scheme.lower() != "bearer"
+        or not credential
+        or " " in credential
+        or not compare_digest(credential, expected_token)
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Bearer token admin tidak valid.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return list_pending_feedback()
