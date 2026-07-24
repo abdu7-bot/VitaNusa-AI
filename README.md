@@ -10,6 +10,7 @@ VitaNusa AI bukan dokter, alat diagnosis, pemberi resep, mufti, atau pengganti t
 |---|---|
 | **Beranda** | Nusa Chat sebagai pintu utama edukasi amanah |
 | **VitaCheck** | Refleksi kebiasaan sehat, bukan diagnosis |
+| **Navigator Kesehatan** | Edukasi multi-bidang, penyaring tanda bahaya, sumber tepercaya, dan rujukan aman; bukan diagnosis |
 | **Edukasi** | Artikel kesehatan, kebiasaan, literasi produk, dan kapan mencari bantuan |
 | **VitaStory** | Cerita, komik, audio story, dan refleksi |
 | **Produk** | Katalog reseller dengan edukasi sebelum promosi |
@@ -77,6 +78,9 @@ python tests/ci_smoke_test.py
 - [`docs/amanah-guidelines.md`](docs/amanah-guidelines.md) — pedoman praktis
 - [`docs/nusa-ai-assistant-prompt.md`](docs/nusa-ai-assistant-prompt.md) — batas dan gaya Nusa AI
 - [`docs/nusa-ai-islamic-thinking-principles.md`](docs/nusa-ai-islamic-thinking-principles.md) — prinsip adab Islami
+- [`docs/vitanusa-master-map-2026.md`](docs/vitanusa-master-map-2026.md) — peta induk arsitektur dan arah 2026
+- [`docs/vitanusa-health-navigator-zero-cost.md`](docs/vitanusa-health-navigator-zero-cost.md) — rancangan Navigator Kesehatan multi-bidang yang aman dan Rp0
+- [`docs/api-inventory-free-tier-2026.md`](docs/api-inventory-free-tier-2026.md) — inventaris layanan gratis dan batasannya
 - [`docs/vitanusa-map.md`](docs/vitanusa-map.md) — peta besar platform
 - [`docs/roadmap.md`](docs/roadmap.md) — roadmap pengembangan
 
