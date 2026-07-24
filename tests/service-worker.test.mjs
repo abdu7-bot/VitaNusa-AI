@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const workerUrl = new URL('../service-worker.js', import.meta.url);
 const source = await readFile(workerUrl, 'utf8');
 
 test('service worker mempunyai syntax valid dan cache version', () => {
-  const result = spawnSync(process.execPath, ['--check', workerUrl.pathname], { encoding: 'utf8' });
+  const result = spawnSync(process.execPath, ['--check', fileURLToPath(workerUrl)], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.match(source, /CACHE_NAME = `\$\{CACHE_PREFIX}v\d+-/);
 });

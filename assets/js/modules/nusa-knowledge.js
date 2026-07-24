@@ -7,6 +7,7 @@
  */
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { findMatchingNusaArticle } from './nusa-articles-map.js?v=20260626-nusa-brain-v3-1';
+import { sanitizeContentHtml } from './content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const WHATSAPP_URL = 'https://wa.me/6288708862581';
 const EMAIL_URL = 'mailto:kopiscent99@gmail.com';
@@ -100,7 +101,6 @@ const EMERGENCY_TERMS = Object.freeze([
 const DOSE_DIAGNOSIS_TERMS = Object.freeze(['diagnosis', 'diagnosa', 'dosis', 'resep obat', 'obat apa', 'minum apa', 'harus minum obat']);
 const FINAL_FATWA_TERMS = Object.freeze(['fatwa final', 'pasti halal', 'pasti haram', 'hukum final', 'menurut islam pasti', 'halal menurut islam', 'haram menurut islam']);
 const PRODUCT_CLAIM_TERMS = Object.freeze(['pasti menyembuhkan', 'pasti sembuh', 'menyembuhkan diabetes', 'menyembuhkan kanker', 'obat segala penyakit', 'sembuh total', '100% aman']);
-const BLOCKED_HTML_SELECTOR = 'script, iframe, object, embed, link, meta, style';
 const SAFE_FALLBACK_TEXT = [
   'Saya belum mempunyai informasi yang cukup untuk menjawab pertanyaan itu secara aman.',
   '',
@@ -425,19 +425,7 @@ function createGuardAnswer(question, text, riskLevel, primaryAction) {
   };
 }
 function sanitizeKnowledgeHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = String(html || '');
-  template.content.querySelectorAll(BLOCKED_HTML_SELECTOR).forEach((node) => node.remove());
-  template.content.querySelectorAll('*').forEach((node) => {
-    [...node.attributes].forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      const value = String(attr.value || '').trim().toLowerCase();
-      if (name.startsWith('on') || ((name === 'href' || name === 'src') && value.startsWith('javascript:'))) {
-        node.removeAttribute(attr.name);
-      }
-    });
-  });
-  return template.innerHTML;
+  return sanitizeContentHtml(html);
 }
 function createSafetyNote(answer) {
   if (answer.riskLevel === 'high') return 'Catatan amanah: topik ini berisiko tinggi. Gunakan sebagai edukasi umum dan rujuk pihak kompeten.';

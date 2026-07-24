@@ -1,5 +1,6 @@
 import { db } from './firebase-auth.js';
 import { collection, deleteDoc, doc, getDocs } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { htmlToPlainText } from '../assets/js/modules/content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const app = document.querySelector('[data-content-library-app]');
 const state = { initialized: false, items: [], filters: { search: '', category: '', status: '' } };
@@ -340,9 +341,7 @@ function normalizeSearch(value) {
 }
 
 function stripHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = String(html || '');
-  return template.content.textContent?.replace(/\s+/g, ' ').trim() || '';
+  return htmlToPlainText(html);
 }
 
 function formatDate(value) {

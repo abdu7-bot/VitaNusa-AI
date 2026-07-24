@@ -152,6 +152,9 @@ jobs:
       - name: Test Android PWA and Nusa Agent
         run: npm run test:android-pwa
 
+      - name: Test content rendering security
+        run: npm run test:content-security
+
       - name: Test VitaNusa Mandiri shell
         run: npm run test:mandiri:shell
 
@@ -208,6 +211,7 @@ jobs:
           node --check assets/js/modules/vitacheck-history.js
           node --check assets/js/modules/nusa-chat.js
           node --check assets/js/modules/nusa-knowledge.js
+          node --check assets/js/modules/content-sanitizer.js
           node --check assets/js/modules/nusa-ui-shell.js
           node --check assets/js/modules/pwa-install.js
           node --check assets/js/modules/nusa-agent.js

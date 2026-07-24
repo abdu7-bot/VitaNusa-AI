@@ -1,5 +1,6 @@
 import { getNusaReply } from './nusa-knowledge.js?v=20260712-product-claim-v1';
 import { getVitaNusaBaseUrl } from './pwa-install.js?v=20260716-android-pwa-v1';
+import { createSanitizedContentFragment } from './content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const ROUTE_OVERRIDES = Object.freeze({
   '#vitacheck': 'vitacheck.html',
@@ -38,8 +39,6 @@ const DEFAULT_LOCAL_BACKENDS = Object.freeze([
 const ACTIVE_BACKEND_STORAGE_KEY = 'VITANUSA_ACTIVE_BACKEND_ASK_URL';
 const CHAT_SESSION_STORAGE_KEY = 'VITANUSA_CHAT_SESSION_ID';
 const BACKEND_TIMEOUT_MS = 7000;
-const BLOCKED_DETAIL_SELECTOR = 'script, iframe, object, embed, link, meta, style';
-const URL_DETAIL_ATTRIBUTES = new Set(['href', 'src', 'srcdoc', 'xlink:href']);
 const UNORDERED_LIST_PATTERN = /^-\s+(.+)$/;
 const ORDERED_LIST_PATTERN = /^\d+\.\s+(.+)$/;
 const CHAT_CONTROLLERS = new WeakMap();
@@ -183,34 +182,13 @@ function appendFormattedText(container, text) {
   container.append(formatted);
 }
 
-function isUnsafeUrlAttribute(name, value) {
-  return URL_DETAIL_ATTRIBUTES.has(name) && value.trim().toLowerCase().startsWith('javascript:');
-}
-
-function sanitizeDetailDocument(doc) {
-  doc.body.querySelectorAll(BLOCKED_DETAIL_SELECTOR).forEach((node) => node.remove());
-  doc.body.querySelectorAll('*').forEach((node) => {
-    [...node.attributes].forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      const value = String(attr.value || '');
-      if (name.startsWith('on') || isUnsafeUrlAttribute(name, value)) {
-        node.removeAttribute(attr.name);
-      }
-    });
-  });
-}
-
 function appendKnowledgeDetail(container, html) {
   if (!html) return;
 
-  const detailDoc = new DOMParser().parseFromString(String(html), 'text/html');
-  sanitizeDetailDocument(detailDoc);
-
-  if (!detailDoc.body.childNodes.length) return;
-
   const detail = document.createElement('div');
   detail.className = 'nusa-knowledge-detail';
-  detail.append(...detailDoc.body.childNodes);
+  detail.append(createSanitizedContentFragment(html, detail.ownerDocument));
+  if (!detail.hasChildNodes()) return;
   container.append(detail);
 }
 
