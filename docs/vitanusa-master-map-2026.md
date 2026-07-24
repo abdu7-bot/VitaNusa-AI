@@ -14,8 +14,9 @@ Dokumen rinci yang menjadi bagian peta induk:
 2. [Firebase Admin Architecture Plan](./firebase-admin-plan.md) — autentikasi, Firestore, Storage, admin, dan migrasi.
 3. [Peta Produksi Kreatif Gratis dan Ketat](./vitanusa-creative-production-zero-cost.md) — novel, komik, syariah, review, dan budget gate.
 4. [Inventaris API Gratis dan Free Tier 2026](./api-inventory-free-tier-2026.md) — sumber data, API key, batas biaya, lisensi, dan keputusan integrasi.
-5. [Katalog Novel](../documents/novel/README.md) — status karya novel yang benar-benar tersedia.
-6. Direktori [`komik/`](../komik/) — implementasi komik statis yang sudah ada.
+5. [Peta Navigator Kesehatan Multi-Bidang Rp0](./vitanusa-health-navigator-zero-cost.md) — intended use, emergency gate, ruang edukasi, privasi, pemisahan produk, dan validasi.
+6. [Katalog Novel](../documents/novel/README.md) — status karya novel yang benar-benar tersedia.
+7. Direktori [`komik/`](../komik/) — implementasi komik statis yang sudah ada.
 
 Apabila dua dokumen memberi arahan berbeda, urutan penyelesaian konflik adalah:
 
@@ -84,6 +85,13 @@ VitaNusa AI
 │   ├── refleksi kebiasaan
 │   ├── skor non-diagnostik
 │   └── tanda kapan mencari bantuan
+│
+├── Navigator Kesehatan Multi-Bidang
+│   ├── emergency gate sebelum routing lain
+│   ├── ruang edukasi, bukan dokter spesialis
+│   ├── sumber terkurasi dan sitasi
+│   ├── langkah aman serta pertanyaan untuk tenaga kesehatan
+│   └── tanpa diagnosis, resep, atau rekomendasi produk personal
 │
 ├── Edukasi
 │   ├── artikel kesehatan
@@ -210,7 +218,35 @@ Contoh rute:
 
 Daftar keputusan lengkap berada di [Inventaris API](./api-inventory-free-tier-2026.md).
 
-## 8. Arsitektur Nol Biaya
+## 8. Navigator Kesehatan Multi-Bidang
+
+Arah kesehatan resmi adalah **navigator edukasi**, bukan dokter, alat diagnosis, atau persona spesialis. Istilah multi-bidang hanya berarti sistem memilih sumber, policy, dan format jawaban yang relevan.
+
+```text
+intake minimum dan consent
+→ emergency gate
+→ specialized policies
+→ router ruang edukasi
+→ approved health sources
+→ constrained AI draft
+→ claim/citation/privacy validation
+→ edukasi + langkah aman + rujukan
+```
+
+Aturan inti:
+
+- emergency gate berjalan sebelum artikel, AI, VitaCheck, dan produk;
+- diagnosis, diagnosis banding personal, dosis, resep, dan penghentian obat dilarang;
+- anak, kehamilan, menyusui, penyakit kronis, dan krisis mental memakai mode lebih konservatif;
+- UI memakai label `Ruang Edukasi`, bukan `Dokter Spesialis`; persona AI tidak memakai gelar atau identitas klinis;
+- data kesehatan diminimalkan, penyimpanan lokal menjadi default, dan cloud bersifat opt-in;
+- keluhan personal tidak boleh menghasilkan rekomendasi produk;
+- model bahasa tidak menjadi satu-satunya classifier risiko;
+- tanpa reviewer kompeten, ruang high-risk tetap `EDUCATION_ONLY` atau `BLOCKED_REVIEWER_UNAVAILABLE`.
+
+Rancangan lengkap berada di [Peta Navigator Kesehatan Multi-Bidang Rp0](./vitanusa-health-navigator-zero-cost.md).
+
+## 9. Arsitektur Nol Biaya
 
 ```text
 Frontend statis VitaNusa
@@ -239,7 +275,7 @@ Aturan:
 - free tier cloud hanya cadangan dan tidak menerima data sensitif;
 - semua lisensi model dan dataset diregistrasi sebelum digunakan.
 
-## 9. Arsitektur Produksi Kreatif
+## 10. Arsitektur Produksi Kreatif
 
 ```text
 Tema
@@ -267,7 +303,7 @@ Prinsip pokok:
 - tanpa reviewer kompeten, karya risiko tinggi tetap diblokir;
 - satu validator gagal memblokir publikasi.
 
-## 10. Peran dan Kewenangan
+## 11. Peran dan Kewenangan
 
 | Peran | Kewenangan |
 |---|---|
@@ -282,7 +318,7 @@ Prinsip pokok:
 
 Tidak ada AI role yang mempunyai izin `publish`.
 
-## 11. Roadmap Terpadu
+## 12. Roadmap Terpadu
 
 ### Fase A — Kunci arah
 
@@ -345,7 +381,20 @@ Tidak ada AI role yang mempunyai izin `publish`.
 - [ ] Withdrawal mechanism.
 - [ ] Public source notes dan disclaimer.
 
-## 12. Kondisi yang Memblokir Rilis
+### Fase H — Navigator kesehatan Rp0
+
+- [x] Intended use dan arsitektur sasaran tersedia.
+- [ ] Audit content rendering security selesai.
+- [ ] Emergency gate terstruktur dengan negation/context tests.
+- [ ] Intake minimum dan consent terpisah.
+- [ ] Health source/evidence registry machine-readable.
+- [ ] Ruang edukasi prioritas dengan structured response contract.
+- [ ] Pemisahan keras keluhan personal dari rekomendasi produk.
+- [ ] AI lokal terbatas dengan claim, citation, authority, dan privacy gates.
+- [ ] Golden test set bahasa Indonesia dan review tenaga kesehatan.
+- [ ] Tidak ada klaim dokter, diagnosis, atau spesialis pada pemasaran.
+
+## 13. Kondisi yang Memblokir Rilis
 
 Rilis tidak boleh dilakukan bila:
 
@@ -358,9 +407,13 @@ Rilis tidak boleh dilakukan bila:
 - portal BPOM/BPJPH di-scrape tanpa izin;
 - free tier dapat otomatis menjadi berbayar;
 - tidak tersedia audit log atau penarikan publikasi;
-- validator gagal tetapi admin tetap dapat memaksa publish tanpa alasan dan jejak audit.
+- validator gagal tetapi admin tetap dapat memaksa publish tanpa alasan dan jejak audit;
+- emergency gate dapat dilewati oleh artikel, model, VitaCheck, atau produk;
+- data kesehatan mentah masuk log publik atau dikirim ke provider yang tidak disetujui;
+- AI memberi diagnosis, dosis, penghentian obat, atau rekomendasi produk dari keluhan personal;
+- antarmuka kesehatan mengaku sebagai dokter atau spesialis.
 
-## 13. Definition of Done Platform
+## 14. Definition of Done Platform
 
 VitaNusa dianggap mempunyai fondasi produksi mandiri yang aman apabila:
 
@@ -373,9 +426,13 @@ VitaNusa dianggap mempunyai fondasi produksi mandiri yang aman apabila:
 7. publikasi dapat ditarik dan dikoreksi;
 8. novel dan komik memiliki version history;
 9. sumber, model, prompt version, dan reviewer tercatat;
-10. test membuktikan kegagalan satu gate memblokir publikasi.
+10. test membuktikan kegagalan satu gate memblokir publikasi;
+11. health navigator berjalan non-diagnostik dan memprioritaskan emergency gate;
+12. data kesehatan diminimalkan dan cloud storage bersifat opt-in;
+13. keluhan personal tidak memicu rekomendasi produk;
+14. seluruh biaya layanan digital terkunci Rp0 tanpa paid fallback.
 
-## 14. Keputusan Penutup
+## 15. Keputusan Penutup
 
 VitaNusa tidak dibangun dengan prinsip “sebanyak mungkin fitur dan API”. Arah resminya adalah:
 
