@@ -1,3 +1,5 @@
+import { htmlToPlainText } from '../assets/js/modules/content-sanitizer.js?v=20260725-content-rendering-security-v1';
+
 (() => {
   const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
 
@@ -13,9 +15,7 @@
   }
 
   function stripTags(value) {
-    const container = document.createElement('div');
-    container.innerHTML = String(value || '');
-    return (container.textContent || '').replace(/\s+/g, ' ').trim();
+    return htmlToPlainText(value);
   }
 
   function firstMatch(value, pattern) {

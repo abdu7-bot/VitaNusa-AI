@@ -16,6 +16,7 @@
     "test:pwa-manifest": "node --test tests/pwa-manifest.test.mjs",
     "test:pwa-install": "node --test tests/pwa-install.test.mjs",
     "test:nusa-agent": "node --test tests/nusa-agent.test.mjs",
+    "test:content-security": "node --test tests/content-rendering-security.test.mjs",
     "test:share-target": "node --test tests/share-target.test.mjs",
     "test:service-worker": "node --test tests/service-worker.test.mjs",
     "test:android-pwa": "node --test tests/pwa-manifest.test.mjs tests/pwa-install.test.mjs tests/nusa-agent.test.mjs tests/share-target.test.mjs tests/service-worker.test.mjs",

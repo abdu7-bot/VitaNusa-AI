@@ -1,5 +1,9 @@
 import { db } from './firebase-auth.js';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import {
+  htmlToPlainText,
+  inspectContentHtml,
+} from '../assets/js/modules/content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const knowledgeApp = document.querySelector('[data-knowledge-app]');
 const VALID_STATUSES = new Set(['draft', 'published', 'archived']);
@@ -136,45 +140,68 @@ function renderKnowledge() {
   const body = getListBody();
   if (!body) return;
   if (!state.knowledge.length) {
-    body.innerHTML = '<tr><td colspan="7"><strong>Belum ada Q&amp;A Nusa AI.</strong><br><span class="article-meta-muted">Klik Tambah Q&amp;A atau pakai Import Knowledge dari Prompt untuk membuat pustaka pertama. Item baru default published agar dibaca Nusa AI.</span></td></tr>';
+    body.replaceChildren(createKnowledgeEmptyRow(
+      'Belum ada Q&A Nusa AI.',
+      'Klik Tambah Q&A atau pakai Import Knowledge dari Prompt untuk membuat pustaka pertama. Item baru default published agar dibaca Nusa AI.',
+    ));
     return;
   }
   const items = getFilteredKnowledge();
   if (!items.length) {
-    body.innerHTML = '<tr><td colspan="7"><strong>Tidak ada Q&amp;A yang cocok dengan filter.</strong></td></tr>';
+    body.replaceChildren(createKnowledgeEmptyRow('Tidak ada Q&A yang cocok dengan filter.'));
     return;
   }
   body.replaceChildren(...items.map(createKnowledgeRow));
 }
 
+function createKnowledgeEmptyRow(title, description = '') {
+  const row = document.createElement('tr');
+  const cell = document.createElement('td');
+  const strong = document.createElement('strong');
+  cell.colSpan = 7;
+  strong.textContent = title;
+  cell.append(strong);
+  if (description) {
+    const detail = document.createElement('span');
+    detail.className = 'article-meta-muted';
+    detail.textContent = description;
+    cell.append(document.createElement('br'), detail);
+  }
+  row.append(cell);
+  return row;
+}
+
 function createKnowledgeRow(item) {
   const row = document.createElement('tr');
-  row.innerHTML = `
-    <td class="article-title-cell"><strong></strong><small></small></td>
-    <td></td>
-    <td></td>
-    <td><span class="article-status"></span></td>
-    <td class="article-meta-muted"></td>
-    <td class="article-meta-muted"></td>
-    <td><div class="article-row-actions"></div></td>
-  `;
-  Array.from(row.children).forEach((cell, index) => {
+  const cells = Array.from({ length: 7 }, () => document.createElement('td'));
+  cells.forEach((cell, index) => {
     cell.dataset.label = ['Pertanyaan', 'Kategori', 'Intent / Risk', 'Status', 'Dibuat', 'Update', 'Aksi'][index] || '';
   });
-  row.querySelector('strong').textContent = item.question || '(tanpa pertanyaan)';
-  row.querySelector('small').textContent = item.shortAnswer || '-';
-  row.children[1].textContent = item.category || '-';
-  row.children[2].textContent = `${item.intentTarget || '-'} / ${item.riskLevel || '-'}`;
-  const status = row.querySelector('.article-status');
+  cells[0].className = 'article-title-cell';
+  const question = document.createElement('strong');
+  const shortAnswer = document.createElement('small');
+  question.textContent = item.question || '(tanpa pertanyaan)';
+  shortAnswer.textContent = item.shortAnswer || '-';
+  cells[0].append(question, shortAnswer);
+  cells[1].textContent = item.category || '-';
+  cells[2].textContent = `${item.intentTarget || '-'} / ${item.riskLevel || '-'}`;
+  const status = document.createElement('span');
+  status.className = 'article-status';
   status.textContent = item.status || 'draft';
   status.classList.add(`article-status-${item.status || 'draft'}`);
-  row.children[4].textContent = formatDate(item.createdAt);
-  row.children[5].textContent = formatDate(item.updatedAt || item.createdAt);
-  const actions = row.querySelector('.article-row-actions');
+  cells[3].append(status);
+  cells[4].className = 'article-meta-muted';
+  cells[5].className = 'article-meta-muted';
+  cells[4].textContent = formatDate(item.createdAt);
+  cells[5].textContent = formatDate(item.updatedAt || item.createdAt);
+  const actions = document.createElement('div');
+  actions.className = 'article-row-actions';
   actions.append(createActionButton('Edit', 'edit', item.id));
   if (item.status !== 'published') actions.append(createActionButton('Publish', 'publish', item.id));
   if (item.status !== 'archived') actions.append(createActionButton('Archive', 'archive', item.id));
   actions.append(createActionButton('Hapus', 'delete', item.id, 'danger'));
+  cells[6].append(actions);
+  row.append(...cells);
   return row;
 }
 
@@ -294,7 +321,8 @@ function validateKnowledgePayload(payload, { publishing = false } = {}) {
   if (!VALID_INTENT_TARGETS.has(payload.intentTarget)) errors.push('Intent target tidak valid.');
   if (!VALID_PRIMARY_ACTIONS.has(payload.primaryAction)) errors.push('Primary action tidak valid.');
   if (!Number.isFinite(payload.priority)) errors.push('Priority harus angka.');
-  if (/<\s*script\b/i.test(payload.answerHtml)) errors.push('Answer HTML tidak boleh mengandung script.');
+  const answerInspection = inspectContentHtml(payload.answerHtml);
+  if (!answerInspection.ok) errors.push('Answer HTML ditolak karena mengandung markup berbahaya, atribut tidak diizinkan, URL tidak aman, atau struktur HTML malformed.');
   if (payload.riskLevel === 'high') warnings.push('Risk level high: tetap review manual. Jika sensitif, tambahkan reviewer note dan arahkan ke bantuan ahli/prinsip amanah.');
   if (payload.isMedicalSensitive && payload.primaryAction === 'view-products') errors.push('Medical sensitive tidak boleh diarahkan ke view-products.');
   const text = normalize(`${payload.question} ${payload.shortAnswer} ${payload.answerHtml}`);
@@ -565,9 +593,7 @@ function normalizeAnswerHtml(value) {
 }
 
 function stripTags(value) {
-  const div = document.createElement('div');
-  div.innerHTML = String(value || '');
-  return div.textContent || '';
+  return htmlToPlainText(value);
 }
 
 function escapeHtml(value) {

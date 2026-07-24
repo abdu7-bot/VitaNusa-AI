@@ -1,4 +1,8 @@
 import { initNusaUiShell } from './nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
+import {
+  createSanitizedContentFragment,
+  htmlToPlainText,
+} from './content-sanitizer.js?v=20260725-content-rendering-security-v1';
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
 import { getFirestore, collection, getDocs, query, where, limit } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
@@ -137,7 +141,7 @@ function renderArticleDetail(article) {
   if (tagList.length) header.append(createTagList(tagList, 'article-detail-tags'));
 
   const body = el('article', 'article-detail-body');
-  body.innerHTML = sanitizeHtml(article.contentHtml || '');
+  body.append(createSanitizedContentFragment(article.contentHtml || '', body.ownerDocument));
   prepareArticleBody(body);
 
   const nodes = [header];
@@ -311,55 +315,7 @@ function getSafeImageUrl(value) {
 }
 
 function stripHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = html;
-  return template.content.textContent?.replace(/\s+/g, ' ').trim() || '';
-}
-
-function sanitizeHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = String(html || '');
-  template.content.querySelectorAll('script, iframe, object, embed, link, meta, style').forEach((node) => node.remove());
-
-  template.content.querySelectorAll('*').forEach((node) => {
-    [...node.attributes].forEach((attribute) => {
-      const name = attribute.name.toLowerCase();
-      if (name.startsWith('on') || name === 'style' || name === 'srcdoc') {
-        node.removeAttribute(attribute.name);
-        return;
-      }
-
-      if (['href', 'src', 'action', 'formaction', 'xlink:href'].includes(name) && !isSafeContentUrl(attribute.value, name)) {
-        node.removeAttribute(attribute.name);
-      }
-    });
-
-    if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
-      const rel = new Set(String(node.getAttribute('rel') || '').split(/\s+/).filter(Boolean));
-      rel.add('noopener');
-      rel.add('noreferrer');
-      node.setAttribute('rel', [...rel].join(' '));
-    }
-  });
-
-  return template.innerHTML;
-}
-
-function isSafeContentUrl(value, attributeName) {
-  const candidate = String(value || '').trim();
-  if (!candidate || /[\u0000-\u001f]/.test(candidate)) return false;
-  if (attributeName === 'href' && candidate.startsWith('#')) return true;
-
-  const compact = candidate.replace(/\s+/g, '');
-  if (/^(?:javascript|vbscript|data):/i.test(compact)) return false;
-
-  try {
-    const parsed = new URL(candidate, document.baseURI);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return true;
-    return attributeName === 'href' && (parsed.protocol === 'mailto:' || parsed.protocol === 'tel:');
-  } catch {
-    return false;
-  }
+  return htmlToPlainText(html);
 }
 
 function el(tag, className = '', text = '') {

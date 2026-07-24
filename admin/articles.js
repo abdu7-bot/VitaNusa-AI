@@ -1,5 +1,6 @@
 import { db } from './firebase-auth.js';
 import { collection, addDoc, deleteDoc, doc, getDocs, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { inspectContentHtml } from '../assets/js/modules/content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const articleApp = document.querySelector('[data-article-app]');
 const REQUIRED_DISCLAIMER = 'Konten ini bersifat edukasi dan refleksi, bukan diagnosis medis. Untuk keluhan serius, segera konsultasikan kepada tenaga kesehatan profesional.';
@@ -650,7 +651,8 @@ function validateArticle(payload, currentId = null) {
   if (!VALID_RISK_LEVELS.has(payload.riskLevel)) errors.push('Risk Level tidak valid.');
   if (!VALID_CONTENT_DEPTHS.has(payload.contentDepth)) errors.push('Content Depth tidak valid.');
   if (!VALID_PRIMARY_ACTIONS.has(payload.primaryAction)) errors.push('Primary Action tidak valid.');
-  if (/<\s*script/i.test(payload.contentHtml)) errors.push('Content HTML tidak boleh mengandung tag script.');
+  const contentInspection = inspectContentHtml(payload.contentHtml);
+  if (!contentInspection.ok) errors.push('Content HTML ditolak karena mengandung markup berbahaya, atribut tidak diizinkan, URL tidak aman, atau struktur HTML malformed.');
   if (/<\s*\/?\s*(html|head|body)\b/i.test(payload.contentHtml)) errors.push('Content HTML tidak boleh berisi full document HTML seperti html, head, atau body.');
 
   const duplicate = state.articles.find((article) => article.slug === payload.slug && article.id !== currentId);
@@ -909,7 +911,7 @@ function stripImportNonMainHtml(contentHtml) {
       if (normalizedText.startsWith('catatan review amanah')) node.remove();
     });
 
-    return doc.body?.innerHTML || html;
+    return doc.body?.textContent || '';
   }
 
   html = html.replace(/<(section|div)\b[^>]*class=["'][^"']*\barticle-note\b[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, ' ');

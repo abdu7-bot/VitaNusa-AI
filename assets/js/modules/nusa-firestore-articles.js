@@ -1,6 +1,7 @@
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
 import { getFirestore, collection, getDocs, query, where, limit } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { htmlToPlainText } from './content-sanitizer.js?v=20260725-content-rendering-security-v1';
 
 const MAX_LOADED_ARTICLES = 120;
 const MAX_MATCHED_ARTICLES = 3;
@@ -39,14 +40,7 @@ export async function findMatchingFirestoreArticles(queryText, options = {}){
 }
 export function normalizeSearchText(value){ return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' dan ').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
 export function stripHtml(value){
-  const rawHtml = String(value || '');
-  if (!rawHtml) return '';
-  if (typeof DOMParser === 'function') {
-    const parsed = new DOMParser().parseFromString(`<div>${rawHtml}</div>`, 'text/html');
-    parsed.querySelectorAll('script, style, iframe, object, embed, link, meta').forEach((el)=>el.remove());
-    return normalizeWhitespace(parsed.body.textContent || '');
-  }
-  return normalizeWhitespace(rawHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ').replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, 'dan'));
+  return normalizeWhitespace(htmlToPlainText(value));
 }
 export function scoreArticle(article, queryText, options = {}){
   if (!isEligiblePublishedArticle(article)) return 0;

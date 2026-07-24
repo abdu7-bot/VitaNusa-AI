@@ -68,7 +68,7 @@ async function loadArticleContent(entry){
   return {
     ...entry,
     href: entry.sourcePath,
-    contentText: stripHtml(extractMainArticleHtml(html))
+    contentText: extractMainArticleText(html)
   };
 }
 
@@ -95,11 +95,14 @@ function getArticleUrl(sourcePath){
   return new URL(`../../../${sourcePath}`, import.meta.url);
 }
 
-function extractMainArticleHtml(html){
-  if (typeof DOMParser !== 'function') return html;
+function extractMainArticleText(html){
+  if (typeof DOMParser !== 'function') {
+    return normalizeWhitespace(String(html || '').replace(/<[^>]+>/g, ' '));
+  }
   const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  parsed.querySelectorAll('script, style, iframe, object, embed, link, meta, form, svg, math').forEach((element)=>element.remove());
   const article = parsed.querySelector('article.vitanusa-article') || parsed.querySelector('main') || parsed.body;
-  return article?.innerHTML || '';
+  return normalizeWhitespace(article?.textContent || '');
 }
 
 function scoreArticle(article, queryText, options = {}){
@@ -143,16 +146,6 @@ function scoreArticle(article, queryText, options = {}){
 function shouldSearchGithub(normalizedQuery, options){ const tokens = getMeaningfulTokens(normalizedQuery); if (options.allowShortQuery) return normalizedQuery.length >= 3 && tokens.length >= 1; return normalizedQuery.length >= 8 && tokens.length >= 2; }
 function isBlockedIslamicProductArticle(article){ return article?.isIslamicSensitive === true && String(article.primaryAction || '').trim() === 'view-products'; }
 function normalizeSearchText(value){ return String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' dan ').replace(/[?!.:,;()[\]{}"'`~_+=/\\|-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
-function stripHtml(value){
-  const rawHtml = String(value || '');
-  if (!rawHtml) return '';
-  if (typeof DOMParser === 'function') {
-    const parsed = new DOMParser().parseFromString(`<div>${rawHtml}</div>`, 'text/html');
-    parsed.querySelectorAll('script, style, iframe, object, embed, link, meta').forEach((el)=>el.remove());
-    return normalizeWhitespace(parsed.body.textContent || '');
-  }
-  return normalizeWhitespace(rawHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ').replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, 'dan'));
-}
 function getTags(tags){ if (Array.isArray(tags)) return tags.map((tag)=>String(tag || '').trim()).filter(Boolean); if (typeof tags === 'string') return tags.split(',').map((tag)=>tag.trim()).filter(Boolean); return []; }
 function getMeaningfulTokens(text){ return [...new Set(String(text || '').split(' ').map((token)=>token.trim()).filter((token)=>token.length > 2 && !STOP_WORDS.has(token)))]; }
 function getExpandedTokens(text){ const tokens = getMeaningfulTokens(text); const expanded = new Set(tokens); tokens.forEach((token)=>(TOKEN_SYNONYMS[token] || []).forEach((synonym)=>expanded.add(synonym))); return [...expanded]; }
