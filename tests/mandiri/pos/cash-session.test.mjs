@@ -9,6 +9,7 @@ import { createCashSessionService } from '../../../assets/js/mandiri/pos/service
 import { createMemoryRepositories } from '../../../assets/js/mandiri/repositories/memory-repositories.js';
 import {
   ATOMIC_CASH_STORE_NAMES,
+  ATOMIC_SALE_STORE_NAMES,
   createRepositoryContext,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 import { openMandiriDatabase } from '../../../assets/js/mandiri/storage/database.js';
@@ -108,6 +109,150 @@ async function setupMemory({ role = 'merchant_owner' } = {}) {
     digestFactory: digest,
   });
   return { memory, service };
+}
+
+async function appendCashSale(repositoryContext, {
+  suffix,
+  finalizedAtLocal,
+  grandTotalMinor,
+}) {
+  const saleId = `sale_${suffix}`;
+  const paymentId = `payment_${suffix}`;
+  const receiptId = `receipt_${suffix}`;
+  const operationId = `op_${suffix}`;
+  const line = {
+    schemaVersion: 1,
+    saleId,
+    lineNo: 1,
+    productId: 'product_dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    productNameSnapshot: 'Produk uji',
+    skuSnapshot: null,
+    quantityScaled: 1,
+    quantityScale: 1,
+    unitPriceMinor: grandTotalMinor,
+    lineDiscountMinor: 0,
+    lineGrossMinor: grandTotalMinor,
+    lineSubtotalMinor: grandTotalMinor,
+    stockTrackingSnapshot: false,
+  };
+  await repositoryContext.run(
+    ATOMIC_SALE_STORE_NAMES,
+    'readwrite',
+    (repositories) => repositories.saleRepository.appendFinal(
+      ACCOUNT,
+      WORKSPACE,
+      {
+        schemaVersion: 1,
+        saleId,
+        workspaceId: WORKSPACE,
+        cartId: `cart_${suffix}`,
+        cartVersion: 1,
+        status: 'final',
+        currencyCode: 'IDR',
+        discountMinor: 0,
+        subtotalMinor: grandTotalMinor,
+        grandTotalMinor,
+        lineCount: 1,
+        paymentId,
+        receiptId,
+        operationId,
+        actorScope: ACTOR,
+        actorRole: 'merchant_owner',
+        finalizedAtLocal,
+      },
+      [line],
+      {
+        schemaVersion: 1,
+        paymentId,
+        workspaceId: WORKSPACE,
+        saleId,
+        method: 'cash',
+        status: 'recorded',
+        currencyCode: 'IDR',
+        amountDueMinor: grandTotalMinor,
+        amountTenderedMinor: grandTotalMinor,
+        amountAppliedMinor: grandTotalMinor,
+        changeMinor: 0,
+        operationId,
+        actorScope: ACTOR,
+        actorRole: 'merchant_owner',
+        recordedAtLocal: finalizedAtLocal,
+      },
+      {
+        schemaVersion: 1,
+        receiptId,
+        workspaceId: WORKSPACE,
+        saleId,
+        paymentId,
+        currencyCode: 'IDR',
+        subtotalMinor: grandTotalMinor,
+        discountMinor: 0,
+        grandTotalMinor,
+        amountTenderedMinor: grandTotalMinor,
+        changeMinor: 0,
+        paymentMethod: 'cash',
+        lineCount: 1,
+        lines: [line],
+        finalizedAtLocal,
+      },
+    ),
+  );
+}
+
+async function runBoundaryScenario(repositoryContext) {
+  const service = createCashSessionService({ repositoryContext, digestFactory: digest });
+  const beforeBoundary = '2026-07-25T02:59:59.999Z';
+  const boundary = CLOSED_AT;
+  const afterBoundary = '2026-07-25T03:00:00.001Z';
+  const secondClosedAt = '2026-07-25T04:00:00.000Z';
+
+  await appendCashSale(repositoryContext, {
+    suffix: '11111111-1111-4111-8111-111111111111',
+    finalizedAtLocal: beforeBoundary,
+    grandTotalMinor: 1000,
+  });
+  await appendCashSale(repositoryContext, {
+    suffix: '22222222-2222-4222-8222-222222222222',
+    finalizedAtLocal: boundary,
+    grandTotalMinor: 2000,
+  });
+  await appendCashSale(repositoryContext, {
+    suffix: '33333333-3333-4333-8333-333333333333',
+    finalizedAtLocal: afterBoundary,
+    grandTotalMinor: 3000,
+  });
+
+  await service.open(openCommand());
+  const closedA = await service.close(closeCommand({
+    expectedVersion: 1,
+    countedCashMinor: 11000,
+  }));
+  const openB = openCommand({
+    operationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    eventId: 'audit_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    cashSessionId: SESSION_B,
+    openingCashMinor: 20000,
+    createdAtLocal: boundary,
+  });
+  await service.open(openB);
+  const closeB = closeCommand({
+    operationId: 'op_dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    eventId: 'audit_eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    cashSessionId: SESSION_B,
+    expectedVersion: 1,
+    countedCashMinor: 25000,
+    createdAtLocal: secondClosedAt,
+  });
+  const closedB = await service.close(closeB);
+  const retriedB = await service.close(closeB);
+
+  return {
+    firstCashSalesMinor: closedA.cashSession.closingSummary.cashSalesMinor,
+    secondCashSalesMinor: closedB.cashSession.closingSummary.cashSalesMinor,
+    secondExpectedCashMinor: closedB.cashSession.closingSummary.expectedCashMinor,
+    retryStatus: retriedB.status,
+    retrySummary: retriedB.cashSession.closingSummary,
+  };
 }
 
 test('Expense immutable dan closing summary memakai safe integer money', () => {
@@ -316,4 +461,39 @@ test('memory dan IndexedDB parity bertahan setelah reopen', async () => {
   service = createCashSessionService({ repositoryContext: context, digestFactory: digest });
   assert.equal((await service.close(closeCommand())).status, 'duplicate-safe');
   connection.close();
+});
+
+test('batas antar-session half-open menghitung sale sekali di session baru dan parity repository', async () => {
+  const memory = createMemoryRepositories();
+  await addMembership(memory);
+  const memoryResult = await runBoundaryScenario(memory.repositoryContext);
+
+  const indexedDBFactory = new IDBFactory();
+  const connection = await openMandiriDatabase({
+    indexedDBFactory,
+    keyRangeFactory: IDBKeyRange,
+    databaseName: 'cash-session-half-open-boundary',
+  });
+  const indexedContext = createRepositoryContext(connection);
+  await indexedContext.run(ATOMIC_CASH_STORE_NAMES, 'readwrite', (repositories) => (
+    addMembership(repositories)
+  ));
+  const indexedResult = await runBoundaryScenario(indexedContext);
+  connection.close();
+
+  const expected = {
+    firstCashSalesMinor: 1000,
+    secondCashSalesMinor: 5000,
+    secondExpectedCashMinor: 25000,
+    retryStatus: 'duplicate-safe',
+    retrySummary: {
+      cashSalesMinor: 5000,
+      expenseOutMinor: 0,
+      expectedCashMinor: 25000,
+      countedCashMinor: 25000,
+      differenceMinor: 0,
+    },
+  };
+  assert.deepEqual(memoryResult, expected);
+  assert.deepEqual(indexedResult, expected);
 });

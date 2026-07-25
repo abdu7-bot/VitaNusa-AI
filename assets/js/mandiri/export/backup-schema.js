@@ -484,7 +484,7 @@ function normalizeRecords(data, accountScope, workspaceId, collectionFields) {
           cashSalesMinor = sales
             .filter((record) => (
               record.finalizedAtLocal >= session.openedAtLocal
-              && record.finalizedAtLocal <= session.closedAtLocal
+              && record.finalizedAtLocal < session.closedAtLocal
             ))
             .reduce((total, record) => addMoney(total, record.grandTotalMinor), 0);
         } catch (error) {

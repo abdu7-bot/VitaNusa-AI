@@ -1173,7 +1173,7 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       getBucket(getState().sales, accountScope) ?? new Map(),
       workspaceId,
     )?.values() ?? [])]
-      .filter((record) => record.finalizedAtLocal >= start && record.finalizedAtLocal <= end)
+      .filter((record) => record.finalizedAtLocal >= start && record.finalizedAtLocal < end)
       .reduce((total, record) => addMoney(total, record.grandTotalMinor), 0);
   };
   Object.freeze(saleRepository);

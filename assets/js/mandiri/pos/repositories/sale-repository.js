@@ -100,6 +100,8 @@ export function createSaleRepository(options) {
             transaction,
             [accountScope, workspaceId, start],
             [accountScope, workspaceId, end],
+            false,
+            true,
           )),
         );
         return records.reduce((total, record) => (
