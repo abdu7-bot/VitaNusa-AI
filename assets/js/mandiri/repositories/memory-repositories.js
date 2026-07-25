@@ -24,6 +24,10 @@ import { normalizeInventoryBalance, normalizeStockMovement } from '../pos/domain
 import { normalizeSale, normalizeSaleLine, validateFinalSale } from '../pos/domain/sale.js';
 import { normalizePayment } from '../pos/domain/payment.js';
 import { normalizeReceipt } from '../pos/domain/receipt.js';
+import { normalizeExpense } from '../pos/domain/expense.js';
+import { normalizeCashSession } from '../pos/domain/cash-session.js';
+import { addMoney } from '../domain/money.js';
+import { normalizeIsoTimestamp } from '../domain/validation.js';
 import { normalizeLearnerScope } from '../learning/domain/learning-validation.js';
 import {
   assertRecordScope,
@@ -56,6 +60,8 @@ function createEmptyState() {
     saleLines: new Map(),
     payments: new Map(),
     receipts: new Map(),
+    expenses: new Map(),
+    cashSessions: new Map(),
   };
 }
 
@@ -85,6 +91,8 @@ function cloneState(state) {
     saleLines: cloneNestedMap(state.saleLines),
     payments: cloneNestedMap(state.payments),
     receipts: cloneNestedMap(state.receipts),
+    expenses: cloneNestedMap(state.expenses),
+    cashSessions: cloneNestedMap(state.cashSessions),
   };
 }
 
@@ -991,6 +999,183 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
       });
     },
   });
+  function scopedFinancial(normalizer, accountScope, workspaceId, input) {
+    const normalized = normalizeWith(normalizer, input, { workspaceId });
+    return Object.freeze({ accountScope, ...normalized });
+  }
+
+  function publicFinancial(normalizer, record) {
+    const copy = clonePlainRecord(record);
+    delete copy.accountScope;
+    return normalizeWith(normalizer, copy, { workspaceId: record.workspaceId });
+  }
+
+  const expenseRepository = {};
+  expenseRepository.append = async (accountValue, workspaceValue, expenseInput) => {
+    assertStore(MANDIRI_STORE_NAMES.EXPENSES, true);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const expense = scopedFinancial(normalizeExpense, accountScope, workspaceId, expenseInput);
+    const bucket = ensureBucket(ensureBucket(getState().expenses, accountScope), workspaceId);
+    if (
+      bucket.has(expense.expenseId)
+      || [...bucket.values()].some((record) => record.operationId === expense.operationId)
+    ) throw storageError('constraint_violation');
+    bucket.set(expense.expenseId, clonePlainRecord(expense));
+    return publicFinancial(normalizeExpense, expense);
+  };
+  expenseRepository.get = async (accountValue, workspaceValue, expenseValue) => {
+    assertStore(MANDIRI_STORE_NAMES.EXPENSES);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const expenseId = normalizeEntityIdentifier(expenseValue, 'expense');
+    const record = getBucket(
+      getBucket(getState().expenses, accountScope) ?? new Map(),
+      workspaceId,
+    )?.get(expenseId);
+    return record ? publicFinancial(normalizeExpense, record) : null;
+  };
+  expenseRepository.listByCashSession = async (
+    accountValue,
+    workspaceValue,
+    cashSessionValue,
+  ) => {
+    assertStore(MANDIRI_STORE_NAMES.EXPENSES);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const cashSessionId = normalizeEntityIdentifier(cashSessionValue, 'cashsession');
+    return Object.freeze([...(getBucket(
+      getBucket(getState().expenses, accountScope) ?? new Map(),
+      workspaceId,
+    )?.values() ?? [])]
+      .filter((record) => record.cashSessionId === cashSessionId)
+      .map((record) => publicFinancial(normalizeExpense, record))
+      .sort((left, right) => (
+        left.recordedAtLocal.localeCompare(right.recordedAtLocal)
+        || left.expenseId.localeCompare(right.expenseId)
+      )));
+  };
+  Object.defineProperty(expenseRepository, 'listForBackup', {
+    enumerable: false,
+    value: async (accountValue, workspaceValue) => {
+      assertStore(MANDIRI_STORE_NAMES.EXPENSES);
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      return Object.freeze([...(getBucket(
+        getBucket(getState().expenses, accountScope) ?? new Map(),
+        workspaceId,
+      )?.values() ?? [])].map((record) => publicFinancial(normalizeExpense, record)));
+    },
+  });
+  Object.freeze(expenseRepository);
+
+  const cashSessionRepository = {};
+  cashSessionRepository.create = async (accountValue, workspaceValue, sessionInput) => {
+    assertStore(MANDIRI_STORE_NAMES.CASH_SESSIONS, true);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const session = scopedFinancial(
+      normalizeCashSession,
+      accountScope,
+      workspaceId,
+      sessionInput,
+    );
+    if (session.status !== 'open' || session.version !== 1) throw storageError('data_invalid');
+    const bucket = ensureBucket(ensureBucket(getState().cashSessions, accountScope), workspaceId);
+    if (bucket.has(session.cashSessionId)) throw storageError('constraint_violation');
+    bucket.set(session.cashSessionId, clonePlainRecord(session));
+    return publicFinancial(normalizeCashSession, session);
+  };
+  cashSessionRepository.get = async (accountValue, workspaceValue, sessionValue) => {
+    assertStore(MANDIRI_STORE_NAMES.CASH_SESSIONS);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const cashSessionId = normalizeEntityIdentifier(sessionValue, 'cashsession');
+    const record = getBucket(
+      getBucket(getState().cashSessions, accountScope) ?? new Map(),
+      workspaceId,
+    )?.get(cashSessionId);
+    return record ? publicFinancial(normalizeCashSession, record) : null;
+  };
+  cashSessionRepository.findOpen = async (accountValue, workspaceValue) => {
+    assertStore(MANDIRI_STORE_NAMES.CASH_SESSIONS);
+    const sessions = await cashSessionRepository.listByWorkspace(accountValue, workspaceValue);
+    const open = sessions.filter((session) => session.status === 'open');
+    if (open.length > 1) throw storageError('data_invalid');
+    return open[0] ?? null;
+  };
+  cashSessionRepository.listByWorkspace = async (accountValue, workspaceValue) => {
+    assertStore(MANDIRI_STORE_NAMES.CASH_SESSIONS);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    return Object.freeze([...(getBucket(
+      getBucket(getState().cashSessions, accountScope) ?? new Map(),
+      workspaceId,
+    )?.values() ?? [])]
+      .map((record) => publicFinancial(normalizeCashSession, record))
+      .sort((left, right) => (
+        left.openedAtLocal.localeCompare(right.openedAtLocal)
+        || left.cashSessionId.localeCompare(right.cashSessionId)
+      )));
+  };
+  cashSessionRepository.update = async (
+    accountValue,
+    workspaceValue,
+    sessionInput,
+    expectedVersion,
+  ) => {
+    assertStore(MANDIRI_STORE_NAMES.CASH_SESSIONS, true);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const next = scopedFinancial(
+      normalizeCashSession,
+      accountScope,
+      workspaceId,
+      sessionInput,
+    );
+    const bucket = ensureBucket(ensureBucket(getState().cashSessions, accountScope), workspaceId);
+    const currentRecord = bucket.get(next.cashSessionId);
+    if (!currentRecord) throw storageError('record_not_found');
+    const current = publicFinancial(normalizeCashSession, currentRecord);
+    if (current.version !== expectedVersion || next.version !== expectedVersion + 1) {
+      throw storageError('version_conflict');
+    }
+    if (current.status !== 'open') throw storageError('cash_session_closed');
+    for (const field of [
+      'schemaVersion', 'cashSessionId', 'workspaceId', 'openingCashMinor',
+      'openedByScope', 'openedByRole', 'openOperationId', 'openedAtLocal',
+    ]) {
+      if (current[field] !== next[field]) throw storageError('data_invalid');
+    }
+    if (next.updatedAtLocal < current.updatedAtLocal) throw storageError('data_invalid');
+    bucket.set(next.cashSessionId, clonePlainRecord(next));
+    return publicFinancial(normalizeCashSession, next);
+  };
+  Object.defineProperty(cashSessionRepository, 'listForBackup', {
+    enumerable: false,
+    value: cashSessionRepository.listByWorkspace,
+  });
+  Object.freeze(cashSessionRepository);
+
+  saleRepository.sumCashSalesBetween = async (
+    accountValue,
+    workspaceValue,
+    startValue,
+    endValue,
+  ) => {
+    assertStore(MANDIRI_STORE_NAMES.SALES);
+    const accountScope = normalizeAccountScope(accountValue);
+    const workspaceId = normalizeWorkspaceScope(workspaceValue);
+    const start = normalizeIsoTimestamp(startValue, 'startAtLocal');
+    const end = normalizeIsoTimestamp(endValue, 'endAtLocal');
+    if (end < start) throw storageError('data_invalid');
+    return [...(getBucket(
+      getBucket(getState().sales, accountScope) ?? new Map(),
+      workspaceId,
+    )?.values() ?? [])]
+      .filter((record) => record.finalizedAtLocal >= start && record.finalizedAtLocal < end)
+      .reduce((total, record) => addMoney(total, record.grandTotalMinor), 0);
+  };
   Object.freeze(saleRepository);
 
   return Object.freeze({
@@ -1005,6 +1190,8 @@ function createMemoryRepositorySet({ getState, assertActive, allowedStores, mode
     cartRepository,
     inventoryRepository,
     saleRepository,
+    expenseRepository,
+    cashSessionRepository,
   });
 }
 

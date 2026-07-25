@@ -11,6 +11,8 @@ import { createCartRepository } from '../pos/repositories/cart-repository.js';
 import { createProductRepository } from '../pos/repositories/product-repository.js';
 import { createInventoryRepository } from '../pos/repositories/inventory-repository.js';
 import { createSaleRepository } from '../pos/repositories/sale-repository.js';
+import { createExpenseRepository } from '../pos/repositories/expense-repository.js';
+import { createCashSessionRepository } from '../pos/repositories/cash-session-repository.js';
 
 export const ATOMIC_WORKSPACE_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.WORKSPACES,
@@ -67,6 +69,15 @@ export const ATOMIC_SALE_STORE_NAMES = Object.freeze([
   MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
 ]);
 
+export const ATOMIC_CASH_STORE_NAMES = Object.freeze([
+  MANDIRI_STORE_NAMES.EXPENSES,
+  MANDIRI_STORE_NAMES.CASH_SESSIONS,
+  MANDIRI_STORE_NAMES.SALES,
+  MANDIRI_STORE_NAMES.MEMBERSHIPS,
+  MANDIRI_STORE_NAMES.AUDIT_EVENTS,
+  MANDIRI_STORE_NAMES.OPERATION_RECEIPTS,
+]);
+
 export function createRepositoryContext(connection) {
   if (!connection || typeof connection.runTransaction !== 'function') {
     throw storageError('data_invalid');
@@ -88,6 +99,8 @@ export function createRepositoryContext(connection) {
           productRepository: createProductRepository({ transactionContext }),
           inventoryRepository: createInventoryRepository({ transactionContext }),
           saleRepository: createSaleRepository({ transactionContext }),
+          expenseRepository: createExpenseRepository({ transactionContext }),
+          cashSessionRepository: createCashSessionRepository({ transactionContext }),
         });
         return callback(repositories);
       });

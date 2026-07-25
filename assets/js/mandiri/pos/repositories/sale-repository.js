@@ -8,6 +8,8 @@ import { normalizePayment } from '../domain/payment.js';
 import { normalizeReceipt } from '../domain/receipt.js';
 import { normalizeSale, normalizeSaleLine, validateFinalSale } from '../domain/sale.js';
 import { clonePlainRecord, normalizeWith } from '../../repositories/repository-utils.js';
+import { addMoney } from '../../domain/money.js';
+import { normalizeIsoTimestamp } from '../../domain/validation.js';
 
 const SALES = MANDIRI_STORE_NAMES.SALES;
 const LINES = MANDIRI_STORE_NAMES.SALE_LINES;
@@ -83,6 +85,28 @@ export function createSaleRepository(options) {
           payment: publicRecord(normalizePayment, paymentRecords[0]),
           receipt: publicRecord(normalizeReceipt, receiptRecords[0]),
         });
+      });
+    },
+
+    async sumCashSalesBetween(accountValue, workspaceValue, startValue, endValue) {
+      const accountScope = normalizeAccountScope(accountValue);
+      const workspaceId = normalizeWorkspaceScope(workspaceValue);
+      const start = normalizeIsoTimestamp(startValue, 'startAtLocal');
+      const end = normalizeIsoTimestamp(endValue, 'endAtLocal');
+      if (end < start) throw storageError('data_invalid');
+      return executor.run([SALES], 'readonly', async (transaction) => {
+        const records = await transaction.request(
+          transaction.objectStore(SALES).index('byWorkspaceFinalizedAt').getAll(keyRangeBound(
+            transaction,
+            [accountScope, workspaceId, start],
+            [accountScope, workspaceId, end],
+            false,
+            true,
+          )),
+        );
+        return records.reduce((total, record) => (
+          addMoney(total, publicRecord(normalizeSale, record).grandTotalMinor)
+        ), 0);
       });
     },
   };
