@@ -1,0 +1,505 @@
+import { getMandiriFeatureState } from '../../config/feature-flags.js';
+import { createEntityId, createOperationId } from '../../domain/ids.js';
+import {
+  addMoney, formatMoney, parseControlledMoneyInput, subtractMoney,
+} from '../../domain/money.js';
+import { canPerformWorkspaceAction } from '../../domain/permissions.js';
+import { createRepositoryContext } from '../../repositories/repository-context.js';
+import { createLocalScopesFromUser } from '../../services/account-scope.js';
+import { openMandiriDatabase } from '../../storage/database.js';
+import { getSafeStorageMessage, storageError } from '../../storage/storage-errors.js';
+import { subscribeUserAuth } from '../../../modules/user-auth.js';
+import { getNusaKasirFeatureContract, getNusaKasirFeatureState } from '../config/nusakasir-flags.js';
+import { createClosingSummary } from '../domain/cash-session.js';
+import { createCashSessionId } from '../domain/cash-session.js';
+import { createExpenseId, EXPENSE_CATEGORIES } from '../domain/expense.js';
+import { createCashSessionService } from '../services/cash-session-service.js';
+
+export const CASH_PAGE_STATES = Object.freeze([
+  'disabled', 'auth-loading', 'signed-out', 'loading', 'no-open-session',
+  'open-session', 'closed-session', 'permission-denied', 'submitting',
+  'version-conflict', 'error',
+]);
+
+export const EXPENSE_CATEGORY_LABELS = Object.freeze({
+  operational: 'Operasional',
+  supplies: 'Perlengkapan',
+  transport: 'Transportasi',
+  utilities: 'Utilitas',
+  maintenance: 'Perawatan',
+  other: 'Lainnya',
+});
+
+const MESSAGES = Object.freeze({
+  disabled: 'NusaKasir belum tersedia pada build ini.',
+  'auth-loading': 'Memeriksa sesi akun VitaNusa.',
+  'signed-out': 'Login diperlukan sebelum membuka data kas lokal.',
+  loading: 'Memuat sesi kas dan pengeluaran lokal.',
+  'no-open-session': 'Belum ada sesi kas aktif. Data sesi disimpan lokal pada perangkat ini.',
+  'open-session': 'Sesi kas aktif dan data terbaru telah dimuat.',
+  'closed-session': 'Tidak ada sesi aktif. Ringkasan sesi terakhir tersedia.',
+  'permission-denied': 'Membership aktif tidak memiliki akses ke workspace ini.',
+  submitting: 'Menyimpan perubahan kas secara lokal.',
+  'version-conflict': 'Data berubah di tab lain. Data terbaru telah dimuat; periksa kembali sebelum mencoba.',
+  opened: 'Sesi kas berhasil dibuka secara lokal.',
+  expense: 'Pengeluaran berhasil dicatat secara lokal.',
+  closed: 'Sesi kas berhasil ditutup secara lokal.',
+  permission_denied: 'Role workspace aktif tidak memiliki izin untuk tindakan ini.',
+  invalid_money_input: 'Nominal harus rupiah bulat, misalnya 15000 atau Rp15.000.',
+  data_invalid: 'Data yang dimasukkan tidak valid. Periksa kembali formulir.',
+  duplicate_operation: 'Operasi ini sudah diproses. Data terbaru telah dimuat.',
+  idempotency_mismatch: 'Operasi tidak dapat diproses ulang karena datanya berbeda.',
+  operation_payload_mismatch: 'Operasi tidak dapat diproses ulang karena datanya berbeda.',
+  record_not_found: 'Data sesi tidak ditemukan. Data terbaru telah dimuat.',
+  invalid_reference: 'Referensi sesi tidak lagi valid. Data terbaru telah dimuat.',
+  cash_session_already_open: 'Sesi kas lain sudah aktif. Data terbaru telah dimuat.',
+  session_already_open: 'Sesi kas lain sudah aktif. Data terbaru telah dimuat.',
+  cash_session_required: 'Buka sesi kas sebelum mencatat pengeluaran.',
+  session_not_open: 'Buka sesi kas sebelum melanjutkan.',
+  cash_session_closed: 'Sesi kas sudah ditutup. Data terbaru telah dimuat.',
+  session_already_closed: 'Sesi kas sudah ditutup. Data terbaru telah dimuat.',
+  schema_too_new: 'Versi data lokal lebih baru. Perbarui aplikasi sebelum melanjutkan.',
+  database_newer_version: 'Versi data lokal lebih baru. Perbarui aplikasi sebelum melanjutkan.',
+  storage_error: 'Data lokal belum dapat diproses. Tidak ada perubahan palsu yang ditampilkan.',
+});
+
+function safeMessage(code) {
+  return MESSAGES[code] || getSafeStorageMessage(code) || MESSAGES.storage_error;
+}
+
+function actor(membership) {
+  return {
+    accountScope: membership.accountScope,
+    workspaceId: membership.workspaceId,
+    userScope: membership.userScope,
+    role: membership.role,
+    status: membership.status,
+  };
+}
+
+export function normalizeCashInput(value, { positive = false } = {}) {
+  const amount = parseControlledMoneyInput(value);
+  if (positive && amount === 0) throw storageError('data_invalid');
+  return amount;
+}
+
+function sortExpenses(values) {
+  return Object.freeze([...values].sort((left, right) => (
+    right.recordedAtLocal.localeCompare(left.recordedAtLocal)
+    || right.expenseId.localeCompare(left.expenseId)
+  )));
+}
+
+function model(state, values = {}) {
+  return Object.freeze({
+    state,
+    message: values.message || MESSAGES[state] || MESSAGES.storage_error,
+    session: values.session || null,
+    lastClosedSession: values.lastClosedSession || null,
+    expenses: sortExpenses(values.expenses || []),
+    summary: values.summary || null,
+    canOpen: values.canOpen === true,
+    canExpense: values.canExpense === true,
+    canClose: values.canClose === true,
+    submitting: values.submitting === true,
+    confirmOpen: values.confirmOpen === true,
+    focusStatus: values.focusStatus === true,
+  });
+}
+
+export function createCashManagementController({
+  contract,
+  view,
+  subscribeAuth = subscribeUserAuth,
+  createScopes = createLocalScopesFromUser,
+  openDatabase = openMandiriDatabase,
+  createContext = createRepositoryContext,
+  createService = createCashSessionService,
+  now = () => new Date().toISOString(),
+  cryptoRef = globalThis.crypto,
+} = {}) {
+  if (!view?.render) throw storageError('data_invalid');
+  let current = model(contract?.enabled ? 'auth-loading' : 'disabled');
+  let unsubscribe = () => {};
+  let connection = null;
+  let context = null;
+  let service = null;
+  let scopes = null;
+  let workspace = null;
+  let membership = null;
+  let generation = 0;
+  let submitPromise = null;
+  let destroyed = false;
+
+  const render = (next) => {
+    current = next;
+    view.render(next);
+    return next;
+  };
+
+  function permissions() {
+    const subject = membership && actor(membership);
+    const scope = workspace && { accountScope: scopes.accountScope, workspaceId: workspace.workspaceId };
+    return {
+      canOpen: !!subject && canPerformWorkspaceAction(subject, 'cash_session.open', scope),
+      canExpense: !!subject && canPerformWorkspaceAction(subject, 'expense.create', scope),
+      canClose: !!subject && canPerformWorkspaceAction(subject, 'cash_session.close', scope),
+    };
+  }
+
+  async function readCashData() {
+    const readAt = now();
+    const activeContext = context;
+    const accountScope = scopes.accountScope;
+    const workspaceId = workspace.workspaceId;
+    return activeContext.run(['cashSessions', 'expenses', 'sales'], 'readonly', async (repositories) => {
+      const sessions = await repositories.cashSessionRepository.listByWorkspace(
+        accountScope, workspaceId,
+      );
+      const openSession = sessions.find((entry) => entry.status === 'open') || null;
+      const lastClosedSession = [...sessions].reverse().find((entry) => entry.status === 'closed') || null;
+      if (!openSession) return { session: null, lastClosedSession, expenses: [], summary: null };
+      const expenses = await repositories.expenseRepository.listByCashSession(
+        accountScope, workspaceId, openSession.cashSessionId,
+      );
+      const expenseOutMinor = expenses.reduce(
+        (total, expense) => addMoney(total, expense.amountMinor), 0,
+      );
+      const cashSalesMinor = await repositories.saleRepository.sumCashSalesBetween(
+        accountScope, workspaceId, openSession.openedAtLocal, readAt,
+      );
+      const summary = createClosingSummary({
+        openingCashMinor: openSession.openingCashMinor,
+        cashSalesMinor,
+        expenseOutMinor,
+        countedCashMinor: 0,
+      });
+      return { session: openSession, lastClosedSession, expenses, summary };
+    });
+  }
+
+  async function reload({ message, focusStatus = false, conflict = false } = {}) {
+    const token = generation;
+    const data = await readCashData();
+    if (destroyed || token !== generation) return current;
+    const state = conflict
+      ? 'version-conflict'
+      : data.session ? 'open-session' : data.lastClosedSession ? 'closed-session' : 'no-open-session';
+    return render(model(state, {
+      ...data, ...permissions(), message: message || MESSAGES[state], focusStatus,
+    }));
+  }
+
+  async function handleAuth(authState) {
+    const token = ++generation;
+    let nextConnection = null;
+    connection?.close?.();
+    connection = context = service = scopes = workspace = membership = null;
+    if (!authState?.isAuthenticated || !authState.user) {
+      render(model('signed-out'));
+      return;
+    }
+    render(model('loading'));
+    try {
+      const nextScopes = await createScopes(authState.user);
+      nextConnection = await openDatabase();
+      if (destroyed || token !== generation) return nextConnection.close?.();
+      const nextContext = createContext(nextConnection);
+      const access = await nextContext.run(['workspaces', 'memberships'], 'readonly', async (repositories) => {
+        const workspaces = await repositories.workspaceRepository.listByStatus(nextScopes.accountScope, 'active');
+        if (workspaces.length !== 1) throw storageError('record_not_found');
+        const selected = workspaces[0];
+        const member = await repositories.membershipRepository.getByUserScope(
+          nextScopes.accountScope, selected.workspaceId, nextScopes.userScope,
+        );
+        return { workspace: selected, membership: member };
+      });
+      if (!access.membership || !canPerformWorkspaceAction(
+        actor(access.membership), 'workspace.read',
+        { accountScope: nextScopes.accountScope, workspaceId: access.workspace.workspaceId },
+      )) throw storageError('permission_denied');
+      if (destroyed || token !== generation) return nextConnection.close?.();
+      connection = nextConnection;
+      nextConnection = null;
+      context = nextContext;
+      service = createService({ repositoryContext: context });
+      scopes = nextScopes;
+      workspace = access.workspace;
+      membership = access.membership;
+      await reload();
+    } catch (error) {
+      nextConnection?.close?.();
+      if (destroyed || token !== generation) return;
+      connection?.close?.();
+      connection = null;
+      const denied = error?.code === 'permission_denied';
+      render(model(denied ? 'permission-denied' : 'error', {
+        message: safeMessage(error?.code), focusStatus: true,
+      }));
+    }
+  }
+
+  function submit(kind, input) {
+    if (submitPromise) return submitPromise;
+    const permission = permissions();
+    if (!contract?.enabled || !service || !permission[
+      kind === 'open' ? 'canOpen' : kind === 'expense' ? 'canExpense' : 'canClose'
+    ]) return Promise.reject(storageError('permission_denied'));
+    const session = current.session;
+    let command;
+    try {
+      const createdAtLocal = now();
+      const base = {
+        schemaVersion: 1,
+        accountScope: scopes.accountScope,
+        workspaceId: workspace.workspaceId,
+        actorScope: scopes.userScope,
+        actorRole: membership.role,
+        operationId: createOperationId(cryptoRef),
+        eventId: createEntityId('audit', cryptoRef),
+        cashSessionId: kind === 'open' ? createCashSessionId(cryptoRef) : session?.cashSessionId,
+        createdAtLocal,
+      };
+      if (kind === 'open') command = { ...base, openingCashMinor: normalizeCashInput(input?.openingCash) };
+      if (kind === 'expense') command = {
+        ...base,
+        expenseId: createExpenseId(cryptoRef),
+        expectedVersion: session?.version,
+        category: EXPENSE_CATEGORIES.includes(input?.category) ? input.category : '',
+        amountMinor: normalizeCashInput(input?.amount, { positive: true }),
+        note: String(input?.note || '').trim() || null,
+      };
+      if (kind === 'close') command = {
+        ...base,
+        expectedVersion: session?.version,
+        countedCashMinor: normalizeCashInput(input?.countedCash),
+      };
+    } catch (error) {
+      render(model(current.state, { ...current, message: safeMessage(error?.code), focusStatus: true }));
+      return Promise.reject(error);
+    }
+    const token = generation;
+    render(model('submitting', { ...current, submitting: true, message: MESSAGES.submitting }));
+    const operation = service[kind === 'expense' ? 'recordExpense' : kind](Object.freeze(command))
+      .then(async (result) => {
+        if (destroyed || token !== generation) return result;
+        await reload({ message: MESSAGES[kind], focusStatus: true });
+        return result;
+      })
+      .catch(async (error) => {
+        if (destroyed || token !== generation) throw error;
+        if (error?.code === 'version_conflict') {
+          await reload({ message: MESSAGES['version-conflict'], focusStatus: true, conflict: true });
+        } else if ([
+          'cash_session_already_open', 'cash_session_required', 'cash_session_closed',
+          'record_not_found', 'invalid_reference', 'duplicate_operation',
+        ].includes(error?.code)) {
+          await reload({ message: safeMessage(error.code), focusStatus: true });
+        } else {
+          render(model('error', { ...current, submitting: false, message: safeMessage(error?.code), focusStatus: true }));
+        }
+        throw error;
+      })
+      .finally(() => { if (submitPromise === operation) submitPromise = null; });
+    submitPromise = operation;
+    return operation;
+  }
+
+  function setConfirmOpen(value) {
+    return render(model(current.state, { ...current, confirmOpen: value === true }));
+  }
+
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    generation += 1;
+    unsubscribe();
+    connection?.close?.();
+    connection = context = service = scopes = workspace = membership = null;
+    view.destroy?.();
+  }
+
+  render(current);
+  if (contract?.enabled) {
+    view.bind?.({ submit, reload, setConfirmOpen });
+    unsubscribe = subscribeAuth((state) => { void handleAuth(state); });
+  }
+  return Object.freeze({ destroy, getState: () => current, reload, submit, setConfirmOpen });
+}
+
+function setHidden(element, hidden) { if (element) element.hidden = hidden; }
+function text(element, value) { if (element) element.textContent = value; }
+function dateTime(value) {
+  try { return new Date(value).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }); }
+  catch { return 'Waktu tidak tersedia'; }
+}
+
+export function createCashManagementView(root, documentRef = root?.ownerDocument) {
+  if (!root || !documentRef) throw storageError('data_invalid');
+  const listeners = [];
+  const status = root.querySelector('[data-cash-status]');
+  const expenseList = root.querySelector('[data-expense-list]');
+  const closeDialog = root.querySelector('#close-session-dialog');
+  const closeForm = root.querySelector('[data-close-form]');
+  let dialogTrigger = null;
+  let expectedCashMinor = 0;
+  const add = (element, type, listener) => {
+    element?.addEventListener(type, listener);
+    listeners.push([element, type, listener]);
+  };
+
+  function fillSummary(container, session, summary) {
+    if (!container || !session) return;
+    const closed = session.status === 'closed';
+    const values = closed ? session.closingSummary : summary;
+    const rows = [
+      ['Waktu dibuka', dateTime(session.openedAtLocal)],
+      ['Saldo awal', formatMoney(session.openingCashMinor)],
+      ['Penjualan tunai', formatMoney(values?.cashSalesMinor || 0)],
+      ['Total pengeluaran', formatMoney(values?.expenseOutMinor || 0)],
+      ['Kas yang diharapkan', formatMoney(values?.expectedCashMinor || 0)],
+      ...(closed ? [
+        ['Kas yang dihitung', formatMoney(values.countedCashMinor)],
+        ['Selisih', formatMoney(values.differenceMinor)],
+        ['Waktu ditutup', dateTime(session.closedAtLocal)],
+      ] : []),
+      ['Status', closed ? 'Closed' : 'Open'],
+    ];
+    container.replaceChildren();
+    rows.forEach(([label, value]) => {
+      const group = documentRef.createElement('div');
+      const dt = documentRef.createElement('dt');
+      const dd = documentRef.createElement('dd');
+      dt.textContent = label;
+      dd.textContent = value;
+      group.append(dt, dd);
+      container.append(group);
+    });
+  }
+
+  function renderExpenses(modelValue) {
+    expenseList?.replaceChildren();
+    modelValue.expenses.forEach((expense) => {
+      const item = documentRef.createElement('li');
+      const heading = documentRef.createElement('strong');
+      const amount = documentRef.createElement('span');
+      const meta = documentRef.createElement('span');
+      heading.textContent = EXPENSE_CATEGORY_LABELS[expense.category] || 'Kategori tercatat';
+      amount.textContent = formatMoney(expense.amountMinor);
+      meta.textContent = `${dateTime(expense.recordedAtLocal)} • Recorded`;
+      item.append(heading, amount, meta);
+      if (expense.note) {
+        const note = documentRef.createElement('p');
+        note.textContent = expense.note;
+        item.append(note);
+      }
+      expenseList.append(item);
+    });
+  }
+
+  function render(modelValue) {
+    root.dataset.cashState = modelValue.state;
+    root.setAttribute('aria-busy', String(['auth-loading', 'loading', 'submitting'].includes(modelValue.state)));
+    text(status, modelValue.message);
+    if (modelValue.focusStatus) status?.focus?.({ preventScroll: true });
+    setHidden(root.querySelector('[data-disabled]'), modelValue.state !== 'disabled');
+    setHidden(root.querySelector('[data-signed-out]'), modelValue.state !== 'signed-out');
+    setHidden(root.querySelector('[data-loading]'), !['auth-loading', 'loading'].includes(modelValue.state));
+    setHidden(root.querySelector('[data-access-error]'), !['permission-denied', 'error'].includes(modelValue.state));
+    setHidden(root.querySelector('[data-no-session]'), !!modelValue.session || ![
+      'no-open-session', 'closed-session', 'version-conflict',
+    ].includes(modelValue.state));
+    setHidden(root.querySelector('[data-open-session]'), !modelValue.session);
+    setHidden(root.querySelector('[data-last-session]'), !modelValue.lastClosedSession);
+    setHidden(root.querySelector('[data-expense-form-wrap]'), !modelValue.session || !modelValue.canExpense);
+    setHidden(root.querySelector('[data-expense-readonly]'), !modelValue.session || modelValue.canExpense);
+    setHidden(root.querySelector('[data-close-wrap]'), !modelValue.session || !modelValue.canClose);
+    root.querySelectorAll('fieldset').forEach((field) => { field.disabled = modelValue.submitting; });
+    fillSummary(root.querySelector('[data-open-summary]'), modelValue.session, modelValue.summary);
+    fillSummary(root.querySelector('[data-last-summary]'), modelValue.lastClosedSession, null);
+    text(root.querySelector('[data-expense-count]'), String(modelValue.expenses.length));
+    text(root.querySelector('[data-expected-cash]'), formatMoney(modelValue.summary?.expectedCashMinor || 0));
+    renderExpenses(modelValue);
+    if (modelValue.confirmOpen && closeDialog && !closeDialog.open) closeDialog.showModal?.();
+    if (!modelValue.confirmOpen && closeDialog?.open) closeDialog.close?.();
+  }
+
+  function bind(callbacks) {
+    const openForm = root.querySelector('[data-open-form]');
+    const expenseForm = root.querySelector('[data-expense-form]');
+    add(openForm, 'submit', (event) => {
+      event.preventDefault();
+      void callbacks.submit('open', { openingCash: openForm.elements.openingCash.value })
+        .then(() => openForm.reset()).catch(() => {});
+    });
+    add(expenseForm, 'submit', (event) => {
+      event.preventDefault();
+      void callbacks.submit('expense', {
+        category: expenseForm.elements.category.value,
+        amount: expenseForm.elements.amount.value,
+        note: expenseForm.elements.note.value,
+      }).then(() => expenseForm.reset()).catch(() => {});
+    });
+    add(expenseForm?.querySelector('[data-reset-expense]'), 'click', () => expenseForm.reset());
+    add(root.querySelector('[data-open-close-dialog]'), 'click', (event) => {
+      dialogTrigger = event.currentTarget;
+      callbacks.setConfirmOpen(true);
+      closeForm?.elements?.countedCash?.focus?.();
+    });
+    add(closeForm, 'input', () => {
+      let preview = 'Masukkan kas yang dihitung.';
+      try {
+        const counted = normalizeCashInput(closeForm.elements.countedCash.value);
+        const difference = expectedCashMinor >= 0
+          ? subtractMoney(counted, expectedCashMinor)
+          : addMoney(counted, -expectedCashMinor);
+        preview = formatMoney(difference);
+      } catch {}
+      text(root.querySelector('[data-difference-preview]'), preview);
+    });
+    add(closeForm, 'submit', (event) => {
+      event.preventDefault();
+      void callbacks.submit('close', { countedCash: closeForm.elements.countedCash.value })
+        .then(() => { callbacks.setConfirmOpen(false); closeForm.reset(); }).catch(() => {});
+    });
+    const close = () => {
+      callbacks.setConfirmOpen(false);
+      dialogTrigger?.focus?.();
+    };
+    add(closeDialog, 'cancel', (event) => { event.preventDefault(); close(); });
+    add(closeDialog?.querySelector('[data-cancel-close]'), 'click', close);
+  }
+
+  return Object.freeze({
+    bind,
+    render(modelValue) {
+      expectedCashMinor = modelValue.summary?.expectedCashMinor || 0;
+      render(modelValue);
+    },
+    destroy() {
+      listeners.splice(0).forEach(([element, type, listener]) => element?.removeEventListener(type, listener));
+      closeDialog?.close?.();
+    },
+  });
+}
+
+export function initCashManagementPage({
+  documentRef = document,
+  mandiriState = getMandiriFeatureState(),
+  nusakasirState = getNusaKasirFeatureState(),
+  ...dependencies
+} = {}) {
+  const root = documentRef.querySelector('[data-cash-root]');
+  if (!root) throw storageError('data_invalid');
+  return createCashManagementController({
+    contract: getNusaKasirFeatureContract({ mandiriState, nusakasirState }),
+    view: createCashManagementView(root, documentRef),
+    ...dependencies,
+  });
+}
+
+if (typeof document !== 'undefined') {
+  const boot = () => { initCashManagementPage(); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
+}
