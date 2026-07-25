@@ -25,6 +25,8 @@ const SAFE_MESSAGES = Object.freeze({
   discount_exceeds_subtotal: 'Diskon melebihi subtotal.',
   underpayment: 'Pembayaran kurang dari total.',
   cash_session_required: 'Sesi kas harus dibuka terlebih dahulu.',
+  cash_session_already_open: 'Satu sesi kas masih terbuka pada workspace ini.',
+  cash_session_closed: 'Sesi kas sudah ditutup dan tidak dapat diubah.',
   duplicate_operation: 'Operasi yang sama sudah pernah diproses.',
   sale_immutable: 'Sale final tidak dapat diubah.',
   cart_cancelled: 'Keranjang telah dibatalkan.',

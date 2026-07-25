@@ -5,6 +5,7 @@ import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repo
 import { ATOMIC_INVENTORY_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_CART_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_SALE_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_CASH_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -47,6 +48,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       ...ATOMIC_PRODUCT_STORE_NAMES, ...ATOMIC_INVENTORY_STORE_NAMES,
       ...ATOMIC_CART_STORE_NAMES,
       ...ATOMIC_SALE_STORE_NAMES,
+      ...ATOMIC_CASH_STORE_NAMES,
     ])],
     'readonly',
     async (repositories) => {
@@ -88,11 +90,16 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       const balancePromise = repositories.inventoryRepository.listBalances(accountScope, workspaceId);
       const cartBackupPromise = repositories.cartRepository.listForBackup(accountScope, workspaceId);
       const saleBackupPromise = repositories.saleRepository.listForBackup(accountScope, workspaceId);
+      const expensePromise = repositories.expenseRepository.listForBackup(accountScope, workspaceId);
+      const cashSessionPromise = repositories.cashSessionRepository.listForBackup(
+        accountScope,
+        workspaceId,
+      );
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
-        cartBackup, saleBackup,
+        cartBackup, saleBackup, expenses, cashSessions,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -104,13 +111,15 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         productPromise,
         movementPromise,
         balancePromise,
-        cartBackupPromise, saleBackupPromise,
+        cartBackupPromise, saleBackupPromise, expensePromise, cashSessionPromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
         ...cartBackup,
         ...saleBackup,
+        expenses,
+        cashSessions,
       };
     },
   );
@@ -178,6 +187,8 @@ export function createBackupService({
         ))),
         payments: sortedRecords(records.payments, 'paymentId'),
         receipts: sortedRecords(records.receipts, 'receiptId'),
+        expenses: sortedRecords(records.expenses, 'expenseId'),
+        cashSessions: sortedRecords(records.cashSessions, 'cashSessionId'),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),

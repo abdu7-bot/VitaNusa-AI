@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createEntityId } from '../../../assets/js/mandiri/domain/ids.js';
 import { createBackupService } from '../../../assets/js/mandiri/export/backup.js';
 import { createInventoryService } from '../../../assets/js/mandiri/pos/services/inventory-service.js';
+import { createCashSessionService } from '../../../assets/js/mandiri/pos/services/cash-session-service.js';
 import {
   createBackupChecksumPayload,
   MANDIRI_BACKUP_CHECKSUM_ALGORITHM,
@@ -14,6 +15,7 @@ import {
   ATOMIC_INVENTORY_STORE_NAMES,
   ATOMIC_WORKSPACE_STORE_NAMES,
   ATOMIC_SALE_STORE_NAMES,
+  ATOMIC_CASH_STORE_NAMES,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 import {
   ACCOUNT_A,
@@ -28,11 +30,11 @@ import {
   WORKSPACE_A,
 } from './fixtures.mjs';
 
-test('backup valid memuat manifest, enam belas collection, dan count yang benar', async () => {
+test('backup valid memuat manifest, delapan belas collection, dan count yang benar', async () => {
   const { backup } = await createValidBackup();
   assert.equal(backup.format, 'vitanusa-mandiri-backup');
-  assert.equal(backup.formatVersion, 6);
-  assert.equal(backup.databaseSchemaVersion, 6);
+  assert.equal(backup.formatVersion, 7);
+  assert.equal(backup.databaseSchemaVersion, 7);
   assert.equal(backup.checksumAlgorithm, MANDIRI_BACKUP_CHECKSUM_ALGORITHM);
   assert.match(backup.checksum, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(backup.recordCounts, {
@@ -52,6 +54,8 @@ test('backup valid memuat manifest, enam belas collection, dan count yang benar'
     saleLines: 0,
     payments: 0,
     receipts: 0,
+    expenses: 0,
+    cashSessions: 0,
   });
   assert.deepEqual(Object.keys(backup.data), [
     'workspaces', 'memberships', 'auditEvents', 'operationReceipts',
@@ -59,6 +63,7 @@ test('backup valid memuat manifest, enam belas collection, dan count yang benar'
     'categories', 'products', 'stockMovements', 'inventoryBalances',
     'cartDrafts', 'cartLines',
     'sales', 'saleLines', 'payments', 'receipts',
+    'expenses', 'cashSessions',
   ]);
 });
 
@@ -66,6 +71,64 @@ test('checksum sama dengan canonical payload tanpa field checksum', async () => 
   const { backup } = await createValidBackup();
   assert.equal(await digest(createBackupChecksumPayload(backup)), backup.checksum);
   assert.equal('checksum' in createBackupChecksumPayload(backup), false);
+});
+
+test('backup v7 memuat expense dan cash session closed yang konsisten', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const cashService = createCashSessionService({
+    repositoryContext: fixture.memory.repositoryContext,
+    digestFactory: digest,
+  });
+  const cashSessionId = 'cashsession_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  await cashService.open({
+    schemaVersion: 1,
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+    actorScope: USER_A,
+    actorRole: 'merchant_owner',
+    operationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    eventId: 'audit_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    cashSessionId,
+    openingCashMinor: 5000,
+    createdAtLocal: '2026-07-17T00:10:00.000Z',
+  });
+  await cashService.recordExpense({
+    schemaVersion: 1,
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+    actorScope: USER_A,
+    actorRole: 'merchant_owner',
+    operationId: 'op_dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    eventId: 'audit_eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    cashSessionId,
+    expenseId: 'expense_ffffffff-ffff-4fff-8fff-ffffffffffff',
+    expectedVersion: 1,
+    category: 'utilities',
+    amountMinor: 1000,
+    note: null,
+    createdAtLocal: '2026-07-17T00:20:00.000Z',
+  });
+  await cashService.close({
+    schemaVersion: 1,
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+    actorScope: USER_A,
+    actorRole: 'merchant_owner',
+    operationId: 'op_11111111-1111-4111-8111-111111111111',
+    eventId: 'audit_22222222-2222-4222-8222-222222222222',
+    cashSessionId,
+    expectedVersion: 2,
+    countedCashMinor: 4000,
+    createdAtLocal: '2026-07-17T00:30:00.000Z',
+  });
+  const backup = await fixture.backupService.createWorkspaceBackup({
+    accountScope: ACCOUNT_A,
+    workspaceId: WORKSPACE_A,
+  });
+  assert.equal(backup.recordCounts.expenses, 1);
+  assert.equal(backup.recordCounts.cashSessions, 1);
+  assert.equal(backup.data.cashSessions[0].closingSummary.expectedCashMinor, 4000);
+  assert.equal(backup.data.expenses[0].amountMinor, 1000);
 });
 
 test('backup tepat pada accountScope dan workspaceId yang diminta', async () => {
@@ -211,6 +274,7 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         ...ATOMIC_INVENTORY_STORE_NAMES,
         ...ATOMIC_CART_STORE_NAMES,
         ...ATOMIC_SALE_STORE_NAMES,
+        ...ATOMIC_CASH_STORE_NAMES,
       ])]);
       assert.equal(mode, 'readonly');
       return callback({
@@ -227,6 +291,8 @@ test('backup menolak jumlah record di atas batas tanpa menghasilkan backup parsi
         saleRepository: {
           listForBackup: async () => ({ sales: [], saleLines: [], payments: [], receipts: [] }),
         },
+        expenseRepository: { listForBackup: async () => [] },
+        cashSessionRepository: { listForBackup: async () => [] },
       });
     },
   };

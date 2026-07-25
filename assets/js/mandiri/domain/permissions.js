@@ -27,6 +27,9 @@ export const WORKSPACE_ACTIONS = Object.freeze([
   'inventory.read',
   'inventory.update',
   'sale.create',
+  'expense.create',
+  'cash_session.open',
+  'cash_session.close',
 ]);
 
 const OWNER_ACTIONS = new Set(WORKSPACE_ACTIONS);
@@ -112,6 +115,7 @@ export function canPerformWorkspaceAction(actor, action, context) {
       || action === 'cart.read'
       || action === 'inventory.read'
       || action === 'sale.create'
+      || action === 'cash_session.open'
       || (
         action === 'member.read'
         && context.target?.userScope === actor.userScope

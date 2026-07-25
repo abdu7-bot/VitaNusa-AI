@@ -1,5 +1,5 @@
 export const MANDIRI_DATABASE_NAME = 'vitanusa-mandiri';
-export const MANDIRI_DATABASE_VERSION = 6;
+export const MANDIRI_DATABASE_VERSION = 7;
 
 export const MANDIRI_STORE_NAMES = Object.freeze({
   METADATA: 'metadata',
@@ -19,6 +19,8 @@ export const MANDIRI_STORE_NAMES = Object.freeze({
   SALE_LINES: 'saleLines',
   PAYMENTS: 'payments',
   RECEIPTS: 'receipts',
+  EXPENSES: 'expenses',
+  CASH_SESSIONS: 'cashSessions',
 });
 
 function index(keyPath, options = {}) {
@@ -160,11 +162,30 @@ export const MANDIRI_SCHEMA_V6 = Object.freeze({
   }),
 });
 
-export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V6));
+export const MANDIRI_SCHEMA_V7 = Object.freeze({
+  ...MANDIRI_SCHEMA_V6,
+  [MANDIRI_STORE_NAMES.EXPENSES]: store(
+    ['accountScope', 'workspaceId', 'expenseId'],
+    {
+      byWorkspaceRecordedAt: index(['accountScope', 'workspaceId', 'recordedAtLocal']),
+      byCashSessionRecordedAt: index([
+        'accountScope', 'workspaceId', 'cashSessionId', 'recordedAtLocal',
+      ]),
+      byOperation: index(['accountScope', 'workspaceId', 'operationId'], { unique: true }),
+    },
+  ),
+  [MANDIRI_STORE_NAMES.CASH_SESSIONS]: store(
+    ['accountScope', 'workspaceId', 'cashSessionId'],
+    {
+      byWorkspaceStatus: index(['accountScope', 'workspaceId', 'status']),
+      byWorkspaceOpenedAt: index(['accountScope', 'workspaceId', 'openedAtLocal']),
+    },
+  ),
+});
+
+export const MANDIRI_ALLOWED_STORE_NAMES = Object.freeze(Object.keys(MANDIRI_SCHEMA_V7));
 
 export const MANDIRI_FUTURE_STORE_NAMES = Object.freeze([
-  'expenses',
-  'cashSessions',
   'syncOutbox',
   'syncConflicts',
 ]);
