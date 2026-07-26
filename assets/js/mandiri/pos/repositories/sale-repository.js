@@ -7,14 +7,16 @@ import {
 import { normalizePayment } from '../domain/payment.js';
 import { normalizeReceipt } from '../domain/receipt.js';
 import { normalizeSale, normalizeSaleLine, validateFinalSale } from '../domain/sale.js';
+import { normalizeSaleReversal } from '../domain/sale-reversal.js';
 import { clonePlainRecord, normalizeWith } from '../../repositories/repository-utils.js';
-import { addMoney } from '../../domain/money.js';
+import { addMoney, subtractMoney } from '../../domain/money.js';
 import { normalizeIsoTimestamp } from '../../domain/validation.js';
 
 const SALES = MANDIRI_STORE_NAMES.SALES;
 const LINES = MANDIRI_STORE_NAMES.SALE_LINES;
 const PAYMENTS = MANDIRI_STORE_NAMES.PAYMENTS;
 const RECEIPTS = MANDIRI_STORE_NAMES.RECEIPTS;
+const REVERSALS = MANDIRI_STORE_NAMES.SALE_REVERSALS;
 const STORES = Object.freeze([SALES, LINES, PAYMENTS, RECEIPTS]);
 
 function scoped(accountScope, record) {
@@ -94,19 +96,37 @@ export function createSaleRepository(options) {
       const start = normalizeIsoTimestamp(startValue, 'startAtLocal');
       const end = normalizeIsoTimestamp(endValue, 'endAtLocal');
       if (end < start) throw storageError('data_invalid');
-      return executor.run([SALES], 'readonly', async (transaction) => {
-        const records = await transaction.request(
-          transaction.objectStore(SALES).index('byWorkspaceFinalizedAt').getAll(keyRangeBound(
-            transaction,
-            [accountScope, workspaceId, start],
-            [accountScope, workspaceId, end],
-            false,
-            true,
-          )),
-        );
-        return records.reduce((total, record) => (
+      return executor.run([SALES, REVERSALS], 'readonly', async (transaction) => {
+        const [saleRecords, reversalRecords] = await Promise.all([
+          transaction.request(
+            transaction.objectStore(SALES).index('byWorkspaceFinalizedAt').getAll(keyRangeBound(
+              transaction,
+              [accountScope, workspaceId, start],
+              [accountScope, workspaceId, end],
+              false,
+              true,
+            )),
+          ),
+          transaction.request(
+            transaction.objectStore(REVERSALS).index('byWorkspaceReversedAt').getAll(keyRangeBound(
+              transaction,
+              [accountScope, workspaceId, start],
+              [accountScope, workspaceId, end],
+              false,
+              true,
+            )),
+          ),
+        ]);
+        const saleIds = new Set(saleRecords.map((record) => record.saleId));
+        const gross = saleRecords.reduce((total, record) => (
           addMoney(total, publicRecord(normalizeSale, record).grandTotalMinor)
         ), 0);
+        return reversalRecords.reduce((total, record) => {
+          const reversal = publicRecord(normalizeSaleReversal, record);
+          return saleIds.has(reversal.originalSaleId)
+            ? subtractMoney(total, reversal.reversedAmountMinor)
+            : total;
+        }, gross);
       });
     },
   };
