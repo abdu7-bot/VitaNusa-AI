@@ -101,6 +101,7 @@ export function createRepositoryContext(connection) {
   }
 
   return Object.freeze({
+    capabilities: Object.freeze({ saleReversals: true }),
     run(storeNames, mode, callback) {
       if (typeof callback !== 'function') throw storageError('data_invalid');
       return connection.runTransaction(storeNames, mode, async (transactionContext) => {
