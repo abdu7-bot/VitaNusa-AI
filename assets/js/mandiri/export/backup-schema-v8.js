@@ -118,9 +118,12 @@ function validateReversalReferences(baseData, saleReversals) {
       || payment.saleId !== sale.saleId
       || sale.paymentId !== payment.paymentId
       || payment.amountAppliedMinor !== reversal.reversedAmountMinor
-      || session.status !== 'open'
       || sale.finalizedAtLocal < session.openedAtLocal
       || reversal.reversedAtLocal < sale.finalizedAtLocal
+      || (
+        session.status === 'closed'
+        && reversal.reversedAtLocal > session.closedAtLocal
+      )
       || !receipt
       || receipt.operationType !== 'sale_void'
       || receipt.entityType !== 'sale_reversal'
@@ -155,13 +158,15 @@ function validateReversalReferences(baseData, saleReversals) {
 function normalizeV8Document(input, options) {
   assertSafeBackupValue(input);
   assertExactObject(input, ROOT_FIELDS);
+  if (input.format !== MANDIRI_BACKUP_FORMAT) throw backupError('format_unknown');
+  if (input.databaseSchemaVersion !== 8) {
+    // Preserve the legacy error contract when only formatVersion is forged to 8.
+    throw backupError('format_version_unsupported');
+  }
   assertExactObject(input.recordCounts, V8_COLLECTION_FIELDS);
   assertExactObject(input.data, V8_COLLECTION_FIELDS);
   if (
-    input.format !== MANDIRI_BACKUP_FORMAT
-    || input.formatVersion !== 8
-    || input.databaseSchemaVersion !== 8
-    || !Array.isArray(input.data.saleReversals)
+    !Array.isArray(input.data.saleReversals)
     || input.data.saleReversals.length > MANDIRI_BACKUP_RECORD_LIMITS.saleReversals
     || input.recordCounts.saleReversals !== input.data.saleReversals.length
   ) throw backupError('backup_invalid');
