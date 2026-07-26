@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { createEntityId, createOperationId } from '../../../assets/js/mandiri/domain/ids.js';
 import {
+  normalizeStockMovement,
+  STOCK_MOVEMENT_TYPES,
+} from '../../../assets/js/mandiri/pos/domain/inventory.js';
+import {
   createSaleReversalId,
   normalizeSaleReversal,
   SALE_REVERSAL_REASON_CODES,
@@ -120,4 +124,31 @@ test('field tidak dikenal dan timestamp invalid ditolak fail-closed', () => {
     () => normalizeSaleReversal(validInput({ reversedAtLocal: '26-07-2026' })),
     { code: 'invalid_timestamp' },
   );
+});
+
+test('stock void_reversal bersifat movement masuk positif dan tanpa reason manual', () => {
+  assert.equal(STOCK_MOVEMENT_TYPES.includes('void_reversal'), true);
+  const value = normalizeStockMovement({
+    schemaVersion: 1,
+    movementId: createEntityId('movement', webcrypto),
+    workspaceId: createEntityId('workspace', webcrypto),
+    productId: createEntityId('product', webcrypto),
+    movementType: 'void_reversal',
+    quantityDelta: 4,
+    reason: null,
+    actorScope: 'user:owner-001',
+    actorRole: 'merchant_owner',
+    sourceReference: createEntityId('reversal', webcrypto),
+    operationId: createOperationId(webcrypto),
+    createdAtLocal: '2026-07-26T06:30:00.000Z',
+  });
+  assert.equal(value.quantityDelta, 4);
+  assert.throws(() => normalizeStockMovement({
+    ...value,
+    quantityDelta: -4,
+  }), { code: 'invalid_quantity' });
+  assert.throws(() => normalizeStockMovement({
+    ...value,
+    reason: 'tidak boleh disisipkan',
+  }), { code: 'unknown_field' });
 });
