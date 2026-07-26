@@ -5,7 +5,7 @@ import { ATOMIC_LEARNING_STORE_NAMES, ATOMIC_PRODUCT_STORE_NAMES } from '../repo
 import { ATOMIC_INVENTORY_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_CART_STORE_NAMES } from '../repositories/repository-context.js';
 import { ATOMIC_SALE_STORE_NAMES } from '../repositories/repository-context.js';
-import { ATOMIC_CASH_STORE_NAMES } from '../repositories/repository-context.js';
+import { ATOMIC_CASH_STORE_NAMES, ATOMIC_REVERSAL_STORE_NAMES } from '../repositories/repository-context.js';
 import {
   backupError,
   MandiriBackupError,
@@ -22,7 +22,7 @@ import {
   normalizeBackupAccountScope,
   normalizeBackupDocument,
   normalizeBackupWorkspaceId,
-} from './backup-schema.js';
+} from './backup-schema-v8.js';
 
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
@@ -49,12 +49,14 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       ...ATOMIC_CART_STORE_NAMES,
       ...ATOMIC_SALE_STORE_NAMES,
       ...ATOMIC_CASH_STORE_NAMES,
+      ...ATOMIC_REVERSAL_STORE_NAMES,
     ])],
     'readonly',
     async (repositories) => {
       if (
         typeof repositories.auditRepository?.listForBackup !== 'function'
         || typeof repositories.operationReceiptRepository?.listForBackup !== 'function'
+        || typeof repositories.saleReversalRepository?.listForBackup !== 'function'
       ) {
         throw backupError('backup_invalid');
       }
@@ -95,11 +97,15 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         accountScope,
         workspaceId,
       );
+      const saleReversalPromise = repositories.saleReversalRepository.listForBackup(
+        accountScope,
+        workspaceId,
+      );
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
         categories, products, stockMovements, inventoryBalances,
-        cartBackup, saleBackup, expenses, cashSessions,
+        cartBackup, saleBackup, expenses, cashSessions, saleReversals,
       ] = await Promise.all([
         workspacePromise,
         membershipPromise,
@@ -112,6 +118,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         movementPromise,
         balancePromise,
         cartBackupPromise, saleBackupPromise, expensePromise, cashSessionPromise,
+        saleReversalPromise,
       ]);
       return {
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
@@ -120,6 +127,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         ...saleBackup,
         expenses,
         cashSessions,
+        saleReversals,
       };
     },
   );
@@ -189,6 +197,7 @@ export function createBackupService({
         receipts: sortedRecords(records.receipts, 'receiptId'),
         expenses: sortedRecords(records.expenses, 'expenseId'),
         cashSessions: sortedRecords(records.cashSessions, 'cashSessionId'),
+        saleReversals: sortedRecords(records.saleReversals, 'reversalId'),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),
