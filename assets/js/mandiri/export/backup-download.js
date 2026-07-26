@@ -1,5 +1,5 @@
 import { backupError, MandiriBackupError } from './backup-errors.js';
-import { normalizeBackupDocument } from './backup-schema.js';
+import { normalizeBackupDocument } from './backup-schema-v8.js';
 
 const RESERVED_WINDOWS_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
