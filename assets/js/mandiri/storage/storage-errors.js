@@ -28,6 +28,7 @@ const SAFE_MESSAGES = Object.freeze({
   cash_session_already_open: 'Satu sesi kas masih terbuka pada workspace ini.',
   cash_session_closed: 'Sesi kas sudah ditutup dan tidak dapat diubah.',
   duplicate_operation: 'Operasi yang sama sudah pernah diproses.',
+  operation_in_progress: 'Operasi lain masih diproses. Tunggu hingga selesai sebelum mencoba lagi.',
   sale_immutable: 'Sale final tidak dapat diubah.',
   cart_cancelled: 'Keranjang telah dibatalkan.',
   cart_already_finalized: 'Keranjang telah difinalisasi.',
