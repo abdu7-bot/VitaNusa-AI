@@ -29,10 +29,12 @@ const digestFactory = (value) => createPayloadDigest(value, webcrypto);
 
 function fakeView() {
   let callbacks = null;
+  const renders = [];
   return {
     get callbacks() { return callbacks; },
+    get renders() { return renders; },
     bind(value) { callbacks = value; },
-    render() {},
+    render(value) { renders.push(value); },
     destroy() {},
   };
 }
@@ -60,6 +62,8 @@ function fakeSessionStore() {
         try { return JSON.parse(value); } catch { return []; }
       });
     },
+    get keys() { return [...values.keys()]; },
+    serialized(key) { return values.get(key) || null; },
     get size() { return values.size; },
   };
 }
@@ -127,7 +131,7 @@ async function createScopeFixture({
     schemaVersion: 1,
     accountScope,
     workspaceId,
-    cashSessionId: `cash_session_${sessionSuffix.repeat(8)}-${sessionSuffix.repeat(4)}-4${sessionSuffix.repeat(3)}-8${sessionSuffix.repeat(3)}-${sessionSuffix.repeat(12)}`,
+    cashSessionId: `cashsession_${sessionSuffix.repeat(8)}-${sessionSuffix.repeat(4)}-4${sessionSuffix.repeat(3)}-8${sessionSuffix.repeat(3)}-${sessionSuffix.repeat(12)}`,
     openedByScope: userScope,
     openedByRole: 'merchant_owner',
     openedAtLocal: '2026-07-25T03:00:00.000Z',
@@ -238,8 +242,14 @@ async function scopedHarness(initialFixture, pendingExpenseStore) {
     selectedFixture = fixture;
     await controller.rebindWorkspace();
   };
+  const signOut = async () => {
+    authListener({ isAuthenticated: false, user: null });
+    await settle();
+  };
   await authenticate(initialFixture);
-  return { authenticate, controller, rebind, view };
+  return {
+    authenticate, controller, rebind, signOut, view,
+  };
 }
 
 const EXPENSE_INPUT = Object.freeze({
@@ -793,7 +803,55 @@ test('rebind workspace dan account membersihkan scope lama serta mengabaikan rel
   assert.equal(value.controller.getState().session.workspaceId, accountB.workspace.workspaceId);
 });
 
-test('submission dan pending snapshot scope lama tidak dapat mengubah workspace baru', async () => {
+test('continuation handleAuth stale tidak menyentuh snapshot atau submission lifecycle baru', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'overlap-workspace-a',
+    sessionSuffix: '6',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'overlap-workspace-b',
+    sessionSuffix: '7',
+  });
+  const reloadA = deferred();
+  const writeB = deferred();
+  workspaceB.recordExpense = async (command) => {
+    await writeB.promise;
+    workspaceB.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
+    return { status: 'committed' };
+  };
+  const value = await scopedHarness(workspaceA, pendingExpenseStore);
+
+  workspaceA.readGate = reloadA;
+  const staleLifecycle = value.rebind(workspaceA);
+  await new Promise((resolve) => setImmediate(resolve));
+  const currentLifecycle = value.rebind(workspaceB);
+  await currentLifecycle;
+  const submissionB = value.controller.submit('expense', EXPENSE_INPUT);
+  const snapshotBKey = pendingExpenseStore.keys[0];
+  const snapshotBBefore = pendingExpenseStore.serialized(snapshotBKey);
+  const renderCountBefore = value.view.renders.length;
+
+  reloadA.resolve();
+  await staleLifecycle;
+  assert.equal(value.view.renders.length, renderCountBefore);
+  assert.equal(value.controller.getState().state, 'submitting');
+  assert.equal(value.controller.getState().session.workspaceId, WORKSPACE_B);
+  assert.equal(pendingExpenseStore.serialized(snapshotBKey), snapshotBBefore);
+  assert.equal(value.controller.submit('expense', EXPENSE_INPUT), submissionB);
+
+  writeB.resolve();
+  await submissionB;
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('snapshot write lama dipertahankan lintas rebind dan direkonsiliasi duplicate-safe', async () => {
   const pendingExpenseStore = fakeSessionStore();
   const workspaceA = await createScopeFixture({
     accountScope: ACCOUNT_A,
@@ -811,35 +869,174 @@ test('submission dan pending snapshot scope lama tidak dapat mengubah workspace 
   });
   const oldWrite = deferred();
   let oldCommand;
+  let oldCalls = 0;
   workspaceA.recordExpense = async (command) => {
+    oldCalls += 1;
     oldCommand = command;
     await oldWrite.promise;
     workspaceA.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
-    return { status: 'committed' };
+    throw storageError('storage_error');
   };
-  let newCommand;
-  workspaceB.recordExpense = async (command) => {
-    newCommand = command;
-    workspaceB.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
-    return { status: 'committed' };
-  };
+  workspaceB.recordExpense = async () => { throw storageError('storage_error'); };
 
   const value = await scopedHarness(workspaceA, pendingExpenseStore);
   const staleSubmission = value.controller.submit('expense', EXPENSE_INPUT);
+  const staleResult = staleSubmission.catch((error) => error);
   assert.equal(pendingExpenseStore.size, 1);
+  const snapshotAKey = pendingExpenseStore.keys[0];
+  const pendingCommandA = pendingExpenseStore.entries[0].command;
   await value.rebind(workspaceB);
-  assert.equal(pendingExpenseStore.size, 0);
-  const currentSubmission = value.controller.submit('expense', EXPENSE_INPUT);
-  assert.notEqual(currentSubmission, staleSubmission);
-  await currentSubmission;
-  assert.equal(newCommand.workspaceId, WORKSPACE_B);
-  assert.notEqual(newCommand.operationId, oldCommand.operationId);
-  assert.notEqual(newCommand.expenseId, oldCommand.expenseId);
+  const snapshotABefore = pendingExpenseStore.serialized(snapshotAKey);
+  assert.equal(pendingExpenseStore.entries.find(
+    (entry) => entry.command.operationId === pendingCommandA.operationId,
+  ).outcome, 'orphaned');
+  await assert.rejects(value.controller.submit('expense', {
+    ...EXPENSE_INPUT, amount: '30.000',
+  }));
+  const snapshotBKey = pendingExpenseStore.keys.find((key) => key !== snapshotAKey);
+  const snapshotBBefore = pendingExpenseStore.serialized(snapshotBKey);
+  const stateBBefore = value.controller.getState();
+
   oldWrite.resolve();
-  await staleSubmission;
+  assert.equal((await staleResult).code, 'storage_unknown');
   assert.equal(value.controller.getState().session.workspaceId, WORKSPACE_B);
-  assert.equal(value.controller.getState().expenses.length, 1);
-  assert.equal(value.controller.getState().expenses[0].expenseId, newCommand.expenseId);
+  assert.equal(value.controller.getState(), stateBBefore);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), snapshotABefore);
+  assert.equal(pendingExpenseStore.serialized(snapshotBKey), snapshotBBefore);
+
+  await value.rebind(workspaceA);
+  assert.equal(workspaceA.expenses.length, 1);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), null);
+  assert.equal(pendingExpenseStore.serialized(snapshotBKey), snapshotBBefore);
+  const reconciled = await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(reconciled.status, 'duplicate-safe');
+  assert.equal(reconciled.expense.operationId, oldCommand.operationId);
+  assert.equal(reconciled.expense.expenseId, oldCommand.expenseId);
+  assert.equal(oldCalls, 1);
+  assert.equal(workspaceA.expenses.length, 1);
+  assert.equal(pendingExpenseStore.serialized(snapshotBKey), snapshotBBefore);
+});
+
+test('failure sebelum commit tetap dapat retry dengan identity sama setelah kembali ke workspace', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'retry-workspace-a',
+    sessionSuffix: '8',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'retry-workspace-b',
+    sessionSuffix: '9',
+  });
+  const commands = [];
+  let fail = true;
+  workspaceA.recordExpense = async (command) => {
+    commands.push(command);
+    if (fail) {
+      fail = false;
+      throw storageError('storage_error');
+    }
+    workspaceA.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
+    return { status: 'committed' };
+  };
+  const value = await scopedHarness(workspaceA, pendingExpenseStore);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  const snapshotAKey = pendingExpenseStore.keys[0];
+  assert.equal(pendingExpenseStore.entries[0].outcome, 'absent');
+
+  await value.rebind(workspaceB);
+  assert.notEqual(pendingExpenseStore.serialized(snapshotAKey), null);
+  await value.rebind(workspaceA);
+  assert.notEqual(pendingExpenseStore.serialized(snapshotAKey), null);
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands.length, 2);
+  assert.equal(commands[0].operationId, commands[1].operationId);
+  assert.equal(commands[0].expenseId, commands[1].expenseId);
+  assert.equal(workspaceA.expenses.length, 1);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), null);
+});
+
+test('orphaned write dengan payload collision tetap menjadi idempotency mismatch', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'collision-workspace-a',
+    sessionSuffix: 'c',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'collision-workspace-b',
+    sessionSuffix: 'd',
+  });
+  const writeA = deferred();
+  let commandA;
+  workspaceA.recordExpense = async (command) => {
+    commandA = command;
+    await writeA.promise;
+    workspaceA.expenses.push({
+      ...command,
+      amountMinor: command.amountMinor + 1,
+      recordedAtLocal: command.createdAtLocal,
+    });
+    throw storageError('storage_error');
+  };
+  const value = await scopedHarness(workspaceA, pendingExpenseStore);
+  const staleSubmission = value.controller.submit('expense', EXPENSE_INPUT);
+  const staleResult = staleSubmission.catch((error) => error);
+  const snapshotAKey = pendingExpenseStore.keys[0];
+  await value.rebind(workspaceB);
+  writeA.resolve();
+  assert.equal((await staleResult).code, 'storage_unknown');
+
+  await value.rebind(workspaceA);
+  assert.equal(value.controller.getState().state, 'error');
+  assert.equal(
+    value.controller.getState().message,
+    'Operasi tidak dapat diproses ulang karena datanya berbeda.',
+  );
+  assert.equal(workspaceA.expenses.length, 1);
+  assert.equal(workspaceA.expenses[0].expenseId, commandA.expenseId);
+  assert.equal(workspaceA.expenses[0].amountMinor, commandA.amountMinor + 1);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), null);
+});
+
+test('logout membersihkan pending snapshot dari seluruh scope yang dikunjungi controller', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'logout-workspace-a',
+    sessionSuffix: 'a',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'logout-workspace-b',
+    sessionSuffix: 'b',
+  });
+  workspaceA.recordExpense = async () => { throw storageError('storage_error'); };
+  workspaceB.recordExpense = async () => { throw storageError('storage_error'); };
+  const value = await scopedHarness(workspaceA, pendingExpenseStore);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  await value.rebind(workspaceB);
+  await assert.rejects(value.controller.submit('expense', {
+    ...EXPENSE_INPUT, amount: '30.000',
+  }));
+  assert.equal(pendingExpenseStore.size, 2);
+  await value.signOut();
+  assert.equal(pendingExpenseStore.size, 0);
+  assert.equal(value.controller.getState().state, 'signed-out');
 });
 
 test('logout melepas guard lama dan finally stale tidak membersihkan guard konteks baru', async () => {

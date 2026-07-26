@@ -31,13 +31,15 @@ ulang tanpa retry otomatis. Expense diurutkan terbaru dahulu dengan timestamp la
 Command Expense yang belum terkonfirmasi disimpan di `sessionStorage` dengan scope akun,
 workspace, dan pengguna. Dengan demikian refresh pada tab yang sama mempertahankan
 operation/expense/event ID dan timestamp untuk reconciliation; reset hanya membuang
-command setelah pengguna memilih reset secara eksplisit. Command juga dibuang setelah
-sukses terkonfirmasi, logout, atau perubahan konteks. Snapshot storage divalidasi ulang
-sebagai command Expense dan data rusak dibuang; bila Web Storage diblokir, idempotensi
-in-memory tetap berjalan. Penyimpanan ini tidak mengubah IndexedDB v7 atau format backup.
-Menutup tab tetap menghapus `sessionStorage`; operasi yang telah sempat commit tetap aman
-bila retry dilakukan tanpa kehilangan command, tetapi tab baru tidak dapat merekonstruksi
-identity dari input yang sama saja.
+command setelah pengguna memilih reset secara eksplisit. Command dibuang setelah sukses
+terkonfirmasi atau logout. Rebind account/workspace mempertahankan snapshot pada key scope
+asal; write yang masih aktif ditandai orphaned agar hasilnya tidak menyentuh UI scope baru
+dan dapat direkonsiliasi ketika scope asal dibuka kembali. Logout membersihkan key dari
+seluruh scope yang telah dikunjungi controller. Snapshot storage divalidasi ulang sebagai
+command Expense dan data rusak dibuang; bila Web Storage diblokir, idempotensi in-memory
+tetap berjalan. Penyimpanan ini tidak mengubah IndexedDB v7 atau format backup. Menutup
+tab tetap menghapus `sessionStorage`; tab baru tidak dapat merekonstruksi identity hanya
+dari input transaksi yang sama.
 
 Saat halaman dimuat ulang, snapshot direkonsiliasi dengan Expense hasil reload berdasarkan
 expense/operation ID. Record yang cocok mengonfirmasi sukses dan membersihkan snapshot;

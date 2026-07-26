@@ -155,7 +155,7 @@ function normalizeRestorableExpenseSubmission(
   };
   const materialKey = expenseMaterialKey(material);
   if (
-    !['pending', 'absent'].includes(value.outcome)
+    !['pending', 'orphaned', 'absent'].includes(value.outcome)
     || command.schemaVersion !== 1
     || command.accountScope !== scopes.accountScope
     || command.workspaceId !== workspace.workspaceId
@@ -215,6 +215,8 @@ export function createCashManagementController({
   let generation = 0;
   let activeSubmission = null;
   let pendingExpenseSubmissions = new Map();
+  let confirmedExpenseSubmissions = new Map();
+  const knownPendingExpenseKeys = new Set();
   let lastAuthState = null;
   let destroyed = false;
 
@@ -229,12 +231,14 @@ export function createCashManagementController({
     connection = context = service = scopes = workspace = membership = null;
     activeSubmission = null;
     pendingExpenseSubmissions = new Map();
+    confirmedExpenseSubmissions = new Map();
     previousConnection?.close?.();
   }
 
   function persistPendingExpenseSubmissions() {
     const key = pendingExpenseStorageKey(scopes, workspace);
     if (!key || !expenseSubmissionStore) return;
+    knownPendingExpenseKeys.add(key);
     try {
       const entries = [...pendingExpenseSubmissions.values()];
       if (entries.length === 0) {
@@ -256,6 +260,11 @@ export function createCashManagementController({
     }
   }
 
+  function removeKnownPersistedExpenseSubmissions() {
+    knownPendingExpenseKeys.forEach(removePersistedExpenseSubmissions);
+    knownPendingExpenseKeys.clear();
+  }
+
   function removePendingExpenseSubmission(materialKey) {
     if (!pendingExpenseSubmissions.delete(materialKey)) return;
     persistPendingExpenseSubmissions();
@@ -270,6 +279,17 @@ export function createCashManagementController({
       }
     }
     if (removed) persistPendingExpenseSubmissions();
+  }
+
+  function preserveActiveExpenseSubmission() {
+    if (activeSubmission?.kind !== 'expense') return;
+    const pending = pendingExpenseSubmissions.get(activeSubmission.logicalKey);
+    if (!pending) return;
+    pendingExpenseSubmissions.set(activeSubmission.logicalKey, Object.freeze({
+      ...pending,
+      outcome: 'orphaned',
+    }));
+    persistPendingExpenseSubmissions();
   }
 
   function restorePendingExpenseSubmissions() {
@@ -287,6 +307,7 @@ export function createCashManagementController({
     }
     let mismatch = false;
     pendingExpenseSubmissions = new Map();
+    confirmedExpenseSubmissions = new Map();
     values.forEach((value) => {
       const restored = normalizeRestorableExpenseSubmission(value, {
         scopes, workspace, session: current.session, membership,
@@ -297,7 +318,14 @@ export function createCashManagementController({
         || expense.operationId === restored.command.operationId
       ));
       if (recorded) {
-        if (!expenseMatchesCommand(recorded, restored.command)) mismatch = true;
+        if (!expenseMatchesCommand(recorded, restored.command)) {
+          mismatch = true;
+        } else if (restored.outcome === 'orphaned') {
+          confirmedExpenseSubmissions.set(restored.materialKey, Object.freeze({
+            command: restored.command,
+            expense: recorded,
+          }));
+        }
         return;
       }
       pendingExpenseSubmissions.set(restored.materialKey, restored);
@@ -370,15 +398,18 @@ export function createCashManagementController({
     const token = ++generation;
     let nextConnection = null;
     const previousPendingKey = pendingExpenseStorageKey(scopes, workspace);
+    if (authState?.isAuthenticated && authState.user) preserveActiveExpenseSubmission();
     clearOperationalReferences();
     if (!authState?.isAuthenticated || !authState.user) {
-      removePersistedExpenseSubmissions(previousPendingKey);
+      if (previousPendingKey) knownPendingExpenseKeys.add(previousPendingKey);
+      removeKnownPersistedExpenseSubmissions();
       render(model('signed-out'));
       return;
     }
     render(model('loading'));
     try {
       const nextScopes = await createScopes(authState.user);
+      if (destroyed || token !== generation) return;
       nextConnection = await openDatabase();
       if (destroyed || token !== generation) return nextConnection.close?.();
       const nextContext = createContext(nextConnection);
@@ -396,10 +427,6 @@ export function createCashManagementController({
         { accountScope: nextScopes.accountScope, workspaceId: access.workspace.workspaceId },
       )) throw storageError('permission_denied');
       if (destroyed || token !== generation) return nextConnection.close?.();
-      const nextPendingKey = pendingExpenseStorageKey(nextScopes, access.workspace);
-      if (previousPendingKey !== nextPendingKey) {
-        removePersistedExpenseSubmissions(previousPendingKey);
-      }
       connection = nextConnection;
       nextConnection = null;
       context = nextContext;
@@ -408,6 +435,7 @@ export function createCashManagementController({
       workspace = access.workspace;
       membership = access.membership;
       await reload();
+      if (destroyed || token !== generation) return;
       restorePendingExpenseSubmissions();
     } catch (error) {
       nextConnection?.close?.();
@@ -470,6 +498,19 @@ export function createCashManagementController({
       }));
       return Promise.reject(error);
     }
+    if (kind === 'expense') {
+      const confirmed = confirmedExpenseSubmissions.get(logicalKey);
+      if (confirmed) {
+        confirmedExpenseSubmissions.delete(logicalKey);
+        render(model(current.session ? 'open-session' : current.state, {
+          ...current, submitting: false, message: MESSAGES.expense, focusStatus: true,
+        }));
+        return Promise.resolve(Object.freeze({
+          status: 'duplicate-safe',
+          expense: confirmed.expense,
+        }));
+      }
+    }
     try {
       if (kind === 'expense') {
         const materialKey = logicalKey;
@@ -530,13 +571,14 @@ export function createCashManagementController({
     const activeService = service;
     render(model('submitting', { ...current, submitting: true, message: MESSAGES.submitting }));
     const submission = {
-      kind, logicalKey, generation: token, promise: null,
+      command, kind, logicalKey, generation: token, promise: null,
     };
     const operation = Promise.resolve()
       .then(() => activeService[kind === 'expense' ? 'recordExpense' : kind](Object.freeze(command)))
       .then(async (result) => {
         if (destroyed || token !== generation) return result;
         await reload({ message: MESSAGES[kind], focusStatus: true });
+        if (destroyed || token !== generation) return result;
         if (kind === 'expense') {
           removePendingExpenseSubmission(expenseMaterialKey(command));
           discardAbsentExpenseSubmissions();
@@ -548,21 +590,25 @@ export function createCashManagementController({
         let expenseReconciled = false;
         if (error?.code === 'version_conflict') {
           await reload({ message: MESSAGES['version-conflict'], focusStatus: true, conflict: true });
+          if (destroyed || token !== generation) throw error;
           expenseReconciled = kind === 'expense';
         } else if ([
           'cash_session_already_open', 'cash_session_required', 'cash_session_closed',
           'record_not_found', 'invalid_reference', 'duplicate_operation',
         ].includes(error?.code)) {
           await reload({ message: safeMessage(error.code), focusStatus: true });
+          if (destroyed || token !== generation) throw error;
           expenseReconciled = kind === 'expense';
         } else {
           let reloaded = false;
           if (kind === 'expense') {
             try {
               await reload();
+              if (destroyed || token !== generation) throw error;
               reloaded = true;
               expenseReconciled = true;
             } catch (reloadError) {
+              if (destroyed || token !== generation) throw error;
               render(model('error', {
                 ...current, submitting: false, message: safeMessage(reloadError?.code), focusStatus: true,
               }));
@@ -574,6 +620,7 @@ export function createCashManagementController({
             }));
           }
         }
+        if (destroyed || token !== generation) throw error;
         if (kind === 'expense') {
           const materialKey = expenseMaterialKey(command);
           const recorded = current.expenses.find((expense) => (
