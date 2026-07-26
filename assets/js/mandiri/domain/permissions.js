@@ -27,6 +27,7 @@ export const WORKSPACE_ACTIONS = Object.freeze([
   'inventory.read',
   'inventory.update',
   'sale.create',
+  'sale.void',
   'expense.create',
   'cash_session.open',
   'cash_session.close',
