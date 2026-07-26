@@ -90,6 +90,31 @@ function sortExpenses(values) {
   )));
 }
 
+function normalizeExpenseMaterial(input, cashSessionId) {
+  return Object.freeze({
+    cashSessionId,
+    category: EXPENSE_CATEGORIES.includes(input?.category) ? input.category : '',
+    amountMinor: normalizeCashInput(input?.amount, { positive: true }),
+    note: String(input?.note || '').trim() || null,
+  });
+}
+
+function expenseMaterialKey(value) {
+  return JSON.stringify([
+    value.cashSessionId, value.category, value.amountMinor, value.note,
+  ]);
+}
+
+function expenseMatchesCommand(expense, command) {
+  return expense.expenseId === command.expenseId
+    && expense.operationId === command.operationId
+    && expense.cashSessionId === command.cashSessionId
+    && expense.category === command.category
+    && expense.amountMinor === command.amountMinor
+    && expense.note === command.note
+    && expense.recordedAtLocal === command.createdAtLocal;
+}
+
 function model(state, values = {}) {
   return Object.freeze({
     state,
@@ -129,6 +154,7 @@ export function createCashManagementController({
   let membership = null;
   let generation = 0;
   let submitPromise = null;
+  let pendingExpenseSubmission = null;
   let destroyed = false;
 
   const render = (next) => {
@@ -195,6 +221,7 @@ export function createCashManagementController({
     let nextConnection = null;
     connection?.close?.();
     connection = context = service = scopes = workspace = membership = null;
+    pendingExpenseSubmission = null;
     if (!authState?.isAuthenticated || !authState.user) {
       render(model('signed-out'));
       return;
@@ -248,32 +275,54 @@ export function createCashManagementController({
     const session = current.session;
     let command;
     try {
-      const createdAtLocal = now();
-      const base = {
-        schemaVersion: 1,
-        accountScope: scopes.accountScope,
-        workspaceId: workspace.workspaceId,
-        actorScope: scopes.userScope,
-        actorRole: membership.role,
-        operationId: createOperationId(cryptoRef),
-        eventId: createEntityId('audit', cryptoRef),
-        cashSessionId: kind === 'open' ? createCashSessionId(cryptoRef) : session?.cashSessionId,
-        createdAtLocal,
-      };
-      if (kind === 'open') command = { ...base, openingCashMinor: normalizeCashInput(input?.openingCash) };
-      if (kind === 'expense') command = {
-        ...base,
-        expenseId: createExpenseId(cryptoRef),
-        expectedVersion: session?.version,
-        category: EXPENSE_CATEGORIES.includes(input?.category) ? input.category : '',
-        amountMinor: normalizeCashInput(input?.amount, { positive: true }),
-        note: String(input?.note || '').trim() || null,
-      };
-      if (kind === 'close') command = {
-        ...base,
-        expectedVersion: session?.version,
-        countedCashMinor: normalizeCashInput(input?.countedCash),
-      };
+      if (kind === 'expense') {
+        const material = normalizeExpenseMaterial(input, session?.cashSessionId);
+        const materialKey = expenseMaterialKey(material);
+        if (pendingExpenseSubmission?.materialKey === materialKey) {
+          command = pendingExpenseSubmission.command;
+        } else {
+          const createdAtLocal = now();
+          command = Object.freeze({
+            schemaVersion: 1,
+            accountScope: scopes.accountScope,
+            workspaceId: workspace.workspaceId,
+            actorScope: scopes.userScope,
+            actorRole: membership.role,
+            operationId: createOperationId(cryptoRef),
+            eventId: createEntityId('audit', cryptoRef),
+            cashSessionId: material.cashSessionId,
+            createdAtLocal,
+            expenseId: createExpenseId(cryptoRef),
+            expectedVersion: session?.version,
+            category: material.category,
+            amountMinor: material.amountMinor,
+            note: material.note,
+          });
+          pendingExpenseSubmission = { command, materialKey };
+        }
+      }
+      if (kind !== 'expense') {
+        const createdAtLocal = now();
+        const base = {
+          schemaVersion: 1,
+          accountScope: scopes.accountScope,
+          workspaceId: workspace.workspaceId,
+          actorScope: scopes.userScope,
+          actorRole: membership.role,
+          operationId: createOperationId(cryptoRef),
+          eventId: createEntityId('audit', cryptoRef),
+          cashSessionId: kind === 'open' ? createCashSessionId(cryptoRef) : session?.cashSessionId,
+          createdAtLocal,
+        };
+        if (kind === 'open') command = {
+          ...base, openingCashMinor: normalizeCashInput(input?.openingCash),
+        };
+        if (kind === 'close') command = {
+          ...base,
+          expectedVersion: session?.version,
+          countedCashMinor: normalizeCashInput(input?.countedCash),
+        };
+      }
     } catch (error) {
       render(model(current.state, { ...current, message: safeMessage(error?.code), focusStatus: true }));
       return Promise.reject(error);
@@ -284,6 +333,9 @@ export function createCashManagementController({
       .then(async (result) => {
         if (destroyed || token !== generation) return result;
         await reload({ message: MESSAGES[kind], focusStatus: true });
+        if (kind === 'expense' && pendingExpenseSubmission?.command === command) {
+          pendingExpenseSubmission = null;
+        }
         return result;
       })
       .catch(async (error) => {
@@ -296,7 +348,39 @@ export function createCashManagementController({
         ].includes(error?.code)) {
           await reload({ message: safeMessage(error.code), focusStatus: true });
         } else {
+          if (kind === 'expense') {
+            try { await reload(); } catch {}
+          }
           render(model('error', { ...current, submitting: false, message: safeMessage(error?.code), focusStatus: true }));
+        }
+        if (kind === 'expense') {
+          const recorded = current.expenses.find((expense) => (
+            expense.expenseId === command.expenseId || expense.operationId === command.operationId
+          ));
+          if (recorded) {
+            if (!expenseMatchesCommand(recorded, command)) {
+              const mismatch = storageError('idempotency_mismatch');
+              render(model('error', {
+                ...current, submitting: false, message: safeMessage(mismatch.code), focusStatus: true,
+              }));
+              throw mismatch;
+            }
+            pendingExpenseSubmission = null;
+            render(model(current.session ? 'open-session' : current.state, {
+              ...current, submitting: false, message: MESSAGES.expense, focusStatus: true,
+            }));
+            return Object.freeze({ status: 'duplicate-safe', expense: recorded });
+          }
+          if (
+            error?.code === 'version_conflict'
+            && pendingExpenseSubmission?.command === command
+            && current.session?.cashSessionId === command.cashSessionId
+          ) {
+            pendingExpenseSubmission = {
+              ...pendingExpenseSubmission,
+              command: Object.freeze({ ...command, expectedVersion: current.session.version }),
+            };
+          }
         }
         throw error;
       })
@@ -307,6 +391,10 @@ export function createCashManagementController({
 
   function setConfirmOpen(value) {
     return render(model(current.state, { ...current, confirmOpen: value === true }));
+  }
+
+  function resetExpenseSubmission() {
+    if (!submitPromise) pendingExpenseSubmission = null;
   }
 
   function destroy() {
@@ -321,10 +409,12 @@ export function createCashManagementController({
 
   render(current);
   if (contract?.enabled) {
-    view.bind?.({ submit, reload, setConfirmOpen });
+    view.bind?.({ submit, reload, resetExpenseSubmission, setConfirmOpen });
     unsubscribe = subscribeAuth((state) => { void handleAuth(state); });
   }
-  return Object.freeze({ destroy, getState: () => current, reload, submit, setConfirmOpen });
+  return Object.freeze({
+    destroy, getState: () => current, reload, resetExpenseSubmission, submit, setConfirmOpen,
+  });
 }
 
 function setHidden(element, hidden) { if (element) element.hidden = hidden; }
@@ -440,7 +530,10 @@ export function createCashManagementView(root, documentRef = root?.ownerDocument
         note: expenseForm.elements.note.value,
       }).then(() => expenseForm.reset()).catch(() => {});
     });
-    add(expenseForm?.querySelector('[data-reset-expense]'), 'click', () => expenseForm.reset());
+    add(expenseForm?.querySelector('[data-reset-expense]'), 'click', () => {
+      callbacks.resetExpenseSubmission();
+      expenseForm.reset();
+    });
     add(root.querySelector('[data-open-close-dialog]'), 'click', (event) => {
       dialogTrigger = event.currentTarget;
       callbacks.setConfirmOpen(true);

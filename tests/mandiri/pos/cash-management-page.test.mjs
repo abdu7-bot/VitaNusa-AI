@@ -9,6 +9,7 @@ import {
 } from '../../../assets/js/mandiri/pos/ui/cash-management-page.js';
 import { createPayloadDigest } from '../../../assets/js/mandiri/domain/ids.js';
 import { createCashSessionService } from '../../../assets/js/mandiri/pos/services/cash-session-service.js';
+import { storageError } from '../../../assets/js/mandiri/storage/storage-errors.js';
 import { seedMemoryWorkspace, ACCOUNT_A, USER_A, WORKSPACE_A } from '../export/fixtures.mjs';
 
 const rootUrl = new URL('../../../', import.meta.url);
@@ -34,7 +35,7 @@ async function settle() {
   for (let index = 0; index < 7; index += 1) await new Promise((resolve) => setImmediate(resolve));
 }
 
-async function harness() {
+async function harness({ decorateService = (value) => value, createContext } = {}) {
   const fixture = await seedMemoryWorkspace();
   const view = fakeView();
   let authListener;
@@ -45,16 +46,24 @@ async function harness() {
     subscribeAuth(listener) { authListener = listener; return () => {}; },
     createScopes: async () => ({ accountScope: ACCOUNT_A, userScope: USER_A }),
     openDatabase: async () => ({ close() { closeCalls += 1; } }),
-    createContext: () => fixture.memory.repositoryContext,
-    createService: ({ repositoryContext }) => createCashSessionService({
+    createContext: () => createContext?.(fixture) || fixture.memory.repositoryContext,
+    createService: ({ repositoryContext }) => decorateService(createCashSessionService({
       repositoryContext, digestFactory,
-    }),
+    })),
     now: () => '2026-07-25T04:00:00.000Z',
     cryptoRef: webcrypto,
   });
   authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
   await settle();
   return { ...fixture, controller, view, authListener, get closeCalls() { return closeCalls; } };
+}
+
+const EXPENSE_INPUT = Object.freeze({
+  category: 'operational', amount: '25.000', note: 'Air minum',
+});
+
+async function openSession(value) {
+  await value.controller.submit('open', { openingCash: 'Rp100.000' });
 }
 
 test('state eksplisit PR 9 tersedia', () => {
@@ -108,6 +117,212 @@ test('double submit memakai promise dan operasi yang sama', async () => {
   await first;
   const sessions = await value.memory.cashSessionRepository.listByWorkspace(ACCOUNT_A, WORKSPACE_A);
   assert.equal(sessions.length, 1);
+});
+
+test('commit berhasil tetapi respons dan reconciliation pertama gagal memakai identity yang sama saat retry', async () => {
+  let failNextRead = false;
+  const commands = [];
+  const value = await harness({
+    createContext(fixture) {
+      return {
+        run(storeNames, mode, callback) {
+          if (mode === 'readonly' && failNextRead) {
+            failNextRead = false;
+            throw storageError('storage_error');
+          }
+          return fixture.memory.repositoryContext.run(storeNames, mode, callback);
+        },
+      };
+    },
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          commands.push(command);
+          const result = await service.recordExpense(command);
+          if (commands.length === 1) {
+            failNextRead = true;
+            throw storageError('storage_error');
+          }
+          return result;
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT), { code: 'storage_unknown' });
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands.length, 2);
+  assert.equal(commands[0].operationId, commands[1].operationId);
+  assert.equal(commands[0].expenseId, commands[1].expenseId);
+  const expenses = await value.memory.expenseRepository.listByCashSession(
+    ACCOUNT_A, WORKSPACE_A, value.controller.getState().session.cashSessionId,
+  );
+  assert.equal(expenses.length, 1);
+  assert.equal(expenses[0].expenseId, commands[0].expenseId);
+});
+
+test('retry berkali-kali mempertahankan identity dan hanya menyimpan satu Expense', async () => {
+  const commands = [];
+  let failures = 2;
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          if (failures > 0) {
+            failures -= 1;
+            return Promise.reject(storageError('storage_error'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(new Set(commands.map((command) => command.operationId)).size, 1);
+  assert.equal(new Set(commands.map((command) => command.expenseId)).size, 1);
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('double click Expense menjalankan satu write logis', async () => {
+  let calls = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          calls += 1;
+          await gate;
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  const first = value.controller.submit('expense', EXPENSE_INPUT);
+  const second = value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(first, second);
+  assert.equal(value.controller.getState().submitting, true);
+  release();
+  await first;
+  assert.equal(calls, 1);
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('sukses terminal dan perubahan payload material memperoleh identity baru', async () => {
+  const commands = [];
+  let failFirst = true;
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          if (failFirst) {
+            failFirst = false;
+            return Promise.reject(storageError('storage_error'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  await value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.notEqual(commands[0].operationId, commands[1].operationId);
+  assert.notEqual(commands[0].expenseId, commands[1].expenseId);
+  assert.notEqual(commands[1].operationId, commands[2].operationId);
+  assert.notEqual(commands[1].expenseId, commands[2].expenseId);
+  assert.equal(value.controller.getState().expenses.length, 2);
+});
+
+test('reset form setelah failure membuang logical submission lama', async () => {
+  const commands = [];
+  let failFirst = true;
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          if (failFirst) {
+            failFirst = false;
+            return Promise.reject(storageError('storage_error'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  value.controller.resetExpenseSubmission();
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.notEqual(commands[0].operationId, commands[1].operationId);
+  assert.notEqual(commands[0].expenseId, commands[1].expenseId);
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('record identity sama dengan payload material berbeda direkonsiliasi sebagai conflict aman', async () => {
+  let captured;
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          captured = command;
+          await service.recordExpense({ ...command, amountMinor: command.amountMinor + 1 });
+          throw storageError('storage_error');
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(
+    value.controller.submit('expense', EXPENSE_INPUT),
+    { code: 'idempotency_mismatch' },
+  );
+  const expenses = await value.memory.expenseRepository.listByCashSession(
+    ACCOUNT_A, WORKSPACE_A, captured.cashSessionId,
+  );
+  assert.equal(expenses.length, 1);
+  assert.equal(expenses[0].amountMinor, 25001);
+  assert.equal(value.controller.getState().message, 'Operasi tidak dapat diproses ulang karena datanya berbeda.');
+});
+
+test('version conflict mempertahankan operationId dan expenseId pada retry', async () => {
+  const commands = [];
+  let conflict = true;
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          if (conflict) {
+            conflict = false;
+            return Promise.reject(storageError('version_conflict'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT), { code: 'version_conflict' });
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands[0].operationId, commands[1].operationId);
+  assert.equal(commands[0].expenseId, commands[1].expenseId);
+  assert.equal(value.controller.getState().expenses.length, 1);
 });
 
 test('cashier dapat membuka sesi tetapi tidak mendapat permission expense atau close', async () => {
