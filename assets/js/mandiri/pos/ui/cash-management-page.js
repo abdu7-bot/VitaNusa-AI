@@ -151,7 +151,7 @@ function isRestorableExpenseSubmission(value, { scopes, workspace, session, memb
     note: command.note,
   };
   return value.materialKey === expenseMaterialKey(material)
-    && value.outcome === 'pending'
+    && ['pending', 'absent'].includes(value.outcome)
     && command.schemaVersion === 1
     && command.accountScope === scopes.accountScope
     && command.workspaceId === workspace.workspaceId
@@ -203,7 +203,7 @@ export function createCashManagementController({
   let workspace = null;
   let membership = null;
   let generation = 0;
-  let submitPromise = null;
+  let activeSubmission = null;
   let pendingExpenseSubmissions = new Map();
   let destroyed = false;
 
@@ -266,16 +266,34 @@ export function createCashManagementController({
       removePersistedExpenseSubmissions(key);
       return;
     }
-    pendingExpenseSubmissions = new Map(values
-      .filter((value) => isRestorableExpenseSubmission(value, {
+    let mismatch = false;
+    pendingExpenseSubmissions = new Map();
+    values.forEach((value) => {
+      if (!isRestorableExpenseSubmission(value, {
         scopes, workspace, session: current.session, membership,
-      }))
-      .map((value) => [value.materialKey, Object.freeze({
+      })) return;
+      const recorded = current.expenses.find((expense) => (
+        expense.expenseId === value.command.expenseId
+        || expense.operationId === value.command.operationId
+      ));
+      if (recorded) {
+        if (!expenseMatchesCommand(recorded, value.command)) mismatch = true;
+        return;
+      }
+      pendingExpenseSubmissions.set(value.materialKey, Object.freeze({
         command: Object.freeze(value.command),
         materialKey: value.materialKey,
-        outcome: 'pending',
-      })]));
+        outcome: value.outcome,
+      }));
+    });
     persistPendingExpenseSubmissions();
+    if (mismatch) {
+      render(model('error', {
+        ...current,
+        message: safeMessage('idempotency_mismatch'),
+        focusStatus: true,
+      }));
+    }
   }
 
   function permissions() {
@@ -337,6 +355,7 @@ export function createCashManagementController({
     const previousPendingKey = pendingExpenseStorageKey(scopes, workspace);
     connection?.close?.();
     connection = context = service = scopes = workspace = membership = null;
+    activeSubmission = null;
     pendingExpenseSubmissions = new Map();
     if (!authState?.isAuthenticated || !authState.user) {
       removePersistedExpenseSubmissions(previousPendingKey);
@@ -389,17 +408,49 @@ export function createCashManagementController({
   }
 
   function submit(kind, input) {
-    if (submitPromise) return submitPromise;
     const permission = permissions();
     if (!contract?.enabled || !service || !permission[
       kind === 'open' ? 'canOpen' : kind === 'expense' ? 'canExpense' : 'canClose'
     ]) return Promise.reject(storageError('permission_denied'));
     const session = current.session;
+    let logicalKey;
+    let normalizedInput;
     let command;
     try {
       if (kind === 'expense') {
-        const material = normalizeExpenseMaterial(input, session?.cashSessionId);
-        const materialKey = expenseMaterialKey(material);
+        if (!session) throw storageError('cash_session_required');
+        if (session.status !== 'open') throw storageError('cash_session_closed');
+        if (!session.cashSessionId || !Number.isSafeInteger(session.version) || session.version < 1) {
+          throw storageError('cash_session_required');
+        }
+        normalizedInput = normalizeExpenseMaterial(input, session.cashSessionId);
+        logicalKey = expenseMaterialKey(normalizedInput);
+      } else if (kind === 'open') {
+        normalizedInput = normalizeCashInput(input?.openingCash);
+        logicalKey = JSON.stringify(['open', session?.cashSessionId || null, normalizedInput]);
+      } else if (kind === 'close') {
+        normalizedInput = normalizeCashInput(input?.countedCash);
+        logicalKey = JSON.stringify([
+          'close', session?.cashSessionId || null, session?.version || null, normalizedInput,
+        ]);
+      } else {
+        throw storageError('data_invalid');
+      }
+    } catch (error) {
+      render(model(current.state, { ...current, message: safeMessage(error?.code), focusStatus: true }));
+      return Promise.reject(error);
+    }
+    if (activeSubmission) {
+      if (
+        activeSubmission.generation === generation
+        && activeSubmission.kind === kind
+        && activeSubmission.logicalKey === logicalKey
+      ) return activeSubmission.promise;
+      return Promise.reject(storageError('operation_in_progress'));
+    }
+    try {
+      if (kind === 'expense') {
+        const materialKey = logicalKey;
         const pendingExpenseSubmission = pendingExpenseSubmissions.get(materialKey);
         if (pendingExpenseSubmission) {
           command = pendingExpenseSubmission.command;
@@ -413,13 +464,13 @@ export function createCashManagementController({
             actorRole: membership.role,
             operationId: createOperationId(cryptoRef),
             eventId: createEntityId('audit', cryptoRef),
-            cashSessionId: material.cashSessionId,
+            cashSessionId: normalizedInput.cashSessionId,
             createdAtLocal,
             expenseId: createExpenseId(cryptoRef),
             expectedVersion: session?.version,
-            category: material.category,
-            amountMinor: material.amountMinor,
-            note: material.note,
+            category: normalizedInput.category,
+            amountMinor: normalizedInput.amountMinor,
+            note: normalizedInput.note,
           });
           pendingExpenseSubmissions.set(materialKey, Object.freeze({
             command, materialKey, outcome: 'pending',
@@ -441,12 +492,12 @@ export function createCashManagementController({
           createdAtLocal,
         };
         if (kind === 'open') command = {
-          ...base, openingCashMinor: normalizeCashInput(input?.openingCash),
+          ...base, openingCashMinor: normalizedInput,
         };
         if (kind === 'close') command = {
           ...base,
           expectedVersion: session?.version,
-          countedCashMinor: normalizeCashInput(input?.countedCash),
+          countedCashMinor: normalizedInput,
         };
       }
     } catch (error) {
@@ -454,8 +505,13 @@ export function createCashManagementController({
       return Promise.reject(error);
     }
     const token = generation;
+    const activeService = service;
     render(model('submitting', { ...current, submitting: true, message: MESSAGES.submitting }));
-    const operation = service[kind === 'expense' ? 'recordExpense' : kind](Object.freeze(command))
+    const submission = {
+      kind, logicalKey, generation: token, promise: null,
+    };
+    const operation = Promise.resolve()
+      .then(() => activeService[kind === 'expense' ? 'recordExpense' : kind](Object.freeze(command)))
       .then(async (result) => {
         if (destroyed || token !== generation) return result;
         await reload({ message: MESSAGES[kind], focusStatus: true });
@@ -532,12 +588,16 @@ export function createCashManagementController({
               ...pendingExpenseSubmissions.get(materialKey),
               outcome: 'absent',
             }));
+            persistPendingExpenseSubmissions();
           }
         }
         throw error;
       })
-      .finally(() => { if (submitPromise === operation) submitPromise = null; });
-    submitPromise = operation;
+      .finally(() => {
+        if (activeSubmission === submission) activeSubmission = null;
+      });
+    submission.promise = operation;
+    activeSubmission = submission;
     return operation;
   }
 
@@ -546,7 +606,7 @@ export function createCashManagementController({
   }
 
   function resetExpenseSubmission() {
-    if (submitPromise) return;
+    if (activeSubmission) return;
     pendingExpenseSubmissions.clear();
     persistPendingExpenseSubmissions();
   }
@@ -555,6 +615,7 @@ export function createCashManagementController({
     if (destroyed) return;
     destroyed = true;
     generation += 1;
+    activeSubmission = null;
     unsubscribe();
     connection?.close?.();
     connection = context = service = scopes = workspace = membership = null;

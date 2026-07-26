@@ -44,12 +44,18 @@ function fakeSessionStore() {
     getItem(key) { return values.get(key) || null; },
     removeItem(key) { values.delete(key); },
     setItem(key, value) { values.set(key, value); },
+    get entries() {
+      return [...values.values()].flatMap((value) => {
+        try { return JSON.parse(value); } catch { return []; }
+      });
+    },
     get size() { return values.size; },
   };
 }
 
 async function harness({
   decorateService = (value) => value, createContext, fixture = null, pendingExpenseStore,
+  now = () => '2026-07-25T04:00:00.000Z', cryptoRef = webcrypto,
 } = {}) {
   const currentFixture = fixture || await seedMemoryWorkspace();
   const view = fakeView();
@@ -65,8 +71,8 @@ async function harness({
     createService: ({ repositoryContext }) => decorateService(createCashSessionService({
       repositoryContext, digestFactory,
     })),
-    now: () => '2026-07-25T04:00:00.000Z',
-    cryptoRef: webcrypto,
+    now,
+    cryptoRef,
     pendingExpenseStore,
   });
   authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
@@ -247,7 +253,7 @@ test('reset eksplisit setelah commit ambigu membuang pending identity', async ()
   assert.equal(expenses.length, 1);
 });
 
-test('hard refresh memulihkan identity commit ambigu dari session storage', async () => {
+test('hard refresh membersihkan snapshot commit yang sudah ditemukan lalu payload sama menjadi Expense baru', async () => {
   const fixture = await seedMemoryWorkspace();
   const pendingExpenseStore = fakeSessionStore();
   let failNextRead = false;
@@ -286,6 +292,7 @@ test('hard refresh memulihkan identity commit ambigu dari session storage', asyn
   const second = await harness({
     fixture,
     pendingExpenseStore,
+    now: () => '2026-07-25T05:00:00.000Z',
     decorateService(service) {
       return {
         ...service,
@@ -296,16 +303,18 @@ test('hard refresh memulihkan identity commit ambigu dari session storage', asyn
       };
     },
   });
+  assert.equal(second.controller.getState().expenses.length, 1);
+  assert.equal(pendingExpenseStore.size, 0);
   await second.controller.submit('expense', EXPENSE_INPUT);
   assert.equal(commands.length, 1);
-  assert.equal(commands[0].operationId, firstCommand.operationId);
-  assert.equal(commands[0].expenseId, firstCommand.expenseId);
-  assert.equal(commands[0].eventId, firstCommand.eventId);
-  assert.equal(commands[0].createdAtLocal, firstCommand.createdAtLocal);
+  assert.notEqual(commands[0].operationId, firstCommand.operationId);
+  assert.notEqual(commands[0].expenseId, firstCommand.expenseId);
+  assert.notEqual(commands[0].eventId, firstCommand.eventId);
+  assert.notEqual(commands[0].createdAtLocal, firstCommand.createdAtLocal);
   const expenses = await fixture.memory.expenseRepository.listByCashSession(
     ACCOUNT_A, WORKSPACE_A, second.controller.getState().session.cashSessionId,
   );
-  assert.equal(expenses.length, 1);
+  assert.equal(expenses.length, 2);
 });
 
 test('session storage rusak dibuang tanpa memblokir halaman atau membuat bypass', async () => {
@@ -339,6 +348,49 @@ test('session storage rusak dibuang tanpa memblokir halaman atau membuat bypass'
   assert.equal(pendingExpenseStore.size, 0);
   await second.controller.submit('expense', EXPENSE_INPUT);
   assert.equal(second.controller.getState().expenses.length, 1);
+});
+
+test('restore membuang snapshot bila identity bertabrakan dengan payload Expense berbeda', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const pendingExpenseStore = fakeSessionStore();
+  let pendingCommand;
+  const first = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          pendingCommand = command;
+          return Promise.reject(storageError('storage_error'));
+        },
+      };
+    },
+  });
+  await openSession(first);
+  await assert.rejects(first.controller.submit('expense', EXPENSE_INPUT));
+  const directService = createCashSessionService({
+    repositoryContext: fixture.memory.repositoryContext,
+    digestFactory,
+  });
+  await directService.recordExpense({
+    ...pendingCommand,
+    amountMinor: pendingCommand.amountMinor + 1,
+  });
+  first.controller.destroy();
+
+  const second = await harness({ fixture, pendingExpenseStore });
+  assert.equal(pendingExpenseStore.size, 0);
+  assert.equal(second.controller.getState().state, 'error');
+  assert.equal(
+    second.controller.getState().message,
+    'Operasi tidak dapat diproses ulang karena datanya berbeda.',
+  );
+  const expenses = await fixture.memory.expenseRepository.listByCashSession(
+    ACCOUNT_A, WORKSPACE_A, second.controller.getState().session.cashSessionId,
+  );
+  assert.equal(expenses.length, 1);
+  assert.equal(expenses[0].amountMinor, 25001);
 });
 
 test('Web Storage yang diblokir tidak mematikan idempotensi in-memory', async () => {
@@ -397,6 +449,105 @@ test('double click Expense menjalankan satu write logis', async () => {
   release();
   await first;
   assert.equal(calls, 1);
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('Expense berbeda saat in-flight ditolak tanpa menumpang Promise pertama', async () => {
+  let calls = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          calls += 1;
+          await gate;
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  const first = value.controller.submit('expense', EXPENSE_INPUT);
+  const second = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
+  assert.notEqual(first, second);
+  await assert.rejects(second, { code: 'operation_in_progress' });
+  assert.equal(calls, 1);
+  release();
+  await first;
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('close tidak menumpang hasil Expense yang masih in-flight', async () => {
+  let release;
+  let closeCalls = 0;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          await gate;
+          return service.recordExpense(command);
+        },
+        close(command) {
+          closeCalls += 1;
+          return service.close(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  const expense = value.controller.submit('expense', EXPENSE_INPUT);
+  const close = value.controller.submit('close', { countedCash: '100000' });
+  assert.notEqual(expense, close);
+  await assert.rejects(close, { code: 'operation_in_progress' });
+  assert.equal(closeCalls, 0);
+  release();
+  await expense;
+});
+
+test('logout melepas guard lama dan finally stale tidak membersihkan guard konteks baru', async () => {
+  let oldRelease;
+  let nextRelease;
+  let calls = 0;
+  const oldGate = new Promise((resolve) => { oldRelease = resolve; });
+  const nextGate = new Promise((resolve) => { nextRelease = resolve; });
+  const value = await harness({
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          calls += 1;
+          if (calls === 1) {
+            await oldGate;
+            throw storageError('storage_error');
+          }
+          await nextGate;
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  const stale = value.controller.submit('expense', EXPENSE_INPUT);
+  const staleResult = stale.then(
+    () => null,
+    (error) => error,
+  );
+  value.authListener({ isAuthenticated: false, user: null });
+  await settle();
+  value.authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
+  await settle();
+  const current = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
+  oldRelease();
+  assert.equal((await staleResult).code, 'storage_unknown');
+  const duplicate = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
+  assert.equal(duplicate, current);
+  assert.equal(value.controller.getState().state, 'submitting');
+  nextRelease();
+  await current;
   assert.equal(value.controller.getState().expenses.length, 1);
 });
 
@@ -507,6 +658,90 @@ test('version conflict mempertahankan operationId dan expenseId pada retry', asy
   assert.equal(commands[0].operationId, commands[1].operationId);
   assert.equal(commands[0].expenseId, commands[1].expenseId);
   assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('Expense tanpa sesi ditolak sebelum service, snapshot, atau pembuatan ID', async () => {
+  let serviceCalls = 0;
+  let idCalls = 0;
+  const pendingExpenseStore = fakeSessionStore();
+  const cryptoRef = {
+    getRandomValues(value) {
+      idCalls += 1;
+      return webcrypto.getRandomValues(value);
+    },
+    randomUUID() {
+      idCalls += 1;
+      return webcrypto.randomUUID();
+    },
+  };
+  const value = await harness({
+    pendingExpenseStore,
+    cryptoRef,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense() {
+          serviceCalls += 1;
+          return Promise.resolve();
+        },
+      };
+    },
+  });
+  assert.equal(value.controller.getState().session, null);
+  idCalls = 0;
+  await assert.rejects(
+    value.controller.submit('expense', EXPENSE_INPUT),
+    { code: 'cash_session_required' },
+  );
+  assert.equal(serviceCalls, 0);
+  assert.equal(pendingExpenseStore.size, 0);
+  assert.equal(idCalls, 0);
+});
+
+test('failure sebelum commit mempersistenkan absent dan refresh mempertahankan lifecycle retry', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const pendingExpenseStore = fakeSessionStore();
+  let firstCommand;
+  const first = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          firstCommand = command;
+          return Promise.reject(storageError('storage_error'));
+        },
+      };
+    },
+  });
+  await openSession(first);
+  await assert.rejects(first.controller.submit('expense', EXPENSE_INPUT));
+  assert.equal(pendingExpenseStore.entries.length, 1);
+  assert.equal(pendingExpenseStore.entries[0].outcome, 'absent');
+  first.controller.destroy();
+
+  const commands = [];
+  const second = await harness({
+    fixture,
+    pendingExpenseStore,
+    now: () => '2026-07-25T05:00:00.000Z',
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  assert.equal(pendingExpenseStore.entries.length, 1);
+  assert.equal(pendingExpenseStore.entries[0].outcome, 'absent');
+  await second.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands[0].operationId, firstCommand.operationId);
+  assert.equal(commands[0].expenseId, firstCommand.expenseId);
+  assert.equal(second.controller.getState().expenses.length, 1);
 });
 
 test('cashier dapat membuka sesi tetapi tidak mendapat permission expense atau close', async () => {

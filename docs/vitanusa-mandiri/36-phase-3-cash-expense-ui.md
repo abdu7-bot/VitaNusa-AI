@@ -37,6 +37,13 @@ Menutup tab tetap menghapus `sessionStorage`; operasi yang telah sempat commit t
 bila retry dilakukan tanpa kehilangan command, tetapi tab baru tidak dapat merekonstruksi
 identity dari input yang sama saja.
 
+Saat halaman dimuat ulang, snapshot direkonsiliasi dengan Expense hasil reload berdasarkan
+expense/operation ID. Record yang cocok mengonfirmasi sukses dan membersihkan snapshot;
+tabrakan payload dibuang sebagai idempotency mismatch yang aman. Guard submit membagikan
+Promise hanya untuk kind dan payload material yang sama. Operasi berbeda selama write
+aktif ditolak eksplisit, dan pergantian auth melepas guard berdasarkan generation tanpa
+membiarkan hasil async lama mengubah UI konteks baru.
+
 Ringkasan session aktif memakai agregasi sale/expense repository dan kalkulasi domain
 existing. Session closed hanya menampilkan `closingSummary` immutable. Tidak ada summary
 di localStorage/Cache API, edit/delete Expense, cash adjustment, atau Expense otomatis
