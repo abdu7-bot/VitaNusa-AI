@@ -13,7 +13,9 @@ import { getNusaKasirFeatureContract, getNusaKasirFeatureState } from '../config
 import { createClosingSummary } from '../domain/cash-session.js';
 import { createCashSessionId } from '../domain/cash-session.js';
 import { createExpenseId, EXPENSE_CATEGORIES } from '../domain/expense.js';
-import { createCashSessionService } from '../services/cash-session-service.js';
+import {
+  createCashSessionService, normalizeRecordExpenseCommand,
+} from '../services/cash-session-service.js';
 
 export const CASH_PAGE_STATES = Object.freeze([
   'disabled', 'auth-loading', 'signed-out', 'loading', 'no-open-session',
@@ -62,6 +64,7 @@ const MESSAGES = Object.freeze({
   database_newer_version: 'Versi data lokal lebih baru. Perbarui aplikasi sebelum melanjutkan.',
   storage_error: 'Data lokal belum dapat diproses. Tidak ada perubahan palsu yang ditampilkan.',
 });
+const PENDING_EXPENSE_STORAGE_PREFIX = 'vitanusa.mandiri.pending-expense.v1';
 
 function safeMessage(code) {
   return MESSAGES[code] || getSafeStorageMessage(code) || MESSAGES.storage_error;
@@ -115,6 +118,49 @@ function expenseMatchesCommand(expense, command) {
     && expense.recordedAtLocal === command.createdAtLocal;
 }
 
+function pendingExpenseStorageKey(scopes, workspace) {
+  if (!scopes?.accountScope || !scopes?.userScope || !workspace?.workspaceId) return null;
+  return [
+    PENDING_EXPENSE_STORAGE_PREFIX,
+    scopes.accountScope,
+    workspace.workspaceId,
+    scopes.userScope,
+  ].join(':');
+}
+
+function getSessionStorage() {
+  try {
+    return globalThis.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function isRestorableExpenseSubmission(value, { scopes, workspace, session, membership }) {
+  const command = value?.command;
+  if (!command || !session) return false;
+  try {
+    normalizeRecordExpenseCommand(command);
+  } catch {
+    return false;
+  }
+  const material = {
+    cashSessionId: command.cashSessionId,
+    category: command.category,
+    amountMinor: command.amountMinor,
+    note: command.note,
+  };
+  return value.materialKey === expenseMaterialKey(material)
+    && value.outcome === 'pending'
+    && command.schemaVersion === 1
+    && command.accountScope === scopes.accountScope
+    && command.workspaceId === workspace.workspaceId
+    && command.actorScope === scopes.userScope
+    && command.actorRole === membership.role
+    && command.cashSessionId === session.cashSessionId
+    && command.expectedVersion <= session.version;
+}
+
 function model(state, values = {}) {
   return Object.freeze({
     state,
@@ -142,8 +188,12 @@ export function createCashManagementController({
   createService = createCashSessionService,
   now = () => new Date().toISOString(),
   cryptoRef = globalThis.crypto,
+  pendingExpenseStore,
 } = {}) {
   if (!view?.render) throw storageError('data_invalid');
+  const expenseSubmissionStore = pendingExpenseStore === undefined && contract?.enabled
+    ? getSessionStorage()
+    : pendingExpenseStore;
   let current = model(contract?.enabled ? 'auth-loading' : 'disabled');
   let unsubscribe = () => {};
   let connection = null;
@@ -154,7 +204,7 @@ export function createCashManagementController({
   let membership = null;
   let generation = 0;
   let submitPromise = null;
-  let pendingExpenseSubmission = null;
+  let pendingExpenseSubmissions = new Map();
   let destroyed = false;
 
   const render = (next) => {
@@ -162,6 +212,71 @@ export function createCashManagementController({
     view.render(next);
     return next;
   };
+
+  function persistPendingExpenseSubmissions() {
+    const key = pendingExpenseStorageKey(scopes, workspace);
+    if (!key || !expenseSubmissionStore) return;
+    try {
+      const entries = [...pendingExpenseSubmissions.values()];
+      if (entries.length === 0) {
+        expenseSubmissionStore.removeItem(key);
+        return;
+      }
+      expenseSubmissionStore.setItem(key, JSON.stringify(entries));
+    } catch {
+      // In-memory idempotency remains active when Web Storage is unavailable.
+    }
+  }
+
+  function removePersistedExpenseSubmissions(key) {
+    if (!key || !expenseSubmissionStore) return;
+    try {
+      expenseSubmissionStore.removeItem(key);
+    } catch {
+      // Cleanup is best-effort when the browser blocks Web Storage.
+    }
+  }
+
+  function removePendingExpenseSubmission(materialKey) {
+    if (!pendingExpenseSubmissions.delete(materialKey)) return;
+    persistPendingExpenseSubmissions();
+  }
+
+  function discardAbsentExpenseSubmissions() {
+    let removed = false;
+    for (const [materialKey, submission] of pendingExpenseSubmissions) {
+      if (submission.outcome === 'absent') {
+        pendingExpenseSubmissions.delete(materialKey);
+        removed = true;
+      }
+    }
+    if (removed) persistPendingExpenseSubmissions();
+  }
+
+  function restorePendingExpenseSubmissions() {
+    const key = pendingExpenseStorageKey(scopes, workspace);
+    if (!key || !expenseSubmissionStore) return;
+    let values;
+    try {
+      const serialized = expenseSubmissionStore.getItem(key);
+      if (!serialized) return;
+      values = JSON.parse(serialized);
+      if (!Array.isArray(values)) throw storageError('data_invalid');
+    } catch {
+      removePersistedExpenseSubmissions(key);
+      return;
+    }
+    pendingExpenseSubmissions = new Map(values
+      .filter((value) => isRestorableExpenseSubmission(value, {
+        scopes, workspace, session: current.session, membership,
+      }))
+      .map((value) => [value.materialKey, Object.freeze({
+        command: Object.freeze(value.command),
+        materialKey: value.materialKey,
+        outcome: 'pending',
+      })]));
+    persistPendingExpenseSubmissions();
+  }
 
   function permissions() {
     const subject = membership && actor(membership);
@@ -219,10 +334,12 @@ export function createCashManagementController({
   async function handleAuth(authState) {
     const token = ++generation;
     let nextConnection = null;
+    const previousPendingKey = pendingExpenseStorageKey(scopes, workspace);
     connection?.close?.();
     connection = context = service = scopes = workspace = membership = null;
-    pendingExpenseSubmission = null;
+    pendingExpenseSubmissions = new Map();
     if (!authState?.isAuthenticated || !authState.user) {
+      removePersistedExpenseSubmissions(previousPendingKey);
       render(model('signed-out'));
       return;
     }
@@ -246,6 +363,10 @@ export function createCashManagementController({
         { accountScope: nextScopes.accountScope, workspaceId: access.workspace.workspaceId },
       )) throw storageError('permission_denied');
       if (destroyed || token !== generation) return nextConnection.close?.();
+      const nextPendingKey = pendingExpenseStorageKey(nextScopes, access.workspace);
+      if (previousPendingKey !== nextPendingKey) {
+        removePersistedExpenseSubmissions(previousPendingKey);
+      }
       connection = nextConnection;
       nextConnection = null;
       context = nextContext;
@@ -254,6 +375,7 @@ export function createCashManagementController({
       workspace = access.workspace;
       membership = access.membership;
       await reload();
+      restorePendingExpenseSubmissions();
     } catch (error) {
       nextConnection?.close?.();
       if (destroyed || token !== generation) return;
@@ -278,7 +400,8 @@ export function createCashManagementController({
       if (kind === 'expense') {
         const material = normalizeExpenseMaterial(input, session?.cashSessionId);
         const materialKey = expenseMaterialKey(material);
-        if (pendingExpenseSubmission?.materialKey === materialKey) {
+        const pendingExpenseSubmission = pendingExpenseSubmissions.get(materialKey);
+        if (pendingExpenseSubmission) {
           command = pendingExpenseSubmission.command;
         } else {
           const createdAtLocal = now();
@@ -298,7 +421,10 @@ export function createCashManagementController({
             amountMinor: material.amountMinor,
             note: material.note,
           });
-          pendingExpenseSubmission = { command, materialKey };
+          pendingExpenseSubmissions.set(materialKey, Object.freeze({
+            command, materialKey, outcome: 'pending',
+          }));
+          persistPendingExpenseSubmissions();
         }
       }
       if (kind !== 'expense') {
@@ -333,39 +459,58 @@ export function createCashManagementController({
       .then(async (result) => {
         if (destroyed || token !== generation) return result;
         await reload({ message: MESSAGES[kind], focusStatus: true });
-        if (kind === 'expense' && pendingExpenseSubmission?.command === command) {
-          pendingExpenseSubmission = null;
+        if (kind === 'expense') {
+          removePendingExpenseSubmission(expenseMaterialKey(command));
+          discardAbsentExpenseSubmissions();
         }
         return result;
       })
       .catch(async (error) => {
         if (destroyed || token !== generation) throw error;
+        let expenseReconciled = false;
         if (error?.code === 'version_conflict') {
           await reload({ message: MESSAGES['version-conflict'], focusStatus: true, conflict: true });
+          expenseReconciled = kind === 'expense';
         } else if ([
           'cash_session_already_open', 'cash_session_required', 'cash_session_closed',
           'record_not_found', 'invalid_reference', 'duplicate_operation',
         ].includes(error?.code)) {
           await reload({ message: safeMessage(error.code), focusStatus: true });
+          expenseReconciled = kind === 'expense';
         } else {
+          let reloaded = false;
           if (kind === 'expense') {
-            try { await reload(); } catch {}
+            try {
+              await reload();
+              reloaded = true;
+              expenseReconciled = true;
+            } catch (reloadError) {
+              render(model('error', {
+                ...current, submitting: false, message: safeMessage(reloadError?.code), focusStatus: true,
+              }));
+            }
           }
-          render(model('error', { ...current, submitting: false, message: safeMessage(error?.code), focusStatus: true }));
+          if (!reloaded || kind !== 'expense') {
+            render(model('error', {
+              ...current, submitting: false, message: safeMessage(error?.code), focusStatus: true,
+            }));
+          }
         }
         if (kind === 'expense') {
+          const materialKey = expenseMaterialKey(command);
           const recorded = current.expenses.find((expense) => (
             expense.expenseId === command.expenseId || expense.operationId === command.operationId
           ));
           if (recorded) {
             if (!expenseMatchesCommand(recorded, command)) {
+              removePendingExpenseSubmission(materialKey);
               const mismatch = storageError('idempotency_mismatch');
               render(model('error', {
                 ...current, submitting: false, message: safeMessage(mismatch.code), focusStatus: true,
               }));
               throw mismatch;
             }
-            pendingExpenseSubmission = null;
+            removePendingExpenseSubmission(materialKey);
             render(model(current.session ? 'open-session' : current.state, {
               ...current, submitting: false, message: MESSAGES.expense, focusStatus: true,
             }));
@@ -373,13 +518,20 @@ export function createCashManagementController({
           }
           if (
             error?.code === 'version_conflict'
-            && pendingExpenseSubmission?.command === command
+            && pendingExpenseSubmissions.get(materialKey)?.command === command
             && current.session?.cashSessionId === command.cashSessionId
           ) {
-            pendingExpenseSubmission = {
-              ...pendingExpenseSubmission,
+            pendingExpenseSubmissions.set(materialKey, Object.freeze({
+              ...pendingExpenseSubmissions.get(materialKey),
               command: Object.freeze({ ...command, expectedVersion: current.session.version }),
-            };
+              outcome: 'pending',
+            }));
+            persistPendingExpenseSubmissions();
+          } else if (expenseReconciled && current.session?.cashSessionId === command.cashSessionId) {
+            pendingExpenseSubmissions.set(materialKey, Object.freeze({
+              ...pendingExpenseSubmissions.get(materialKey),
+              outcome: 'absent',
+            }));
           }
         }
         throw error;
@@ -394,7 +546,9 @@ export function createCashManagementController({
   }
 
   function resetExpenseSubmission() {
-    if (!submitPromise) pendingExpenseSubmission = null;
+    if (submitPromise) return;
+    pendingExpenseSubmissions.clear();
+    persistPendingExpenseSubmissions();
   }
 
   function destroy() {

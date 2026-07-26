@@ -35,8 +35,23 @@ async function settle() {
   for (let index = 0; index < 7; index += 1) await new Promise((resolve) => setImmediate(resolve));
 }
 
-async function harness({ decorateService = (value) => value, createContext } = {}) {
-  const fixture = await seedMemoryWorkspace();
+function fakeSessionStore() {
+  const values = new Map();
+  return {
+    corrupt() {
+      for (const key of values.keys()) values.set(key, '{invalid-json');
+    },
+    getItem(key) { return values.get(key) || null; },
+    removeItem(key) { values.delete(key); },
+    setItem(key, value) { values.set(key, value); },
+    get size() { return values.size; },
+  };
+}
+
+async function harness({
+  decorateService = (value) => value, createContext, fixture = null, pendingExpenseStore,
+} = {}) {
+  const currentFixture = fixture || await seedMemoryWorkspace();
   const view = fakeView();
   let authListener;
   let closeCalls = 0;
@@ -46,16 +61,19 @@ async function harness({ decorateService = (value) => value, createContext } = {
     subscribeAuth(listener) { authListener = listener; return () => {}; },
     createScopes: async () => ({ accountScope: ACCOUNT_A, userScope: USER_A }),
     openDatabase: async () => ({ close() { closeCalls += 1; } }),
-    createContext: () => createContext?.(fixture) || fixture.memory.repositoryContext,
+    createContext: () => createContext?.(currentFixture) || currentFixture.memory.repositoryContext,
     createService: ({ repositoryContext }) => decorateService(createCashSessionService({
       repositoryContext, digestFactory,
     })),
     now: () => '2026-07-25T04:00:00.000Z',
     cryptoRef: webcrypto,
+    pendingExpenseStore,
   });
   authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
   await settle();
-  return { ...fixture, controller, view, authListener, get closeCalls() { return closeCalls; } };
+  return {
+    ...currentFixture, controller, view, authListener, get closeCalls() { return closeCalls; },
+  };
 }
 
 const EXPENSE_INPUT = Object.freeze({
@@ -155,6 +173,8 @@ test('commit berhasil tetapi respons dan reconciliation pertama gagal memakai id
   assert.equal(commands.length, 2);
   assert.equal(commands[0].operationId, commands[1].operationId);
   assert.equal(commands[0].expenseId, commands[1].expenseId);
+  assert.equal(commands[0].eventId, commands[1].eventId);
+  assert.equal(commands[0].createdAtLocal, commands[1].createdAtLocal);
   const expenses = await value.memory.expenseRepository.listByCashSession(
     ACCOUNT_A, WORKSPACE_A, value.controller.getState().session.cashSessionId,
   );
@@ -186,6 +206,170 @@ test('retry berkali-kali mempertahankan identity dan hanya menyimpan satu Expens
   await value.controller.submit('expense', EXPENSE_INPUT);
   assert.equal(new Set(commands.map((command) => command.operationId)).size, 1);
   assert.equal(new Set(commands.map((command) => command.expenseId)).size, 1);
+  assert.equal(value.controller.getState().expenses.length, 1);
+});
+
+test('reset eksplisit setelah commit ambigu membuang pending identity', async () => {
+  let failNextRead = false;
+  const pendingExpenseStore = fakeSessionStore();
+  const value = await harness({
+    pendingExpenseStore,
+    createContext(fixture) {
+      return {
+        run(storeNames, mode, callback) {
+          if (mode === 'readonly' && failNextRead) {
+            failNextRead = false;
+            throw storageError('storage_error');
+          }
+          return fixture.memory.repositoryContext.run(storeNames, mode, callback);
+        },
+      };
+    },
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          const result = await service.recordExpense(command);
+          failNextRead = true;
+          throw storageError('storage_error');
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT), { code: 'storage_unknown' });
+  assert.equal(pendingExpenseStore.size, 1);
+  value.controller.resetExpenseSubmission();
+  assert.equal(pendingExpenseStore.size, 0);
+  const expenses = await value.memory.expenseRepository.listByCashSession(
+    ACCOUNT_A, WORKSPACE_A, value.controller.getState().session.cashSessionId,
+  );
+  assert.equal(expenses.length, 1);
+});
+
+test('hard refresh memulihkan identity commit ambigu dari session storage', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const pendingExpenseStore = fakeSessionStore();
+  let failNextRead = false;
+  let firstCommand;
+  const first = await harness({
+    fixture,
+    pendingExpenseStore,
+    createContext(value) {
+      return {
+        run(storeNames, mode, callback) {
+          if (mode === 'readonly' && failNextRead) {
+            failNextRead = false;
+            throw storageError('storage_error');
+          }
+          return value.memory.repositoryContext.run(storeNames, mode, callback);
+        },
+      };
+    },
+    decorateService(service) {
+      return {
+        ...service,
+        async recordExpense(command) {
+          firstCommand = command;
+          const result = await service.recordExpense(command);
+          failNextRead = true;
+          throw storageError('storage_error');
+        },
+      };
+    },
+  });
+  await openSession(first);
+  await assert.rejects(first.controller.submit('expense', EXPENSE_INPUT), { code: 'storage_unknown' });
+  first.controller.destroy();
+
+  const commands = [];
+  const second = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await second.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands.length, 1);
+  assert.equal(commands[0].operationId, firstCommand.operationId);
+  assert.equal(commands[0].expenseId, firstCommand.expenseId);
+  assert.equal(commands[0].eventId, firstCommand.eventId);
+  assert.equal(commands[0].createdAtLocal, firstCommand.createdAtLocal);
+  const expenses = await fixture.memory.expenseRepository.listByCashSession(
+    ACCOUNT_A, WORKSPACE_A, second.controller.getState().session.cashSessionId,
+  );
+  assert.equal(expenses.length, 1);
+});
+
+test('session storage rusak dibuang tanpa memblokir halaman atau membuat bypass', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const pendingExpenseStore = fakeSessionStore();
+  let failOnce = true;
+  const first = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          if (failOnce) {
+            failOnce = false;
+            return Promise.reject(storageError('storage_error'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(first);
+  await assert.rejects(first.controller.submit('expense', EXPENSE_INPUT));
+  assert.equal(pendingExpenseStore.size, 1);
+  first.controller.destroy();
+  pendingExpenseStore.corrupt();
+
+  const second = await harness({ fixture, pendingExpenseStore });
+  assert.equal(second.controller.getState().state, 'open-session');
+  assert.equal(pendingExpenseStore.size, 0);
+  await second.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(second.controller.getState().expenses.length, 1);
+});
+
+test('Web Storage yang diblokir tidak mematikan idempotensi in-memory', async () => {
+  const commands = [];
+  let failOnce = true;
+  const blockedStore = {
+    getItem() { throw new Error('blocked'); },
+    removeItem() { throw new Error('blocked'); },
+    setItem() { throw new Error('blocked'); },
+  };
+  const value = await harness({
+    pendingExpenseStore: blockedStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          if (failOnce) {
+            failOnce = false;
+            return Promise.reject(storageError('storage_error'));
+          }
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT));
+  await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands[0].operationId, commands[1].operationId);
+  assert.equal(commands[0].expenseId, commands[1].expenseId);
   assert.equal(value.controller.getState().expenses.length, 1);
 });
 
@@ -369,6 +553,25 @@ test('logout menutup koneksi, membuang data lama, dan destroy aman', async () =>
   assert.equal(value.controller.getState().session, null);
   assert.equal(value.closeCalls, 1);
   value.controller.destroy();
+});
+
+test('logout membuang pending Expense yang belum memiliki hasil pasti', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const value = await harness({
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense() { return Promise.reject(storageError('storage_error')); },
+      };
+    },
+  });
+  await openSession(value);
+  await assert.rejects(value.controller.submit('expense', EXPENSE_INPUT), { code: 'storage_unknown' });
+  assert.equal(pendingExpenseStore.size, 1);
+  value.authListener({ isAuthenticated: false, user: null });
+  await settle();
+  assert.equal(pendingExpenseStore.size, 0);
 });
 
 test('normalisasi uang menolak kosong, negatif, pecahan, exponent, ambigu, dan unsafe', () => {

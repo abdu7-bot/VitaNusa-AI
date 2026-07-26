@@ -26,6 +26,17 @@ memvalidasi permission, payload, session reference, operation ID, dan expected v
 Setelah mutasi berhasil UI selalu membaca ulang repository; version conflict juga memuat
 ulang tanpa retry otomatis. Expense diurutkan terbaru dahulu dengan timestamp lalu ID.
 
+Command Expense yang belum terkonfirmasi disimpan di `sessionStorage` dengan scope akun,
+workspace, dan pengguna. Dengan demikian refresh pada tab yang sama mempertahankan
+operation/expense/event ID dan timestamp untuk reconciliation; reset hanya membuang
+command setelah pengguna memilih reset secara eksplisit. Command juga dibuang setelah
+sukses terkonfirmasi, logout, atau perubahan konteks. Snapshot storage divalidasi ulang
+sebagai command Expense dan data rusak dibuang; bila Web Storage diblokir, idempotensi
+in-memory tetap berjalan. Penyimpanan ini tidak mengubah IndexedDB v7 atau format backup.
+Menutup tab tetap menghapus `sessionStorage`; operasi yang telah sempat commit tetap aman
+bila retry dilakukan tanpa kehilangan command, tetapi tab baru tidak dapat merekonstruksi
+identity dari input yang sama saja.
+
 Ringkasan session aktif memakai agregasi sale/expense repository dan kalkulasi domain
 existing. Session closed hanya menampilkan `closingSummary` immutable. Tidak ada summary
 di localStorage/Cache API, edit/delete Expense, cash adjustment, atau Expense otomatis
