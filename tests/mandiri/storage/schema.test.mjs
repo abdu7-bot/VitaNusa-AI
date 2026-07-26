@@ -12,14 +12,15 @@ import {
   MANDIRI_SCHEMA_V5,
   MANDIRI_SCHEMA_V6,
   MANDIRI_SCHEMA_V7,
+  MANDIRI_SCHEMA_V8,
 } from '../../../assets/js/mandiri/storage/schema.js';
 
 test('nama dan version database Mandiri benar', () => {
   assert.equal(MANDIRI_DATABASE_NAME, 'vitanusa-mandiri');
-  assert.equal(MANDIRI_DATABASE_VERSION, 7);
+  assert.equal(MANDIRI_DATABASE_VERSION, 8);
 });
 
-test('schema version 7 menambah expense dan cash session tanpa mengubah schema lama', () => {
+test('schema version 8 menambah SaleReversal tanpa mengubah schema lama', () => {
   assert.deepEqual(MANDIRI_ALLOWED_STORE_NAMES, [
     'metadata',
     'workspaces',
@@ -40,12 +41,14 @@ test('schema version 7 menambah expense dan cash session tanpa mengubah schema l
     'receipts',
     'expenses',
     'cashSessions',
+    'saleReversals',
   ]);
   assert.equal(Object.keys(MANDIRI_SCHEMA_V1).length, 5);
   assert.equal(Object.keys(MANDIRI_SCHEMA_V6).length, 17);
   assert.equal(Object.keys(MANDIRI_SCHEMA_V7).length, 19);
+  assert.equal(Object.keys(MANDIRI_SCHEMA_V8).length, 20);
   for (const futureStore of MANDIRI_FUTURE_STORE_NAMES) {
-    assert.equal(Object.hasOwn(MANDIRI_SCHEMA_V3, futureStore), false);
+    assert.equal(Object.hasOwn(MANDIRI_SCHEMA_V8, futureStore), false);
   }
 });
 
@@ -103,6 +106,11 @@ test('seluruh primary key mengandung scope yang diwajibkan', () => {
     'accountScope', 'workspaceId', 'cashSessionId',
   ]);
   assert.equal(MANDIRI_SCHEMA_V7.expenses.indexes.byOperation.unique, true);
+  assert.deepEqual(MANDIRI_SCHEMA_V8.saleReversals.keyPath, [
+    'accountScope', 'workspaceId', 'reversalId',
+  ]);
+  assert.equal(MANDIRI_SCHEMA_V8.saleReversals.indexes.byOriginalSale.unique, true);
+  assert.equal(MANDIRI_SCHEMA_V8.saleReversals.indexes.byOperation.unique, true);
 });
 
 test('seluruh index version 1 sesuai kontrak scoped', () => {
