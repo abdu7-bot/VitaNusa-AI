@@ -82,7 +82,9 @@ export async function previewBackupText({
       saleCount: backup.recordCounts.sales ?? 0,
       expenseCount: backup.recordCounts.expenses ?? 0,
       cashSessionCount: backup.recordCounts.cashSessions ?? 0,
-      saleReversalCount: backup.recordCounts.saleReversals ?? 0,
+      ...(Object.hasOwn(backup.recordCounts, 'saleReversals') ? {
+        saleReversalCount: backup.recordCounts.saleReversals,
+      } : {}),
       createdAt: backup.createdAt,
       formatVersion: backup.formatVersion,
       databaseSchemaVersion: backup.databaseSchemaVersion,
