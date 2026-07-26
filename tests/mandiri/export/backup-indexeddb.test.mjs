@@ -48,13 +48,15 @@ function backupService(repositoryContext) {
   });
 }
 
-test('backup aktual memakai database version 7 dan memuat collection Fase 2-7', async () => {
+test('backup aktual memakai database version 8 dan memuat collection SaleReversal', async () => {
   const fixture = await setup('backup-indexeddb-basic');
   assert.equal(fixture.connection.schemaVersion, MANDIRI_DATABASE_VERSION);
   const backup = await backupService(fixture.repositoryContext).createWorkspaceBackup({
     accountScope: ACCOUNT_A,
     workspaceId: WORKSPACE_A,
   });
+  assert.equal(backup.formatVersion, 8);
+  assert.equal(backup.databaseSchemaVersion, 8);
   assert.deepEqual(backup.recordCounts, {
     workspaces: 1,
     memberships: 1,
@@ -74,6 +76,7 @@ test('backup aktual memakai database version 7 dan memuat collection Fase 2-7', 
     receipts: 0,
     expenses: 0,
     cashSessions: 0,
+    saleReversals: 0,
   });
   fixture.connection.close();
 });
@@ -98,6 +101,7 @@ test('backup menggunakan satu repository context readonly', async () => {
   const fixture = await setup('backup-indexeddb-readonly');
   const modes = [];
   const context = {
+    capabilities: fixture.repositoryContext.capabilities,
     run(stores, mode, callback) {
       modes.push({ stores: [...stores], mode });
       return fixture.repositoryContext.run(stores, mode, callback);
@@ -115,7 +119,7 @@ test('backup menggunakan satu repository context readonly', async () => {
     'categories', 'products', 'stockMovements', 'inventoryBalances',
     'cartDrafts', 'cartLines',
     'sales', 'saleLines', 'payments', 'receipts',
-    'expenses', 'cashSessions',
+    'expenses', 'cashSessions', 'saleReversals',
   ]);
   fixture.connection.close();
 });
