@@ -4,12 +4,12 @@ import {
   MandiriBackupError,
   mapBackupError,
 } from './backup-errors.js';
+import { MAX_BACKUP_FILE_BYTES } from './backup-schema.js';
 import {
   createBackupChecksumPayload,
   deepFreezeBackup,
-  MAX_BACKUP_FILE_BYTES,
   normalizeBackupDocument,
-} from './backup-schema.js';
+} from './backup-schema-v8.js';
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
@@ -82,6 +82,7 @@ export async function previewBackupText({
       saleCount: backup.recordCounts.sales ?? 0,
       expenseCount: backup.recordCounts.expenses ?? 0,
       cashSessionCount: backup.recordCounts.cashSessions ?? 0,
+      saleReversalCount: backup.recordCounts.saleReversals ?? 0,
       createdAt: backup.createdAt,
       formatVersion: backup.formatVersion,
       databaseSchemaVersion: backup.databaseSchemaVersion,
