@@ -12,6 +12,9 @@ import {
   mapBackupError,
 } from './backup-errors.js';
 import {
+  normalizeBackupDocument as normalizeLegacyBackupDocument,
+} from './backup-schema.js';
+import {
   createBackupChecksumPayload,
   deepFreezeBackup,
   MANDIRI_BACKUP_CHECKSUM_ALGORITHM,
@@ -25,6 +28,7 @@ import {
 } from './backup-schema-v8.js';
 
 const CHECKSUM_PATTERN = /^sha256:[0-9a-f]{64}$/;
+const LEGACY_BACKUP_VERSION = 7;
 
 function compareId(field) {
   return (left, right) => left[field].localeCompare(right[field]);
@@ -41,7 +45,12 @@ function assertRecordLimit(records, name) {
   return records;
 }
 
-async function readScopedBackupRecords(repositoryContext, accountScope, workspaceId) {
+async function readScopedBackupRecords(
+  repositoryContext,
+  accountScope,
+  workspaceId,
+  includeSaleReversals,
+) {
   return repositoryContext.run(
     [...new Set([
       ...ATOMIC_WORKSPACE_STORE_NAMES, ...ATOMIC_LEARNING_STORE_NAMES,
@@ -49,14 +58,17 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
       ...ATOMIC_CART_STORE_NAMES,
       ...ATOMIC_SALE_STORE_NAMES,
       ...ATOMIC_CASH_STORE_NAMES,
-      ...ATOMIC_REVERSAL_STORE_NAMES,
+      ...(includeSaleReversals ? ATOMIC_REVERSAL_STORE_NAMES : []),
     ])],
     'readonly',
     async (repositories) => {
       if (
         typeof repositories.auditRepository?.listForBackup !== 'function'
         || typeof repositories.operationReceiptRepository?.listForBackup !== 'function'
-        || typeof repositories.saleReversalRepository?.listForBackup !== 'function'
+        || (
+          includeSaleReversals
+          && typeof repositories.saleReversalRepository?.listForBackup !== 'function'
+        )
       ) {
         throw backupError('backup_invalid');
       }
@@ -97,10 +109,9 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         accountScope,
         workspaceId,
       );
-      const saleReversalPromise = repositories.saleReversalRepository.listForBackup(
-        accountScope,
-        workspaceId,
-      );
+      const saleReversalPromise = includeSaleReversals
+        ? repositories.saleReversalRepository.listForBackup(accountScope, workspaceId)
+        : Promise.resolve([]);
 
       const [
         workspaces, memberships, auditEvents, operationReceipts, learningAttempts, learningProgress,
@@ -127,7 +138,7 @@ async function readScopedBackupRecords(repositoryContext, accountScope, workspac
         ...saleBackup,
         expenses,
         cashSessions,
-        saleReversals,
+        ...(includeSaleReversals ? { saleReversals } : {}),
       };
     },
   );
@@ -151,7 +162,13 @@ export function createBackupService({
     try {
       const accountScope = normalizeBackupAccountScope(accountScopeValue);
       const workspaceId = normalizeBackupWorkspaceId(workspaceIdValue);
-      const records = await readScopedBackupRecords(repositoryContext, accountScope, workspaceId);
+      const includeSaleReversals = repositoryContext.capabilities?.saleReversals === true;
+      const records = await readScopedBackupRecords(
+        repositoryContext,
+        accountScope,
+        workspaceId,
+        includeSaleReversals,
+      );
 
       if (records.workspaces.length === 0) throw backupError('workspace_not_found');
       if (records.workspaces.length !== 1) throw backupError('integrity_error');
@@ -197,15 +214,23 @@ export function createBackupService({
         receipts: sortedRecords(records.receipts, 'receiptId'),
         expenses: sortedRecords(records.expenses, 'expenseId'),
         cashSessions: sortedRecords(records.cashSessions, 'cashSessionId'),
-        saleReversals: sortedRecords(records.saleReversals, 'reversalId'),
+        ...(includeSaleReversals ? {
+          saleReversals: sortedRecords(records.saleReversals, 'reversalId'),
+        } : {}),
       });
       const recordCounts = Object.freeze(Object.fromEntries(
         Object.entries(data).map(([name, values]) => [name, values.length]),
       ));
+      const formatVersion = includeSaleReversals
+        ? MANDIRI_BACKUP_FORMAT_VERSION
+        : LEGACY_BACKUP_VERSION;
+      const databaseSchemaVersion = includeSaleReversals
+        ? MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION
+        : LEGACY_BACKUP_VERSION;
       const unsignedBackup = deepFreezeBackup({
         format: MANDIRI_BACKUP_FORMAT,
-        formatVersion: MANDIRI_BACKUP_FORMAT_VERSION,
-        databaseSchemaVersion: MANDIRI_BACKUP_DATABASE_SCHEMA_VERSION,
+        formatVersion,
+        databaseSchemaVersion,
         createdAt,
         accountScope,
         workspaceId,
@@ -224,7 +249,10 @@ export function createBackupService({
         throw backupError('checksum_failed');
       }
 
-      return normalizeBackupDocument({ ...unsignedBackup, checksum }, { expectedAccountScope: accountScope });
+      const normalize = includeSaleReversals
+        ? normalizeBackupDocument
+        : normalizeLegacyBackupDocument;
+      return normalize({ ...unsignedBackup, checksum }, { expectedAccountScope: accountScope });
     } catch (error) {
       if (error instanceof MandiriBackupError) throw error;
       throw mapBackupError(error, 'integrity_error');
