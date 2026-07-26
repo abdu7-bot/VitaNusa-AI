@@ -5,12 +5,18 @@ import { webcrypto } from 'node:crypto';
 import {
   CASH_PAGE_STATES,
   createCashManagementController,
+  createCashManagementView,
   normalizeCashInput,
 } from '../../../assets/js/mandiri/pos/ui/cash-management-page.js';
 import { createPayloadDigest } from '../../../assets/js/mandiri/domain/ids.js';
 import { createCashSessionService } from '../../../assets/js/mandiri/pos/services/cash-session-service.js';
 import { storageError } from '../../../assets/js/mandiri/storage/storage-errors.js';
-import { seedMemoryWorkspace, ACCOUNT_A, USER_A, WORKSPACE_A } from '../export/fixtures.mjs';
+import {
+  seedMemoryWorkspace, ACCOUNT_A, ACCOUNT_B, USER_A, USER_B, WORKSPACE_A, WORKSPACE_B,
+} from '../export/fixtures.mjs';
+import {
+  FakeDocument, FakeElement, collectText, findAll,
+} from '../learning-reader/fixtures.mjs';
 
 const rootUrl = new URL('../../../', import.meta.url);
 const html = await readFile(new URL('mandiri/kasir/cash.html', rootUrl), 'utf8');
@@ -40,6 +46,11 @@ function fakeSessionStore() {
   return {
     corrupt() {
       for (const key of values.keys()) values.set(key, '{invalid-json');
+    },
+    transform(callback) {
+      for (const [key, value] of values) {
+        values.set(key, JSON.stringify(callback(JSON.parse(value))));
+      }
     },
     getItem(key) { return values.get(key) || null; },
     removeItem(key) { values.delete(key); },
@@ -80,6 +91,155 @@ async function harness({
   return {
     ...currentFixture, controller, view, authListener, get closeCalls() { return closeCalls; },
   };
+}
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolveValue, rejectValue) => {
+    resolve = resolveValue;
+    reject = rejectValue;
+  });
+  return { promise, reject, resolve };
+}
+
+async function createScopeFixture({
+  accountScope, userScope, workspaceId, label, sessionSuffix,
+}) {
+  const seeded = await seedMemoryWorkspace();
+  const owner = await seeded.memory.membershipRepository.getByUserScope(
+    ACCOUNT_A, WORKSPACE_A, USER_A,
+  );
+  const workspace = Object.freeze({
+    ...seeded.command,
+    accountScope,
+    workspaceId,
+    name: `Workspace ${label}`,
+  });
+  const membership = Object.freeze({
+    ...owner,
+    accountScope,
+    workspaceId,
+    userScope,
+    membershipId: `membership_${sessionSuffix.repeat(8)}-${sessionSuffix.repeat(4)}-4${sessionSuffix.repeat(3)}-8${sessionSuffix.repeat(3)}-${sessionSuffix.repeat(12)}`,
+  });
+  const session = {
+    schemaVersion: 1,
+    accountScope,
+    workspaceId,
+    cashSessionId: `cash_session_${sessionSuffix.repeat(8)}-${sessionSuffix.repeat(4)}-4${sessionSuffix.repeat(3)}-8${sessionSuffix.repeat(3)}-${sessionSuffix.repeat(12)}`,
+    openedByScope: userScope,
+    openedByRole: 'merchant_owner',
+    openedAtLocal: '2026-07-25T03:00:00.000Z',
+    openingCashMinor: 100000,
+    status: 'open',
+    version: 1,
+    updatedAtLocal: '2026-07-25T03:00:00.000Z',
+  };
+  const fixture = {
+    accountScope,
+    expenses: [],
+    label,
+    membership,
+    session,
+    userScope,
+    workspace,
+    closeCalls: 0,
+    readGate: null,
+    recordExpense: null,
+  };
+  fixture.context = {
+    fixture,
+    run(storeNames, mode, callback) {
+      if (storeNames.includes('workspaces')) {
+        return callback({
+          workspaceRepository: {
+            listByStatus: async (requestedAccount) => (
+              requestedAccount === accountScope ? [workspace] : []
+            ),
+          },
+          membershipRepository: {
+            getByUserScope: async (
+              requestedAccount, requestedWorkspace, requestedUser,
+            ) => (
+              requestedAccount === accountScope
+              && requestedWorkspace === workspaceId
+              && requestedUser === userScope
+                ? membership
+                : null
+            ),
+          },
+        });
+      }
+      return callback({
+        cashSessionRepository: {
+          async listByWorkspace() {
+            if (fixture.readGate) await fixture.readGate.promise;
+            return [fixture.session];
+          },
+        },
+        expenseRepository: {
+          listByCashSession: async () => [...fixture.expenses],
+        },
+        saleRepository: {
+          sumCashSalesBetween: async () => 0,
+        },
+      });
+    },
+  };
+  fixture.service = {
+    async recordExpense(command) {
+      if (fixture.recordExpense) return fixture.recordExpense(command);
+      const expense = Object.freeze({
+        ...command,
+        recordedAtLocal: command.createdAtLocal,
+      });
+      fixture.expenses.push(expense);
+      fixture.session = { ...fixture.session, version: fixture.session.version + 1 };
+      return Object.freeze({ status: 'committed', expense });
+    },
+    open: async () => { throw storageError('cash_session_already_open'); },
+    close: async () => { throw storageError('operation_in_progress'); },
+  };
+  fixture.connection = {
+    context: fixture.context,
+    close() { fixture.closeCalls += 1; },
+  };
+  return fixture;
+}
+
+async function scopedHarness(initialFixture, pendingExpenseStore) {
+  let selectedFixture = initialFixture;
+  let authListener;
+  const view = fakeView();
+  const controller = createCashManagementController({
+    contract: { enabled: true },
+    view,
+    subscribeAuth(listener) { authListener = listener; return () => {}; },
+    createScopes: async (user) => user.scopes,
+    openDatabase: async () => selectedFixture.connection,
+    createContext: (connection) => connection.context,
+    createService: ({ repositoryContext }) => repositoryContext.fixture.service,
+    now: () => '2026-07-25T04:00:00.000Z',
+    cryptoRef: webcrypto,
+    pendingExpenseStore,
+  });
+  const authenticate = async (fixture) => {
+    selectedFixture = fixture;
+    authListener({
+      isAuthenticated: true,
+      user: { uid: fixture.label, scopes: {
+        accountScope: fixture.accountScope, userScope: fixture.userScope,
+      } },
+    });
+    await settle();
+  };
+  const rebind = async (fixture) => {
+    selectedFixture = fixture;
+    await controller.rebindWorkspace();
+  };
+  await authenticate(initialFixture);
+  return { authenticate, controller, rebind, view };
 }
 
 const EXPENSE_INPUT = Object.freeze({
@@ -317,6 +477,59 @@ test('hard refresh membersihkan snapshot commit yang sudah ditemukan lalu payloa
   assert.equal(expenses.length, 2);
 });
 
+test('restore memakai command canonical sehingga whitespace tidak membuat mismatch atau Expense ganda', async () => {
+  const fixture = await seedMemoryWorkspace();
+  const pendingExpenseStore = fakeSessionStore();
+  let firstCommand;
+  const first = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          firstCommand = command;
+          return Promise.reject(storageError('storage_error'));
+        },
+      };
+    },
+  });
+  await openSession(first);
+  await assert.rejects(first.controller.submit('expense', EXPENSE_INPUT));
+  first.controller.destroy();
+  pendingExpenseStore.transform((entries) => entries.map((entry) => ({
+    ...entry,
+    materialKey: 'stale-non-canonical-key',
+    command: {
+      ...entry.command,
+      category: ` ${entry.command.category} `,
+      note: ` ${entry.command.note} `,
+    },
+  })));
+
+  const commands = [];
+  const second = await harness({
+    fixture,
+    pendingExpenseStore,
+    decorateService(service) {
+      return {
+        ...service,
+        recordExpense(command) {
+          commands.push(command);
+          return service.recordExpense(command);
+        },
+      };
+    },
+  });
+  await second.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(commands.length, 1);
+  assert.equal(commands[0].operationId, firstCommand.operationId);
+  assert.equal(commands[0].expenseId, firstCommand.expenseId);
+  assert.equal(commands[0].category, 'operational');
+  assert.equal(commands[0].note, 'Air minum');
+  assert.equal(second.controller.getState().expenses.length, 1);
+});
+
 test('session storage rusak dibuang tanpa memblokir halaman atau membuat bypass', async () => {
   const fixture = await seedMemoryWorkspace();
   const pendingExpenseStore = fakeSessionStore();
@@ -473,6 +686,10 @@ test('Expense berbeda saat in-flight ditolak tanpa menumpang Promise pertama', a
   const second = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
   assert.notEqual(first, second);
   await assert.rejects(second, { code: 'operation_in_progress' });
+  assert.equal(
+    value.controller.getState().message,
+    'Operasi lain masih diproses. Tunggu hingga selesai sebelum mencoba lagi.',
+  );
   assert.equal(calls, 1);
   release();
   await first;
@@ -506,6 +723,123 @@ test('close tidak menumpang hasil Expense yang masih in-flight', async () => {
   assert.equal(closeCalls, 0);
   release();
   await expense;
+});
+
+test('rebind workspace dan account membersihkan scope lama serta mengabaikan reload stale', async () => {
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'account-a-workspace-a',
+    sessionSuffix: '1',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'account-a-workspace-b',
+    sessionSuffix: '2',
+  });
+  const accountB = await createScopeFixture({
+    accountScope: ACCOUNT_B,
+    userScope: USER_B,
+    workspaceId: 'workspace_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    label: 'account-b-workspace-b',
+    sessionSuffix: '3',
+  });
+  workspaceA.expenses.push({
+    expenseId: 'expense_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    operationId: 'op_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    cashSessionId: workspaceA.session.cashSessionId,
+    category: 'operational',
+    amountMinor: 11000,
+    note: 'Data Workspace A',
+    recordedAtLocal: '2026-07-25T03:30:00.000Z',
+  });
+  workspaceB.expenses.push({
+    expenseId: 'expense_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    operationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    cashSessionId: workspaceB.session.cashSessionId,
+    category: 'supplies',
+    amountMinor: 22000,
+    note: 'Data Workspace B',
+    recordedAtLocal: '2026-07-25T03:40:00.000Z',
+  });
+  accountB.expenses.push({
+    expenseId: 'expense_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    operationId: 'op_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    cashSessionId: accountB.session.cashSessionId,
+    category: 'other',
+    amountMinor: 33000,
+    note: 'Data Account B',
+    recordedAtLocal: '2026-07-25T03:50:00.000Z',
+  });
+
+  const value = await scopedHarness(workspaceA);
+  assert.equal(value.controller.getState().expenses[0].note, 'Data Workspace A');
+
+  workspaceA.readGate = deferred();
+  const staleReload = value.controller.reload();
+  await value.rebind(workspaceB);
+  assert.equal(workspaceA.closeCalls, 1);
+  assert.equal(value.controller.getState().expenses[0].note, 'Data Workspace B');
+  workspaceA.readGate.resolve();
+  await staleReload;
+  assert.equal(value.controller.getState().expenses[0].note, 'Data Workspace B');
+
+  await value.authenticate(accountB);
+  assert.equal(workspaceB.closeCalls, 1);
+  assert.equal(value.controller.getState().expenses[0].note, 'Data Account B');
+  assert.equal(value.controller.getState().session.workspaceId, accountB.workspace.workspaceId);
+});
+
+test('submission dan pending snapshot scope lama tidak dapat mengubah workspace baru', async () => {
+  const pendingExpenseStore = fakeSessionStore();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: 'old-workspace',
+    sessionSuffix: '4',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_B,
+    label: 'new-workspace',
+    sessionSuffix: '5',
+  });
+  const oldWrite = deferred();
+  let oldCommand;
+  workspaceA.recordExpense = async (command) => {
+    oldCommand = command;
+    await oldWrite.promise;
+    workspaceA.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
+    return { status: 'committed' };
+  };
+  let newCommand;
+  workspaceB.recordExpense = async (command) => {
+    newCommand = command;
+    workspaceB.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
+    return { status: 'committed' };
+  };
+
+  const value = await scopedHarness(workspaceA, pendingExpenseStore);
+  const staleSubmission = value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(pendingExpenseStore.size, 1);
+  await value.rebind(workspaceB);
+  assert.equal(pendingExpenseStore.size, 0);
+  const currentSubmission = value.controller.submit('expense', EXPENSE_INPUT);
+  assert.notEqual(currentSubmission, staleSubmission);
+  await currentSubmission;
+  assert.equal(newCommand.workspaceId, WORKSPACE_B);
+  assert.notEqual(newCommand.operationId, oldCommand.operationId);
+  assert.notEqual(newCommand.expenseId, oldCommand.expenseId);
+  oldWrite.resolve();
+  await staleSubmission;
+  assert.equal(value.controller.getState().session.workspaceId, WORKSPACE_B);
+  assert.equal(value.controller.getState().expenses.length, 1);
+  assert.equal(value.controller.getState().expenses[0].expenseId, newCommand.expenseId);
 });
 
 test('logout melepas guard lama dan finally stale tidak membersihkan guard konteks baru', async () => {
@@ -698,6 +1032,42 @@ test('Expense tanpa sesi ditolak sebelum service, snapshot, atau pembuatan ID', 
   assert.equal(idCalls, 0);
 });
 
+test('kegagalan reload saat inisialisasi menutup koneksi dan submit fail-closed', async () => {
+  const fixture = await seedMemoryWorkspace();
+  let authListener;
+  let closeCalls = 0;
+  let serviceCalls = 0;
+  const controller = createCashManagementController({
+    contract: { enabled: true },
+    view: fakeView(),
+    subscribeAuth(listener) { authListener = listener; return () => {}; },
+    createScopes: async () => ({ accountScope: ACCOUNT_A, userScope: USER_A }),
+    openDatabase: async () => ({ close() { closeCalls += 1; } }),
+    createContext: () => ({
+      run(storeNames, mode, callback) {
+        if (storeNames.includes('workspaces')) {
+          return fixture.memory.repositoryContext.run(storeNames, mode, callback);
+        }
+        throw storageError('storage_error');
+      },
+    }),
+    createService: () => ({
+      recordExpense() { serviceCalls += 1; },
+      open() { serviceCalls += 1; },
+      close() { serviceCalls += 1; },
+    }),
+    cryptoRef: webcrypto,
+  });
+  authListener({ isAuthenticated: true, user: { uid: 'fixture' } });
+  await settle();
+  assert.equal(controller.getState().state, 'error');
+  assert.equal(controller.getState().session, null);
+  assert.deepEqual(controller.getState().expenses, []);
+  assert.equal(closeCalls, 1);
+  await assert.rejects(controller.submit('expense', EXPENSE_INPUT), { code: 'permission_denied' });
+  assert.equal(serviceCalls, 0);
+});
+
 test('failure sebelum commit mempersistenkan absent dan refresh mempertahankan lifecycle retry', async () => {
   const fixture = await seedMemoryWorkspace();
   const pendingExpenseStore = fakeSessionStore();
@@ -835,4 +1205,49 @@ test('markup, navigasi, keamanan render, dan aksesibilitas memenuhi kontrak', ()
   assert.match(css, /prefers-reduced-motion/u);
   assert.match(css, /forced-colors: active/u);
   assert.match(css, /max-width:\s*680px/u);
+});
+
+test('render Expense menampilkan payload HTML sebagai plain text tanpa membuat elemen aktif', () => {
+  const documentRef = new FakeDocument();
+  const status = new FakeElement('p');
+  const expenseList = new FakeElement('ul');
+  const root = {
+    ownerDocument: documentRef,
+    dataset: {},
+    setAttribute() {},
+    querySelector(selector) {
+      if (selector === '[data-cash-status]') return status;
+      if (selector === '[data-expense-list]') return expenseList;
+      return null;
+    },
+    querySelectorAll() { return []; },
+  };
+  const payload = '<img src=x onerror="globalThis.__xss=true">';
+  globalThis.__xss = false;
+  try {
+    const view = createCashManagementView(root, documentRef);
+    view.render({
+      state: 'open-session',
+      message: 'Sesi kas aktif.',
+      session: null,
+      lastClosedSession: null,
+      expenses: [{
+        expenseId: 'expense_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        category: 'operational',
+        amountMinor: 25000,
+        note: payload,
+        recordedAtLocal: '2026-07-25T04:00:00.000Z',
+      }],
+      summary: null,
+      canExpense: true,
+      canClose: true,
+      submitting: false,
+      confirmOpen: false,
+    });
+    assert.match(collectText(expenseList), new RegExp(payload.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'));
+    assert.equal(findAll(expenseList, (node) => node.tagName === 'IMG').length, 0);
+    assert.equal(globalThis.__xss, false);
+  } finally {
+    delete globalThis.__xss;
+  }
 });

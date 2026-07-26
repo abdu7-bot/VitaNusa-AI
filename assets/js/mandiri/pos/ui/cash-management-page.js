@@ -136,13 +136,16 @@ function getSessionStorage() {
   }
 }
 
-function isRestorableExpenseSubmission(value, { scopes, workspace, session, membership }) {
-  const command = value?.command;
-  if (!command || !session) return false;
+function normalizeRestorableExpenseSubmission(
+  value,
+  { scopes, workspace, session, membership },
+) {
+  if (!value?.command || !session) return null;
+  let command;
   try {
-    normalizeRecordExpenseCommand(command);
+    command = normalizeRecordExpenseCommand(value.command);
   } catch {
-    return false;
+    return null;
   }
   const material = {
     cashSessionId: command.cashSessionId,
@@ -150,15 +153,22 @@ function isRestorableExpenseSubmission(value, { scopes, workspace, session, memb
     amountMinor: command.amountMinor,
     note: command.note,
   };
-  return value.materialKey === expenseMaterialKey(material)
-    && ['pending', 'absent'].includes(value.outcome)
-    && command.schemaVersion === 1
-    && command.accountScope === scopes.accountScope
-    && command.workspaceId === workspace.workspaceId
-    && command.actorScope === scopes.userScope
-    && command.actorRole === membership.role
-    && command.cashSessionId === session.cashSessionId
-    && command.expectedVersion <= session.version;
+  const materialKey = expenseMaterialKey(material);
+  if (
+    !['pending', 'absent'].includes(value.outcome)
+    || command.schemaVersion !== 1
+    || command.accountScope !== scopes.accountScope
+    || command.workspaceId !== workspace.workspaceId
+    || command.actorScope !== scopes.userScope
+    || command.actorRole !== membership.role
+    || command.cashSessionId !== session.cashSessionId
+    || command.expectedVersion > session.version
+  ) return null;
+  return Object.freeze({
+    command,
+    materialKey,
+    outcome: value.outcome,
+  });
 }
 
 function model(state, values = {}) {
@@ -205,6 +215,7 @@ export function createCashManagementController({
   let generation = 0;
   let activeSubmission = null;
   let pendingExpenseSubmissions = new Map();
+  let lastAuthState = null;
   let destroyed = false;
 
   const render = (next) => {
@@ -212,6 +223,14 @@ export function createCashManagementController({
     view.render(next);
     return next;
   };
+
+  function clearOperationalReferences() {
+    const previousConnection = connection;
+    connection = context = service = scopes = workspace = membership = null;
+    activeSubmission = null;
+    pendingExpenseSubmissions = new Map();
+    previousConnection?.close?.();
+  }
 
   function persistPendingExpenseSubmissions() {
     const key = pendingExpenseStorageKey(scopes, workspace);
@@ -269,22 +288,19 @@ export function createCashManagementController({
     let mismatch = false;
     pendingExpenseSubmissions = new Map();
     values.forEach((value) => {
-      if (!isRestorableExpenseSubmission(value, {
+      const restored = normalizeRestorableExpenseSubmission(value, {
         scopes, workspace, session: current.session, membership,
-      })) return;
+      });
+      if (!restored) return;
       const recorded = current.expenses.find((expense) => (
-        expense.expenseId === value.command.expenseId
-        || expense.operationId === value.command.operationId
+        expense.expenseId === restored.command.expenseId
+        || expense.operationId === restored.command.operationId
       ));
       if (recorded) {
-        if (!expenseMatchesCommand(recorded, value.command)) mismatch = true;
+        if (!expenseMatchesCommand(recorded, restored.command)) mismatch = true;
         return;
       }
-      pendingExpenseSubmissions.set(value.materialKey, Object.freeze({
-        command: Object.freeze(value.command),
-        materialKey: value.materialKey,
-        outcome: value.outcome,
-      }));
+      pendingExpenseSubmissions.set(restored.materialKey, restored);
     });
     persistPendingExpenseSubmissions();
     if (mismatch) {
@@ -350,13 +366,11 @@ export function createCashManagementController({
   }
 
   async function handleAuth(authState) {
+    lastAuthState = authState;
     const token = ++generation;
     let nextConnection = null;
     const previousPendingKey = pendingExpenseStorageKey(scopes, workspace);
-    connection?.close?.();
-    connection = context = service = scopes = workspace = membership = null;
-    activeSubmission = null;
-    pendingExpenseSubmissions = new Map();
+    clearOperationalReferences();
     if (!authState?.isAuthenticated || !authState.user) {
       removePersistedExpenseSubmissions(previousPendingKey);
       render(model('signed-out'));
@@ -398,13 +412,17 @@ export function createCashManagementController({
     } catch (error) {
       nextConnection?.close?.();
       if (destroyed || token !== generation) return;
-      connection?.close?.();
-      connection = null;
+      clearOperationalReferences();
       const denied = error?.code === 'permission_denied';
       render(model(denied ? 'permission-denied' : 'error', {
         message: safeMessage(error?.code), focusStatus: true,
       }));
     }
+  }
+
+  function rebindWorkspace() {
+    if (destroyed || !lastAuthState) return Promise.reject(storageError('permission_denied'));
+    return handleAuth(lastAuthState);
   }
 
   function submit(kind, input) {
@@ -446,7 +464,11 @@ export function createCashManagementController({
         && activeSubmission.kind === kind
         && activeSubmission.logicalKey === logicalKey
       ) return activeSubmission.promise;
-      return Promise.reject(storageError('operation_in_progress'));
+      const error = storageError('operation_in_progress');
+      render(model(current.state, {
+        ...current, message: safeMessage(error.code), focusStatus: true,
+      }));
+      return Promise.reject(error);
     }
     try {
       if (kind === 'expense') {
@@ -617,8 +639,8 @@ export function createCashManagementController({
     generation += 1;
     activeSubmission = null;
     unsubscribe();
-    connection?.close?.();
-    connection = context = service = scopes = workspace = membership = null;
+    clearOperationalReferences();
+    lastAuthState = null;
     view.destroy?.();
   }
 
@@ -628,7 +650,8 @@ export function createCashManagementController({
     unsubscribe = subscribeAuth((state) => { void handleAuth(state); });
   }
   return Object.freeze({
-    destroy, getState: () => current, reload, resetExpenseSubmission, submit, setConfirmOpen,
+    destroy, getState: () => current, rebindWorkspace, reload,
+    resetExpenseSubmission, submit, setConfirmOpen,
   });
 }
 

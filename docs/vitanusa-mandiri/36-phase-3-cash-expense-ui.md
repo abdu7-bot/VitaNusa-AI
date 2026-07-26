@@ -15,6 +15,8 @@ service, repository, IndexedDB v7, dan backup v7 dari PR 8 tanpa schema atau pol
   serta workspace yang sama.
 - Pergantian auth/account/workspace dan `destroy()` menaikkan generation token, menutup
   koneksi, membuang context lama, dan mengabaikan hasil async stale.
+- Lifecycle shell yang mengubah workspace tanpa mengganti Firebase user wajib memanggil
+  `controller.rebindWorkspace()`; auth observer memakai jalur rebind yang sama.
 - Cashier aktif dapat membuka session dan melihat data. Form Expense dan penutupan hanya
   dirender aktif untuk merchant owner sesuai permission existing.
 
