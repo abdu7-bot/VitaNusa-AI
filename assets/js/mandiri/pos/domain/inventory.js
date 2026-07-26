@@ -12,7 +12,9 @@ import { isWorkspaceRole } from '../../domain/membership.js';
 export const MANUAL_STOCK_MOVEMENT_TYPES = Object.freeze([
   'opening_stock', 'purchase_in', 'adjustment',
 ]);
-export const STOCK_MOVEMENT_TYPES = Object.freeze([...MANUAL_STOCK_MOVEMENT_TYPES, 'sale']);
+export const STOCK_MOVEMENT_TYPES = Object.freeze([
+  ...MANUAL_STOCK_MOVEMENT_TYPES, 'sale', 'void_reversal',
+]);
 
 const MOVEMENT_FIELDS = Object.freeze([
   'schemaVersion', 'movementId', 'workspaceId', 'productId', 'movementType',
@@ -57,7 +59,10 @@ export function normalizeStockMovement(input, { workspaceId: expectedWorkspaceId
     throw new MandiriDomainError('invalid_movement_type', 'jenis movement tidak didukung', 'stockMovement.movementType');
   }
   const quantityDelta = signedQuantity(input.quantityDelta, 'stockMovement.quantityDelta');
-  if (['opening_stock', 'purchase_in'].includes(input.movementType) && quantityDelta < 1) {
+  if (
+    ['opening_stock', 'purchase_in', 'void_reversal'].includes(input.movementType)
+    && quantityDelta < 1
+  ) {
     throw new MandiriDomainError('invalid_quantity', 'movement masuk harus positif', 'stockMovement.quantityDelta');
   }
   const reason = input.reason === null ? null : normalizeTrimmedString(input.reason, {
