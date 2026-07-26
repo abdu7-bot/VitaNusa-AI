@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { webcrypto } from 'node:crypto';
 import {
   CASH_PAGE_STATES,
+  STALE_CASH_SUBMISSION_RESULT,
   createCashManagementController,
   createCashManagementView,
   normalizeCashInput,
@@ -212,10 +213,64 @@ async function createScopeFixture({
   return fixture;
 }
 
-async function scopedHarness(initialFixture, pendingExpenseStore) {
+function createCashViewFixture() {
+  const documentRef = new FakeDocument();
+  const root = new FakeElement('main');
+  const status = new FakeElement('p');
+  const expenseList = new FakeElement('ul');
+  const openForm = new FakeElement('form');
+  const expenseForm = new FakeElement('form');
+  const closeForm = new FakeElement('form');
+  const dialog = new FakeElement('dialog');
+  const openingCash = new FakeElement('input');
+  const category = new FakeElement('input');
+  const amount = new FakeElement('input');
+  const note = new FakeElement('input');
+  const countedCash = new FakeElement('input');
+  openForm.elements = { openingCash };
+  expenseForm.elements = { category, amount, note };
+  closeForm.elements = { countedCash };
+  openForm.append(openingCash);
+  expenseForm.append(category, amount, note);
+  closeForm.append(countedCash);
+  openForm.querySelector = () => null;
+  expenseForm.querySelector = () => null;
+  closeForm.querySelector = () => null;
+  dialog.querySelector = () => null;
+  dialog.open = false;
+  dialog.showModal = () => { dialog.open = true; };
+  dialog.close = () => { dialog.open = false; };
+  const selectors = new Map([
+    ['[data-cash-status]', status],
+    ['[data-expense-list]', expenseList],
+    ['[data-open-form]', openForm],
+    ['[data-expense-form]', expenseForm],
+    ['[data-close-form]', closeForm],
+    ['#close-session-dialog', dialog],
+  ]);
+  root.ownerDocument = documentRef;
+  root.querySelector = (selector) => selectors.get(selector) || null;
+  root.querySelectorAll = () => [];
+  return {
+    amount,
+    category,
+    closeForm,
+    countedCash,
+    dialog,
+    expenseForm,
+    note,
+    openForm,
+    openingCash,
+    root,
+    status,
+    view: createCashManagementView(root, documentRef),
+  };
+}
+
+async function scopedHarness(initialFixture, pendingExpenseStore, suppliedView = null) {
   let selectedFixture = initialFixture;
   let authListener;
-  const view = fakeView();
+  const view = suppliedView || fakeView();
   const controller = createCashManagementController({
     contract: { enabled: true },
     view,
@@ -250,6 +305,88 @@ async function scopedHarness(initialFixture, pendingExpenseStore) {
   return {
     authenticate, controller, rebind, signOut, view,
   };
+}
+
+async function verifyStaleExpenseCallerIsolation({ accountChange }) {
+  const pendingExpenseStore = fakeSessionStore();
+  const dom = createCashViewFixture();
+  const workspaceA = await createScopeFixture({
+    accountScope: ACCOUNT_A,
+    userScope: USER_A,
+    workspaceId: WORKSPACE_A,
+    label: accountChange ? 'caller-account-a' : 'caller-workspace-a',
+    sessionSuffix: accountChange ? 'e' : '1',
+  });
+  const workspaceB = await createScopeFixture({
+    accountScope: accountChange ? ACCOUNT_B : ACCOUNT_A,
+    userScope: accountChange ? USER_B : USER_A,
+    workspaceId: accountChange
+      ? 'workspace_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+      : WORKSPACE_B,
+    label: accountChange ? 'caller-account-b' : 'caller-workspace-b',
+    sessionSuffix: accountChange ? 'f' : '2',
+  });
+  workspaceB.expenses.push({
+    expenseId: 'expense_dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    operationId: 'op_dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    cashSessionId: workspaceB.session.cashSessionId,
+    category: 'supplies',
+    amountMinor: 31000,
+    note: accountChange ? 'Data Account B' : 'Data Workspace B',
+    recordedAtLocal: '2026-07-25T03:30:00.000Z',
+  });
+  const writeA = deferred();
+  let commandA;
+  let callsA = 0;
+  workspaceA.recordExpense = async (command) => {
+    callsA += 1;
+    commandA = command;
+    await writeA.promise;
+    workspaceA.expenses.push({ ...command, recordedAtLocal: command.createdAtLocal });
+    return { status: 'committed' };
+  };
+  const value = await scopedHarness(workspaceA, pendingExpenseStore, dom.view);
+  dom.category.value = EXPENSE_INPUT.category;
+  dom.amount.value = EXPENSE_INPUT.amount;
+  dom.note.value = EXPENSE_INPUT.note;
+  await dom.expenseForm.dispatch('submit');
+  await new Promise((resolve) => setImmediate(resolve));
+  const snapshotAKey = pendingExpenseStore.keys[0];
+  assert.notEqual(snapshotAKey, undefined);
+
+  if (accountChange) await value.authenticate(workspaceB);
+  else await value.rebind(workspaceB);
+  dom.category.value = 'supplies';
+  dom.amount.value = '31.000';
+  dom.note.value = 'Input scope B';
+  dom.dialog.open = true;
+  const stateBBefore = value.controller.getState();
+  const statusBBefore = dom.status.textContent;
+  const snapshotABefore = pendingExpenseStore.serialized(snapshotAKey);
+
+  writeA.resolve();
+  await settle();
+  assert.equal(dom.category.value, 'supplies');
+  assert.equal(dom.amount.value, '31.000');
+  assert.equal(dom.note.value, 'Input scope B');
+  assert.equal(dom.dialog.open, true);
+  assert.equal(dom.status.textContent, statusBBefore);
+  assert.equal(value.controller.getState(), stateBBefore);
+  assert.equal(value.controller.getState().session.workspaceId, workspaceB.workspace.workspaceId);
+  assert.equal(value.controller.getState().expenses.length, 1);
+  assert.equal(value.controller.getState().expenses[0].note, workspaceB.expenses[0].note);
+  assert.deepEqual(pendingExpenseStore.keys, [snapshotAKey]);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), snapshotABefore);
+
+  await value.authenticate(workspaceA);
+  assert.equal(workspaceA.expenses.length, 1);
+  assert.equal(pendingExpenseStore.serialized(snapshotAKey), null);
+  const reconciled = await value.controller.submit('expense', EXPENSE_INPUT);
+  assert.equal(reconciled.status, 'duplicate-safe');
+  assert.equal(reconciled.expense.operationId, commandA.operationId);
+  assert.equal(reconciled.expense.expenseId, commandA.expenseId);
+  assert.equal(callsA, 1);
+  assert.equal(workspaceA.expenses.length, 1);
 }
 
 const EXPENSE_INPUT = Object.freeze({
@@ -851,6 +988,42 @@ test('continuation handleAuth stale tidak menyentuh snapshot atau submission lif
   assert.equal(value.controller.getState().expenses.length, 1);
 });
 
+test('caller view mengabaikan stale Expense success setelah rebind workspace', async () => {
+  await verifyStaleExpenseCallerIsolation({ accountChange: false });
+});
+
+test('caller view mengabaikan stale Expense success setelah pergantian account', async () => {
+  await verifyStaleExpenseCallerIsolation({ accountChange: true });
+});
+
+test('seluruh success handler view mengabaikan kontrak hasil stale', async () => {
+  const dom = createCashViewFixture();
+  let confirmCalls = 0;
+  dom.openingCash.value = '100000';
+  dom.category.value = 'operational';
+  dom.amount.value = '25000';
+  dom.note.value = 'Jangan reset';
+  dom.countedCash.value = '75000';
+  dom.dialog.open = true;
+  dom.view.bind({
+    resetExpenseSubmission() {},
+    setConfirmOpen() { confirmCalls += 1; },
+    submit: async () => STALE_CASH_SUBMISSION_RESULT,
+  });
+
+  await dom.openForm.dispatch('submit');
+  await dom.expenseForm.dispatch('submit');
+  await dom.closeForm.dispatch('submit');
+  await settle();
+  assert.equal(dom.openingCash.value, '100000');
+  assert.equal(dom.category.value, 'operational');
+  assert.equal(dom.amount.value, '25000');
+  assert.equal(dom.note.value, 'Jangan reset');
+  assert.equal(dom.countedCash.value, '75000');
+  assert.equal(dom.dialog.open, true);
+  assert.equal(confirmCalls, 0);
+});
+
 test('snapshot write lama dipertahankan lintas rebind dan direkonsiliasi duplicate-safe', async () => {
   const pendingExpenseStore = fakeSessionStore();
   const workspaceA = await createScopeFixture({
@@ -898,7 +1071,7 @@ test('snapshot write lama dipertahankan lintas rebind dan direkonsiliasi duplica
   const stateBBefore = value.controller.getState();
 
   oldWrite.resolve();
-  assert.equal((await staleResult).code, 'storage_unknown');
+  assert.equal((await staleResult).status, 'stale');
   assert.equal(value.controller.getState().session.workspaceId, WORKSPACE_B);
   assert.equal(value.controller.getState(), stateBBefore);
   assert.equal(pendingExpenseStore.serialized(snapshotAKey), snapshotABefore);
@@ -995,7 +1168,7 @@ test('orphaned write dengan payload collision tetap menjadi idempotency mismatch
   const snapshotAKey = pendingExpenseStore.keys[0];
   await value.rebind(workspaceB);
   writeA.resolve();
-  assert.equal((await staleResult).code, 'storage_unknown');
+  assert.equal((await staleResult).status, 'stale');
 
   await value.rebind(workspaceA);
   assert.equal(value.controller.getState().state, 'error');
@@ -1064,7 +1237,7 @@ test('logout melepas guard lama dan finally stale tidak membersihkan guard konte
   await openSession(value);
   const stale = value.controller.submit('expense', EXPENSE_INPUT);
   const staleResult = stale.then(
-    () => null,
+    (result) => result,
     (error) => error,
   );
   value.authListener({ isAuthenticated: false, user: null });
@@ -1073,7 +1246,7 @@ test('logout melepas guard lama dan finally stale tidak membersihkan guard konte
   await settle();
   const current = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
   oldRelease();
-  assert.equal((await staleResult).code, 'storage_unknown');
+  assert.equal((await staleResult).status, 'stale');
   const duplicate = value.controller.submit('expense', { ...EXPENSE_INPUT, amount: '30.000' });
   assert.equal(duplicate, current);
   assert.equal(value.controller.getState().state, 'submitting');

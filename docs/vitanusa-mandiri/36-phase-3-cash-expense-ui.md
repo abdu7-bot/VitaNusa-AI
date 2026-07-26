@@ -48,6 +48,12 @@ Promise hanya untuk kind dan payload material yang sama. Operasi berbeda selama 
 aktif ditolak eksplisit, dan pergantian auth melepas guard berdasarkan generation tanpa
 membiarkan hasil async lama mengubah UI konteks baru.
 
+Promise submit yang selesai setelah generation berubah menghasilkan kontrak eksplisit
+`{ status: "stale" }`. Seluruh success handler form memeriksa hasil ini sebelum reset
+input atau menutup dialog, sehingga caller UI tidak memperlakukan hasil scope lama sebagai
+sukses pada scope baru. Error scope lama juga diselesaikan sebagai hasil stale tanpa
+menampilkan pesan error pada lifecycle baru.
+
 Ringkasan session aktif memakai agregasi sale/expense repository dan kalkulasi domain
 existing. Session closed hanya menampilkan `closingSummary` immutable. Tidak ada summary
 di localStorage/Cache API, edit/delete Expense, cash adjustment, atau Expense otomatis

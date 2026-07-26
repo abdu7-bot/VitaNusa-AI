@@ -23,6 +23,14 @@ export const CASH_PAGE_STATES = Object.freeze([
   'version-conflict', 'error',
 ]);
 
+export const STALE_CASH_SUBMISSION_RESULT = Object.freeze({
+  status: 'stale',
+});
+
+export function isStaleCashSubmissionResult(result) {
+  return result === STALE_CASH_SUBMISSION_RESULT || result?.status === 'stale';
+}
+
 export const EXPENSE_CATEGORY_LABELS = Object.freeze({
   operational: 'Operasional',
   supplies: 'Perlengkapan',
@@ -576,9 +584,9 @@ export function createCashManagementController({
     const operation = Promise.resolve()
       .then(() => activeService[kind === 'expense' ? 'recordExpense' : kind](Object.freeze(command)))
       .then(async (result) => {
-        if (destroyed || token !== generation) return result;
+        if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
         await reload({ message: MESSAGES[kind], focusStatus: true });
-        if (destroyed || token !== generation) return result;
+        if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
         if (kind === 'expense') {
           removePendingExpenseSubmission(expenseMaterialKey(command));
           discardAbsentExpenseSubmissions();
@@ -586,29 +594,29 @@ export function createCashManagementController({
         return result;
       })
       .catch(async (error) => {
-        if (destroyed || token !== generation) throw error;
+        if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
         let expenseReconciled = false;
         if (error?.code === 'version_conflict') {
           await reload({ message: MESSAGES['version-conflict'], focusStatus: true, conflict: true });
-          if (destroyed || token !== generation) throw error;
+          if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
           expenseReconciled = kind === 'expense';
         } else if ([
           'cash_session_already_open', 'cash_session_required', 'cash_session_closed',
           'record_not_found', 'invalid_reference', 'duplicate_operation',
         ].includes(error?.code)) {
           await reload({ message: safeMessage(error.code), focusStatus: true });
-          if (destroyed || token !== generation) throw error;
+          if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
           expenseReconciled = kind === 'expense';
         } else {
           let reloaded = false;
           if (kind === 'expense') {
             try {
               await reload();
-              if (destroyed || token !== generation) throw error;
+              if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
               reloaded = true;
               expenseReconciled = true;
             } catch (reloadError) {
-              if (destroyed || token !== generation) throw error;
+              if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
               render(model('error', {
                 ...current, submitting: false, message: safeMessage(reloadError?.code), focusStatus: true,
               }));
@@ -620,7 +628,7 @@ export function createCashManagementController({
             }));
           }
         }
-        if (destroyed || token !== generation) throw error;
+        if (destroyed || token !== generation) return STALE_CASH_SUBMISSION_RESULT;
         if (kind === 'expense') {
           const materialKey = expenseMaterialKey(command);
           const recorded = current.expenses.find((expense) => (
@@ -805,7 +813,9 @@ export function createCashManagementView(root, documentRef = root?.ownerDocument
     add(openForm, 'submit', (event) => {
       event.preventDefault();
       void callbacks.submit('open', { openingCash: openForm.elements.openingCash.value })
-        .then(() => openForm.reset()).catch(() => {});
+        .then((result) => {
+          if (!isStaleCashSubmissionResult(result)) openForm.reset();
+        }).catch(() => {});
     });
     add(expenseForm, 'submit', (event) => {
       event.preventDefault();
@@ -813,7 +823,9 @@ export function createCashManagementView(root, documentRef = root?.ownerDocument
         category: expenseForm.elements.category.value,
         amount: expenseForm.elements.amount.value,
         note: expenseForm.elements.note.value,
-      }).then(() => expenseForm.reset()).catch(() => {});
+      }).then((result) => {
+        if (!isStaleCashSubmissionResult(result)) expenseForm.reset();
+      }).catch(() => {});
     });
     add(expenseForm?.querySelector('[data-reset-expense]'), 'click', () => {
       callbacks.resetExpenseSubmission();
@@ -838,7 +850,11 @@ export function createCashManagementView(root, documentRef = root?.ownerDocument
     add(closeForm, 'submit', (event) => {
       event.preventDefault();
       void callbacks.submit('close', { countedCash: closeForm.elements.countedCash.value })
-        .then(() => { callbacks.setConfirmOpen(false); closeForm.reset(); }).catch(() => {});
+        .then((result) => {
+          if (isStaleCashSubmissionResult(result)) return;
+          callbacks.setConfirmOpen(false);
+          closeForm.reset();
+        }).catch(() => {});
     });
     const close = () => {
       callbacks.setConfirmOpen(false);
