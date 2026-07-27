@@ -5,8 +5,10 @@
 **Proposed**.
 
 This ADR records the approved planning decisions for the prerequisite chain that
-must precede the reconstruction of Sale reversal in Issue #88. It does not
-authorize implementation, a schema upgrade, or a backup-format upgrade.
+must precede the reconstruction of Sale reversal in Issue #88. This document does
+not itself implement runtime behavior, activate schema v8, or change the backup
+format. Those changes are authorized only through the sequential prerequisite
+issues defined below.
 
 ## Context
 
@@ -116,32 +118,89 @@ Refund or correction after close belongs to a separate
 `PostCloseCorrection` workflow and issue. That workflow is outside Issue #88 and
 is not a direct prerequisite for it.
 
-### 6. Schema v7 to v8 migration
+### 6. Issue #94 is the sole v8 activation boundary
 
-The v7-to-v8 migration is non-destructive and adds the `CashMovement` and
-`SaleReversal` stores and required scoped uniqueness/index contracts. It does
-not rewrite legacy Sales, manufacture lineage, synthesize historical movements,
-recalculate closed sessions, or change backup schema/version by implication.
+Issue #94 is the only delivery allowed to activate database schema v8. The v8
+activation is one coherent compatibility boundary and must include all of the
+following before any CashMovement producer is enabled:
 
-For each active/open CashSession present at migration, v8 stores two immutable
-baseline values:
+- database schema v8;
+- append-only `CashMovement` and `SaleReversal` stores and scoped indexes;
+- CashSession schema v2;
+- migration of every valid active/open CashSession v7 to CashSession v2;
+- immutable `legacyCashSalesMinor` and `legacyExpenseOutMinor` baselines;
+- a durable migration/compatibility marker;
+- complete backup format/schema v8 support;
+- legacy-backup compatibility according to the existing compatibility policy;
+- append-only repository foundations for later producer and reversal services.
+
+Issue #94 must not activate a Sale/Expense CashMovement producer or a
+SaleReversal service. It creates and validates the storage, migration, backup,
+and repository boundary only.
+
+No later issue may perform another v7-to-v8 versionchange or defer any required
+active-session baseline into a post-upgrade migration.
+
+### 7. Atomic v7-to-v8 migration and active-session baselines
+
+The v7-to-v8 migration is non-destructive. It does not rewrite legacy Sales,
+manufacture Sale–CashSession lineage, synthesize historical movements,
+recalculate closed sessions, or mutate an already committed closing summary.
+
+For every valid active/open CashSession visible during the upgrade, the
+versionchange transaction persists CashSession v2 and calculates exactly once:
 
 - `legacyCashSalesMinor`;
 - `legacyExpenseOutMinor`.
 
-Each baseline is calculated once from the valid v7 records visible under the
-existing deterministic session rules at migration time, using safe-integer
-arithmetic. The migration is retry-safe: an already persisted baseline is
-verified and retained, never recalculated from later data.
+The baselines are calculated from valid v7 records under the existing
+deterministic session rules using safe-integer arithmetic. They become immutable
+when the v8 activation commits. No synthetic historical `CashMovement` is
+created.
 
-Closed CashSessions are historical records and are not reopened or
-re-baselined. Corrupt, ambiguous, cross-scope, or overflow input aborts the
-upgrade transaction rather than producing a partial v8 database.
+The schema changes, CashSession v2 records, baselines, migration marker, and
+compatibility state are one atomic activation. An already committed marker and
+baseline are verified and retained on retry; they are never recalculated from
+later data.
 
-### 7. Active-session baseline and ledger close
+Closed CashSessions remain unchanged historical records. They are not reopened,
+upgraded for new behavior, or re-baselined.
 
-After migration, expected cash for a migrated active session is derived from
-its immutable v7 baseline plus v8 ledger movements:
+Before activation can commit, the implementation must validate the complete v8
+backup contract and legacy-compatibility rules against the schema being
+activated. Missing backup coverage, invalid backup schema, corrupt or ambiguous
+session data, cross-scope references, unsafe money, overflow, baseline failure,
+or marker inconsistency aborts the complete upgrade. There must be no partially
+activated v8 database and no state in which schema v8 can produce records that
+the active backup contract cannot preserve.
+
+### 8. Backup v8 is part of activation
+
+Issue #94 activates backup format/schema v8 together with database v8. The v8
+contract must cover every new or changed authoritative value required by the
+compatibility boundary, including:
+
+- Sale v1/v2 fields, including Sale v2 `cashSessionId`;
+- CashSession v1/v2 fields, including both immutable legacy baselines and the
+  migration marker/compatibility state where applicable;
+- `CashMovement`;
+- `SaleReversal`;
+- all required references, record counts, limits, checksum material, scope, and
+  safe-integer validation.
+
+Export, preview, normalization/validation, and restore behavior must agree on the
+same v8 contract. A v8 backup must not silently omit a v8 store or field.
+Legacy backups remain processable under the existing compatibility policy and
+must not be silently upgraded, assigned invented lineage, or converted into
+synthetic movements.
+
+Because backup v8 is active before Issue #95, every later CashMovement producer
+must write records already covered by the merged backup contract.
+
+### 9. Ledger close after activation
+
+After #94, expected cash for a migrated active session is derived from its
+immutable v7 baseline plus v8 ledger movements:
 
 `openingCashMinor + legacyCashSalesMinor - legacyExpenseOutMinor + sum(CashMovement.amountMinor)`
 
@@ -149,17 +208,29 @@ The exact sign convention is owned by the CashMovement domain contract and must
 be applied consistently for Sale, Expense, and reversal events. New v8 writes
 must append movements; they must not alter either legacy baseline.
 
-Closing an active session reloads all authoritative records inside one
-transaction, verifies membership and active-session invariants, and computes
-the final values from the baseline plus the complete scoped ledger. The close
-operation atomically persists the closed session, immutable `closingSummary`,
-audit event, and operation receipt.
+Issue #96 does not run a versionchange migration and does not calculate, insert,
+or rewrite baselines. It only consumes CashSession v2 and baseline state already
+committed by Issue #94.
 
-### 8. Immutable closing summary
+Closing an active native-v8 or migrated session reloads all authoritative
+records inside one transaction, verifies membership and active-session
+invariants, and computes the final values from the committed baseline plus the
+complete scoped ledger. The close operation atomically persists the closed
+session, immutable `closingSummary`, audit event, and operation receipt.
+
+Sale/Expense writes and close must have deterministic concurrency behavior: one
+transaction commits first and the other observes the authoritative resulting
+state or fails/retries. No CashMovement may commit outside a closing summary that
+claims to cover it.
+
+### 10. Immutable closing summary
 
 Once a CashSession is closed, its `closingSummary` is an immutable historical
 snapshot. Later ledger events, refunds, corrections, migrations, retries, or a
 new active session cannot mutate or recompute it.
+
+A duplicate-safe close retry returns the previously committed closed session and
+summary. It must not reread newer movements to produce a different result.
 
 `PostCloseCorrection` must preserve that snapshot and represent later business
 events separately with explicit references and reporting semantics.
@@ -175,9 +246,11 @@ events separately with explicit references and reporting semantics.
   cash-affecting writes, reversal, and close.
 - Unknown fields, invalid identifiers, unsafe money, overflow, corrupt lineage,
   and ambiguous state are rejected.
-- Original financial records, ledger events, baselines, and closing summaries
-  are immutable.
+- Original financial records, ledger events, baselines, migration state, and
+  closing summaries are immutable.
 - Timestamp inference and synthetic historical ledger creation are prohibited.
+- A producer cannot be activated before the storage and backup contracts that
+  preserve its records are active.
 
 ## Atomicity and idempotency
 
@@ -185,11 +258,16 @@ Each command owns one transaction boundary containing all of its domain writes,
 audit record, and operation receipt. Any failure rolls back the whole command.
 No path may commit an entity without its required movement or receipt.
 
+The v8 activation owns one versionchange transaction for schema, CashSession v2,
+baselines, and migration/compatibility marker state. Backup-contract validation
+is a hard activation gate. Any failure leaves v7 authoritative and prevents
+partial v8 activation.
+
 Every mutating command requires a scoped `operationId` and canonical material
 payload. Retrying the same operation and payload returns the committed result
 without duplicate entities or movements. Reusing the operation ID with
-different material returns `idempotency_mismatch`. Migration retries produce
-the same stores and baseline values and never duplicate or recalculate ledger
+different material returns `idempotency_mismatch`. Activation retries verify the
+same marker and baseline values and never duplicate or recalculate ledger
 history.
 
 ## Required verification
@@ -200,35 +278,51 @@ Implementation issues must cover, at minimum:
 - Sale v2 cash finalization with verified originating session;
 - missing, stale, closed, inactive, and cross-tenant expected references;
 - membership and active-session race checks inside the transaction;
-- Sale, Expense, reversal, and CashMovement atomic rollback points;
+- v7-to-v8 schema, CashSession v2, baseline, marker, and compatibility-state
+  atomic commit;
+- upgrade abort on baseline, marker, backup-contract, safe-integer, corrupt, or
+  cross-scope failure;
+- closed CashSession v7 preservation;
+- active CashSession v7 baseline exactly once and no synthetic movement;
+- backup v8 export, preview, validation, restore, complete field/store coverage,
+  checksum, limits, and legacy compatibility;
+- proof that #94 activates no Sale/Expense CashMovement producer and no
+  SaleReversal service;
+- Sale, Expense, reversal, and CashMovement atomic rollback points after their
+  producer issues are reached;
 - movement uniqueness and same/different-payload retry behavior;
-- safe-integer boundaries and overflow;
-- v7-to-v8 success, retry, abort, and non-destructive preservation;
-- immutable migration baselines and absence of synthetic movements;
-- close calculation for native-v8 and migrated active sessions;
+- close calculation for native-v8 and migrated active sessions using baselines
+  committed by #94;
+- deterministic close-versus-Sale/Expense concurrency;
+- duplicate close returning the stored snapshot without recomputation;
 - immutable closed summary and rejection of normal post-close reversal;
-- memory/IndexedDB parity, scoped indexes, audit, and operation receipts;
-- compatibility checks required by the existing backup contract, without
-  upgrading backup in these prerequisites.
+- memory/IndexedDB parity, scoped indexes, audit, and operation receipts.
 
 ## Consequences
 
 Positive: cash lineage becomes deterministic, tenant-safe, auditable, and
-replayable without mutating financial history. Migration can bridge active v7
-sessions without fabricating events.
+replayable without mutating financial history. Schema, active-session migration,
+and backup are activated as one coherent boundary before any producer can create
+new ledger records.
 
-Negative: legacy Sale v1 cannot use normal reversal, post-close corrections
-need a separate workflow, and the prerequisite sequence delays Issue #88.
+Negative: Issue #94 is larger than a store-only migration, legacy Sale v1 cannot
+use normal reversal, post-close corrections need a separate workflow, and the
+prerequisite sequence delays Issue #88.
 
 ## Delivery sequence
 
 The implementation sequence is strictly:
 
-1. ADR cash lineage;
-2. Sale v2 — persist originating CashSession;
-3. schema v8 — `CashMovement` and `SaleReversal` stores;
-4. append `CashMovement` for Sale and Expense;
-5. CashSession v2 — active-session migration and ledger close;
+1. #92 / PR #91 — approve ADR cash lineage;
+2. #93 — Sale v2 persists the verified originating CashSession while database
+   schema and backup remain at the current version;
+3. #94 — sole v8 activation boundary: schema v8, CashMovement and SaleReversal
+   stores, CashSession v2, active-session baseline migration, migration marker,
+   backup v8, legacy backup compatibility, and append-only repositories;
+4. #95 — activate CashMovement producers for Sale and Expense using the v8
+   backup contract already merged in #94;
+5. #96 — CashSession v2 ledger close and concurrency hardening, consuming but
+   never recalculating the baselines committed by #94;
 6. reconstruct Issue #88 on a clean branch.
 
 No issue in the sequence may start until the preceding issue is merged and CI
@@ -250,5 +344,8 @@ are approved.
    migration cannot prove event-level lineage.
 4. Recompute closed summaries after reversal: rejected because a closing
    summary is a historical attestation.
-5. Continue implementing on PR #90: rejected because its history combines
+5. Split schema v8 activation, active-session baseline migration, and backup v8
+   across later issues: rejected because versionchange occurs once and producers
+   must never outrun backup coverage.
+6. Continue implementing on PR #90: rejected because its history combines
    unresolved contracts and schema/backup changes.
