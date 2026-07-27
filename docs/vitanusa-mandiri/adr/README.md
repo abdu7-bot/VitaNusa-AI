@@ -23,7 +23,7 @@ ADR mencatat satu keputusan arsitektur beserta alternatif dan dampaknya. Seluruh
 | [ADR-006](ADR-006-auth-and-role-model.md) | Proposed | Firebase identity, role platform/workspace/learning terpisah |
 | [ADR-007](ADR-007-nusa-agent-actions.md) | Proposed | Draft + explicit confirmation + trusted validation |
 | [ADR-008](ADR-008-health-and-business-data-separation.md) | Proposed | Health, learning, business, dan admin terpisah |
-| [ADR-009](ADR-009-deterministic-sale-cash-lineage.md) | Proposed | Lineage Sale, CashSession, dan CashMovement deterministik serta append-only |
+| [ADR-009](ADR-009-deterministic-sale-cash-lineage.md) | Proposed | Lineage deterministik; #94 menjadi satu-satunya v8 activation boundary untuk baseline CashSession dan backup v8 sebelum producer |
 
 ## Perubahan ADR
 
