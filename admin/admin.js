@@ -12,6 +12,29 @@
   const mobileQuery = window.matchMedia('(max-width: 920px)');
   const pasteRestoreState = new WeakMap();
 
+  const setManualScrollRestoration = () => {
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+  };
+
+  const scrollWindowToStart = () => {
+    window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+  };
+
+  const initializeAdminScroll = () => {
+    setManualScrollRestoration();
+    scrollWindowToStart();
+    requestAnimationFrame(scrollWindowToStart);
+    window.addEventListener('pageshow', scrollWindowToStart, { once: true });
+  };
+
+  const scrollPanelToStart = (panel) => {
+    if (!panel) return;
+    const panelTop = Math.max(0, window.scrollY + panel.getBoundingClientRect().top);
+    window.scrollTo({ left: 0, top: panelTop, behavior: 'auto' });
+  };
+
+  initializeAdminScroll();
+
   const isKnowledgeImportTextarea = (target) =>
     target instanceof HTMLTextAreaElement && target.matches('[data-knowledge-import-text]');
 
@@ -191,7 +214,7 @@
     sidebarCollapse.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
   });
 
-  const openSection = (target, trigger = null) => {
+  const openSection = (target, trigger = null, { scrollToStart = false } = {}) => {
     const activeLink = trigger?.matches?.('[data-admin-section]')
       ? trigger
       : navLinks.find((item) => item.dataset.adminSection === target && !item.classList.contains('admin-nav-child'))
@@ -215,19 +238,20 @@
       }));
     }
 
+    if (scrollToStart) scrollPanelToStart(activePanel);
     closeSidebar();
     return true;
   };
 
   navLinks.forEach((link) => {
     link.addEventListener('click', () => {
-      openSection(link.dataset.adminSection, link);
+      openSection(link.dataset.adminSection, link, { scrollToStart: true });
     });
   });
 
   sectionOpeners.forEach((button) => {
     button.addEventListener('click', () => {
-      openSection(button.dataset.openAdminSection, button);
+      openSection(button.dataset.openAdminSection, button, { scrollToStart: true });
     });
   });
 
@@ -243,7 +267,7 @@
   });
 
   window.addEventListener('vitanusa:admin-open-panel', (event) => {
-    openSection(event.detail?.panel);
+    openSection(event.detail?.panel, null, { scrollToStart: Boolean(event.detail?.scrollToStart) });
   });
 
   const syncSidebarState = () => {

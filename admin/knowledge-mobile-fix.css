@@ -1,4 +1,9 @@
 /* Mobile-first hardening for Admin Knowledge layout. */
+.admin-panel[data-admin-panel="knowledge"] {
+  /* Dynamic import/list rendering must not move the shared window scroll position. */
+  overflow-anchor: none;
+}
+
 .knowledge-admin,
 .knowledge-admin * {
   box-sizing: border-box;
