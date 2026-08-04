@@ -5,7 +5,7 @@ import {
 } from './content-sanitizer.js?v=20260725-content-rendering-security-v1';
 import { firebaseConfig } from '../../../admin/firebase-config.js';
 import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js';
-import { getFirestore, collection, getDocs, query, where, limit } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
 
 initNusaUiShell();
 
@@ -14,177 +14,258 @@ const db = getFirestore(app);
 const listRoot = document.querySelector('[data-public-article-list]');
 const detailRoot = document.querySelector('[data-public-article-detail]');
 const statusBox = document.querySelector('[data-public-article-status]');
+const relatedRoot = document.querySelector('[data-related-articles]');
+const relatedList = document.querySelector('[data-related-articles-list]');
 
-if (listRoot) loadPublishedArticles();
-if (detailRoot) loadArticleDetail();
+let publishedArticlesPromise = null;
 
-async function loadPublishedArticles() {
-  setStatus('loading', 'Memuat artikel terbaru...');
-  try {
+if (listRoot && listRoot.dataset.publicArticlesInitialized !== 'true') {
+  listRoot.dataset.publicArticlesInitialized = 'true';
+  loadPublishedArticles();
+}
+
+if (detailRoot && detailRoot.dataset.publicArticleDetailInitialized !== 'true') {
+  detailRoot.dataset.publicArticleDetailInitialized = 'true';
+  loadArticleDetail();
+}
+
+async function getPublishedArticles() {
+  if (publishedArticlesPromise) return publishedArticlesPromise;
+
+  publishedArticlesPromise = (async () => {
     const publishedQuery = query(collection(db, 'articles'), where('status', '==', 'published'));
     const snapshot = await getDocs(publishedQuery);
-    const articles = snapshot.docs
+    return snapshot.docs
       .map((item) => ({ id: item.id, ...item.data() }))
       .filter(isVisiblePublishedArticle)
       .sort(sortNewestFirst);
+  })().catch((error) => {
+    publishedArticlesPromise = null;
+    throw error;
+  });
+
+  return publishedArticlesPromise;
+}
+
+async function loadPublishedArticles() {
+  setStatus('loading', 'Memuat artikel terbaru…');
+
+  try {
+    const articles = await getPublishedArticles();
 
     if (!articles.length) {
-      setStatus('warning', 'Konten dinamis belum tersedia. Silakan baca artikel pilihan yang sudah tersedia.');
+      setStatus('warning', 'Belum ada artikel terbaru dari sumber dinamis. Bacaan pilihan tetap tersedia.');
       dispatchRenderEvent({ count: 0 });
       return;
     }
 
     listRoot.append(...articles.map(createArticleCard));
-    hideFirestoreFallbackIfNeeded(articles);
-    setStatus('success', `${articles.length} artikel terbaru berhasil ditambahkan.`);
+    setStatus('success', `${articles.length} artikel terbaru telah dimuat.`);
     dispatchRenderEvent({ count: articles.length });
   } catch (error) {
     console.error('Gagal memuat artikel published dari Firestore:', error);
-    setStatus('warning', 'Artikel terbaru belum bisa dimuat. Artikel pilihan tetap tersedia. Coba lagi ketika koneksi sudah stabil.');
+    setStatus('error', 'Artikel terbaru belum dapat dimuat. Bacaan pilihan tetap tersedia; silakan coba lagi saat koneksi stabil.');
     dispatchRenderEvent({ count: 0, error: true });
   }
 }
 
 async function loadArticleDetail() {
   const slug = new URLSearchParams(window.location.search).get('slug')?.trim();
+
   if (!slug) {
-    renderDetailState('warning', 'Alamat artikel belum lengkap', 'Pilih artikel dari daftar agar halaman yang tepat dapat dibuka.');
+    renderDetailState('warning', 'Alamat artikel belum lengkap', 'Buka artikel melalui daftar agar alamat yang tepat digunakan.');
     return;
   }
 
-  renderDetailState('loading', 'Memuat artikel...', 'Mohon tunggu sebentar. Bacaan sedang disiapkan.');
+  renderDetailState('loading', 'Menyiapkan artikel…', 'Bacaan sedang dimuat.');
 
   try {
-    const detailQuery = query(
-      collection(db, 'articles'),
-      where('slug', '==', slug),
-      where('status', '==', 'published'),
-      limit(1),
-    );
-    const snapshot = await getDocs(detailQuery);
-
-    if (snapshot.empty) {
-      renderDetailState('warning', 'Artikel tidak ditemukan', 'Artikel mungkin belum dipublikasikan atau alamatnya sudah berubah.');
-      return;
-    }
-
-    const article = snapshot.docs
-      .map((item) => ({ id: item.id, ...item.data() }))
-      .find(isVisiblePublishedArticle);
+    const articles = await getPublishedArticles();
+    const article = articles.find((item) => String(item.slug || '').trim() === slug);
 
     if (!article) {
-      renderDetailState('warning', 'Artikel tidak ditemukan', 'Artikel mungkin belum dipublikasikan atau alamatnya sudah berubah.');
+      renderDetailState('warning', 'Artikel tidak ditemukan', 'Artikel mungkin belum dipublikasikan atau alamatnya tidak lagi tersedia.');
       return;
     }
 
     renderArticleDetail(article);
+    renderRelatedArticles(article, articles);
   } catch (error) {
     console.error('Gagal memuat detail artikel dari Firestore:', error);
-    renderDetailState('error', 'Artikel belum dapat dimuat', 'Periksa koneksi, lalu kembali ke daftar artikel untuk mencoba lagi.');
+    renderDetailState('error', 'Artikel belum dapat dimuat', 'Periksa koneksi, lalu kembali ke daftar artikel untuk mencoba kembali.');
   }
 }
 
 function createArticleCard(article) {
-  const card = el('article', 'article-card article-card-dynamic vn-card');
+  const card = el('article', 'article-card article-card-dynamic');
+  const title = cleanText(article.title) || 'Artikel VitaNusa';
   const summaryText = getArticleSummary(article);
   const tagList = normalizeTagList(article.tags);
   const bannerUrl = getSafeImageUrl(article.bannerUrl);
+  const category = cleanText(article.category);
 
   card.dataset.articleCard = '';
   card.dataset.firestoreArticle = 'true';
-  card.dataset.title = article.title || '';
+  card.dataset.title = title;
   card.dataset.description = summaryText;
   card.dataset.category = buildSearchCategory(article);
   card.dataset.tags = tagList.join(' ');
 
-  if (bannerUrl) card.append(createArticleBanner(bannerUrl, article.title, 'article-card-banner', true));
+  card.append(createArticleCardMedia(bannerUrl, article, title));
 
-  if (article.category) card.append(el('p', 'article-badge green', article.category));
-
-  const content = el('div', 'article-content');
-  if (article.readTime) content.append(el('p', 'article-meta', article.readTime));
-  content.append(el('h3', '', article.title || 'Artikel VitaNusa AI'));
+  const content = el('div', 'article-card-content');
+  if (category) content.append(el('p', 'article-category', category));
+  content.append(el('h3', '', title));
   if (summaryText) content.append(el('p', 'article-card-summary', summaryText));
-  card.append(content);
 
-  if (tagList.length) card.append(createTagList(tagList.slice(0, 3)));
+  const metadata = getCardMetadata(article);
+  if (metadata.length) content.append(createMetadata(metadata, 'article-card-meta'));
 
-  if (article.slug) {
-    const footer = el('div', 'article-footer');
-    const link = el('a', 'read-link', 'Baca Artikel');
-    link.href = `detail.html?slug=${encodeURIComponent(article.slug)}`;
-    footer.append(link);
-    card.append(footer);
+  const slug = cleanText(article.slug);
+  if (slug) {
+    const link = el('a', 'read-link', 'Baca artikel');
+    link.href = `detail.html?slug=${encodeURIComponent(slug)}`;
+    link.setAttribute('aria-label', `Baca artikel ${title}`);
+    content.append(link);
   }
 
+  card.append(content);
   return card;
+}
+
+function createArticleCardMedia(bannerUrl, article, title) {
+  const media = el('div', 'article-card-media');
+
+  if (!bannerUrl) {
+    media.classList.add('article-card-placeholder');
+    media.setAttribute('aria-hidden', 'true');
+    media.append(el('span', '', 'VitaNusa'));
+    return media;
+  }
+
+  const image = document.createElement('img');
+  image.src = bannerUrl;
+  image.alt = getImageAlt(article, title);
+  image.loading = 'lazy';
+  image.decoding = 'async';
+  image.width = 1200;
+  image.height = 675;
+  image.addEventListener('error', () => {
+    media.replaceChildren(el('span', '', 'VitaNusa'));
+    media.classList.add('article-card-placeholder');
+    media.setAttribute('aria-hidden', 'true');
+  }, { once: true });
+  media.append(image);
+  return media;
 }
 
 function renderArticleDetail(article) {
   if (!detailRoot) return;
 
+  const title = cleanText(article.title) || 'Artikel VitaNusa';
   const summaryText = getArticleSummary(article);
-  const tagList = normalizeTagList(article.tags);
   const bannerUrl = getSafeImageUrl(article.bannerUrl);
+  const category = cleanText(article.category);
   const header = el('header', 'article-detail-header');
 
-  if (article.category) header.append(el('p', 'article-badge', article.category));
-  header.append(el('h1', '', article.title || 'Artikel VitaNusa AI'));
+  if (category) header.append(el('p', 'article-category', category));
+  header.append(el('h1', '', title));
   if (summaryText) header.append(el('p', 'article-detail-summary', summaryText));
 
-  const metaItems = [article.readTime].filter(Boolean);
-  if (metaItems.length) {
-    const meta = el('div', 'article-detail-meta');
-    metaItems.forEach((item) => meta.append(el('span', '', item)));
-    header.append(meta);
-  }
-  if (tagList.length) header.append(createTagList(tagList, 'article-detail-tags'));
+  const metadata = getDetailMetadata(article);
+  if (metadata.length) header.append(createMetadata(metadata, 'article-detail-meta'));
 
   const body = el('article', 'article-detail-body');
   body.append(createSanitizedContentFragment(article.contentHtml || '', body.ownerDocument));
   prepareArticleBody(body);
 
   const nodes = [header];
-  if (bannerUrl) nodes.push(createArticleBanner(bannerUrl, article.title, 'article-detail-banner', false));
+  if (bannerUrl) nodes.push(createArticleBanner(bannerUrl, article, title));
   nodes.push(body);
 
   detailRoot.replaceChildren(...nodes);
   detailRoot.setAttribute('aria-busy', 'false');
-  updateDocumentMetadata(article, summaryText, bannerUrl);
+  updateDocumentMetadata(article, title, summaryText, bannerUrl);
+}
+
+function renderRelatedArticles(activeArticle, articles) {
+  if (!relatedRoot || !relatedList) return;
+
+  const activeSlug = cleanText(activeArticle.slug);
+  const activeId = cleanText(activeArticle.id);
+  const related = articles
+    .filter((article) => isVisiblePublishedArticle(article))
+    .filter((article) => {
+      const candidateSlug = cleanText(article.slug);
+      const candidateId = cleanText(article.id);
+      return candidateSlug !== activeSlug && (!activeId || candidateId !== activeId);
+    })
+    .map((article) => ({ article, score: getRelatedScore(activeArticle, article) }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || sortNewestFirst(a.article, b.article))
+    .slice(0, 3)
+    .map((entry) => entry.article);
+
+  if (!related.length) {
+    relatedList.replaceChildren();
+    relatedRoot.hidden = true;
+    return;
+  }
+
+  relatedList.replaceChildren(...related.map(createRelatedArticleCard));
+  relatedRoot.hidden = false;
+}
+
+function createRelatedArticleCard(article) {
+  const card = el('article', 'related-article-card');
+  const title = cleanText(article.title) || 'Artikel VitaNusa';
+  const category = cleanText(article.category);
+  const slug = cleanText(article.slug);
+
+  if (category) card.append(el('p', '', category));
+  card.append(el('h3', '', title));
+
+  if (slug) {
+    const link = el('a', '', 'Baca artikel');
+    link.href = `detail.html?slug=${encodeURIComponent(slug)}`;
+    link.setAttribute('aria-label', `Baca artikel ${title}`);
+    card.append(link);
+  }
+
+  return card;
 }
 
 function renderDetailState(type, title, message) {
   if (!detailRoot) return;
 
-  const state = el('div', `empty-state article-detail-empty is-${type}`);
+  const state = el('div', `article-state is-${type}`);
   state.setAttribute('role', type === 'loading' ? 'status' : 'alert');
   state.append(el('h2', '', title), el('p', '', message));
 
-  const backLink = el('a', 'btn btn-secondary', 'Kembali ke Daftar Artikel');
-  backLink.href = 'index.html';
-  state.append(backLink);
+  if (type !== 'loading') {
+    const backLink = el('a', '', 'Kembali ke daftar artikel');
+    backLink.href = 'index.html';
+    state.append(backLink);
+  }
 
   detailRoot.replaceChildren(state);
   detailRoot.setAttribute('aria-busy', String(type === 'loading'));
+
+  if (relatedRoot) relatedRoot.hidden = true;
 }
 
-function createArticleBanner(url, title, className, lazy) {
-  const figure = el('figure', className);
+function createArticleBanner(url, article, title) {
+  const figure = el('figure', 'article-detail-banner');
   const image = document.createElement('img');
   image.src = url;
-  image.alt = title ? `Banner artikel ${title}` : 'Banner artikel VitaNusa AI';
-  image.loading = lazy ? 'lazy' : 'eager';
+  image.alt = getImageAlt(article, title);
+  image.loading = 'eager';
   image.decoding = 'async';
+  image.width = 1200;
+  image.height = 675;
   image.addEventListener('error', () => figure.remove(), { once: true });
   figure.append(image);
   return figure;
-}
-
-function createTagList(tags, extraClass = '') {
-  const list = el('div', ['article-tags', extraClass].filter(Boolean).join(' '));
-  list.setAttribute('aria-label', 'Topik artikel');
-  tags.forEach((tag) => list.append(el('span', '', tag)));
-  return list;
 }
 
 function prepareArticleBody(body) {
@@ -217,23 +298,116 @@ function prepareArticleBody(body) {
   body.querySelectorAll('img').forEach((image) => {
     image.loading = 'lazy';
     image.decoding = 'async';
+    if (!image.hasAttribute('alt')) image.alt = '';
+  });
+
+  body.querySelectorAll('p, blockquote, li').forEach((node) => {
+    if (!isMostlyArabic(node.textContent)) return;
+    node.classList.add('article-arabic');
+    if (!node.hasAttribute('lang')) node.setAttribute('lang', 'ar');
+    if (!node.hasAttribute('dir')) node.setAttribute('dir', 'rtl');
   });
 }
 
-function updateDocumentMetadata(article, summaryText, bannerUrl) {
-  if (article.title) {
-    document.title = `${article.title} | VitaNusa AI`;
-    setMetaContent('property', 'og:title', article.title);
-  }
+function updateDocumentMetadata(article, title, summaryText, bannerUrl) {
+  document.title = `${title} | VitaNusa AI`;
+  setMetaContent('property', 'og:title', title);
+  setMetaContent('property', 'og:type', 'article');
+
   if (summaryText) {
     setMetaContent('name', 'description', summaryText);
     setMetaContent('property', 'og:description', summaryText);
   }
+
+  const publishedDate = getDate(article.publishedAt || article.createdAt);
+  const updatedDate = getDate(article.updatedAt);
+  if (publishedDate) setMetaContent('property', 'article:published_time', publishedDate.toISOString());
+  if (updatedDate) setMetaContent('property', 'article:modified_time', updatedDate.toISOString());
+
   if (bannerUrl) {
     setMetaContent('property', 'og:image', new URL(bannerUrl, document.baseURI).href);
   } else {
     document.querySelector('meta[property="og:image"]')?.remove();
   }
+}
+
+function getCardMetadata(article) {
+  return [formatArticleDate(article), getReadTime(article)].filter(Boolean);
+}
+
+function getDetailMetadata(article) {
+  const author = getAuthorName(article);
+  return [formatArticleDate(article, true), author ? `Oleh ${author}` : '', getReadTime(article)].filter(Boolean);
+}
+
+function createMetadata(items, className) {
+  const metadata = el('p', className);
+  items.forEach((item) => metadata.append(el('span', '', item)));
+  return metadata;
+}
+
+function formatArticleDate(article, includeLabel = false) {
+  const published = getDate(article?.publishedAt || article?.createdAt);
+  const updated = getDate(article?.updatedAt);
+  const useUpdated = updated && (!published || updated.getTime() > published.getTime() + 60_000);
+  const selected = useUpdated ? updated : published;
+  if (!selected) return '';
+
+  const formatted = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(selected);
+
+  if (!includeLabel) return formatted;
+  return `${useUpdated ? 'Diperbarui' : 'Terbit'} ${formatted}`;
+}
+
+function getDate(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  if (typeof value.toMillis === 'function') return new Date(value.toMillis());
+  if (Number.isFinite(value.seconds)) return new Date(value.seconds * 1000);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getReadTime(article) {
+  const supplied = article?.readTime;
+  if (typeof supplied === 'number' && Number.isFinite(supplied) && supplied > 0) {
+    return `${Math.ceil(supplied)} menit baca`;
+  }
+  if (typeof supplied === 'string' && supplied.trim()) return supplied.trim();
+
+  const text = htmlToPlainText(article?.contentHtml || '');
+  const wordCount = text.split(/\s+/u).filter(Boolean).length;
+  if (!wordCount) return '';
+  return `${Math.max(1, Math.ceil(wordCount / 200))} menit baca`;
+}
+
+function getAuthorName(article) {
+  const candidates = [article?.authorName, article?.author, article?.createdByName];
+  const value = candidates.find((candidate) => typeof candidate === 'string' && candidate.trim());
+  return cleanText(value);
+}
+
+function getRelatedScore(activeArticle, candidate) {
+  let score = 0;
+  const activeCategory = cleanText(activeArticle?.category).toLowerCase();
+  const candidateCategory = cleanText(candidate?.category).toLowerCase();
+
+  if (activeCategory && candidateCategory && activeCategory === candidateCategory) score += 5;
+
+  const activeTags = new Set(normalizeTagList(activeArticle?.tags).map((tag) => tag.toLowerCase()));
+  normalizeTagList(candidate?.tags).forEach((tag) => {
+    if (activeTags.has(tag.toLowerCase())) score += 2;
+  });
+
+  return score;
+}
+
+function getImageAlt(article, title) {
+  return cleanText(article?.bannerAlt || article?.imageAlt) || `Gambar utama artikel ${title}`;
 }
 
 function setMetaContent(attribute, key, value) {
@@ -257,16 +431,6 @@ function dispatchRenderEvent(detail = {}) {
   document.dispatchEvent(new CustomEvent('vitanusa:public-articles-rendered', { detail }));
 }
 
-function hideFirestoreFallbackIfNeeded(articles) {
-  const fallback = document.querySelector('[data-firestore-fallback="kebiasaan-kecil"]');
-  if (!fallback) return;
-  const hasRelated = articles.some((article) => {
-    const text = `${article.title || ''} ${article.category || ''} ${getTagText(article.tags)}`.toLowerCase();
-    return text.includes('kebiasaan') || text.includes('habit') || text.includes('sehat');
-  });
-  if (hasRelated) fallback.hidden = true;
-}
-
 function isVisiblePublishedArticle(article) {
   return article?.status === 'published';
 }
@@ -276,35 +440,37 @@ function sortNewestFirst(a, b) {
 }
 
 function getComparableDate(article) {
-  const value = article?.publishedAt || article?.updatedAt || article?.createdAt;
-  if (value?.toMillis) return value.toMillis();
-  if (value?.seconds) return value.seconds * 1000;
-  const parsed = Date.parse(value || '');
-  return Number.isNaN(parsed) ? 0 : parsed;
+  return getDate(article?.publishedAt || article?.updatedAt || article?.createdAt)?.getTime() || 0;
 }
 
 function getArticleSummary(article) {
-  return String(article.summary || stripHtml(article.contentHtml || '').slice(0, 160) || '').trim();
+  const source = cleanText(article?.summary) || htmlToPlainText(article?.contentHtml || '');
+  return truncateText(source, 180);
+}
+
+function truncateText(value, maxLength) {
+  const text = cleanText(value);
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function buildSearchCategory(article) {
-  return [article.category, getTagText(article.tags)].filter(Boolean).join(' ').toLowerCase();
+  return [cleanText(article?.category), normalizeTagList(article?.tags).join(' ')]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function normalizeTagList(tags) {
-  if (Array.isArray(tags)) return tags.map((tag) => String(tag || '').trim()).filter(Boolean);
-  if (typeof tags === 'string') return tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+  if (Array.isArray(tags)) return tags.map(cleanText).filter(Boolean);
+  if (typeof tags === 'string') return tags.split(',').map(cleanText).filter(Boolean);
   return [];
 }
 
-function getTagText(tags) {
-  return normalizeTagList(tags).join(' ');
-}
-
 function getSafeImageUrl(value) {
-  const candidate = String(value || '').trim();
-  if (!candidate || /[\u0000-\u001f]/.test(candidate)) return '';
-  if (/^(?:javascript|vbscript|data):/i.test(candidate.replace(/\s+/g, ''))) return '';
+  const candidate = cleanText(value);
+  if (!candidate || /[\u0000-\u001f]/u.test(candidate)) return '';
+  if (/^(?:javascript|vbscript|data):/iu.test(candidate.replace(/\s+/gu, ''))) return '';
 
   try {
     const parsed = new URL(candidate, document.baseURI);
@@ -314,8 +480,16 @@ function getSafeImageUrl(value) {
   }
 }
 
-function stripHtml(html) {
-  return htmlToPlainText(html);
+function isMostlyArabic(value) {
+  const text = cleanText(value);
+  if (!text) return false;
+  const arabicCharacters = text.match(/[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]/gu)?.length || 0;
+  const letterCharacters = text.match(/[\p{L}\p{N}]/gu)?.length || 0;
+  return arabicCharacters >= 4 && arabicCharacters / Math.max(letterCharacters, 1) >= 0.35;
+}
+
+function cleanText(value) {
+  return String(value || '').replace(/\s+/gu, ' ').trim();
 }
 
 function el(tag, className = '', text = '') {
