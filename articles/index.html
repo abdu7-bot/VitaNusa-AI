@@ -3,145 +3,135 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ruang Baca Edukasi Sehat | VitaNusa AI</title>
-  <meta name="description" content="Ruang baca VitaNusa AI berisi artikel edukasi kesehatan, kebiasaan sehat, literasi produk, AI edukasi, pencernaan, dan prinsip amanah." />
+  <title>Artikel VitaNusa | Edukasi Kesehatan dan Kehidupan</title>
+  <meta name="description" content="Baca artikel VitaNusa tentang kesehatan, kehidupan, kebiasaan baik, literasi produk, dan kesadaran yang disampaikan dengan jernih dan amanah." />
   <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260709-vn-page-unify-v1" />
-  <link rel="stylesheet" href="articles-style.css?v=20260711-article-reading-ui-v1" />
+  <link rel="stylesheet" href="articles-style.css?v=20260804-public-article-ui-v2" />
 </head>
-<body class="vn-page article-page">
-  <a class="skip-link skip" href="#main">Lewati ke konten</a>
+<body class="vn-page article-page article-index-page">
+  <a class="skip-link" href="#main">Lewati ke konten utama</a>
 
-  <section class="article-hero vn-page-hero">
-    <div class="wrap vn-container">
-      <p class="eyebrow vn-eyebrow">Artikel VitaNusa AI</p>
-      <h1>Ruang Baca Edukasi Sehat</h1>
-      <p>Pilih artikel sesuai kebutuhanmu: kebiasaan sehat, literasi produk, AI edukasi, pencernaan, dan prinsip amanah.</p>
-      <div class="hero-badges vn-badge-row" aria-label="Prinsip artikel VitaNusa AI">
-        <span>Edukasi, bukan diagnosis</span>
-        <span>Testimoni bukan bukti utama</span>
-        <span>Baca dengan tenang</span>
+  <header class="article-header">
+    <div class="article-container article-header-inner">
+      <div>
+        <p class="article-eyebrow">Ruang baca VitaNusa AI</p>
+        <h1>Artikel VitaNusa</h1>
+        <p class="article-header-description">Edukasi kesehatan, kehidupan, dan kesadaran untuk membantu pembaca memahami informasi dengan tenang, kritis, dan amanah.</p>
       </div>
-      <div class="hero-actions vn-actions">
-        <a href="#artikelList" class="btn primary btn-primary">Mulai Membaca</a>
-        <a href="../vitacheck.html" class="btn outline btn-secondary">Kembali ke VitaCheck</a>
-        <a href="../prinsip-amanah.html" class="btn outline btn-secondary">Prinsip Amanah</a>
-      </div>
+      <nav class="article-header-links" aria-label="Tautan pendukung">
+        <a href="../vitacheck.html">VitaCheck</a>
+        <a href="../prinsip-amanah.html">Prinsip Amanah</a>
+      </nav>
     </div>
-  </section>
+  </header>
 
-  <main id="main">
-    <section class="article-index-section vn-section">
-      <div class="wrap vn-container">
-        <header class="section-heading vn-section-heading article-tools-heading" aria-labelledby="pilihArtikelTitle">
-          <p class="eyebrow vn-eyebrow">Pilih Jalur Baca</p>
-          <h2 id="pilihArtikelTitle">Cari artikel yang paling sesuai</h2>
-          <p>Gunakan pencarian atau kategori untuk menemukan bacaan yang sesuai dengan hasil VitaCheck, rasa ingin tahu, atau kebutuhan edukasi hari ini.</p>
-        </header>
+  <main id="main" class="article-main">
+    <div class="article-container">
+      <section class="article-tools" aria-labelledby="articleBrowseTitle">
+        <div class="article-section-heading">
+          <h2 id="articleBrowseTitle">Temukan bacaan yang sesuai</h2>
+          <p>Cari berdasarkan judul atau topik, lalu gunakan kategori bila diperlukan.</p>
+        </div>
 
-        <section class="tools-bar vn-card" aria-label="Pencarian dan filter artikel">
-          <div class="search-box">
-            <label class="sr-only" for="searchInput">Cari artikel, kategori, atau topik</label>
-            <input type="search" id="searchInput" placeholder="Cari artikel, kategori, atau topik…" aria-label="Cari artikel, kategori, atau topik" autocomplete="off" />
-            <button class="clear-search" id="clearSearch" type="button" aria-label="Hapus pencarian" hidden>Hapus</button>
+        <div class="article-search-row">
+          <div class="article-search-field">
+            <label for="searchInput">Cari artikel</label>
+            <input type="search" id="searchInput" placeholder="Contoh: tidur, pencernaan, amanah…" autocomplete="off" />
           </div>
-          <p class="article-ux-note vn-note">Edukasi dulu, bukan klaim. Informasi kesehatan bukan diagnosis.</p>
-          <div class="filter-buttons" role="group" aria-label="Filter kategori artikel">
-            <button class="filter-btn active" type="button" data-category="semua" aria-pressed="true">Semua</button>
-            <button class="filter-btn" type="button" data-category="kebiasaan sehat" aria-pressed="false">Kebiasaan Sehat</button>
-            <button class="filter-btn" type="button" data-category="kesehatan dasar" aria-pressed="false">Kesehatan Dasar</button>
-            <button class="filter-btn" type="button" data-category="literasi produk" aria-pressed="false">Literasi Produk</button>
-            <button class="filter-btn" type="button" data-category="testimoni klaim produk" aria-pressed="false">Testimoni &amp; Klaim</button>
-            <button class="filter-btn" type="button" data-category="ai & edukasi" aria-pressed="false">AI &amp; Edukasi</button>
-            <button class="filter-btn" type="button" data-category="halal-thayyib" aria-pressed="false">Halal-Thayyib</button>
-            <button class="filter-btn" type="button" data-category="refleksi islami" aria-pressed="false">Refleksi Islami</button>
-            <button class="filter-btn" type="button" data-category="pencernaan" aria-pressed="false">Pencernaan</button>
-            <button class="filter-btn" type="button" data-category="tidur" aria-pressed="false">Tidur</button>
-            <button class="filter-btn" type="button" data-category="pola makan" aria-pressed="false">Pola Makan</button>
-            <button class="filter-btn" type="button" data-category="kapan harus ke dokter" aria-pressed="false">Kapan Harus ke Dokter</button>
-            <button class="filter-btn" type="button" data-category="mitos vs fakta" aria-pressed="false">Mitos vs Fakta</button>
+          <button class="article-reset-button" id="clearSearch" type="button" hidden>Reset pencarian dan filter</button>
+        </div>
+
+        <div class="article-filter-group" role="group" aria-label="Filter kategori artikel">
+          <button class="filter-btn active" type="button" data-category="semua" aria-pressed="true">Semua</button>
+          <button class="filter-btn" type="button" data-category="kebiasaan sehat" aria-pressed="false">Kebiasaan sehat</button>
+          <button class="filter-btn" type="button" data-category="kesehatan dasar" aria-pressed="false">Kesehatan dasar</button>
+          <button class="filter-btn" type="button" data-category="literasi produk" aria-pressed="false">Literasi produk</button>
+          <button class="filter-btn" type="button" data-category="ai & edukasi" aria-pressed="false">AI &amp; edukasi</button>
+          <button class="filter-btn" type="button" data-category="halal-thayyib" aria-pressed="false">Halal-thayyib</button>
+          <button class="filter-btn" type="button" data-category="pencernaan" aria-pressed="false">Pencernaan</button>
+          <button class="filter-btn" type="button" data-category="tidur" aria-pressed="false">Tidur</button>
+          <button class="filter-btn" type="button" data-category="pola makan" aria-pressed="false">Pola makan</button>
+          <button class="filter-btn" type="button" data-category="kapan harus ke dokter" aria-pressed="false">Kapan perlu bantuan medis</button>
+          <button class="filter-btn" type="button" data-category="mitos vs fakta" aria-pressed="false">Mitos vs fakta</button>
+        </div>
+
+        <p class="article-result-count" id="articleResultCount" role="status" aria-live="polite" aria-atomic="true"></p>
+      </section>
+
+      <section class="article-list-section" aria-labelledby="allArticlesTitle">
+        <div class="article-section-heading article-section-heading-row">
+          <div>
+            <p class="article-eyebrow">Bacaan pilihan</p>
+            <h2 id="allArticlesTitle">Artikel terbaru</h2>
           </div>
-          <p class="article-result-count" id="articleResultCount" role="status" aria-live="polite" aria-atomic="true"></p>
-        </section>
+          <p>Informasi di sini bersifat edukasi, bukan diagnosis atau pengganti konsultasi profesional.</p>
+        </div>
 
-        <section class="all-articles-section" aria-labelledby="allArticlesTitle">
-          <div class="section-heading compact vn-section-heading">
-            <p class="eyebrow vn-eyebrow">Semua Artikel</p>
-            <h2 id="allArticlesTitle">Artikel statis dan artikel dari dashboard</h2>
-            <p>Artikel statis penting tetap tersedia. Artikel published dari Firestore akan ditambahkan otomatis jika berhasil dimuat.</p>
-          </div>
+        <div class="article-load-status" data-public-article-status role="status" aria-live="polite" hidden></div>
 
-          <div class="article-load-status vn-card" data-public-article-status hidden></div>
+        <div class="article-grid" id="artikelList" data-public-article-list aria-live="polite">
+          <article class="article-card" data-article-card data-static-article="true" data-category="literasi produk mitos vs fakta konsumen klaim produk" data-title="testimoni bukan bukti cara bijak menilai klaim produk" data-description="belajar menilai klaim produk tanpa langsung percaya testimoni" data-tags="wajib dibaca literasi produk testimoni klaim">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Literasi produk</p><h3>Testimoni Bukan Bukti</h3><p class="article-card-summary">Belajar menilai klaim produk tanpa langsung percaya testimoni.</p><p class="article-card-meta"><span>7 menit baca</span></p><a href="artikel-3.html" class="read-link" aria-label="Baca artikel Testimoni Bukan Bukti">Baca artikel</a></div>
+          </article>
 
-          <section class="article-grid vn-grid" id="artikelList" data-public-article-list aria-live="polite">
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="literasi produk mitos vs fakta konsumen klaim produk" data-title="testimoni bukan bukti cara bijak menilai klaim produk" data-description="belajar menilai klaim produk tanpa langsung percaya testimoni" data-tags="wajib dibaca literasi produk testimoni klaim">
-              <div class="article-badge orange">Wajib Dibaca</div><div class="article-content"><p class="article-meta">Literasi Produk • 7 menit baca</p><h3>Testimoni Bukan Bukti</h3><p>Belajar menilai klaim produk tanpa langsung percaya testimoni.</p></div><div class="article-footer"><a href="artikel-3.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="ai & edukasi teknologi edukasi digital" data-title="ai untuk edukasi kesehatan" data-description="memahami ai sebagai alat bantu belajar kesehatan bukan pengganti tenaga kesehatan" data-tags="ai edukasi kesehatan teknologi">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">AI &amp; edukasi</p><h3>AI untuk Edukasi Kesehatan</h3><p class="article-card-summary">Memahami AI sebagai alat bantu belajar kesehatan, bukan pengganti tenaga kesehatan.</p><p class="article-card-meta"><span>6 menit baca</span></p><a href="ai-untuk-edukasi-kesehatan.html" class="read-link" aria-label="Baca artikel AI untuk Edukasi Kesehatan">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="ai & edukasi teknologi edukasi digital" data-title="ai untuk edukasi kesehatan" data-description="memahami ai sebagai alat bantu belajar kesehatan bukan pengganti tenaga kesehatan" data-tags="ai edukasi kesehatan teknologi">
-              <div class="article-badge blue">Edukasi Digital</div><div class="article-content"><p class="article-meta">AI &amp; Edukasi • 6 menit baca</p><h3>AI untuk Edukasi Kesehatan</h3><p>Memahami AI sebagai alat bantu belajar kesehatan, bukan pengganti tenaga kesehatan.</p></div><div class="article-footer"><a href="ai-untuk-edukasi-kesehatan.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="halal-thayyib kebiasaan sehat amanah kesehatan refleksi islami kesehatan dasar" data-title="sehat itu amanah" data-description="menjaga tubuh sebagai amanah melalui ilmu kebiasaan baik dan sikap kritis" data-tags="refleksi sehat halal thayyib amanah">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Halal-thayyib</p><h3>Sehat Itu Amanah</h3><p class="article-card-summary">Menjaga tubuh sebagai amanah melalui ilmu, kebiasaan baik, dan sikap kritis.</p><p class="article-card-meta"><span>5 menit baca</span></p><a href="sehat-itu-amanah.html" class="read-link" aria-label="Baca artikel Sehat Itu Amanah">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="halal-thayyib kebiasaan sehat amanah kesehatan refleksi refleksi islami kesehatan dasar" data-title="sehat itu amanah" data-description="menjaga tubuh sebagai amanah melalui ilmu kebiasaan baik dan sikap kritis" data-tags="refleksi sehat halal thayyib amanah">
-              <div class="article-badge green">Refleksi Sehat</div><div class="article-content"><p class="article-meta">Halal-Thayyib • 5 menit baca</p><h3>Sehat Itu Amanah</h3><p>Menjaga tubuh sebagai amanah melalui ilmu, kebiasaan baik, dan sikap kritis.</p></div><div class="article-footer"><a href="sehat-itu-amanah.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="kesehatan dasar edukasi aman tenaga kesehatan dokter fasilitas kesehatan darurat keluhan berat kapan harus ke dokter" data-title="kapan harus ke tenaga kesehatan kapan harus ke dokter keluhan berat" data-description="mengenali keluhan berat memburuk menetap atau mengganggu aktivitas yang perlu tenaga kesehatan" data-tags="tenaga kesehatan keluhan berat darurat dokter">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Kesehatan dasar</p><h3>Kapan Harus ke Tenaga Kesehatan?</h3><p class="article-card-summary">Mengenali keluhan berat, memburuk, menetap, atau mengganggu aktivitas yang perlu tenaga kesehatan.</p><p class="article-card-meta"><span>4 menit baca</span></p><a href="kapan-harus-ke-tenaga-kesehatan.html" class="read-link" aria-label="Baca artikel Kapan Harus ke Tenaga Kesehatan">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="edukasi aman tenaga kesehatan dokter fasilitas kesehatan darurat keluhan berat kapan harus ke dokter" data-title="kapan harus ke tenaga kesehatan kapan harus ke dokter keluhan berat" data-description="mengenali keluhan berat memburuk menetap atau mengganggu aktivitas yang perlu tenaga kesehatan" data-tags="tenaga kesehatan keluhan berat darurat dokter">
-              <div class="article-badge">Edukasi Aman</div><div class="article-content"><p class="article-meta">Edukasi Aman • 4 menit baca</p><h3>Kapan Harus ke Tenaga Kesehatan?</h3><p>Mengenali keluhan berat, memburuk, menetap, atau mengganggu aktivitas yang perlu tenaga kesehatan.</p></div><div class="article-footer"><a href="kapan-harus-ke-tenaga-kesehatan.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="kebiasaan sehat 7 hari hidup sehat pola hidup rutinitas habit sehat" data-title="kebiasaan sehat 7 hari mulai hidup sehat rutinitas" data-description="mulai kebiasaan sehat dari tidur air makan gerak ringan dan energi secara kecil" data-tags="kebiasaan sehat 7 hari vitacheck langkah kecil">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Kebiasaan sehat</p><h3>Kebiasaan Sehat 7 Hari</h3><p class="article-card-summary">Mulai kebiasaan sehat dari tidur, air, makan, gerak ringan, dan energi secara kecil.</p><p class="article-card-meta"><span>5 menit baca</span></p><a href="kebiasaan-sehat-7-hari.html" class="read-link" aria-label="Baca artikel Kebiasaan Sehat 7 Hari">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="kebiasaan sehat 7 hari hidup sehat pola hidup rutinitas habit sehat" data-title="kebiasaan sehat 7 hari mulai hidup sehat rutinitas" data-description="mulai kebiasaan sehat dari tidur air makan gerak ringan dan energi secara kecil" data-tags="kebiasaan sehat 7 hari vitaCheck langkah kecil">
-              <div class="article-badge">Kebiasaan Sehat</div><div class="article-content"><p class="article-meta">Kebiasaan Sehat • 5 menit baca</p><h3>Kebiasaan Sehat 7 Hari</h3><p>Mulai kebiasaan sehat dari tidur, air, makan, gerak ringan, dan energi secara kecil.</p></div><div class="article-footer"><a href="kebiasaan-sehat-7-hari.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="kebiasaan sehat tidur energi lelah kurang tidur begadang fokus mood capek" data-title="tidur dan energi harian lelah begadang kurang tidur" data-description="memahami hubungan tidur dengan energi fokus mood dan kebiasaan makan tanpa diagnosis" data-tags="tidur energi lelah begadang fokus">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Tidur</p><h3>Tidur dan Energi Harian</h3><p class="article-card-summary">Memahami hubungan tidur dengan energi, fokus, suasana hati, dan kebiasaan makan tanpa diagnosis.</p><p class="article-card-meta"><span>5 menit baca</span></p><a href="tidur-dan-energi-harian.html" class="read-link" aria-label="Baca artikel Tidur dan Energi Harian">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="kebiasaan sehat tidur energi lelah kurang tidur begadang fokus mood capek" data-title="tidur dan energi harian lelah begadang kurang tidur" data-description="memahami hubungan tidur dengan energi fokus mood dan kebiasaan makan tanpa diagnosis" data-tags="tidur energi lelah begadang fokus">
-              <div class="article-badge">Kebiasaan Sehat</div><div class="article-content"><p class="article-meta">Kebiasaan Sehat • 5 menit baca</p><h3>Tidur dan Energi Harian</h3><p>Memahami hubungan tidur dengan energi, fokus, mood, dan kebiasaan makan tanpa diagnosis.</p></div><div class="article-footer"><a href="tidur-dan-energi-harian.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="pencernaan pola makan perut tidak nyaman serat air putih mual ringan kembung ringan" data-title="pencernaan dan pola makan perut tidak nyaman" data-description="arahan umum tentang pola makan air serat gerak dan stres ringan terkait kenyamanan pencernaan" data-tags="pencernaan pola makan serat air putih">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Pencernaan</p><h3>Pencernaan dan Pola Makan</h3><p class="article-card-summary">Arahan umum tentang pola makan, air, serat, gerak, dan stres ringan terkait kenyamanan pencernaan.</p><p class="article-card-meta"><span>5 menit baca</span></p><a href="pencernaan-dan-pola-makan.html" class="read-link" aria-label="Baca artikel Pencernaan dan Pola Makan">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="pencernaan pola makan perut tidak nyaman serat air putih mual ringan kembung ringan" data-title="pencernaan dan pola makan perut tidak nyaman" data-description="arahan umum tentang pola makan air serat gerak dan stres ringan terkait kenyamanan pencernaan" data-tags="pencernaan pola makan serat air putih">
-              <div class="article-badge">Pencernaan</div><div class="article-content"><p class="article-meta">Pencernaan • 5 menit baca</p><h3>Pencernaan dan Pola Makan</h3><p>Arahan umum tentang pola makan, air, serat, gerak, dan stres ringan terkait kenyamanan pencernaan.</p></div><div class="article-footer"><a href="pencernaan-dan-pola-makan.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="literasi produk suplemen klaim produk produk bukan obat produk bukan janji sembuh katalog reseller label resmi" data-title="produk bukan jalan pintas produk bukan obat produk bukan janji sembuh" data-description="produk bukan pengganti pola hidup sehat bukan janji sembuh dan katalog hanya informasi reseller" data-tags="literasi produk klaim label resmi amanah">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Literasi produk</p><h3>Produk Bukan Jalan Pintas</h3><p class="article-card-summary">Produk bukan pengganti pola hidup sehat, bukan janji sembuh, dan katalog hanya informasi reseller.</p><p class="article-card-meta"><span>5 menit baca</span></p><a href="produk-bukan-jalan-pintas.html" class="read-link" aria-label="Baca artikel Produk Bukan Jalan Pintas">Baca artikel</a></div>
+          </article>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="literasi produk suplemen klaim produk produk bukan obat produk bukan janji sembuh katalog reseller label resmi" data-title="produk bukan jalan pintas produk bukan obat produk bukan janji sembuh" data-description="produk bukan pengganti pola hidup sehat bukan janji sembuh dan katalog hanya informasi reseller" data-tags="literasi produk klaim label resmi amanah">
-              <div class="article-badge orange">Literasi Produk</div><div class="article-content"><p class="article-meta">Literasi Produk • 5 menit baca</p><h3>Produk Bukan Jalan Pintas</h3><p>Produk bukan pengganti pola hidup sehat, bukan janji sembuh, dan katalog hanya informasi reseller.</p></div><div class="article-footer"><a href="produk-bukan-jalan-pintas.html" class="read-link">Baca Artikel</a></div>
-            </article>
+          <article class="article-card" data-article-card data-static-article="true" data-category="vitacheck kebiasaan sehat skor kebiasaan hasil vitacheck refleksi kebiasaan kesehatan dasar" data-title="cara memakai vitacheck cara pakai vitacheck hasil vitacheck" data-description="panduan memakai vitacheck sebagai refleksi kebiasaan bukan diagnosis" data-tags="vitacheck refleksi kebiasaan skor hasil">
+            <div class="article-card-media article-card-placeholder" aria-hidden="true"><span>VitaNusa</span></div>
+            <div class="article-card-content"><p class="article-category">Kesehatan dasar</p><h3>Cara Memakai VitaCheck</h3><p class="article-card-summary">Panduan memakai VitaCheck sebagai refleksi kebiasaan, bukan diagnosis.</p><p class="article-card-meta"><span>4 menit baca</span></p><a href="cara-memakai-vitacheck.html" class="read-link" aria-label="Baca artikel Cara Memakai VitaCheck">Baca artikel</a></div>
+          </article>
+        </div>
 
-            <article class="article-card vn-card" data-article-card data-static-article="true" data-category="vitacheck kebiasaan sehat skor kebiasaan hasil vitacheck refleksi kebiasaan" data-title="cara memakai vitacheck cara pakai vitacheck hasil vitacheck" data-description="panduan memakai vitacheck sebagai refleksi kebiasaan bukan diagnosis" data-tags="vitacheck refleksi kebiasaan skor hasil">
-              <div class="article-badge blue">VitaCheck</div><div class="article-content"><p class="article-meta">VitaCheck • 4 menit baca</p><h3>Cara Memakai VitaCheck</h3><p>Panduan memakai VitaCheck sebagai refleksi kebiasaan, bukan diagnosis.</p></div><div class="article-footer"><a href="cara-memakai-vitacheck.html" class="read-link">Baca Artikel</a></div>
-            </article>
-
-            <article class="article-card firestore-fallback-card vn-card" data-article-card data-firestore-fallback="kebiasaan-kecil" data-category="kebiasaan sehat pencernaan energi tidur air makan gerak" data-title="sehat itu dimulai dari kebiasaan kecil yang konsisten" data-description="artikel kebiasaan kecil dapat tersedia dari daftar artikel dinamis vitaNusa ai" data-tags="kebiasaan sehat vitaCheck konsisten">
-              <div class="article-badge">Kebiasaan Sehat</div><div class="article-content"><p class="article-meta">Artikel Firestore • Fallback aman</p><h3>Sehat Itu Dimulai dari Kebiasaan Kecil yang Konsisten</h3><p>Artikel kebiasaan kecil dapat tersedia dari daftar artikel dinamis VitaNusa AI.</p></div><div class="article-footer"><a href="index.html" class="read-link">Lihat Daftar Artikel</a></div>
-            </article>
-          </section>
-
-          <div class="empty-state vn-card" id="emptyState" hidden><h3>Belum ada artikel yang cocok</h3><p>Coba kata kunci lain atau pilih kategori Semua.</p></div>
-        </section>
-      </div>
-    </section>
+        <div class="empty-state" id="emptyState" role="status" hidden>
+          <h3>Tidak ada artikel yang cocok</h3>
+          <p>Coba gunakan kata pencarian yang lebih singkat atau pilih kategori lain.</p>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <section class="cta-section vn-section" aria-labelledby="disclaimerTitle">
-    <div class="wrap vn-container">
-      <div class="cta-box disclaimer-box vn-card vn-note">
-        <p class="eyebrow vn-eyebrow">Disclaimer Edukatif</p>
-        <h2 id="disclaimerTitle">Baca sebagai edukasi, bukan diagnosis.</h2>
-        <p>Artikel VitaNusa AI bersifat edukatif. Konten ini bukan diagnosis dan bukan pengganti arahan tenaga kesehatan profesional. Jika ada kondisi khusus atau keluhan yang mengkhawatirkan, minta arahan pihak yang berwenang. Setelah memahami Prinsip Amanah, lihat katalog produk sebagai opsi pendukung, bukan jalan pintas.</p>
-        <div class="actions vn-actions">
-          <a href="../index.html" class="btn primary btn-primary">Kembali ke Halaman Utama</a>
-          <a href="../prinsip-amanah.html" class="btn outline btn-secondary">Baca Prinsip Amanah</a>
-          <a href="../products/index.html" class="btn outline btn-secondary">Lihat Katalog Produk Amanah</a>
-        </div>
-      </div>
+  <footer class="article-footer-site">
+    <div class="article-container">
+      <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian.</p>
+      <a href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
     </div>
-  </section>
+  </footer>
 
-  <footer class="site-footer vn-footer"><p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian. <a href="../prinsip-amanah.html">Prinsip Amanah</a> · <a href="../products/index.html">Produk Amanah</a></p></footer>
-
-  <script type="module" src="articles-main.js?v=20260711-article-reading-ui-v1"></script>
-  <script type="module" src="../assets/js/modules/public-articles.js?v=20260711-article-reading-ui-v1"></script>
-  <script type="module">
-    import { initNusaUiShell } from '../assets/js/modules/nusa-ui-shell.js?v=20260704-vitanusa-master-map-v1';
-    initNusaUiShell();
-  </script>
+  <script type="module" src="../assets/js/modules/public-articles.js?v=20260804-public-article-ui-v2"></script>
+  <script src="articles-main.js?v=20260804-public-article-ui-v2" defer></script>
 </body>
 </html>

@@ -3,46 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Artikel Edukasi | VitaNusa AI</title>
-  <meta name="description" content="Baca artikel edukasi VitaNusa AI yang bersifat edukasi dan refleksi, bukan diagnosis medis." />
-  <meta property="og:title" content="Artikel Edukasi | VitaNusa AI" />
-  <meta property="og:description" content="Baca artikel edukasi VitaNusa AI yang bersifat edukasi dan refleksi, bukan diagnosis medis." />
+  <title>Artikel VitaNusa</title>
+  <meta name="description" content="Baca artikel edukasi VitaNusa yang disampaikan dengan jernih, tenang, dan amanah." />
+  <meta property="og:title" content="Artikel VitaNusa" />
+  <meta property="og:description" content="Baca artikel edukasi VitaNusa yang disampaikan dengan jernih, tenang, dan amanah." />
   <meta property="og:type" content="article" />
   <link rel="stylesheet" href="../assets/css/vitanusa-public.css?v=20260703-public-design-v1" />
-  <link rel="stylesheet" href="articles-style.css?v=20260711-article-reading-ui-v1" />
+  <link rel="stylesheet" href="articles-style.css?v=20260804-public-article-ui-v2" />
 </head>
-<body class="vn-page article-page">
-  <a class="skip-link skip" href="#main">Lewati ke konten</a>
-  <main id="main" class="main-container article-detail-container vn-section">
-    <a href="index.html" class="back-link">← Kembali ke Daftar Artikel</a>
+<body class="vn-page article-page article-detail-page">
+  <a class="skip-link" href="#main">Lewati ke artikel</a>
 
-    <section class="article-detail-shell" data-public-article-detail aria-busy="true">
-      <div class="empty-state article-detail-empty" role="status">
-        <h2>Memuat artikel...</h2>
-        <p>Mohon tunggu sebentar. Bacaan sedang disiapkan.</p>
-        <a href="index.html" class="btn btn-secondary">Kembali ke Daftar Artikel</a>
-      </div>
-    </section>
+  <main id="main" class="article-detail-main">
+    <div class="article-reading-column">
+      <nav class="article-breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Artikel VitaNusa</a>
+        <span aria-hidden="true">/</span>
+        <span>Detail artikel</span>
+      </nav>
+
+      <section class="article-detail-shell" data-public-article-detail aria-busy="true">
+        <div class="article-state is-loading" role="status">
+          <h2>Menyiapkan artikel…</h2>
+          <p>Bacaan sedang dimuat.</p>
+        </div>
+      </section>
+
+      <section class="related-articles" data-related-articles aria-labelledby="relatedArticlesTitle" hidden>
+        <div class="related-articles-heading">
+          <p class="article-eyebrow">Lanjut membaca</p>
+          <h2 id="relatedArticlesTitle">Artikel terkait</h2>
+        </div>
+        <div class="related-articles-grid" data-related-articles-list></div>
+      </section>
+
+      <aside class="article-disclaimer" aria-labelledby="articleDisclaimerTitle">
+        <h2 id="articleDisclaimerTitle">Catatan amanah</h2>
+        <p>Artikel ini bersifat edukasi dan tidak menggantikan diagnosis atau konsultasi medis. Bila keluhan berat, menetap, memburuk, atau mengganggu aktivitas, hubungi tenaga kesehatan profesional.</p>
+        <a href="index.html">Kembali ke daftar artikel</a>
+      </aside>
+    </div>
   </main>
 
-  <section class="cta-section detail-cta vn-section" aria-labelledby="detailDisclaimerTitle">
-    <div class="wrap vn-container">
-      <div class="cta-box disclaimer-box vn-card vn-note">
-        <p class="eyebrow">Catatan Amanah</p>
-        <h2 id="detailDisclaimerTitle">Edukasi bukan pengganti konsultasi medis.</h2>
-        <p>Jika keluhan berat, menetap, memburuk, atau mengganggu aktivitas, konsultasikan kepada tenaga kesehatan profesional.</p>
-        <div class="actions vn-actions">
-          <a href="index.html" class="btn btn-primary">Baca Artikel Lain</a>
-          <a href="../prinsip-amanah.html" class="btn btn-secondary">Prinsip Amanah</a>
-        </div>
-      </div>
+  <footer class="article-footer-site">
+    <div class="article-container">
+      <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian.</p>
+      <a href="../prinsip-amanah.html">Baca Prinsip Amanah</a>
     </div>
-  </section>
-
-  <footer class="site-footer vn-footer">
-    <p>&copy; 2026 VitaNusa AI. Edukasi dulu, produk kemudian. <a href="../prinsip-amanah.html">Prinsip Amanah</a></p>
   </footer>
 
-  <script type="module" src="../assets/js/modules/public-articles.js?v=20260711-article-reading-ui-v1"></script>
+  <script type="module" src="../assets/js/modules/public-articles.js?v=20260804-public-article-ui-v2"></script>
 </body>
 </html>
