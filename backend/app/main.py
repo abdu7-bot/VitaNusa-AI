@@ -48,6 +48,7 @@ from .search.guard import (
 from .search.models import SearchQuery, SearchRouterResponse
 from .search.normalizer import clean_whitespace
 from .search.router import SearchRouter
+from .trusted_sources import list_trusted_sources, sources_for_navigator
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -66,7 +67,6 @@ def get_allowed_origins() -> list[str]:
     raw_origins = os.getenv("VITANUSA_ALLOWED_ORIGINS", "")
     if not raw_origins.strip():
         return DEFAULT_ALLOWED_ORIGINS
-
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
@@ -88,11 +88,7 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    return {
-        "status": "ok",
-        "message": "VitaNusa AI Brain aktif",
-        "service": "vitanusa-ai-backend",
-    }
+    return {"status": "ok", "message": "VitaNusa AI Brain aktif", "service": "vitanusa-ai-backend"}
 
 
 @app.get("/health")
@@ -102,45 +98,19 @@ def health():
 
 @app.get("/navigator/topics")
 def navigator_topics():
-    """Return the small, explicit topic registry used by Navigator MVP."""
     return {"topics": list_topics(), "scope": "education-only"}
+
+
+@app.get("/navigator/sources")
+def navigator_sources():
+    return {"sources": list_trusted_sources(), "scope": "education-only"}
 
 
 @app.post("/navigator/check", response_model=NavigatorResponse)
 def navigator_check(request: NavigatorRequest) -> NavigatorResponse:
-    """Run red-flag-first screening without diagnosing or prescribing."""
     result = check_navigator(request.topic, request.text)
+    result["sources"] = sources_for_navigator(result.get("topic"))
     return NavigatorResponse(**result)
-
-
-def _build_navigator_answer(question: str, navigator_result: dict) -> str:
-    status = navigator_result["status"]
-    action = navigator_result["action"]
-    topic = navigator_result.get("topic") or "keluhan ini"
-    matched = navigator_result.get("matchedFlags") or []
-
-    if status == "red_flag":
-        flags = ", ".join(matched[:3])
-        detail = f"Tanda yang terdeteksi: {flags}.\n\n" if flags else ""
-        return (
-            f"Keluhan yang kamu sampaikan memerlukan perhatian lebih serius.\n\n"
-            f"{detail}{action}\n\n"
-            "Nusa tidak mendiagnosis kondisi ini. Jangan gunakan jawaban ini untuk menunda pertolongan."
-        )
-
-    if status == "high_risk":
-        return (
-            f"Saya bisa membantu memberi edukasi umum tentang {topic}, tetapi konteks yang kamu berikan termasuk kondisi yang perlu kehati-hatian.\n\n"
-            f"{action}\n\n"
-            "Nusa tidak memberikan diagnosis, resep, atau dosis obat."
-        )
-
-    return (
-        f"Saya bisa membantu menavigasi keluhan {topic} sebagai edukasi umum.\n\n"
-        "Ceritakan durasi keluhan, apakah membaik atau memburuk, dan gejala lain yang menyertai tanpa membagikan data pribadi sensitif.\n\n"
-        f"{action}\n\n"
-        "Nusa tidak mendiagnosis dan tidak menggantikan tenaga kesehatan."
-    )
 
 
 @app.post("/llm/preview", response_model=LlmRouterResponse)
@@ -149,44 +119,22 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     app_env = os.getenv("APP_ENV", "development").strip().lower()
     if app_env == "production" or not config.preview_enabled:
         raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
-
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong.")
-
     intent_result = detect_intent(message)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
     decision = POLICY_ENGINE.evaluate_question(message, intent=intent, safety_level=safety_level)
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
-    llm_request = LlmRequest(
-        system_prompt=build_system_prompt(guard_context),
-        user_message=message,
-        model=config.model,
-        temperature=config.temperature,
-        max_tokens=config.max_tokens,
-        intent=intent,
-        safety_level=safety_level,
-    )
+    llm_request = LlmRequest(system_prompt=build_system_prompt(guard_context), user_message=message, model=config.model, temperature=config.temperature, max_tokens=config.max_tokens, intent=intent, safety_level=safety_level)
     guard = evaluate_llm_guard(guard_context, llm_request)
     selected_strategy = request.strategy or config.strategy
     selected_provider = request.provider.strip().lower() if request.provider else None
-
     if not guard.allowed:
-        return build_blocked_router_response(
-            mode=config.mode,
-            strategy=selected_strategy,
-            provider=selected_provider or config.provider or "local-llm",
-            reason=guard.reason or "llm_guard_blocked",
-        )
-
+        return build_blocked_router_response(mode=config.mode, strategy=selected_strategy, provider=selected_provider or config.provider or "local-llm", reason=guard.reason or "llm_guard_blocked")
     router = LocalLlmRouter(config)
-    return await router.route(
-        llm_request,
-        provider=selected_provider,
-        strategy=selected_strategy,
-        guard_context=guard_context,
-    )
+    return await router.route(llm_request, provider=selected_provider, strategy=selected_strategy, guard_context=guard_context)
 
 
 @app.post("/search/preview", response_model=SearchRouterResponse)
@@ -194,120 +142,45 @@ async def search_preview(request: SearchPreviewRequest) -> SearchRouterResponse:
     config = WebSearchConfig.from_env()
     if not config.preview_available:
         raise HTTPException(status_code=404, detail="Endpoint tidak tersedia.")
-
     query_text = clean_whitespace(request.query)
     if len(query_text) < 2:
         raise HTTPException(status_code=400, detail="Query harus berisi minimal dua karakter.")
-
     intent_result = detect_intent(query_text)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
     decision = POLICY_ENGINE.evaluate_question(query_text, intent=intent, safety_level=safety_level)
-    guard_context = build_search_guard_context(
-        decision,
-        intent=intent,
-        safety_level=safety_level,
-        query=query_text,
-    )
+    guard_context = build_search_guard_context(decision, intent=intent, safety_level=safety_level, query=query_text)
     selected_strategy = request.strategy or config.strategy
-    guard = evaluate_search_guard(
-        guard_context,
-        requested_category=request.category,
-        providers=config.providers,
-        strategy=selected_strategy,
-    )
-
+    guard = evaluate_search_guard(guard_context, requested_category=request.category, providers=config.providers, strategy=selected_strategy)
     if not guard.allowed:
-        return build_blocked_search_response(
-            mode=config.mode,
-            strategy=guard.strategy,
-            query=query_text,
-            reason=guard.reason,
-        )
-
-    search_query = SearchQuery(
-        query=query_text,
-        language=config.language,
-        country=config.country,
-        category=guard.category,
-        max_results=request.maxResults,
-        safe_search=config.safe_search,
-    )
+        return build_blocked_search_response(mode=config.mode, strategy=guard.strategy, query=query_text, reason=guard.reason)
+    search_query = SearchQuery(query=query_text, language=config.language, country=config.country, category=guard.category, max_results=request.maxResults, safe_search=config.safe_search)
     router = SearchRouter(config)
-    return await router.route(
-        search_query,
-        provider=request.provider,
-        providers=guard.providers,
-        strategy=guard.strategy,
-    )
+    return await router.route(search_query, provider=request.provider, providers=guard.providers, strategy=guard.strategy)
 
 
-async def _generate_llm_answer(
-    *,
-    question: str,
-    intent: str,
-    safety_level: str,
-    decision,
-    rule_based_answer: str,
-    history_context: str = "",
-) -> tuple[str, str | None]:
+async def _generate_llm_answer(*, question: str, intent: str, safety_level: str, decision, rule_based_answer: str, history_context: str = "") -> tuple[str, str | None]:
     config = LocalLlmConfig.from_env()
-    if not (
-        config.ask_enabled
-        and config.mode == "live"
-        and config.provider == "ollama"
-        and config.ollama.enabled
-        and config.model
-        and not config.configuration_errors
-    ):
+    if not (config.ask_enabled and config.mode == "live" and config.provider == "ollama" and config.ollama.enabled and config.model and not config.configuration_errors):
         return rule_based_answer, None
-
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
     knowledge_context = build_knowledge_context(intent, normalize_text(question))
     system_prompt = build_system_prompt(guard_context, history_context=history_context)
-    system_prompt += (
-        "\n\nJawaban dasar yang sudah disetujui aplikasi (edukasi ulang boleh membuatnya "
-        "lebih natural dan ramah, tetapi jangan mengubah maknanya, jangan menghapus "
-        "peringatan atau anjuran di dalamnya, dan jangan menambah klaim baru):\n"
-        + rule_based_answer
-    )
+    system_prompt += "\n\nJawaban dasar yang sudah disetujui aplikasi (edukasi ulang boleh membuatnya lebih natural dan ramah, tetapi jangan mengubah maknanya, jangan menghapus peringatan atau anjuran di dalamnya, dan jangan menambah klaim baru):\n" + rule_based_answer
     if knowledge_context:
         system_prompt += "\n\n" + knowledge_context
-
-    llm_request = LlmRequest(
-        system_prompt=system_prompt,
-        user_message=question,
-        model=config.model,
-        temperature=config.temperature,
-        max_tokens=config.max_tokens,
-        intent=intent,
-        safety_level=safety_level,
-    )
+    llm_request = LlmRequest(system_prompt=system_prompt, user_message=question, model=config.model, temperature=config.temperature, max_tokens=config.max_tokens, intent=intent, safety_level=safety_level)
     guard = evaluate_llm_guard(guard_context, llm_request)
     if not guard.allowed:
         return rule_based_answer, None
-
     try:
         router = LocalLlmRouter(config)
-        router_response = await router.route(
-            llm_request,
-            provider="ollama",
-            strategy="priority",
-            guard_context=guard_context,
-        )
+        router_response = await router.route(llm_request, provider="ollama", strategy="priority", guard_context=guard_context)
     except Exception:
         return rule_based_answer, None
-
     response = router_response.response
-    if (
-        response is not None
-        and response.provider == "ollama"
-        and router_response.selected_provider == "ollama"
-        and response.status == "success"
-        and response.content.strip()
-    ):
+    if response is not None and response.provider == "ollama" and router_response.selected_provider == "ollama" and response.status == "success" and response.content.strip():
         return response.content.strip(), router_response.selected_provider
-
     return rule_based_answer, None
 
 
@@ -316,82 +189,26 @@ async def ask_ai(request: AskRequest) -> AskResponse:
     question = request.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Pertanyaan tidak boleh kosong.")
-
     session_id = (request.sessionId or "").strip() or uuid.uuid4().hex
     history = CONVERSATION_MEMORY.get_history(session_id)
-
     intent_result = detect_intent(question)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
     decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
     include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
-
-    if intent == "health_navigator" and intent_result.get("navigatorTopic"):
-        navigator_result = check_navigator(intent_result["navigatorTopic"], question)
-        rule_based_answer = _build_navigator_answer(question, navigator_result)
-    else:
-        rule_based_answer = build_answer(
-            intent,
-            safety_level,
-            decision,
-            greeting_prefix=intent_result.get("greetingPrefix", False),
-            is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
-        )
-
-    answer, llm_provider = await _generate_llm_answer(
-        question=question,
-        intent=intent,
-        safety_level=safety_level,
-        decision=decision,
-        rule_based_answer=rule_based_answer,
-        history_context=build_history_context(history),
-    )
-
-    CONVERSATION_MEMORY.record_turn(
-        session_id,
-        question=question,
-        intent=intent,
-        safety_level=safety_level,
-        answer=answer,
-    )
-
-    log_ask_event(
-        intent=intent,
-        safety_level=safety_level,
-        response_blocked=decision.response_blocked,
-        dominant_policy=decision.dominant_policy.policy_id if decision.dominant_policy else None,
-        llm_used=llm_provider is not None,
-        llm_provider=llm_provider,
-        llm_mode=LocalLlmConfig.from_env().mode,
-    )
-
-    return AskResponse(
-        question=question,
-        intent=intent,
-        safetyLevel=safety_level,
-        answer=answer,
-        disclaimer=DISCLAIMER,
-        recommendedAction=decision.recommended_action or intent_result["recommendedAction"],
-        actions=build_actions(intent, decision),
-        sources=[],
-        quranicReflection=build_quranic_reflection() if include_reflection else None,
-        policyDecision=serialize_policy_decision(decision),
-        sessionId=session_id,
-    )
+    rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
+    answer, llm_provider = await _generate_llm_answer(question=question, intent=intent, safety_level=safety_level, decision=decision, rule_based_answer=rule_based_answer, history_context=build_history_context(history))
+    CONVERSATION_MEMORY.record_turn(session_id, question=question, intent=intent, safety_level=safety_level, answer=answer)
+    log_ask_event(intent=intent, safety_level=safety_level, response_blocked=decision.response_blocked, dominant_policy=decision.dominant_policy.policy_id if decision.dominant_policy else None, llm_used=llm_provider is not None, llm_provider=llm_provider, llm_mode=LocalLlmConfig.from_env().mode)
+    sources = sources_for_navigator(intent_result.get("navigatorTopic")) if intent == "health_navigator" else []
+    return AskResponse(question=question, intent=intent, safetyLevel=safety_level, answer=answer, disclaimer=DISCLAIMER, recommendedAction=decision.recommended_action or intent_result["recommendedAction"], actions=build_actions(intent, decision), sources=sources, quranicReflection=build_quranic_reflection() if include_reflection else None, policyDecision=serialize_policy_decision(decision), sessionId=session_id)
 
 
 @app.post("/feedback", response_model=FeedbackReceipt)
 def submit_feedback(feedback: FeedbackRequest, request: Request) -> FeedbackReceipt:
-    client_key = resolve_feedback_client(
-        request.client.host if request.client else None,
-        request.headers.get("X-Forwarded-For"),
-    )
+    client_key = resolve_feedback_client(request.client.host if request.client else None, request.headers.get("X-Forwarded-For"))
     if not FEEDBACK_RATE_LIMITER.allow(client_key):
-        raise HTTPException(
-            status_code=429,
-            detail="Terlalu banyak feedback. Coba lagi nanti.",
-            headers={"Retry-After": str(feedback_rate_limit_window_seconds())},
-        )
+        raise HTTPException(status_code=429, detail="Terlalu banyak feedback. Coba lagi nanti.", headers={"Retry-After": str(feedback_rate_limit_window_seconds())})
     return record_feedback(feedback)
 
 
@@ -404,16 +221,6 @@ def admin_feedback(request: Request) -> list[dict]:
         raise HTTPException(status_code=400, detail="Token query tidak diizinkan.")
     authorization = request.headers.get("Authorization", "")
     scheme, separator, credential = authorization.partition(" ")
-    if (
-        not separator
-        or scheme.lower() != "bearer"
-        or not credential
-        or " " in credential
-        or not compare_digest(credential, expected_token)
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Bearer token admin tidak valid.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return list_pending_feedback()
+    if not separator or scheme.lower() != "bearer" or not credential or " " in credential or not compare_digest(credential, expected_token):
+        raise HTTPException(status_code=401, detail="Bearer token admin tidak valid.", headers={"WWW-Authenticate": "Bearer"})
+    return list_pending_feedback
