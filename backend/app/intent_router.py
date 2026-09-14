@@ -27,6 +27,14 @@ INTENT_KEYWORDS = {
         "baca",
         "info kesehatan",
     ),
+    "health_navigator": (
+        "demam",
+        "batuk",
+        "sakit kepala",
+        "pusing",
+        "sakit perut",
+        "diare",
+    ),
     "health_general": (
         "sakit perut",
         "pusing",
@@ -97,11 +105,14 @@ INTENT_KEYWORDS = {
     ),
 }
 
+NAVIGATOR_TOPIC_KEYWORDS = {
+    "demam": ("demam",),
+    "batuk": ("batuk",),
+    "sakit_kepala": ("sakit kepala", "pusing"),
+    "sakit_perut": ("sakit perut",),
+    "diare": ("diare",),
+}
 
-# Salam dan sapaan waktu. Dicocokkan sebagai kata/frasa utuh (lihat
-# `contains_any` di `safety.py`) supaya "mual" di dalam "assalamualaikum"
-# tidak pernah dianggap cocok dengan keyword lain, dan supaya salam murni
-# dikenali sebagai obrolan biasa, bukan keluhan kesehatan.
 ISLAMIC_GREETING_KEYWORDS = (
     "assalamualaikum",
     "assalamu alaikum",
@@ -127,9 +138,6 @@ GENERAL_GREETING_KEYWORDS = (
 
 GREETING_KEYWORDS = ISLAMIC_GREETING_KEYWORDS + GENERAL_GREETING_KEYWORDS
 
-# Ungkapan koreksi percakapan: pengguna menyatakan jawaban sebelumnya tidak
-# nyambung atau salah. Ini harus ditangani sebagai permintaan klarifikasi,
-# bukan diproses ulang sebagai keluhan kesehatan atau fallback generik.
 CORRECTION_KEYWORDS = (
     "gak nyambung",
     "ga nyambung",
@@ -166,6 +174,13 @@ def normalize_text(value: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def detect_navigator_topic(text: str) -> str | None:
+    for topic, keywords in NAVIGATOR_TOPIC_KEYWORDS.items():
+        if contains_any(text, keywords):
+            return topic
+    return None
+
+
 def detect_intent(question: str) -> dict:
     text = normalize_text(question)
 
@@ -173,28 +188,23 @@ def detect_intent(question: str) -> dict:
     has_correction = False
     has_greeting = False
     is_islamic_greeting = False
+    navigator_topic = None
 
     if is_emergency:
-        # Keadaan darurat selalu mendapat prioritas tertinggi, tanpa
-        # terpengaruh oleh salam atau ungkapan koreksi yang ikut disebutkan.
         intent = "danger_sign"
     else:
         has_correction = contains_any(text, CORRECTION_KEYWORDS)
         is_islamic_greeting = contains_any(text, ISLAMIC_GREETING_KEYWORDS)
         has_greeting = is_islamic_greeting or contains_any(text, GENERAL_GREETING_KEYWORDS)
 
-        # Terminal case: no specific health/product/religious/app keyword
-        # matched. Per the hybrid_open scope, this is treated as ordinary
-        # general conversation (`general_chat`) rather than a defensive
-        # "can't help" fallback — the Policy Engine still evaluates every
-        # message independently below, so a general-sounding question that
-        # actually contains a safety-relevant keyword is still caught by the
-        # specific intents/policies, not by this branch.
         intent = "general_chat"
         for candidate, keywords in INTENT_KEYWORDS.items():
             if contains_any(text, keywords):
                 intent = candidate
                 break
+
+        if intent == "health_navigator":
+            navigator_topic = detect_navigator_topic(text)
 
         if has_correction:
             intent = "conversation_correction"
@@ -202,12 +212,6 @@ def detect_intent(question: str) -> dict:
             intent = "greeting"
 
     safety = classify_risk(text, intent)
-
-    # Salam yang menyertai keluhan/pertanyaan lain (mis. "Assalamualaikum,
-    # perut saya mual") tetap harus diproses sesuai isi utamanya (intent,
-    # klasifikasi risiko, dan kebijakan keselamatan tidak berubah), tapi
-    # jawabannya perlu membuka dengan sapaan singkat. `greetingPrefix`
-    # menandai kasus itu tanpa mengubah kontrak field lama.
     greeting_prefix = has_greeting and intent not in ("greeting", "danger_sign")
 
     return {
@@ -216,4 +220,5 @@ def detect_intent(question: str) -> dict:
         "recommendedAction": safety.recommendedAction,
         "greetingPrefix": greeting_prefix,
         "isIslamicGreeting": is_islamic_greeting,
+        "navigatorTopic": navigator_topic,
     }
