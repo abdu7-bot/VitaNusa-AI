@@ -20,43 +20,24 @@ from .health_navigator import check_navigator, list_topics
 from .intent_router import detect_intent, normalize_text
 from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
-from .llm.guard import (
-    build_blocked_router_response,
-    build_guard_context,
-    evaluate_llm_guard,
-)
+from .llm.guard import build_blocked_router_response, build_guard_context, evaluate_llm_guard
 from .llm.models import LlmRequest, LlmRouterResponse
 from .llm.prompts import build_system_prompt
 from .llm.router import LocalLlmRouter
 from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .privacy import install_sensitive_access_log_filter
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
-from .schemas import (
-    AskRequest,
-    AskResponse,
-    LlmPreviewRequest,
-    NavigatorRequest,
-    NavigatorResponse,
-    SearchPreviewRequest,
-)
+from .schemas import AskRequest, AskResponse, LlmPreviewRequest, NavigatorRequest, NavigatorResponse, SearchPreviewRequest
 from .search.config import WebSearchConfig
-from .search.guard import (
-    build_blocked_search_response,
-    build_search_guard_context,
-    evaluate_search_guard,
-)
+from .search.guard import build_blocked_search_response, build_search_guard_context, evaluate_search_guard
 from .search.models import SearchQuery, SearchRouterResponse
 from .search.normalizer import clean_whitespace
 from .search.router import SearchRouter
 from .trusted_sources import list_trusted_sources, sources_for_navigator
 
 DEFAULT_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
+    "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000",
+    "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500",
     "https://abdu7-bot.github.io",
 ]
 
@@ -70,12 +51,7 @@ def get_allowed_origins() -> list[str]:
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
-app = FastAPI(
-    title="VitaNusa AI Brain",
-    description="Backend otak dasar VitaNusa AI",
-    version="0.2.0",
-)
-
+app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
@@ -133,8 +109,7 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     selected_provider = request.provider.strip().lower() if request.provider else None
     if not guard.allowed:
         return build_blocked_router_response(mode=config.mode, strategy=selected_strategy, provider=selected_provider or config.provider or "local-llm", reason=guard.reason or "llm_guard_blocked")
-    router = LocalLlmRouter(config)
-    return await router.route(llm_request, provider=selected_provider, strategy=selected_strategy, guard_context=guard_context)
+    return await LocalLlmRouter(config).route(llm_request, provider=selected_provider, strategy=selected_strategy, guard_context=guard_context)
 
 
 @app.post("/search/preview", response_model=SearchRouterResponse)
@@ -155,8 +130,7 @@ async def search_preview(request: SearchPreviewRequest) -> SearchRouterResponse:
     if not guard.allowed:
         return build_blocked_search_response(mode=config.mode, strategy=guard.strategy, query=query_text, reason=guard.reason)
     search_query = SearchQuery(query=query_text, language=config.language, country=config.country, category=guard.category, max_results=request.maxResults, safe_search=config.safe_search)
-    router = SearchRouter(config)
-    return await router.route(search_query, provider=request.provider, providers=guard.providers, strategy=guard.strategy)
+    return await SearchRouter(config).route(search_query, provider=request.provider, providers=guard.providers, strategy=guard.strategy)
 
 
 async def _generate_llm_answer(*, question: str, intent: str, safety_level: str, decision, rule_based_answer: str, history_context: str = "") -> tuple[str, str | None]:
@@ -174,8 +148,7 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
     if not guard.allowed:
         return rule_based_answer, None
     try:
-        router = LocalLlmRouter(config)
-        router_response = await router.route(llm_request, provider="ollama", strategy="priority", guard_context=guard_context)
+        router_response = await LocalLlmRouter(config).route(llm_request, provider="ollama", strategy="priority", guard_context=guard_context)
     except Exception:
         return rule_based_answer, None
     response = router_response.response
@@ -223,4 +196,4 @@ def admin_feedback(request: Request) -> list[dict]:
     scheme, separator, credential = authorization.partition(" ")
     if not separator or scheme.lower() != "bearer" or not credential or " " in credential or not compare_digest(credential, expected_token):
         raise HTTPException(status_code=401, detail="Bearer token admin tidak valid.", headers={"WWW-Authenticate": "Bearer"})
-    return list_pending_feedback
+    return list_pending_feedback()
