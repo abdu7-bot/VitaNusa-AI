@@ -25,6 +25,19 @@ class SearchPreviewRequest(BaseModel):
     maxResults: int = Field(default=5, ge=1, le=10)
 
 
+class NavigatorRequest(BaseModel):
+    topic: str | None = Field(default=None, max_length=100)
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class NavigatorResponse(BaseModel):
+    status: Literal["education", "high_risk", "red_flag"]
+    topic: str | None = None
+    action: str
+    matchedFlags: list[str] = Field(default_factory=list)
+    scope: Literal["education-only", "high-risk", "topic-red-flag", "emergency-first"]
+
+
 class ActionLink(BaseModel):
     label: str
     href: str
