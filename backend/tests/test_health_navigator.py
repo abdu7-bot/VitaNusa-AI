@@ -1,6 +1,7 @@
 import unittest
 
 from app.health_navigator import check_navigator, list_topics
+from app.intent_router import detect_intent
 
 
 class HealthNavigatorTests(unittest.TestCase):
@@ -31,6 +32,26 @@ class HealthNavigatorTests(unittest.TestCase):
         result = check_navigator("", "saya sedang hamil dan ingin tahu apa yang aman")
         self.assertEqual(result["status"], "high_risk")
         self.assertEqual(result["scope"], "high-risk")
+
+    def test_nusa_routes_common_symptom_to_navigator(self) -> None:
+        result = detect_intent("Saya demam sejak kemarin")
+        self.assertEqual(result["intent"], "health_navigator")
+        self.assertEqual(result["navigatorTopic"], "demam")
+
+    def test_emergency_does_not_become_navigator(self) -> None:
+        result = detect_intent("Saya batuk darah dan sesak berat")
+        self.assertEqual(result["intent"], "danger_sign")
+        self.assertIsNone(result["navigatorTopic"])
+
+    def test_high_risk_navigator_keeps_high_risk_classification(self) -> None:
+        result = detect_intent("Saya hamil dan demam")
+        self.assertEqual(result["intent"], "health_navigator")
+        self.assertEqual(result["navigatorTopic"], "demam")
+        self.assertEqual(result["safetyLevel"], "high")
+
+    def test_medication_request_is_not_navigator(self) -> None:
+        result = detect_intent("Berapa dosis obat untuk demam saya?")
+        self.assertEqual(result["intent"], "medication_request")
 
 
 if __name__ == "__main__":
