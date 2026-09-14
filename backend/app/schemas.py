@@ -36,6 +36,8 @@ class NavigatorResponse(BaseModel):
     action: str
     matchedFlags: list[str] = Field(default_factory=list)
     scope: Literal["education-only", "high-risk", "topic-red-flag", "emergency-first"]
+    sources: list[dict[str, str]] = Field(default_factory=list)
+    evidenceNote: str = "Sumber adalah rujukan edukasi umum, bukan bukti diagnosis individual."
 
 
 class ActionLink(BaseModel):
