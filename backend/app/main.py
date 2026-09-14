@@ -8,14 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .audit_log import log_ask_event
 from .client_identity import resolve_feedback_client
 from .conversation_memory import CONVERSATION_MEMORY, build_history_context
-from .feedback import (
-    FEEDBACK_RATE_LIMITER,
-    FeedbackReceipt,
-    FeedbackRequest,
-    feedback_rate_limit_window_seconds,
-    list_pending_feedback,
-    record_feedback,
-)
+from .feedback import FEEDBACK_RATE_LIMITER, FeedbackReceipt, FeedbackRequest, feedback_rate_limit_window_seconds, list_pending_feedback, record_feedback
 from .health_navigator import check_navigator, list_topics
 from .intent_router import detect_intent, normalize_text
 from .knowledge_base import build_knowledge_context
@@ -33,14 +26,9 @@ from .search.guard import build_blocked_search_response, build_search_guard_cont
 from .search.models import SearchQuery, SearchRouterResponse
 from .search.normalizer import clean_whitespace
 from .search.router import SearchRouter
-from .trusted_sources import list_trusted_sources, sources_for_navigator
+from .trusted_sources import evidence_for_navigator, list_trusted_sources, sources_for_navigator
 
-DEFAULT_ALLOWED_ORIGINS = [
-    "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000",
-    "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500",
-    "https://abdu7-bot.github.io",
-]
-
+DEFAULT_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500", "https://abdu7-bot.github.io"]
 install_sensitive_access_log_filter()
 
 
@@ -52,14 +40,7 @@ def get_allowed_origins() -> list[str]:
 
 
 app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=get_allowed_origins(),
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/")
@@ -85,7 +66,9 @@ def navigator_sources():
 @app.post("/navigator/check", response_model=NavigatorResponse)
 def navigator_check(request: NavigatorRequest) -> NavigatorResponse:
     result = check_navigator(request.topic, request.text)
-    result["sources"] = sources_for_navigator(result.get("topic"))
+    topic = result.get("topic")
+    result["sources"] = sources_for_navigator(topic)
+    result["evidence"] = evidence_for_navigator(topic)
     return NavigatorResponse(**result)
 
 
@@ -140,7 +123,7 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
     knowledge_context = build_knowledge_context(intent, normalize_text(question))
     system_prompt = build_system_prompt(guard_context, history_context=history_context)
-    system_prompt += "\n\nJawaban dasar yang sudah disetujui aplikasi (edukasi ulang boleh membuatnya lebih natural dan ramah, tetapi jangan mengubah maknanya, jangan menghapus peringatan atau anjuran di dalamnya, dan jangan menambah klaim baru):\n" + rule_based_answer
+    system_prompt += "\n\nJawaban dasar yang sudah disetujui aplikasi (jangan menghapus peringatan/anjuran dan jangan menambah klaim baru):\n" + rule_based_answer
     if knowledge_context:
         system_prompt += "\n\n" + knowledge_context
     llm_request = LlmRequest(system_prompt=system_prompt, user_message=question, model=config.model, temperature=config.temperature, max_tokens=config.max_tokens, intent=intent, safety_level=safety_level)
@@ -169,11 +152,17 @@ async def ask_ai(request: AskRequest) -> AskResponse:
     safety_level = intent_result["safetyLevel"]
     decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
     include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
-    rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
+    navigator_topic = intent_result.get("navigatorTopic")
+    if intent == "health_navigator" and navigator_topic:
+        navigator_result = check_navigator(navigator_topic, question)
+        rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
+        rule_based_answer += "\n\nRujukan: " + ", ".join(item["name"] for item in sources_for_navigator(navigator_topic))
+    else:
+        rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
     answer, llm_provider = await _generate_llm_answer(question=question, intent=intent, safety_level=safety_level, decision=decision, rule_based_answer=rule_based_answer, history_context=build_history_context(history))
     CONVERSATION_MEMORY.record_turn(session_id, question=question, intent=intent, safety_level=safety_level, answer=answer)
     log_ask_event(intent=intent, safety_level=safety_level, response_blocked=decision.response_blocked, dominant_policy=decision.dominant_policy.policy_id if decision.dominant_policy else None, llm_used=llm_provider is not None, llm_provider=llm_provider, llm_mode=LocalLlmConfig.from_env().mode)
-    sources = sources_for_navigator(intent_result.get("navigatorTopic")) if intent == "health_navigator" else []
+    sources = sources_for_navigator(navigator_topic) if intent == "health_navigator" else []
     return AskResponse(question=question, intent=intent, safetyLevel=safety_level, answer=answer, disclaimer=DISCLAIMER, recommendedAction=decision.recommended_action or intent_result["recommendedAction"], actions=build_actions(intent, decision), sources=sources, quranicReflection=build_quranic_reflection() if include_reflection else None, policyDecision=serialize_policy_decision(decision), sessionId=session_id)
 
 
@@ -196,4 +185,4 @@ def admin_feedback(request: Request) -> list[dict]:
     scheme, separator, credential = authorization.partition(" ")
     if not separator or scheme.lower() != "bearer" or not credential or " " in credential or not compare_digest(credential, expected_token):
         raise HTTPException(status_code=401, detail="Bearer token admin tidak valid.", headers={"WWW-Authenticate": "Bearer"})
-    return list_pending_feedback()
+    return list_pending_feedback
