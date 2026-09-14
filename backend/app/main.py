@@ -16,6 +16,7 @@ from .feedback import (
     list_pending_feedback,
     record_feedback,
 )
+from .health_navigator import check_navigator, list_topics
 from .intent_router import detect_intent, normalize_text
 from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
@@ -30,7 +31,14 @@ from .llm.router import LocalLlmRouter
 from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .privacy import install_sensitive_access_log_filter
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
-from .schemas import AskRequest, AskResponse, LlmPreviewRequest, SearchPreviewRequest
+from .schemas import (
+    AskRequest,
+    AskResponse,
+    LlmPreviewRequest,
+    NavigatorRequest,
+    NavigatorResponse,
+    SearchPreviewRequest,
+)
 from .search.config import WebSearchConfig
 from .search.guard import (
     build_blocked_search_response,
@@ -59,11 +67,7 @@ def get_allowed_origins() -> list[str]:
     if not raw_origins.strip():
         return DEFAULT_ALLOWED_ORIGINS
 
-    return [
-        origin.strip()
-        for origin in raw_origins.split(",")
-        if origin.strip()
-    ]
+    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
 app = FastAPI(
@@ -75,7 +79,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=r"^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -96,6 +100,19 @@ def health():
     return {"status": "healthy"}
 
 
+@app.get("/navigator/topics")
+def navigator_topics():
+    """Return the small, explicit topic registry used by Navigator MVP."""
+    return {"topics": list_topics(), "scope": "education-only"}
+
+
+@app.post("/navigator/check", response_model=NavigatorResponse)
+def navigator_check(request: NavigatorRequest) -> NavigatorResponse:
+    """Run red-flag-first screening without diagnosing or prescribing."""
+    result = check_navigator(request.topic, request.text)
+    return NavigatorResponse(**result)
+
+
 @app.post("/llm/preview", response_model=LlmRouterResponse)
 async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     config = LocalLlmConfig.from_env()
@@ -110,16 +127,8 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     intent_result = detect_intent(message)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
-    decision = POLICY_ENGINE.evaluate_question(
-        message,
-        intent=intent,
-        safety_level=safety_level,
-    )
-    guard_context = build_guard_context(
-        decision,
-        intent=intent,
-        safety_level=safety_level,
-    )
+    decision = POLICY_ENGINE.evaluate_question(message, intent=intent, safety_level=safety_level)
+    guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
     llm_request = LlmRequest(
         system_prompt=build_system_prompt(guard_context),
         user_message=message,
@@ -131,9 +140,7 @@ async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     )
     guard = evaluate_llm_guard(guard_context, llm_request)
     selected_strategy = request.strategy or config.strategy
-    selected_provider = (
-        request.provider.strip().lower() if request.provider else None
-    )
+    selected_provider = request.provider.strip().lower() if request.provider else None
 
     if not guard.allowed:
         return build_blocked_router_response(
@@ -160,19 +167,12 @@ async def search_preview(request: SearchPreviewRequest) -> SearchRouterResponse:
 
     query_text = clean_whitespace(request.query)
     if len(query_text) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="Query harus berisi minimal dua karakter.",
-        )
+        raise HTTPException(status_code=400, detail="Query harus berisi minimal dua karakter.")
 
     intent_result = detect_intent(query_text)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
-    decision = POLICY_ENGINE.evaluate_question(
-        query_text,
-        intent=intent,
-        safety_level=safety_level,
-    )
+    decision = POLICY_ENGINE.evaluate_question(query_text, intent=intent, safety_level=safety_level)
     guard_context = build_search_guard_context(
         decision,
         intent=intent,
@@ -221,14 +221,6 @@ async def _generate_llm_answer(
     rule_based_answer: str,
     history_context: str = "",
 ) -> tuple[str, str | None]:
-    """Try to rephrase `rule_based_answer` more naturally using a local LLM.
-
-    Returns (answer, provider_used). Falls back to `rule_based_answer`
-    (provider_used=None) on any disabled/blocked/failed/unavailable outcome —
-    this function must never raise and must never change the safety meaning
-    of the answer, only how naturally it reads.
-    """
-
     config = LocalLlmConfig.from_env()
     if not (
         config.ask_enabled
@@ -241,7 +233,6 @@ async def _generate_llm_answer(
         return rule_based_answer, None
 
     guard_context = build_guard_context(decision, intent=intent, safety_level=safety_level)
-
     knowledge_context = build_knowledge_context(intent, normalize_text(question))
     system_prompt = build_system_prompt(guard_context, history_context=history_context)
     system_prompt += (
@@ -262,7 +253,6 @@ async def _generate_llm_answer(
         intent=intent,
         safety_level=safety_level,
     )
-
     guard = evaluate_llm_guard(guard_context, llm_request)
     if not guard.allowed:
         return rule_based_answer, None
@@ -294,32 +284,17 @@ async def _generate_llm_answer(
 @app.post("/ask", response_model=AskResponse)
 async def ask_ai(request: AskRequest) -> AskResponse:
     question = request.question.strip()
-
     if not question:
-        raise HTTPException(
-            status_code=400,
-            detail="Pertanyaan tidak boleh kosong."
-        )
+        raise HTTPException(status_code=400, detail="Pertanyaan tidak boleh kosong.")
 
-    # Session id is opaque and client-supplied (typically a per-tab id kept
-    # in the browser). It only unlocks short-lived, in-process conversation
-    # context (see conversation_memory.py) — it never affects intent
-    # detection or the Policy Engine's decision for the *current* message.
     session_id = (request.sessionId or "").strip() or uuid.uuid4().hex
     history = CONVERSATION_MEMORY.get_history(session_id)
 
     intent_result = detect_intent(question)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
-    decision = POLICY_ENGINE.evaluate_question(
-        question,
-        intent=intent,
-        safety_level=safety_level,
-    )
-    include_reflection = (
-        request.includeQuranicReflection
-        or intent == "quranic_reflection"
-    )
+    decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
+    include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
 
     rule_based_answer = build_answer(
         intent,
@@ -362,9 +337,7 @@ async def ask_ai(request: AskRequest) -> AskResponse:
         safetyLevel=safety_level,
         answer=answer,
         disclaimer=DISCLAIMER,
-        recommendedAction=(
-            decision.recommended_action or intent_result["recommendedAction"]
-        ),
+        recommendedAction=decision.recommended_action or intent_result["recommendedAction"],
         actions=build_actions(intent, decision),
         sources=[],
         quranicReflection=build_quranic_reflection() if include_reflection else None,
@@ -375,12 +348,6 @@ async def ask_ai(request: AskRequest) -> AskResponse:
 
 @app.post("/feedback", response_model=FeedbackReceipt)
 def submit_feedback(feedback: FeedbackRequest, request: Request) -> FeedbackReceipt:
-    """Record a like/dislike (+ optional reason) into the review queue.
-
-    This never changes app behavior by itself — an admin reviews the queue
-    (see GET /admin/feedback) and applies any resulting change as a normal,
-    tested code change.
-    """
     client_key = resolve_feedback_client(
         request.client.host if request.client else None,
         request.headers.get("X-Forwarded-For"),
