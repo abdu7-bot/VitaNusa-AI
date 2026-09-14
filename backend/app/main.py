@@ -185,4 +185,4 @@ def admin_feedback(request: Request) -> list[dict]:
     scheme, separator, credential = authorization.partition(" ")
     if not separator or scheme.lower() != "bearer" or not credential or " " in credential or not compare_digest(credential, expected_token):
         raise HTTPException(status_code=401, detail="Bearer token admin tidak valid.", headers={"WWW-Authenticate": "Bearer"})
-    return list_pending_feedback
+    return list_pending_feedback()

@@ -11,7 +11,7 @@ INTENT_KEYWORDS = {
     ),
     "vitacheck": ("vitacheck", "vita check", "cek kesehatan", "cek kebiasaan", "skor sehat"),
     "article_search": ("artikel", "edukasi", "baca", "info kesehatan"),
-    "health_navigator": ("demam", "batuk", "sakit kepala", "pusing", "sakit perut", "diare"),
+    "health_navigator": ("demam", "batuk", "sakit kepala", "sakit perut", "diare"),
     "health_general": (
         "sakit perut", "pusing", "sakit kepala", "mual", "batuk", "pilek", "tidur",
         "lelah", "capek", "makan", "pencernaan",
@@ -35,7 +35,7 @@ INTENT_KEYWORDS = {
 NAVIGATOR_TOPIC_KEYWORDS = {
     "demam": ("demam",),
     "batuk": ("batuk",),
-    "sakit_kepala": ("sakit kepala", "pusing"),
+    "sakit_kepala": ("sakit kepala",),
     "sakit_perut": ("sakit perut",),
     "diare": ("diare",),
 }
