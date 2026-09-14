@@ -16,12 +16,12 @@ class HealthNavigatorTests(unittest.TestCase):
         self.assertEqual(result["scope"], "emergency-first")
         self.assertTrue(result["matchedFlags"])
 
-    def test_topic_red_flag_is_not_diagnosis(self) -> None:
+    def test_global_red_flag_stays_emergency_first(self) -> None:
         result = check_navigator("sakit kepala", "saya sakit kepala dan bicara pelo")
         self.assertEqual(result["status"], "red_flag")
-        self.assertEqual(result["scope"], "topic-red-flag")
+        self.assertEqual(result["scope"], "emergency-first")
         self.assertIn("bicara pelo", result["matchedFlags"])
-        self.assertIn("bukan diagnosis", result["action"])
+        self.assertIn("darurat", result["action"])
 
     def test_normal_question_stays_education_only(self) -> None:
         result = check_navigator("demam", "demam ringan sejak pagi")
