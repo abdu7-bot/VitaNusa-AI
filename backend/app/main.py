@@ -113,6 +113,36 @@ def navigator_check(request: NavigatorRequest) -> NavigatorResponse:
     return NavigatorResponse(**result)
 
 
+def _build_navigator_answer(question: str, navigator_result: dict) -> str:
+    status = navigator_result["status"]
+    action = navigator_result["action"]
+    topic = navigator_result.get("topic") or "keluhan ini"
+    matched = navigator_result.get("matchedFlags") or []
+
+    if status == "red_flag":
+        flags = ", ".join(matched[:3])
+        detail = f"Tanda yang terdeteksi: {flags}.\n\n" if flags else ""
+        return (
+            f"Keluhan yang kamu sampaikan memerlukan perhatian lebih serius.\n\n"
+            f"{detail}{action}\n\n"
+            "Nusa tidak mendiagnosis kondisi ini. Jangan gunakan jawaban ini untuk menunda pertolongan."
+        )
+
+    if status == "high_risk":
+        return (
+            f"Saya bisa membantu memberi edukasi umum tentang {topic}, tetapi konteks yang kamu berikan termasuk kondisi yang perlu kehati-hatian.\n\n"
+            f"{action}\n\n"
+            "Nusa tidak memberikan diagnosis, resep, atau dosis obat."
+        )
+
+    return (
+        f"Saya bisa membantu menavigasi keluhan {topic} sebagai edukasi umum.\n\n"
+        "Ceritakan durasi keluhan, apakah membaik atau memburuk, dan gejala lain yang menyertai tanpa membagikan data pribadi sensitif.\n\n"
+        f"{action}\n\n"
+        "Nusa tidak mendiagnosis dan tidak menggantikan tenaga kesehatan."
+    )
+
+
 @app.post("/llm/preview", response_model=LlmRouterResponse)
 async def llm_preview(request: LlmPreviewRequest) -> LlmRouterResponse:
     config = LocalLlmConfig.from_env()
@@ -296,13 +326,17 @@ async def ask_ai(request: AskRequest) -> AskResponse:
     decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
     include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
 
-    rule_based_answer = build_answer(
-        intent,
-        safety_level,
-        decision,
-        greeting_prefix=intent_result.get("greetingPrefix", False),
-        is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
-    )
+    if intent == "health_navigator" and intent_result.get("navigatorTopic"):
+        navigator_result = check_navigator(intent_result["navigatorTopic"], question)
+        rule_based_answer = _build_navigator_answer(question, navigator_result)
+    else:
+        rule_based_answer = build_answer(
+            intent,
+            safety_level,
+            decision,
+            greeting_prefix=intent_result.get("greetingPrefix", False),
+            is_islamic_greeting=intent_result.get("isIslamicGreeting", False),
+        )
 
     answer, llm_provider = await _generate_llm_answer(
         question=question,
