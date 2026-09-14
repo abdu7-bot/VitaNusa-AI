@@ -1,6 +1,19 @@
 # 17 — Phased Roadmap
 
-Status: **Proposed**. Ukuran `Small|Medium|Large|Extra Large` menunjukkan kompleksitas relatif, bukan estimasi waktu.
+Status arsitektur: **Proposed**. Status implementasi aktual dicatat terpisah di [current-status.md](current-status.md) agar roadmap tidak disalahartikan sebagai klaim kesiapan produksi. Ukuran `Small|Medium|Large|Extra Large` menunjukkan kompleksitas relatif, bukan estimasi waktu.
+
+## Snapshot implementasi — 26 Juli 2026
+
+| Fase | Status ringkas |
+| --- | --- |
+| Fase 1 — Foundation | Implemented untuk boundary local-only dan internal |
+| Fase 2 — NusaBelajar MVP | Implemented untuk scope internal lokal; cloud dan pilot belum dimulai |
+| Fase 3 — NusaKasir Local MVP | In progress; foundation sampai Expense/CashSession merged, UI kas/expense masih draft review |
+| Fase 4–6 | Not started sebagai fase penuh |
+| Fase 7 — Security & Hardening | Partial cross-cutting work telah merged; hardening fase penuh belum selesai |
+| Fase 8 — Pilot | Not started |
+
+Sumber status rinci, urutan pekerjaan berikutnya, dan release blockers berada di [current-status.md](current-status.md).
 
 ## Phased delivery
 
