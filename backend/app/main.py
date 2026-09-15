@@ -27,6 +27,7 @@ from .search.guard import build_blocked_search_response, build_search_guard_cont
 from .search.models import SearchQuery, SearchRouterResponse
 from .search.normalizer import clean_whitespace
 from .search.router import SearchRouter
+from .security_middleware import SecurityMiddleware
 from .trusted_sources import evidence_for_navigator, list_trusted_sources, sources_for_navigator
 
 DEFAULT_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500", "https://abdu7-bot.github.io"]
@@ -56,6 +57,7 @@ SEARCH_PREVIEW_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_S
 
 
 app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
+app.add_middleware(SecurityMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 
 
