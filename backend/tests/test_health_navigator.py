@@ -2,6 +2,7 @@ import unittest
 
 from app.health_navigator import check_navigator, list_topics
 from app.intent_router import detect_intent
+from app.trusted_sources import EVIDENCE_REFERENCES, SOURCE_MAP, evidence_for_navigator
 
 
 class HealthNavigatorTests(unittest.TestCase):
@@ -9,6 +10,19 @@ class HealthNavigatorTests(unittest.TestCase):
         topics = list_topics()
         self.assertEqual(len(topics), 5)
         self.assertEqual(topics[0]["key"], "demam")
+
+    def test_every_public_topic_has_evidence(self) -> None:
+        for topic in list_topics():
+            evidence = evidence_for_navigator(topic["key"])
+            self.assertTrue(evidence, topic["key"])
+            for item in evidence:
+                self.assertIn(item["sourceKey"], SOURCE_MAP)
+                self.assertTrue(item["url"].startswith("https://"))
+
+    def test_evidence_registry_has_no_unknown_sources(self) -> None:
+        for evidence in EVIDENCE_REFERENCES:
+            self.assertIn(evidence.source_key, SOURCE_MAP)
+            self.assertTrue(evidence.url.startswith("https://"))
 
     def test_emergency_always_wins(self) -> None:
         result = check_navigator("batuk", "Saya batuk dan sesak berat, dada terasa berat.")
