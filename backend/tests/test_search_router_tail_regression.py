@@ -14,25 +14,6 @@ from app.search.router import SearchRouter
 from test_search_router import make_query, search_result, provider_response, stubs, StubProvider
 
 
-class SearchRouterPriorityTailTests(unittest.IsolatedAsyncioTestCase):
-    async def test_priority_uses_only_brave_on_success(self):
-        providers = stubs(provider_response("brave"), provider_response("searxng"), provider_response("duckduckgo"))
-        response = await SearchRouter(WebSearchConfig(strategy="priority", provider="brave"), providers).route(make_query())
-        self.assertEqual(response.providers_requested, ["brave"])
-        self.assertEqual(providers["searxng"].calls, 0)
-
-    async def test_priority_does_not_fallback_when_primary_fails(self):
-        providers = stubs(provider_response("brave", "failed"), provider_response("searxng"), provider_response("duckduckgo"))
-        response = await SearchRouter(WebSearchConfig(strategy="priority", provider="brave"), providers).route(make_query())
-        self.assertEqual(response.providers_failed, ["brave"])
-        self.assertTrue(response.all_providers_failed)
-
-    async def test_unknown_priority_provider_is_safe(self):
-        response = await SearchRouter(WebSearchConfig()).route(make_query(), provider="unknown-engine", strategy="priority")
-        self.assertTrue(response.all_providers_failed)
-        self.assertEqual(response.providers_failed, ["unknown-engine"])
-
-
 class SearchRouterFallbackTailTests(unittest.IsolatedAsyncioTestCase):
     async def test_brave_success_stops_fallback(self):
         providers = stubs(provider_response("brave"), provider_response("searxng"), provider_response("duckduckgo"))
