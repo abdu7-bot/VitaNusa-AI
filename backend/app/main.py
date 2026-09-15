@@ -40,7 +40,29 @@ def get_allowed_origins() -> list[str]:
 
 
 app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
-app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\\.0\\.1)(:\\d+)?$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+
+def _navigator_answer(question: str, navigator_result: dict, source_names: list[str]) -> str:
+    status = navigator_result.get("status")
+    action = navigator_result.get("action", "")
+    matched = navigator_result.get("matchedFlags", [])
+    scope = navigator_result.get("scope", "education-only")
+    topic = navigator_result.get("topic") or "keluhan kesehatan"
+
+    if status == "red_flag":
+        if scope == "emergency-first":
+            answer = f"Keluhan yang Anda sampaikan mengandung tanda bahaya yang perlu diprioritaskan. VitaNusa AI tidak dapat menentukan diagnosis. {action}"
+        else:
+            answer = f"Pada topik {topic}, ada tanda yang perlu diperiksa lebih lanjut: {', '.join(matched)}. VitaNusa AI tidak dapat menentukan diagnosis. {action}"
+    elif status == "high_risk":
+        answer = f"Untuk {topic}, kondisi atau konteks yang Anda sebutkan termasuk kelompok yang perlu kehati-hatian lebih tinggi. {action}"
+    else:
+        answer = f"Saya bisa membantu memberikan edukasi umum tentang {topic}, tetapi bukan diagnosis. Jika keluhan menetap, memburuk, atau terasa mengkhawatirkan, cari bantuan tenaga kesehatan."
+
+    if source_names:
+        answer += "\n\nRujukan: " + ", ".join(source_names)
+    return answer
 
 
 @app.get("/")
@@ -153,10 +175,11 @@ async def ask_ai(request: AskRequest) -> AskResponse:
     decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
     include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
     navigator_topic = intent_result.get("navigatorTopic")
+    navigator_result = None
     if intent == "health_navigator" and navigator_topic:
         navigator_result = check_navigator(navigator_topic, question)
-        rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
-        rule_based_answer += "\n\nRujukan: " + ", ".join(item["name"] for item in sources_for_navigator(navigator_topic))
+        source_names = [item["name"] for item in sources_for_navigator(navigator_topic)]
+        rule_based_answer = _navigator_answer(question, navigator_result, source_names)
     else:
         rule_based_answer = build_answer(intent, safety_level, decision, greeting_prefix=intent_result.get("greetingPrefix", False), is_islamic_greeting=intent_result.get("isIslamicGreeting", False))
     answer, llm_provider = await _generate_llm_answer(question=question, intent=intent, safety_level=safety_level, decision=decision, rule_based_answer=rule_based_answer, history_context=build_history_context(history))
