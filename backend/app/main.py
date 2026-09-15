@@ -49,33 +49,14 @@ def _positive_env_int(name: str, default: int) -> int:
 
 
 RATE_LIMIT_WINDOW_SECONDS = _positive_env_int("VITANUSA_API_RATE_LIMIT_WINDOW_SECONDS", 60)
-ASK_RATE_LIMITER = RateLimiter(
-    requests=_positive_env_int("VITANUSA_ASK_RATE_LIMIT_REQUESTS", 20),
-    window_seconds=RATE_LIMIT_WINDOW_SECONDS,
-)
-NAVIGATOR_RATE_LIMITER = RateLimiter(
-    requests=_positive_env_int("VITANUSA_NAVIGATOR_RATE_LIMIT_REQUESTS", 60),
-    window_seconds=RATE_LIMIT_WINDOW_SECONDS,
-)
-LLM_PREVIEW_RATE_LIMITER = RateLimiter(
-    requests=_positive_env_int("VITANUSA_LLM_PREVIEW_RATE_LIMIT_REQUESTS", 10),
-    window_seconds=RATE_LIMIT_WINDOW_SECONDS,
-)
-SEARCH_PREVIEW_RATE_LIMITER = RateLimiter(
-    requests=_positive_env_int("VITANUSA_SEARCH_PREVIEW_RATE_LIMIT_REQUESTS", 10),
-    window_seconds=RATE_LIMIT_WINDOW_SECONDS,
-)
+ASK_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_ASK_RATE_LIMIT_REQUESTS", 20), window_seconds=RATE_LIMIT_WINDOW_SECONDS)
+NAVIGATOR_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_NAVIGATOR_RATE_LIMIT_REQUESTS", 60), window_seconds=RATE_LIMIT_WINDOW_SECONDS)
+LLM_PREVIEW_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_LLM_PREVIEW_RATE_LIMIT_REQUESTS", 10), window_seconds=RATE_LIMIT_WINDOW_SECONDS)
+SEARCH_PREVIEW_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_SEARCH_PREVIEW_RATE_LIMIT_REQUESTS", 10), window_seconds=RATE_LIMIT_WINDOW_SECONDS)
 
 
 app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=get_allowed_origins(),
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Authorization", "Content-Type"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 
 
 def _client_key(request: Request, endpoint: str) -> str:
@@ -85,14 +66,12 @@ def _client_key(request: Request, endpoint: str) -> str:
     return f"{endpoint}:{client}"
 
 
-def _enforce_rate_limit(request: Request, limiter: RateLimiter) -> None:
+def _enforce_rate_limit(request: Request | None, limiter: RateLimiter) -> None:
+    if request is None:
+        return
     if limiter.allow(_client_key(request, request.url.path)):
         return
-    raise HTTPException(
-        status_code=429,
-        detail="Terlalu banyak permintaan. Coba lagi nanti.",
-        headers={"Retry-After": str(limiter.window_seconds)},
-    )
+    raise HTTPException(status_code=429, detail="Terlalu banyak permintaan. Coba lagi nanti.", headers={"Retry-After": str(limiter.window_seconds)})
 
 
 def _navigator_answer(question: str, navigator_result: dict, source_names: list[str]) -> str:
@@ -101,7 +80,6 @@ def _navigator_answer(question: str, navigator_result: dict, source_names: list[
     matched = navigator_result.get("matchedFlags", [])
     scope = navigator_result.get("scope", "education-only")
     topic = navigator_result.get("topic") or "keluhan kesehatan"
-
     if status == "red_flag":
         if scope == "emergency-first":
             answer = f"Keluhan yang Anda sampaikan mengandung tanda bahaya yang perlu diprioritaskan. VitaNusa AI tidak dapat menentukan diagnosis. {action}"
@@ -111,7 +89,6 @@ def _navigator_answer(question: str, navigator_result: dict, source_names: list[
         answer = f"Untuk {topic}, kondisi atau konteks yang Anda sebutkan termasuk kelompok yang perlu kehati-hatian lebih tinggi. {action}"
     else:
         answer = f"Saya bisa membantu memberikan edukasi umum tentang {topic}, tetapi bukan diagnosis. Jika keluhan menetap, memburuk, atau terasa mengkhawatirkan, cari bantuan tenaga kesehatan."
-
     if source_names:
         answer += "\n\nRujukan: " + ", ".join(source_names)
     return answer
@@ -138,7 +115,7 @@ def navigator_sources():
 
 
 @app.post("/navigator/check", response_model=NavigatorResponse)
-def navigator_check(request: NavigatorRequest, http_request: Request) -> NavigatorResponse:
+def navigator_check(request: NavigatorRequest, http_request: Request = None) -> NavigatorResponse:
     _enforce_rate_limit(http_request, NAVIGATOR_RATE_LIMITER)
     result = check_navigator(request.topic, request.text)
     topic = result.get("topic")
@@ -148,7 +125,7 @@ def navigator_check(request: NavigatorRequest, http_request: Request) -> Navigat
 
 
 @app.post("/llm/preview", response_model=LlmRouterResponse)
-async def llm_preview(request: LlmPreviewRequest, http_request: Request) -> LlmRouterResponse:
+async def llm_preview(request: LlmPreviewRequest, http_request: Request = None) -> LlmRouterResponse:
     _enforce_rate_limit(http_request, LLM_PREVIEW_RATE_LIMITER)
     config = LocalLlmConfig.from_env()
     app_env = os.getenv("APP_ENV", "development").strip().lower()
@@ -172,7 +149,7 @@ async def llm_preview(request: LlmPreviewRequest, http_request: Request) -> LlmR
 
 
 @app.post("/search/preview", response_model=SearchRouterResponse)
-async def search_preview(request: SearchPreviewRequest, http_request: Request) -> SearchRouterResponse:
+async def search_preview(request: SearchPreviewRequest, http_request: Request = None) -> SearchRouterResponse:
     _enforce_rate_limit(http_request, SEARCH_PREVIEW_RATE_LIMITER)
     config = WebSearchConfig.from_env()
     if not config.preview_available:
@@ -218,7 +195,7 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
 
 
 @app.post("/ask", response_model=AskResponse)
-async def ask_ai(request: AskRequest, http_request: Request) -> AskResponse:
+async def ask_ai(request: AskRequest, http_request: Request = None) -> AskResponse:
     _enforce_rate_limit(http_request, ASK_RATE_LIMITER)
     question = request.question.strip()
     if not question:
