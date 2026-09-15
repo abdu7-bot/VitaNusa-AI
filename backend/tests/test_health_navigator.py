@@ -1,7 +1,10 @@
 import unittest
 
+from fastapi.testclient import TestClient
+
 from app.health_navigator import check_navigator, list_topics
 from app.intent_router import detect_intent
+from app.main import app
 from app.trusted_sources import EVIDENCE_REFERENCES, SOURCE_MAP, evidence_for_navigator
 
 
@@ -66,6 +69,16 @@ class HealthNavigatorTests(unittest.TestCase):
     def test_medication_request_is_not_navigator(self) -> None:
         result = detect_intent("Berapa dosis obat untuk demam saya?")
         self.assertEqual(result["intent"], "medication_request")
+
+    def test_ask_uses_navigator_red_flag_result(self) -> None:
+        client = TestClient(app)
+        response = client.post("/ask", json={"question": "Saya batuk dan sesak berat"})
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["intent"], "health_navigator")
+        self.assertIn("tanda bahaya", payload["answer"].lower())
+        self.assertIn("darurat", payload["answer"].lower())
+        self.assertTrue(payload["sources"])
 
 
 if __name__ == "__main__":
