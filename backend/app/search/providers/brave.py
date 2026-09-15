@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
-
 import httpx
 
 from ..base import DummySearchProvider
@@ -64,4 +62,4 @@ class BraveSearchProvider(DummySearchProvider):
                 results.append(result)
             if len(results) >= query.max_results:
                 break
-        return replace(response, results=results, status="success" if results else "empty")
+        return response.model_copy(update={"results": results, "status": "success" if results else "empty"})
