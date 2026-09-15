@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import replace
 from urllib.parse import urljoin
 
 import httpx
@@ -71,4 +70,4 @@ class SearxngSearchProvider(DummySearchProvider):
                     results.append(result)
                 if len(results) >= query.max_results:
                     break
-        return replace(response, results=results, status="success" if results else "empty")
+        return response.model_copy(update={"results": results, "status": "success" if results else "empty"})
