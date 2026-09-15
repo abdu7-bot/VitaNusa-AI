@@ -11,7 +11,7 @@ class RateLimiter:
     def __init__(self, *, requests: int, window_seconds: int, max_clients: int = 10_000) -> None:
         self.requests = max(1, requests)
         self.window_seconds = max(1, window_seconds)
-        self.max_clients = max(100, max_clients)
+        self.max_clients = max(1, max_clients)
         self._lock = Lock()
         self._events: dict[str, deque[float]] = defaultdict(deque)
 
