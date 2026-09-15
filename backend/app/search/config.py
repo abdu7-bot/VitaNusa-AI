@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Mapping, cast
 
 from .models import SearchMode, SearchStrategy
+from .ssrf import UnsafeOutboundUrl, validate_outbound_base_url
 
 
 SUPPORTED_MODES = frozenset({"disabled", "mock", "live"})
@@ -53,22 +54,13 @@ class WebSearchConfig:
     preview_enabled: bool = False
     mock_scenario: str = "success"
     app_env: str = "development"
-    brave: SearchProviderRuntimeConfig = field(
-        default_factory=SearchProviderRuntimeConfig
-    )
-    duckduckgo: SearchProviderRuntimeConfig = field(
-        default_factory=SearchProviderRuntimeConfig
-    )
-    searxng: SearchProviderRuntimeConfig = field(
-        default_factory=SearchProviderRuntimeConfig
-    )
+    brave: SearchProviderRuntimeConfig = field(default_factory=SearchProviderRuntimeConfig)
+    duckduckgo: SearchProviderRuntimeConfig = field(default_factory=SearchProviderRuntimeConfig)
+    searxng: SearchProviderRuntimeConfig = field(default_factory=SearchProviderRuntimeConfig)
     configuration_errors: tuple[str, ...] = ()
 
     @classmethod
-    def from_env(
-        cls,
-        environ: Mapping[str, str] | None = None,
-    ) -> "WebSearchConfig":
+    def from_env(cls, environ: Mapping[str, str] | None = None) -> "WebSearchConfig":
         errors: list[str] = []
 
         def read(name: str, default: str) -> str:
@@ -87,10 +79,7 @@ class WebSearchConfig:
             raw_strategy = "priority"
 
         providers: list[str] = []
-        raw_providers = read(
-            "WEB_SEARCH_PROVIDERS",
-            ",".join(SUPPORTED_PROVIDERS),
-        )
+        raw_providers = read("WEB_SEARCH_PROVIDERS", ",".join(SUPPORTED_PROVIDERS))
         for raw_provider in raw_providers.split(","):
             if not raw_provider.strip():
                 continue
@@ -117,72 +106,61 @@ class WebSearchConfig:
             errors.append("invalid_web_search_country")
             country = "ID"
 
+        app_env = read("APP_ENV", "development").strip().lower()
+        duckduckgo_enabled = _read_bool(
+            read("DUCKDUCKGO_SEARCH_ENABLED", "false"),
+            default=False,
+            error_code="invalid_duckduckgo_search_enabled_flag",
+            errors=errors,
+        )
+        duckduckgo_base_url = read("DUCKDUCKGO_BASE_URL", "").strip()
+        searxng_enabled = _read_bool(
+            read("SEARXNG_SEARCH_ENABLED", "false"),
+            default=False,
+            error_code="invalid_searxng_search_enabled_flag",
+            errors=errors,
+        )
+        searxng_base_url = read("SEARXNG_BASE_URL", "").strip()
+
+        duckduckgo_base_url = _validate_provider_url(
+            duckduckgo_base_url,
+            enabled=duckduckgo_enabled,
+            app_env=app_env,
+            error_code="invalid_duckduckgo_base_url",
+            errors=errors,
+        )
+        searxng_base_url = _validate_provider_url(
+            searxng_base_url,
+            enabled=searxng_enabled,
+            app_env=app_env,
+            error_code="invalid_searxng_base_url",
+            errors=errors,
+        )
+
         return cls(
             mode=cast(SearchMode, raw_mode),
             strategy=cast(SearchStrategy, raw_strategy),
             providers=tuple(providers),
             provider=primary,
-            max_results=_read_int(
-                read("WEB_SEARCH_MAX_RESULTS", "5"),
-                default=5,
-                minimum=1,
-                maximum=10,
-                error_code="invalid_web_search_max_results",
-                errors=errors,
-            ),
-            timeout_seconds=_read_float(
-                read("WEB_SEARCH_TIMEOUT_SECONDS", "8"),
-                default=8.0,
-                minimum=1.0,
-                maximum=30.0,
-                error_code="invalid_web_search_timeout",
-                errors=errors,
-            ),
+            max_results=_read_int(read("WEB_SEARCH_MAX_RESULTS", "5"), default=5, minimum=1, maximum=10, error_code="invalid_web_search_max_results", errors=errors),
+            timeout_seconds=_read_float(read("WEB_SEARCH_TIMEOUT_SECONDS", "8"), default=8.0, minimum=1.0, maximum=30.0, error_code="invalid_web_search_timeout", errors=errors),
             language=language,
             country=country.upper(),
-            safe_search=_read_bool(
-                read("WEB_SEARCH_SAFE_SEARCH", "true"),
-                default=True,
-                error_code="invalid_web_search_safe_search",
-                errors=errors,
-            ),
-            preview_enabled=_read_bool(
-                read("WEB_SEARCH_PREVIEW_ENABLED", "false"),
-                default=False,
-                error_code="invalid_web_search_preview_flag",
-                errors=errors,
-            ),
-            mock_scenario=read(
-                "WEB_SEARCH_MOCK_SCENARIO",
-                "success",
-            ).strip().lower(),
-            app_env=read("APP_ENV", "development").strip().lower(),
+            safe_search=_read_bool(read("WEB_SEARCH_SAFE_SEARCH", "true"), default=True, error_code="invalid_web_search_safe_search", errors=errors),
+            preview_enabled=_read_bool(read("WEB_SEARCH_PREVIEW_ENABLED", "false"), default=False, error_code="invalid_web_search_preview_flag", errors=errors),
+            mock_scenario=read("WEB_SEARCH_MOCK_SCENARIO", "success").strip().lower(),
+            app_env=app_env,
             brave=SearchProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("BRAVE_SEARCH_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_brave_search_enabled_flag",
-                    errors=errors,
-                ),
+                enabled=_read_bool(read("BRAVE_SEARCH_ENABLED", "false"), default=False, error_code="invalid_brave_search_enabled_flag", errors=errors),
                 api_key=read("BRAVE_SEARCH_API_KEY", "").strip() or None,
             ),
             duckduckgo=SearchProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("DUCKDUCKGO_SEARCH_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_duckduckgo_search_enabled_flag",
-                    errors=errors,
-                ),
-                base_url=read("DUCKDUCKGO_BASE_URL", "").strip(),
+                enabled=duckduckgo_enabled,
+                base_url=duckduckgo_base_url,
             ),
             searxng=SearchProviderRuntimeConfig(
-                enabled=_read_bool(
-                    read("SEARXNG_SEARCH_ENABLED", "false"),
-                    default=False,
-                    error_code="invalid_searxng_search_enabled_flag",
-                    errors=errors,
-                ),
-                base_url=read("SEARXNG_BASE_URL", "").strip(),
+                enabled=searxng_enabled,
+                base_url=searxng_base_url,
                 api_key=read("SEARXNG_API_KEY", "").strip() or None,
             ),
             configuration_errors=tuple(dict.fromkeys(errors)),
@@ -202,13 +180,26 @@ class WebSearchConfig:
         return self.preview_enabled and self.app_env != "production"
 
 
-def _read_bool(
-    raw_value: str,
+def _validate_provider_url(
+    raw_url: str,
     *,
-    default: bool,
+    enabled: bool,
+    app_env: str,
     error_code: str,
     errors: list[str],
-) -> bool:
+) -> str:
+    if not raw_url:
+        if enabled:
+            errors.append(error_code)
+        return ""
+    try:
+        return validate_outbound_base_url(raw_url, app_env=app_env)
+    except UnsafeOutboundUrl:
+        errors.append(error_code)
+        return ""
+
+
+def _read_bool(raw_value: str, *, default: bool, error_code: str, errors: list[str]) -> bool:
     normalized = raw_value.strip().lower()
     if normalized in {"1", "true", "yes", "on"}:
         return True
@@ -218,15 +209,7 @@ def _read_bool(
     return default
 
 
-def _read_int(
-    raw_value: str,
-    *,
-    default: int,
-    minimum: int,
-    maximum: int,
-    error_code: str,
-    errors: list[str],
-) -> int:
+def _read_int(raw_value: str, *, default: int, minimum: int, maximum: int, error_code: str, errors: list[str]) -> int:
     try:
         value = int(raw_value)
     except (TypeError, ValueError):
@@ -238,15 +221,7 @@ def _read_int(
     return value
 
 
-def _read_float(
-    raw_value: str,
-    *,
-    default: float,
-    minimum: float,
-    maximum: float,
-    error_code: str,
-    errors: list[str],
-) -> float:
+def _read_float(raw_value: str, *, default: float, minimum: float, maximum: float, error_code: str, errors: list[str]) -> float:
     try:
         value = float(raw_value)
     except (TypeError, ValueError):
