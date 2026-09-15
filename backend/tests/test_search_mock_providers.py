@@ -58,16 +58,22 @@ class MockSearchProviderTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.results, [])
             self.assertFalse(response.is_mock)
 
-    async def test_live_mode_is_not_implemented_and_never_uses_mock(self) -> None:
+    async def test_live_mode_requires_explicit_provider_configuration(self) -> None:
         config = replace(WebSearchConfig(), mode="live")
+        expected_errors = {
+            "brave": "brave_not_configured",
+            "duckduckgo": "duckduckgo_not_configured",
+            "searxng": "searxng_not_configured",
+        }
         for expected_name, provider_class in PROVIDER_CASES:
             response = await provider_class(config).search(make_query())
             self.assertEqual(response.provider, expected_name)
-            self.assertEqual(response.status, "not_implemented")
+            self.assertEqual(response.status, "unavailable")
+            self.assertEqual(response.error_code, expected_errors[expected_name])
             self.assertEqual(response.results, [])
             self.assertFalse(response.is_mock)
 
-    async def test_providers_make_no_network_connection(self) -> None:
+    async def test_providers_make_no_network_connection_when_live_is_unconfigured(self) -> None:
         for mode in ("mock", "live"):
             config = replace(WebSearchConfig(), mode=mode)
             with patch(
