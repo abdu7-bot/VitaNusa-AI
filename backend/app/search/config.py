@@ -48,6 +48,7 @@ class WebSearchConfig:
     provider: str = "brave"
     max_results: int = 5
     timeout_seconds: float = 8.0
+    max_response_bytes: int = 1_000_000
     language: str = "id"
     country: str = "ID"
     safe_search: bool = True
@@ -144,6 +145,7 @@ class WebSearchConfig:
             provider=primary,
             max_results=_read_int(read("WEB_SEARCH_MAX_RESULTS", "5"), default=5, minimum=1, maximum=10, error_code="invalid_web_search_max_results", errors=errors),
             timeout_seconds=_read_float(read("WEB_SEARCH_TIMEOUT_SECONDS", "8"), default=8.0, minimum=1.0, maximum=30.0, error_code="invalid_web_search_timeout", errors=errors),
+            max_response_bytes=_read_int(read("WEB_SEARCH_MAX_RESPONSE_BYTES", "1000000"), default=1_000_000, minimum=16_384, maximum=5_000_000, error_code="invalid_web_search_max_response_bytes", errors=errors),
             language=language,
             country=country.upper(),
             safe_search=_read_bool(read("WEB_SEARCH_SAFE_SEARCH", "true"), default=True, error_code="invalid_web_search_safe_search", errors=errors),
