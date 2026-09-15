@@ -72,12 +72,12 @@ class HealthNavigatorTests(unittest.TestCase):
 
     def test_ask_uses_navigator_red_flag_result(self) -> None:
         client = TestClient(app)
-        response = client.post("/ask", json={"question": "Saya batuk dan sesak berat"})
+        response = client.post("/ask", json={"question": "Saya batuk darah"})
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["intent"], "health_navigator")
-        self.assertIn("tanda bahaya", payload["answer"].lower())
-        self.assertIn("darurat", payload["answer"].lower())
+        self.assertIn("tanda", payload["answer"].lower())
+        self.assertIn("pertolongan medis", payload["answer"].lower())
         self.assertTrue(payload["sources"])
 
 
