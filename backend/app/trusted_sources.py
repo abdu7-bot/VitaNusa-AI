@@ -35,8 +35,11 @@ EVIDENCE_REFERENCES = (
     EvidenceReference("kemkes-fever", "demam", "kemkes", "Tanda bahaya demam", "https://ayosehat.kemkes.go.id/tag/tanda-bahaya-demam", "edukasi tanda bahaya demam; konteks usia perlu diperhatikan"),
     EvidenceReference("kemkes-dengue", "demam", "kemkes", "Cara Mencegah DBD", "https://ayosehat.kemkes.go.id/cara-mencegah-dbd", "gejala dengue dan tanda peringatan yang memerlukan kewaspadaan"),
     EvidenceReference("who-influenza", "batuk", "who", "Influenza (seasonal)", "https://www.who.int/health-topics/influenza-seasonal", "gejala influenza dan kelompok yang berisiko mengalami penyakit berat"),
-    EvidenceReference("who-diarrhoea", "diare", "who", "Diarrhoea", "https://www.who.int/health-topics/diarrhoea", "definisi umum diare, risiko kehilangan cairan, dan pentingnya pencegahan dehidrasi"),
     EvidenceReference("who-pneumonia", "batuk", "who", "Pneumonia", "https://www.who.int/health-topics/pneumonia", "batuk, sesak, demam, nyeri dada, dan tanda berat yang memerlukan perhatian medis"),
+    EvidenceReference("who-diarrhoea", "diare", "who", "Diarrhoea", "https://www.who.int/health-topics/diarrhoea", "definisi umum diare, risiko kehilangan cairan, dan pentingnya pencegahan dehidrasi"),
+    EvidenceReference("who-headache", "sakit_kepala", "who", "Migraine and other headache disorders", "https://www.who.int/news-room/fact-sheets/detail/headache-disorders", "edukasi umum tentang gangguan sakit kepala dan pentingnya penilaian tenaga kesehatan"),
+    EvidenceReference("who-headache-red-flags", "sakit_kepala", "who", "Headache-specific warning signs", "https://iris.who.int/bitstream/handle/10665/366580/9789240069190-eng.pdf", "tanda peringatan sakit kepala seperti onset mendadak dan gejala neurologis"),
+    EvidenceReference("who-abdominal", "sakit_perut", "who", "WHO Medical Emergency Checklist", "https://www.who.int/publications/i/item/who-medical-emergency-checklist", "kerangka keselamatan untuk mengenali kondisi akut yang memerlukan perhatian segera"),
 )
 
 
