@@ -4,6 +4,7 @@ from hmac import compare_digest
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .audit_log import log_ask_event
 from .client_identity import resolve_feedback_client
@@ -59,6 +60,12 @@ SEARCH_PREVIEW_RATE_LIMITER = RateLimiter(requests=_positive_env_int("VITANUSA_S
 app = FastAPI(title="VitaNusa AI Brain", description="Backend otak dasar VitaNusa AI", version="0.2.0")
 app.add_middleware(SecurityMiddleware)
 app.add_middleware(CORSMiddleware, allow_origins=get_allowed_origins(), allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Return a generic client error without exposing traceback or server internals."""
+    return JSONResponse(status_code=500, content={"detail": "Terjadi kesalahan internal. Coba lagi nanti."})
 
 
 def _client_key(request: Request, endpoint: str) -> str:
