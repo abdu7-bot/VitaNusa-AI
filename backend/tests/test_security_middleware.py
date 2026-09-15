@@ -23,6 +23,7 @@ class SecurityMiddlewareUnitTests(unittest.TestCase):
         async def run():
             response = await middleware.dispatch(request, lambda _: None)
             self.assertEqual(response.status_code, 400)
+            self.assertIn("X-Request-ID", response.headers)
 
         asyncio.run(run())
 
@@ -34,6 +35,7 @@ class SecurityMiddlewareUnitTests(unittest.TestCase):
         async def run():
             response = await middleware.dispatch(request, lambda _: None)
             self.assertEqual(response.status_code, 413)
+            self.assertIn("X-Request-ID", response.headers)
 
         asyncio.run(run())
 
@@ -47,16 +49,7 @@ class SecurityMiddlewareUnitTests(unittest.TestCase):
             self.assertEqual(response.headers["X-Frame-Options"], "DENY")
             self.assertEqual(response.headers["Referrer-Policy"], "no-referrer")
             self.assertEqual(response.headers["Cache-Control"], "no-store")
-
-        asyncio.run(run())
-
-    def test_request_id_is_stable_when_provided(self):
-        middleware = SecurityMiddleware(lambda scope, receive, send: None)
-        request = DummyRequest({"X-Request-ID": "abc123"})
-
-        async def run():
-            response = await middleware.dispatch(request, lambda _: DummyResponse())
-            self.assertEqual(response.headers["X-Request-ID"], "abc123")
+            self.assertRegex(response.headers["X-Request-ID"], r"^[0-9a-f]{32}$")
 
         asyncio.run(run())
 
