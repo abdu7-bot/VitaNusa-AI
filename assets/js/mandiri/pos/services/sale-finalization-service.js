@@ -6,13 +6,15 @@ import {
 } from '../../domain/validation.js';
 import { canPerformWorkspaceAction } from '../../domain/permissions.js';
 import { normalizeOperationReceipt } from '../../repositories/operation-receipt-repository.js';
-import { ATOMIC_SALE_STORE_NAMES } from '../../repositories/repository-context.js';
+import {
+  ATOMIC_SALE_FINALIZATION_STORE_NAMES,
+} from '../../repositories/repository-context.js';
 import { MandiriStorageError, mapStorageError, storageError } from '../../storage/storage-errors.js';
 
 const COMMAND_FIELDS = Object.freeze([
   'schemaVersion', 'accountScope', 'workspaceId', 'actorScope', 'actorRole',
   'operationId', 'eventId', 'saleId', 'paymentId', 'receiptId', 'stockMovementIds',
-  'cartId', 'expectedCartVersion', 'payment', 'createdAtLocal',
+  'cartId', 'expectedCartVersion', 'cashSessionId', 'payment', 'createdAtLocal',
 ]);
 const PAYMENT_FIELDS = Object.freeze(['method', 'amountTenderedMinor']);
 
@@ -53,6 +55,7 @@ export function normalizeFinalizeSaleCommand(input) {
     stockMovementIds,
     cartId: id(input.cartId, 'cart', 'finalizeSaleCommand.cartId'),
     expectedCartVersion: normalizePositiveVersion(input.expectedCartVersion, 'finalizeSaleCommand.expectedCartVersion'),
+    cashSessionId: id(input.cashSessionId, 'cashsession', 'finalizeSaleCommand.cashSessionId'),
     payment: Object.freeze({
       method: 'cash',
       amountTenderedMinor: assertMoney(input.payment.amountTenderedMinor),
@@ -111,7 +114,10 @@ export function createSaleFinalizationService({
     }
 
     try {
-      return await repositoryContext.run(ATOMIC_SALE_STORE_NAMES, 'readwrite', async (repositories) => {
+      return await repositoryContext.run(
+        ATOMIC_SALE_FINALIZATION_STORE_NAMES,
+        'readwrite',
+        async (repositories) => {
         const membership = await repositories.membershipRepository.getByUserScope(
           command.accountScope, command.workspaceId, command.actorScope,
         );
@@ -131,6 +137,24 @@ export function createSaleFinalizationService({
           );
           if (!bundle) throw storageError('data_invalid');
           return Object.freeze({ status: 'duplicate-safe', ...bundle, operationReceipt: oldOperation });
+        }
+
+        const cashSession = await repositories.cashSessionRepository.get(
+          command.accountScope,
+          command.workspaceId,
+          command.cashSessionId,
+        );
+        if (!cashSession) throw storageError('cash_session_required');
+        if (cashSession.status !== 'open') throw storageError('cash_session_closed');
+        const activeCashSession = await repositories.cashSessionRepository.findOpen(
+          command.accountScope,
+          command.workspaceId,
+        );
+        if (!activeCashSession || activeCashSession.cashSessionId !== cashSession.cashSessionId) {
+          throw storageError('invalid_reference');
+        }
+        if (command.createdAtLocal < cashSession.openedAtLocal) {
+          throw storageError('data_invalid');
         }
 
         const cart = await repositories.cartRepository.get(
@@ -178,11 +202,12 @@ export function createSaleFinalizationService({
         }
         const lines = cart.lines.map((line) => saleLine(line, command.saleId, products.get(line.productId)));
         const sale = {
-          schemaVersion: 1,
+          schemaVersion: 2,
           saleId: command.saleId,
           workspaceId: command.workspaceId,
           cartId: command.cartId,
           cartVersion: cart.version,
+          cashSessionId: cashSession.cashSessionId,
           status: 'final',
           currencyCode: cart.currencyCode,
           discountMinor: cart.discountMinor,
@@ -309,7 +334,8 @@ export function createSaleFinalizationService({
         return Object.freeze({
           status: 'committed', ...bundle, cart: closedCart, auditEvent, operationReceipt,
         });
-      });
+        },
+      );
     } catch (error) {
       if (error instanceof MandiriStorageError) throw error;
       throw mapStorageError(error, 'transaction_aborted');

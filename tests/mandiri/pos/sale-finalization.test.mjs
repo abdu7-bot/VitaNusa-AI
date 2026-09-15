@@ -10,7 +10,7 @@ import { normalizeReceipt } from '../../../assets/js/mandiri/pos/domain/receipt.
 import { normalizeSale, normalizeSaleLine } from '../../../assets/js/mandiri/pos/domain/sale.js';
 import { openMandiriDatabase } from '../../../assets/js/mandiri/storage/database.js';
 import {
-  ATOMIC_SALE_STORE_NAMES, createRepositoryContext,
+  ATOMIC_SALE_FINALIZATION_STORE_NAMES, ATOMIC_SALE_STORE_NAMES, createRepositoryContext,
 } from '../../../assets/js/mandiri/repositories/repository-context.js';
 
 const ACCOUNT = 'account_scope_a';
@@ -22,6 +22,7 @@ const UNTRACKED = 'product_44444444-4444-4444-8444-444444444444';
 const SALE = 'sale_55555555-5555-4555-8555-555555555555';
 const PAYMENT = 'payment_66666666-6666-4666-8666-666666666666';
 const RECEIPT = 'receipt_77777777-7777-4777-8777-777777777777';
+const CASH_SESSION = 'cashsession_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const OPERATION = 'op_88888888-8888-4888-8888-888888888888';
 const EVENT = 'audit_99999999-9999-4999-8999-999999999999';
 const MOVEMENT = 'movement_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -52,6 +53,7 @@ const command = (overrides = {}) => ({
   actorScope: 'user_scope_actor', actorRole: 'merchant_owner',
   operationId: OPERATION, eventId: EVENT, saleId: SALE, paymentId: PAYMENT,
   receiptId: RECEIPT, stockMovementIds: [MOVEMENT], cartId: CART,
+  cashSessionId: CASH_SESSION,
   expectedCartVersion: 1, payment: { method: 'cash', amountTenderedMinor: 10000 },
   createdAtLocal: AT, ...overrides,
 });
@@ -86,6 +88,24 @@ async function setup({
       0,
     );
   }
+  await memory.cashSessionRepository.create(ACCOUNT, WORKSPACE, {
+    schemaVersion: 1,
+    version: 1,
+    cashSessionId: CASH_SESSION,
+    workspaceId: WORKSPACE,
+    status: 'open',
+    openingCashMinor: 100000,
+    openedByScope: 'user_scope_actor',
+    openedByRole: role,
+    openOperationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    openedAtLocal: '2026-07-23T05:30:00.000Z',
+    closedByScope: null,
+    closedByRole: null,
+    closeOperationId: null,
+    closedAtLocal: null,
+    closingSummary: null,
+    updatedAtLocal: '2026-07-23T05:30:00.000Z',
+  });
   await memory.cartRepository.create(ACCOUNT, WORKSPACE, cart, lines);
   const service = createSaleFinalizationService({
     repositoryContext: memory.repositoryContext,
@@ -264,7 +284,7 @@ test('IndexedDB parity menyimpan bundle final dan mempertahankannya setelah reop
   const databaseName = 'sale-finalization-indexed-parity';
   let connection = await openMandiriDatabase({ indexedDBFactory, keyRangeFactory: IDBKeyRange, databaseName });
   let context = createRepositoryContext(connection);
-  await context.run(ATOMIC_SALE_STORE_NAMES, 'readwrite', async (repositories) => {
+  await context.run(ATOMIC_SALE_FINALIZATION_STORE_NAMES, 'readwrite', async (repositories) => {
     await repositories.membershipRepository.add(ACCOUNT, WORKSPACE, {
       version: 1, membershipId: 'membership_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       accountScope: ACCOUNT, workspaceId: WORKSPACE, userScope: 'user_scope_actor',
@@ -272,6 +292,24 @@ test('IndexedDB parity menyimpan bundle final dan mempertahankannya setelah reop
     });
     await repositories.productRepository.create(ACCOUNT, WORKSPACE, product(TRACKED));
     await repositories.productRepository.create(ACCOUNT, WORKSPACE, product(UNTRACKED));
+    await repositories.cashSessionRepository.create(ACCOUNT, WORKSPACE, {
+      schemaVersion: 1,
+      version: 1,
+      cashSessionId: CASH_SESSION,
+      workspaceId: WORKSPACE,
+      status: 'open',
+      openingCashMinor: 100000,
+      openedByScope: 'user_scope_actor',
+      openedByRole: 'merchant_owner',
+      openOperationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      openedAtLocal: '2026-07-23T05:30:00.000Z',
+      closedByScope: null,
+      closedByRole: null,
+      closeOperationId: null,
+      closedAtLocal: null,
+      closingSummary: null,
+      updatedAtLocal: '2026-07-23T05:30:00.000Z',
+    });
     await repositories.inventoryRepository.appendMovement(
       ACCOUNT, WORKSPACE,
       {
@@ -301,10 +339,57 @@ test('IndexedDB parity menyimpan bundle final dan mempertahankannya setelah reop
   connection.close();
   connection = await openMandiriDatabase({ indexedDBFactory, keyRangeFactory: IDBKeyRange, databaseName });
   context = createRepositoryContext(connection);
-  const persisted = await context.run(ATOMIC_SALE_STORE_NAMES, 'readonly', (repositories) => (
+  const persisted = await context.run(ATOMIC_SALE_FINALIZATION_STORE_NAMES, 'readonly', (repositories) => (
     repositories.saleRepository.get(ACCOUNT, WORKSPACE, SALE)
   ));
   assert.equal(persisted.payment.changeMinor, 3000);
   assert.equal(persisted.receipt.lines.length, 2);
   connection.close();
+});
+
+test('Sale v2 menyimpan lineage sesi kas yang diverifikasi', async () => {
+  const { service } = await setup();
+  const result = await service.finalize(command());
+  assert.equal(result.sale.schemaVersion, 2);
+  assert.equal(result.sale.cashSessionId, CASH_SESSION);
+});
+
+test('finalisasi menolak sesi kas yang hilang, tertutup, atau timestamp sebelum open', async () => {
+  const missing = await setup();
+  await assert.rejects(missing.service.finalize(command({
+    cashSessionId: 'cashsession_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  })), { code: 'cash_session_required' });
+  assert.equal(await missing.memory.saleRepository.get(ACCOUNT, WORKSPACE, SALE), null);
+
+  const closed = await setup();
+  await closed.memory.cashSessionRepository.update(ACCOUNT, WORKSPACE, {
+    schemaVersion: 1,
+    version: 2,
+    cashSessionId: CASH_SESSION,
+    workspaceId: WORKSPACE,
+    status: 'closed',
+    openingCashMinor: 100000,
+    openedByScope: 'user_scope_actor',
+    openedByRole: 'merchant_owner',
+    openOperationId: 'op_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    openedAtLocal: '2026-07-23T05:30:00.000Z',
+    closedByScope: 'user_scope_actor',
+    closedByRole: 'merchant_owner',
+    closeOperationId: 'op_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    closedAtLocal: '2026-07-23T06:30:00.000Z',
+    closingSummary: {
+      cashSalesMinor: 0,
+      expenseOutMinor: 0,
+      expectedCashMinor: 100000,
+      countedCashMinor: 100000,
+      differenceMinor: 0,
+    },
+    updatedAtLocal: '2026-07-23T06:30:00.000Z',
+  }, 1);
+  await assert.rejects(closed.service.finalize(command()), { code: 'cash_session_closed' });
+
+  const stale = await setup();
+  await assert.rejects(stale.service.finalize(command({
+    createdAtLocal: '2026-07-23T05:00:00.000Z',
+  })), { code: 'data_invalid' });
 });

@@ -27,6 +27,7 @@ const SAFE_MESSAGES = Object.freeze({
   cash_session_required: 'Sesi kas harus dibuka terlebih dahulu.',
   cash_session_already_open: 'Satu sesi kas masih terbuka pada workspace ini.',
   cash_session_closed: 'Sesi kas sudah ditutup dan tidak dapat diubah.',
+  legacy_sale_lineage: 'Sale lama tidak memiliki hubungan sesi kas yang dapat diverifikasi.',
   duplicate_operation: 'Operasi yang sama sudah pernah diproses.',
   operation_in_progress: 'Operasi lain masih diproses. Tunggu hingga selesai sebelum mencoba lagi.',
   sale_immutable: 'Sale final tidak dapat diubah.',

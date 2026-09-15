@@ -10,10 +10,15 @@ import {
 import { normalizeCartLine } from './cart.js';
 import { normalizeWorkspaceScope } from './product-validation.js';
 
-const SALE_FIELDS = Object.freeze([
+const SALE_FIELDS_V1 = Object.freeze([
   'schemaVersion', 'saleId', 'workspaceId', 'cartId', 'cartVersion', 'status',
   'currencyCode', 'discountMinor', 'subtotalMinor', 'grandTotalMinor', 'lineCount',
   'paymentId', 'receiptId', 'operationId', 'actorScope', 'actorRole', 'finalizedAtLocal',
+]);
+const SALE_FIELDS_V2 = Object.freeze([
+  ...SALE_FIELDS_V1.slice(0, 11),
+  'cashSessionId',
+  ...SALE_FIELDS_V1.slice(11),
 ]);
 const SALE_LINE_FIELDS = Object.freeze([
   'schemaVersion', 'saleId', 'lineNo', 'productId', 'productNameSnapshot', 'skuSnapshot',
@@ -56,7 +61,18 @@ export function normalizeSaleLine(input) {
 }
 
 export function normalizeSale(input, { workspaceId: expectedWorkspaceId } = {}) {
-  assertExactFields(input, SALE_FIELDS, { path: 'sale' });
+  const schemaVersion = normalizePositiveVersion(input?.schemaVersion, 'sale.schemaVersion');
+  if (schemaVersion === 1) {
+    assertExactFields(input, SALE_FIELDS_V1, { path: 'sale' });
+  } else if (schemaVersion === 2) {
+    assertExactFields(input, SALE_FIELDS_V2, { path: 'sale' });
+  } else {
+    throw new MandiriDomainError(
+      'unsupported_schema_version',
+      'schema Sale belum didukung',
+      'sale.schemaVersion',
+    );
+  }
   if (input.status !== 'final') throw new MandiriDomainError('data_invalid', 'sale harus final', 'sale.status');
   if (input.currencyCode !== 'IDR') throw new MandiriDomainError('invalid_currency', 'currency hanya IDR');
   if (!['merchant_owner', 'cashier'].includes(input.actorRole)) {
@@ -71,8 +87,8 @@ export function normalizeSale(input, { workspaceId: expectedWorkspaceId } = {}) 
   if (!Number.isSafeInteger(input.lineCount) || input.lineCount < 1) {
     throw new MandiriDomainError('empty_cart', 'sale wajib memiliki line', 'sale.lineCount');
   }
-  return Object.freeze({
-    schemaVersion: normalizePositiveVersion(input.schemaVersion, 'sale.schemaVersion'),
+  const sale = {
+    schemaVersion,
     saleId: id(input.saleId, 'sale', 'sale.saleId'),
     workspaceId: normalizeWorkspaceScope(input.workspaceId, expectedWorkspaceId, 'sale.workspaceId'),
     cartId: id(input.cartId, 'cart', 'sale.cartId'),
@@ -89,7 +105,11 @@ export function normalizeSale(input, { workspaceId: expectedWorkspaceId } = {}) 
     actorScope: normalizeScope(input.actorScope, 'sale.actorScope'),
     actorRole: input.actorRole,
     finalizedAtLocal: normalizeIsoTimestamp(input.finalizedAtLocal, 'sale.finalizedAtLocal'),
-  });
+  };
+  if (schemaVersion === 2) {
+    sale.cashSessionId = id(input.cashSessionId, 'cashsession', 'sale.cashSessionId');
+  }
+  return Object.freeze(sale);
 }
 
 export function validateFinalSale(saleInput, lineInputs) {

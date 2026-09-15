@@ -222,6 +222,12 @@ export function createSaleReversalService({
           if (bundle.payment.paymentId !== bundle.sale.paymentId) {
             throw storageError('data_invalid');
           }
+          if (bundle.sale.schemaVersion !== 2 || !bundle.sale.cashSessionId) {
+            throw storageError('legacy_sale_lineage');
+          }
+          if (command.cashSessionId !== bundle.sale.cashSessionId) {
+            throw storageError('invalid_reference');
+          }
           if (command.createdAtLocal < bundle.sale.finalizedAtLocal) {
             throw storageError('data_invalid');
           }
@@ -229,7 +235,7 @@ export function createSaleReversalService({
           const cashSession = await repositories.cashSessionRepository.get(
             command.accountScope,
             command.workspaceId,
-            command.cashSessionId,
+            bundle.sale.cashSessionId,
           );
           if (!cashSession) throw storageError('cash_session_required');
           if (cashSession.status !== 'open') throw storageError('cash_session_closed');
@@ -259,7 +265,7 @@ export function createSaleReversalService({
             workspaceId: command.workspaceId,
             originalSaleId: command.originalSaleId,
             paymentId: bundle.payment.paymentId,
-            cashSessionId: command.cashSessionId,
+            cashSessionId: bundle.sale.cashSessionId,
             reasonCode: command.reasonCode,
             reasonNote: command.reasonNote,
             reversedAmountMinor: bundle.payment.amountAppliedMinor,

@@ -49,7 +49,11 @@ function command(overrides = {}) {
   };
 }
 
-async function setup({ role = 'merchant_owner', closeSession = false } = {}) {
+async function setup({
+  role = 'merchant_owner',
+  closeSession = false,
+  saleSchemaVersion = 2,
+} = {}) {
   const connection = await openMandiriDatabase({
     indexedDBFactory: new IDBFactory(),
     keyRangeFactory: IDBKeyRange,
@@ -148,7 +152,6 @@ async function setup({ role = 'merchant_owner', closeSession = false } = {}) {
       closeOperationId: 'op_ffffffff-ffff-4fff-8fff-ffffffffffff',
       closedAtLocal: '2026-07-26T06:15:00.000Z',
       closingSummary: {
-        openingCashMinor: 100000,
         cashSalesMinor: 10000,
         expenseOutMinor: 0,
         expectedCashMinor: 110000,
@@ -178,11 +181,12 @@ async function setup({ role = 'merchant_owner', closeSession = false } = {}) {
     ACCOUNT,
     WORKSPACE,
     {
-      schemaVersion: 1,
+      schemaVersion: saleSchemaVersion,
       saleId: SALE,
       workspaceId: WORKSPACE,
       cartId: 'cart_12121212-1212-4212-8212-121212121212',
       cartVersion: 1,
+      ...(saleSchemaVersion === 2 ? { cashSessionId: CASH_SESSION } : {}),
       status: 'final',
       currencyCode: 'IDR',
       discountMinor: 0,
@@ -336,6 +340,18 @@ test('Sale yang sudah void tidak dapat di-void dengan operation baru', async (t)
     eventId: 'audit_17171717-1717-4717-8717-171717171717',
     stockMovementIds: ['movement_18181818-1818-4818-8818-181818181818'],
   })), { code: 'sale_immutable' });
+});
+
+test('reversal menolak Sale legacy dan cashSession caller yang tidak cocok', async (t) => {
+  const legacy = await setup({ saleSchemaVersion: 1 });
+  t.after(() => legacy.connection.close());
+  await assert.rejects(legacy.service.voidSale(command()), { code: 'legacy_sale_lineage' });
+
+  const mismatch = await setup();
+  t.after(() => mismatch.connection.close());
+  await assert.rejects(mismatch.service.voidSale(command({
+    cashSessionId: 'cashsession_cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  })), { code: 'invalid_reference' });
 });
 
 test('kegagalan audit me-rollback reversal, stok, dan receipt', async (t) => {

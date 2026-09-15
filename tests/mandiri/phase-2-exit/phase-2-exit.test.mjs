@@ -11,7 +11,7 @@ test('schema Fase 2 tetap dipertahankan setelah migrasi lanjutan non-destruktif'
     read('assets/js/mandiri/storage/migrations.js'),
     read('docs/vitanusa-mandiri/27-phase-2-exit.md'),
   ]);
-  assert.match(schema, /MANDIRI_DATABASE_VERSION = 7/);
+  assert.match(schema, /MANDIRI_DATABASE_VERSION = 8/);
   assert.match(schema, /MANDIRI_SCHEMA_V2/);
   assert.doesNotMatch(migrations, /deleteObjectStore|deleteIndex|\.clear\s*\(/u);
   assert.match(docs, /tidak menurunkan IndexedDB v2/iu);
