@@ -6,7 +6,7 @@ from .search.models import SearchCategory
 
 
 class AskRequest(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=4000)
     includeQuranicReflection: bool = False
     sessionId: str | None = Field(default=None, max_length=200)
 
