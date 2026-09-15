@@ -109,10 +109,11 @@ async def stream_provider_response(
         content_length = response.headers.get("content-length")
         if content_length:
             try:
-                if int(content_length) > max_bytes:
-                    raise ResponseTooLarge("provider response exceeds byte limit")
+                declared_length = int(content_length)
             except ValueError:
-                pass
+                declared_length = None
+            if declared_length is not None and declared_length > max_bytes:
+                raise ResponseTooLarge("provider response exceeds byte limit")
 
         chunks: list[bytes] = []
         total = 0
