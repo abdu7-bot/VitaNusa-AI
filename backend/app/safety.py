@@ -59,6 +59,14 @@ EMERGENCY_KEYWORDS = (
     "menyakiti diri",
 )
 
+# Some high-risk emergencies are naturally expressed with words between the
+# two concepts. Keep these combinations explicit rather than attempting broad
+# fuzzy matching that could create unsafe false positives.
+EMERGENCY_COMBINATION_PATTERNS = (
+    r"\bhamil\b.{0,60}\b(?:perdarahan|pendarahan|keluar darah)\b",
+    r"\b(?:perdarahan|pendarahan|keluar darah)\b.{0,60}\bhamil\b",
+)
+
 # Explicit negations are handled only when they occur immediately before a
 # matching emergency phrase. This avoids broad NLP assumptions while reducing
 # obvious false positives such as "tidak nyeri dada".
@@ -146,10 +154,29 @@ def contains_non_negated(text: str, keywords: tuple[str, ...]) -> bool:
     return False
 
 
+def contains_non_negated_combination(text: str) -> bool:
+    """Match an explicit emergency combination unless its symptom is negated."""
+    for pattern in EMERGENCY_COMBINATION_PATTERNS:
+        for match in re.finditer(pattern, text):
+            matched = match.group(0)
+            symptom_match = re.search(r"\b(?:perdarahan|pendarahan|keluar darah)\b", matched)
+            if symptom_match is None:
+                continue
+            prefix = matched[:symptom_match.start()]
+            words = re.findall(r"\b[\wÀ-ÿ]+\b", prefix)
+            if not any(word in NEGATION_WORDS for word in words[-4:]):
+                return True
+    return False
+
+
 def classify_risk(question: str, intent: str) -> SafetyResult:
     text = question.lower()
 
-    if contains_non_negated(text, EMERGENCY_KEYWORDS) or intent == "danger_sign":
+    if (
+        contains_non_negated(text, EMERGENCY_KEYWORDS)
+        or contains_non_negated_combination(text)
+        or intent == "danger_sign"
+    ):
         return SafetyResult(
             safetyLevel="emergency",
             recommendedAction="Segera hubungi layanan darurat setempat atau datang ke IGD/fasilitas kesehatan terdekat.",
