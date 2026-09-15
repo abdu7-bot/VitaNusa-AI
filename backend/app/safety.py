@@ -12,14 +12,22 @@ EMERGENCY_KEYWORDS = (
     "nyeri dada berat",
     "dada terasa berat",
     "nyeri dada",
+    "dada sakit sekali",
+    "dada sakit berat",
     "sesak berat",
     "sesak napas berat",
     "sesak nafas berat",
+    "susah napas berat",
+    "susah nafas berat",
     "sulit bernapas",
     "sulit bernafas",
+    "tidak bisa bernapas",
+    "tidak bisa bernafas",
+    "tidak sadar",
     "pingsan",
     "kejang",
     "lemah separuh tubuh",
+    "separuh badan lemah",
     "kelemahan satu sisi",
     "wajah mencong",
     "bicara pelo",
@@ -53,7 +61,7 @@ EMERGENCY_KEYWORDS = (
 
 # Explicit negations are handled only when they occur immediately before a
 # matching emergency phrase. This avoids broad NLP assumptions while reducing
-# obvious false positives such as "tidak sesak napas".
+# obvious false positives such as "tidak nyeri dada".
 NEGATION_WORDS = (
     "tidak",
     "tak",
