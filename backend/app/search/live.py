@@ -60,7 +60,7 @@ async def fetch_json(
     params: dict[str, str | int | bool | None],
     headers: dict[str, str] | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
-) -> ProviderSearchResponse:
+) -> tuple[ProviderSearchResponse, dict | None]:
     try:
         status_code, _, raw = await safe_provider_request(
             url=url,
@@ -76,28 +76,28 @@ async def fetch_json(
             status="failed",
             error_code="unsafe_provider_redirect",
             error_message="Provider mengembalikan redirect yang ditolak.",
-        )
+        ), None
     except ResponseTooLarge:
         return ProviderSearchResponse(
             provider=provider,
             status="failed",
             error_code="provider_response_too_large",
             error_message="Respons provider melebihi batas ukuran.",
-        )
+        ), None
     except httpx.TimeoutException:
         return ProviderSearchResponse(
             provider=provider,
             status="timeout",
             error_code="provider_timeout",
             error_message="Provider pencarian melewati batas waktu.",
-        )
+        ), None
     except (httpx.HTTPError, ValueError, OSError):
         return ProviderSearchResponse(
             provider=provider,
             status="unavailable",
             error_code="provider_request_failed",
             error_message="Provider pencarian tidak dapat diakses.",
-        )
+        ), None
 
     if status_code == 429:
         return ProviderSearchResponse(
@@ -105,21 +105,21 @@ async def fetch_json(
             status="rate_limited",
             error_code="provider_rate_limited",
             error_message="Provider membatasi permintaan.",
-        )
+        ), None
     if status_code >= 500:
         return ProviderSearchResponse(
             provider=provider,
             status="unavailable",
             error_code="provider_server_error",
             error_message="Provider pencarian sedang bermasalah.",
-        )
+        ), None
     if status_code >= 400:
         return ProviderSearchResponse(
             provider=provider,
             status="failed",
             error_code="provider_http_error",
             error_message="Provider menolak permintaan pencarian.",
-        )
+        ), None
 
     payload = parse_json(raw)
     if payload is None:
@@ -128,6 +128,6 @@ async def fetch_json(
             status="failed",
             error_code="provider_invalid_json",
             error_message="Respons provider bukan JSON yang valid.",
-        )
+        ), None
 
-    return ProviderSearchResponse(provider=provider, status="success", results=[])
+    return ProviderSearchResponse(provider=provider, status="success", results=[]), payload
