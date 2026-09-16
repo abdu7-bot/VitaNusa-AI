@@ -1,7 +1,7 @@
 import re
 import unicodedata
 
-from .safety import EMERGENCY_KEYWORDS, classify_risk, contains_any
+from .safety import classify_risk, contains_any, contains_emergency_signal
 
 
 INTENT_KEYWORDS = {
@@ -75,7 +75,7 @@ def detect_navigator_topic(text: str) -> str | None:
 
 def detect_intent(question: str) -> dict:
     text = normalize_text(question)
-    is_emergency = contains_any(text, EMERGENCY_KEYWORDS)
+    is_emergency = contains_emergency_signal(text)
     has_correction = False
     has_greeting = False
     is_islamic_greeting = False

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .intent_router import normalize_text
-from .safety import EMERGENCY_KEYWORDS, HIGH_RISK_KEYWORDS, contains_any
+from .safety import EMERGENCY_KEYWORDS, HIGH_RISK_KEYWORDS, contains_any, contains_emergency_signal
 
 
 @dataclass(frozen=True)
@@ -63,7 +63,7 @@ def check_navigator(topic: str | None, text: str) -> dict:
     normalized = normalize_text(text)
     selected_topic = TOPIC_MAP.get(normalize_text(topic or "").replace(" ", "_"))
 
-    if contains_any(normalized, EMERGENCY_KEYWORDS):
+    if contains_emergency_signal(normalized):
         return {
             "status": "red_flag",
             "topic": selected_topic.key if selected_topic else None,

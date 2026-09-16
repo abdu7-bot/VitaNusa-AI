@@ -40,6 +40,19 @@ class EmergencyGateV2Tests(unittest.TestCase):
         ):
             self.assert_emergency(question)
 
+    def test_severe_chest_pain_with_limited_intervening_words_is_emergency(self) -> None:
+        for question in (
+            "Dada saya sakit sekali",
+            "Dada saya terasa sangat sakit",
+            "Dada terasa sakit sekali",
+            "Dada sakit banget",
+            "Dada saya sakit parah",
+            "Saya sakit sekali di dada",
+            "Saya merasa nyeri sekali di dada",
+            "Nyeri di dada saya sangat berat",
+        ):
+            self.assert_emergency(question)
+
     def test_explicit_negation_does_not_trigger_keyword_only_gate(self) -> None:
         for question in (
             "Saya tidak sesak napas",
@@ -48,6 +61,22 @@ class EmergencyGateV2Tests(unittest.TestCase):
             "Saya tidak mengalami nyeri dada",
         ):
             self.assert_not_emergency(question)
+
+    def test_negated_chest_pain_variants_do_not_trigger_emergency(self) -> None:
+        for question in (
+            "Dada saya tidak sakit",
+            "Saya tidak mengalami nyeri dada",
+            "Dada saya tidak terasa sakit",
+        ):
+            self.assert_not_emergency(question)
+
+    def test_later_emergency_is_not_negated_by_an_earlier_clause(self) -> None:
+        self.assert_emergency(
+            "Dada saya tidak sakit, tetapi sekarang dada saya sakit parah"
+        )
+
+    def test_mild_chest_pain_is_not_emergency_without_severe_qualifier(self) -> None:
+        self.assert_not_emergency("Saya sering merasa sakit ringan di dada")
 
     def test_past_or_third_party_emergency_is_still_conservative(self) -> None:
         for question in (
