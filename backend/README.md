@@ -13,12 +13,34 @@ Dokumentasi fondasi Web Search Router: [`../docs/web-search-router.md`](../docs/
 ```text
 normalize input
   → detect intent
-  → classify medical risk
+  → safety decision pipeline (v3)
+    ├── normalization & context detection
+    ├── emergency signal detection
+    ├── ambiguous safety detection
+    ├── high-risk keyword detection
+    └── decision: emergency | high_risk | ambiguous | low
   → run policy registry
   → aggregate PolicyDecision
   → route content/actions
   → build AskResponse
 ```
+
+### Safety Pipeline v3
+
+Emergency Gate v3 (`app/safety_v3.py`) menyediakan pipeline keputusan keselamatan yang terstruktur:
+
+- **Input teks tervalidasi**: endpoint publik saat ini mengevaluasi teks pertanyaan. Skema `HealthIntake` tersedia untuk integrasi intake terstruktur di masa depan, tetapi belum menjadi input endpoint publik.
+- **Context Detection**: Subject (self/other/hypothetical), Temporal (now/today/recent/past), dan negation handling yang robust
+- **Emergency Detection**: Keyword matching + negation handling + flexible patterns
+- **Ambiguous Handling**: Deteksi input yang tidak jelas tapi berpotensi safety-relevant
+- **SafetyDecision**: Hasil terstruktur dengan level, reason_codes, matched_signals, context, dan clarification fields
+- **Backward Compatibility**: Wrapper `classify_risk()` dan `contains_emergency_signal()` untuk existing code
+
+Safety levels (prioritas):
+1. **EMERGENCY** - Sinyal gejala serius yang memerlukan tindakan medis segera
+2. **HIGH_RISK** - Konteks yang memerlukan evaluasi profesional (hamil, medication, chronic)
+3. **AMBIGUOUS** - Input tidak jelas tapi berpotensi safety-relevant (perlu klarifikasi)
+4. **EDUCATION** - Aman untuk respons edukatif
 
 Folder policy:
 

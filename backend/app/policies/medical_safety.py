@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..safety import classify_risk
+from ..safety_v3 import SafetyDecision, SafetyLevel, evaluate_safety
 from .base import BasePolicy, PolicyContext, PolicyResult
 
 
@@ -9,9 +9,14 @@ class MedicalSafetyPolicy(BasePolicy):
     domain = "medical_safety"
 
     def evaluate(self, context: PolicyContext) -> PolicyResult | None:
-        safety = classify_risk(context.normalized_question, context.intent)
+        supplied_decision = context.metadata.get("safety_decision")
+        safety = (
+            supplied_decision
+            if isinstance(supplied_decision, SafetyDecision)
+            else evaluate_safety(context.question, context.intent)
+        )
 
-        if safety.safetyLevel == "emergency":
+        if safety.level == SafetyLevel.EMERGENCY:
             return PolicyResult(
                 policy_id=self.policy_id,
                 domain=self.domain,
@@ -22,7 +27,7 @@ class MedicalSafetyPolicy(BasePolicy):
                     "Kondisi yang disebutkan dapat termasuk tanda bahaya. "
                     "Pertolongan medis harus didahulukan sebelum pembahasan lain."
                 ),
-                recommended_action=safety.recommendedAction,
+                recommended_action=safety.recommended_action,
                 reasons=("emergency_signal_detected",),
                 metadata={
                     "allowed_actions": ("seek_emergency_help",),
@@ -37,7 +42,7 @@ class MedicalSafetyPolicy(BasePolicy):
                 },
             )
 
-        if safety.safetyLevel == "high":
+        if safety.level == SafetyLevel.HIGH_RISK:
             return PolicyResult(
                 policy_id=self.policy_id,
                 domain=self.domain,
@@ -47,7 +52,7 @@ class MedicalSafetyPolicy(BasePolicy):
                     "Konteks ini memerlukan kehati-hatian lebih karena menyangkut kondisi khusus, "
                     "penyakit kronis, obat resep, atau risiko medis yang lebih tinggi."
                 ),
-                recommended_action=safety.recommendedAction,
+                recommended_action=safety.recommended_action,
                 reasons=("high_risk_context_detected",),
                 metadata={
                     "allowed_actions": ("provide_general_education", "seek_professional_help"),

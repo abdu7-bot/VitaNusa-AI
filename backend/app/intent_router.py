@@ -1,7 +1,7 @@
 import re
 import unicodedata
 
-from .safety import classify_risk, contains_any, contains_emergency_signal
+from .safety_v3 import SafetyDecision, SafetyLevel, contains_any, evaluate_safety
 
 
 INTENT_KEYWORDS = {
@@ -58,10 +58,10 @@ CORRECTION_KEYWORDS = (
 
 def normalize_text(value: str) -> str:
     text = unicodedata.normalize("NFKD", value.lower())
-    text = text.replace("qur'an", "quran").replace("qur’an", "quran")
-    text = text.replace("assalamu'alaikum", "assalamu alaikum").replace("assalamu’alaikum", "assalamu alaikum")
-    text = text.replace("wa'alaikumsalam", "wa alaikumsalam").replace("wa’alaikumsalam", "wa alaikumsalam")
-    text = text.replace("'", " ").replace("`", " ").replace("’", " ")
+    text = text.replace("qur'an", "quran").replace("qur'an", "quran")
+    text = text.replace("assalamu'alaikum", "assalamu alaikum").replace("assalamu'alaikum", "assalamu alaikum")
+    text = text.replace("wa'alaikumsalam", "wa alaikumsalam").replace("wa'alaikumsalam", "wa alaikumsalam")
+    text = text.replace("'", " ").replace("`", " ").replace("'", " ")
     text = re.sub(r"[^a-z0-9\s]", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -73,9 +73,25 @@ def detect_navigator_topic(text: str) -> str | None:
     return None
 
 
-def detect_intent(question: str) -> dict:
+def detect_intent(question: str, *, safety_decision: SafetyDecision | None = None) -> dict:
+    """Detect intent with integrated safety decision pipeline.
+
+    Returns dict with:
+      - intent: detected intent type
+      - safetyLevel: safety classification (emergency|high|ambiguous|low)
+      - recommendedAction: safety action if applicable
+      - greetingPrefix: whether to add greeting prefix
+      - isIslamicGreeting: whether greeting is Islamic
+      - navigatorTopic: detected navigator topic if applicable
+    """
     text = normalize_text(question)
-    is_emergency = contains_emergency_signal(text)
+
+    # Use centralized safety pipeline for consistency
+    safety_decision = safety_decision or evaluate_safety(question)
+
+    is_emergency = safety_decision.level == SafetyLevel.EMERGENCY
+    is_ambiguous = safety_decision.level == SafetyLevel.AMBIGUOUS
+
     has_correction = False
     has_greeting = False
     is_islamic_greeting = False
@@ -94,10 +110,6 @@ def detect_intent(question: str) -> dict:
                 intent = candidate
                 break
 
-        # A symptom may appear together with a request for medicine, a product
-        # claim, or a religious ruling. Those intents must keep precedence over
-        # Navigator so that Navigator never becomes an accidental prescribing,
-        # product, or fatwa route.
         if intent == "health_navigator":
             if contains_any(text, INTENT_KEYWORDS["medication_request"]):
                 intent = "medication_request"
@@ -113,12 +125,21 @@ def detect_intent(question: str) -> dict:
         elif intent == "general_chat" and has_greeting:
             intent = "greeting"
 
-    safety = classify_risk(text, intent)
+    # Map SafetyLevel to safetyLevel string for backward compatibility
+    safety_level_map = {
+        SafetyLevel.EMERGENCY: "emergency",
+        SafetyLevel.HIGH_RISK: "high",
+        SafetyLevel.AMBIGUOUS: "ambiguous",
+        SafetyLevel.EDUCATION: "low",
+    }
+    safety_level_str = safety_level_map.get(safety_decision.level, "low")
+
     greeting_prefix = has_greeting and intent not in ("greeting", "danger_sign")
+
     return {
         "intent": intent,
-        "safetyLevel": safety.safetyLevel,
-        "recommendedAction": safety.recommendedAction,
+        "safetyLevel": safety_level_str,
+        "recommendedAction": safety_decision.recommended_action,
         "greetingPrefix": greeting_prefix,
         "isIslamicGreeting": is_islamic_greeting,
         "navigatorTopic": navigator_topic,

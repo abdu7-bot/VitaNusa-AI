@@ -22,6 +22,7 @@ from .policy_engine import POLICY_ENGINE, serialize_policy_decision
 from .privacy import install_sensitive_access_log_filter
 from .rate_limit import RateLimiter
 from .responses import DISCLAIMER, build_actions, build_answer, build_quranic_reflection
+from .safety_v3 import evaluate_safety
 from .schemas import AskRequest, AskResponse, LlmPreviewRequest, NavigatorRequest, NavigatorResponse, SearchPreviewRequest
 from .search.config import WebSearchConfig
 from .search.guard import build_blocked_search_response, build_search_guard_context, evaluate_search_guard
@@ -211,15 +212,25 @@ async def ask_ai(request: AskRequest, http_request: Request = None) -> AskRespon
         raise HTTPException(status_code=400, detail="Pertanyaan tidak boleh kosong.")
     session_id = (request.sessionId or "").strip() or uuid.uuid4().hex
     history = CONVERSATION_MEMORY.get_history(session_id)
-    intent_result = detect_intent(question)
+    safety_decision = evaluate_safety(question)
+    intent_result = detect_intent(question, safety_decision=safety_decision)
     intent = intent_result["intent"]
     safety_level = intent_result["safetyLevel"]
-    decision = POLICY_ENGINE.evaluate_question(question, intent=intent, safety_level=safety_level)
+    decision = POLICY_ENGINE.evaluate_question(
+        question,
+        intent=intent,
+        safety_level=safety_level,
+        metadata={"safety_decision": safety_decision},
+    )
     include_reflection = request.includeQuranicReflection or intent == "quranic_reflection"
     navigator_topic = intent_result.get("navigatorTopic")
     navigator_result = None
     if intent == "health_navigator" and navigator_topic:
-        navigator_result = check_navigator(navigator_topic, question)
+        navigator_result = check_navigator(
+            navigator_topic,
+            question,
+            safety_decision=safety_decision,
+        )
         source_names = [item["name"] for item in sources_for_navigator(navigator_topic)]
         rule_based_answer = _navigator_answer(question, navigator_result, source_names)
     else:

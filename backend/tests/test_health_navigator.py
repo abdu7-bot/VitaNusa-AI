@@ -75,10 +75,12 @@ class HealthNavigatorTests(unittest.TestCase):
         response = client.post("/ask", json={"question": "Saya batuk darah"})
         self.assertEqual(response.status_code, 200)
         payload = response.json()
-        self.assertEqual(payload["intent"], "health_navigator")
-        self.assertIn("tanda", payload["answer"].lower())
-        self.assertIn("pertolongan medis", payload["answer"].lower())
-        self.assertTrue(payload["sources"])
+        # "batuk darah" is an emergency keyword, so intent should be danger_sign
+        # (safety-first: emergency signals take priority over navigator intent)
+        self.assertEqual(payload["intent"], "danger_sign")
+        self.assertEqual(payload["safetyLevel"], "emergency")
+        self.assertIn("darurat", payload["answer"].lower())
+        self.assertIn("layanan", payload["answer"].lower())
 
 
 if __name__ == "__main__":

@@ -1,11 +1,64 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .search.models import SearchCategory
 
 
+class HealthIntake(BaseModel):
+    """Structured health intake for non-diagnostic context gathering.
+
+    All fields are optional and default to 'unknown' for safety.
+    No personal identifiable information is collected (no name, ID, address, phone).
+    """
+
+    subject_context: Literal["self", "other_person", "hypothetical", "unknown"] = Field(
+        default="unknown",
+        description="Who is the health question about?"
+    )
+
+    age_group: Literal["child", "adult", "elderly", "unknown"] = Field(
+        default="unknown",
+        description="Approximate age group (for context, not diagnosis)"
+    )
+
+    symptom_text: str = Field(
+        default="",
+        max_length=2000,
+        description="Description of symptoms or health concern"
+    )
+
+    onset_context: Literal["now", "today", "recent", "past", "unknown"] = Field(
+        default="unknown",
+        description="When did the symptom start?"
+    )
+
+    severity_context: Literal["mild", "moderate", "severe", "unknown"] = Field(
+        default="unknown",
+        description="How severe does it feel? (self-reported, not diagnostic)"
+    )
+
+    functional_impact: Literal["none", "limited", "severe", "unknown"] = Field(
+        default="unknown",
+        description="How much does it affect daily activities?"
+    )
+
+    relevant_context: list[Literal[
+        "pregnancy", "breastfeeding", "chronic_condition",
+        "medication", "allergy", "injury", "poisoning", "none", "unknown"
+    ]] = Field(
+        default_factory=lambda: ["unknown"],
+        description="Any relevant medical context"
+    )
+
+    @field_validator("symptom_text")
+    @classmethod
+    def strip_symptom_text(cls, v: str) -> str:
+        return v.strip()
+
+
 class AskRequest(BaseModel):
+
     question: str = Field(min_length=1, max_length=4000)
     includeQuranicReflection: bool = False
     sessionId: str | None = Field(default=None, max_length=200)
@@ -31,14 +84,16 @@ class NavigatorRequest(BaseModel):
 
 
 class NavigatorResponse(BaseModel):
-    status: Literal["education", "high_risk", "red_flag"]
+    status: Literal["education", "high_risk", "red_flag", "ambiguous"]
     topic: str | None = None
     action: str
     matchedFlags: list[str] = Field(default_factory=list)
-    scope: Literal["education-only", "high-risk", "topic-red-flag", "emergency-first"]
+    scope: Literal["education-only", "high-risk", "topic-red-flag", "emergency-first", "ambiguous-clarification"]
     sources: list[dict[str, str]] = Field(default_factory=list)
     evidence: list[dict[str, str]] = Field(default_factory=list)
     evidenceNote: str = "Sumber adalah rujukan edukasi umum, bukan bukti diagnosis individual."
+    clarificationRequired: bool = Field(default=False, description="Whether clarification is needed for ambiguous input")
+    clarificationQuestions: list[str] = Field(default_factory=list, description="Minimal clarification questions if ambiguous")
 
 
 class ActionLink(BaseModel):
