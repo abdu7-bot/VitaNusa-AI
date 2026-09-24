@@ -118,33 +118,69 @@ Deployment wajib memiliki rollback path.
 Target: request logs, error logs, latency, provider status, search failures, LLM failures, agent task status, test status, deployment status, audit trail.
 Jangan menyimpan secret atau data sensitif secara sembarangan.
 
-## 21. Master Development Phases
+## 21. Master Development Roadmap — Nusa AI Brain
+
 ### Phase 0 — Baseline & Architecture Freeze
-Audit Git, module inventory, dependency map, test baseline, architecture inventory, source-of-truth docs. Estimasi 2–5 hari.
+Audit Git, module inventory, dependency map, baseline tests, architecture inventory, and source-of-truth documents. Produce DONE / PARTIAL / MISSING / RISK matrix.
 
 ### Phase 1 — Core Stabilization
-API contracts, policy contracts, safety, response contracts, error handling, tests. Estimasi 1–2 minggu.
+Stabilize API contracts, policy contracts, safety boundaries, response contracts, error handling, logging, and core tests.
 
-### Phase 2 — Search & Evidence
-Provider reliability, dedup, ranking, freshness, evidence extraction, claim/evidence mapping. Estimasi 1–3 minggu.
+### Phase 2 — Knowledge Ingestion Engine
+Build the Python/worker pipeline:
+Collector → Extract → Clean → Deduplicate → Classify → Verify → Store.
+Support web/API/document/PDF ingestion, normalization, provenance, versioning, licensing metadata, and structured knowledge storage.
 
-### Phase 3 — Knowledge & Memory
-Knowledge retrieval, trusted sources, conversation memory, user-memory boundaries, project memory. Estimasi 2–4 minggu.
+### Phase 3 — Islamic Knowledge Core
+Build separate domains for Qur'an, Hadith, takhrij/status, tafsir, syarah, aqidah, fiqh, usul fiqh, qawa'id fiqhiyyah, sirah/sejarah, and an ijma' claim registry.
+Every religious claim must have auditable provenance. A large number of websites repeating a claim is not evidence of ijma'.
 
-### Phase 4 — AI Brain
-LLM router, guard, prompt architecture, structured response, tool orchestration. Estimasi 2–4 minggu.
+### Phase 4 — Arabic Language & Verification Core
+Make Arabic analysis a gate for relevant Qur'an/Hadith interpretation:
+Arabic text → integrity → lexical analysis → root/lemma → morphology/sharaf → nahwu/i'rab → balaghah → semantic range → contextual usage → tafsir/syarah → evidence verification.
 
-### Phase 5 — Agent System
-Manager, planner, coder, tester, reviewer, task state, recovery. Estimasi 3–6 minggu.
+Lexical profiles should support Arabic text, root/judhur, lemma, POS, wazan, morphology, grammatical role/i'rab, semantic range, synonyms/antonyms, Qur'anic occurrences, Hadith occurrences, classical Arabic usage, and tafsir/syarah references.
 
-### Phase 6 — Free Provider Router
-Provider abstraction, quota, fallback, cooldown, Rp0 hard limit, pause/resume. Estimasi 1–3 minggu.
+Arabic verification checks language; it does not replace tafsir, hadith science, or usul fiqh. External linguistic resources must retain provenance, license, and version information. If linguistic analysis is uncertain, the system must preserve the uncertainty.
 
-### Phase 7 — Autonomous GitHub Workflow
-Roadmap → task, task execution, branch, test, PR, review, merge gate. Estimasi 1–3 minggu.
+### Phase 5 — Search & Evidence Engine
+Add provider health, freshness, source classification, claim extraction, evidence extraction, claim/evidence mapping, ranking, contradiction detection, and confidence/limitations.
 
-### Phase 8 — Production Hardening
-Security, performance, observability, recovery, deployment, regression. Estimasi 2–4 minggu.
+### Phase 6 — Knowledge Graph + Vector Retrieval
+Run two complementary retrieval paths:
+- Vector: embeddings, chunking, semantic retrieval, reranking.
+- Graph: entities, concepts, sources, claims, scholars, verses, hadith, topics, relationships, provenance.
+
+### Phase 7 — Memory Engine
+Separate conversation memory, user memory, and project/agent memory. Add provenance, retention/deletion boundaries, retrieval policy, and conflict handling.
+
+### Phase 8 — Reasoning & Verification Engine
+Question → Intent → Risk → Policy → Knowledge retrieval → Arabic verification when relevant → Hadith verification when relevant → Ijma' verification when claimed → Evidence ranking → Conflict/khilaf detection → Reasoning → LLM synthesis → Output verification → Citation → Audit.
+
+The LLM is a synthesis component, not the sole source of truth.
+
+### Phase 9 — Nusa AI Brain
+Integrate intent router, policy engine, knowledge, search/evidence, Arabic verification, memory, reasoning, LLM guard, provider router, response builder, audit, and feedback.
+
+Target loop:
+Understand → Verify → Retrieve → Reason → Generate → Validate → Explain → Audit.
+
+### Phase 10 — Agent System
+MANAGER → PLANNER → RESEARCHER → CODER → TESTER → REVIEWER.
+Every agent reads AGENTS.md and the master architecture, operates within task scope, runs tests, records an audit trail, and stops on unresolved high-risk conditions.
+
+### Phase 11 — Free AI Provider Router
+Enforce MAX_SPEND = Rp0. Route dynamically through approved free capacity and PAUSE when free capacity is exhausted. Never bypass quotas/rate limits or enable billing automatically.
+
+### Phase 12 — Autonomous GitHub Development
+ROADMAP → TASK → PLAN → BRANCH → IMPLEMENT → TEST → REVIEW → PR → MERGE GATE → DEPLOY → OBSERVE → ROLLBACK if needed.
+
+### Phase 13 — Production Hardening
+Security, performance, reliability, observability, disaster recovery, backup, regression, deployment, rollback, abuse resistance, prompt-injection resistance, and agent permission boundaries.
+
+### Phase 14 — Continuous Knowledge Growth
+Source → Ingest → Verify → Version → Index → Evaluate → Publish to Knowledge → Monitor.
+Continuous learning means controlled knowledge/retrieval updates; it must not automatically modify model weights whenever a new document is found.
 
 ## 22. Dependency Graph
 Foundation → Core API → Policy/Safety.
