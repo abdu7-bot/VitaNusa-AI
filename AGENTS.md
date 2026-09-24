@@ -4,8 +4,15 @@
 
 VitaNusa AI adalah website edukasi kesehatan, refleksi Islami, VitaCheck, artikel, dan katalog reseller produk secara amanah.
 
+## Master Architecture
+
+Baca **docs/vitanusa-master-architecture-2026.md** sebelum mengerjakan pekerjaan lintas modul, refactor besar, perubahan agent, atau perubahan arsitektur.
+
+Dokumen tersebut adalah peta induk pengembangan 2026. Jangan menyimpang dari dependency, safety boundary, testing gate, Git rules, dan provider-cost rules yang ditetapkan di sana tanpa alasan yang terdokumentasi.
+
 ## Sumber Kebenaran
 
+- Peta arsitektur: `docs/vitanusa-master-architecture-2026.md`
 - Nilai dan prioritas induk: `docs/vitanusa-constitution.md`
 - Cara menambah policy: `docs/hierarchy-system.md`
 - Kontrak policy: `backend/app/policies/base.py`
@@ -29,7 +36,7 @@ Jangan membuat hierarchy logic baru di frontend, prompt, atau response builder b
 
 - Satu aturan memiliki satu pemilik teknis utama.
 - Intent hanya mendeteksi maksud; policy menentukan batas tindakan.
-- Policy baru harus punya `policy_id`, domain, priority, hasil, dan test.
+- Policy baru harus punya policy_id, domain, priority, hasil, dan test.
 - Beberapa policy boleh aktif bersamaan.
 - Jangan menjadikan semua warning sebagai blocker.
 - Emergency harus melarang produk, artikel biasa, dan VitaCheck sebagai pengganti pertolongan.
@@ -54,17 +61,17 @@ Jangan mengubah kecuali dibutuhkan oleh scope:
 
 ## Aturan Artikel Admin
 
-- Artikel baru/import default `published`.
+- Artikel baru/import default published.
 - Pertahankan metadata artikel.
 - Related Articles memakai slug.
 - Draft/archived tidak tampil publik.
 - Warning bukan alasan otomatis memaksa draft.
 - Jangan menghapus Catatan Amanah.
-- Referensi berada di `article-references`.
+- Referensi berada di article-references.
 
 ## Struktur HTML Artikel
 
-Gunakan `article.vitanusa-article`, header dengan `h1` dan summary, section isi, `article-note`, serta `article-references` bila ada. Jangan memasukkan full document HTML ke `contentHtml`.
+Gunakan article.vitanusa-article, header dengan h1 dan summary, section isi, article-note, serta article-references bila ada. Jangan memasukkan full document HTML ke contentHtml.
 
 ## Workflow
 
