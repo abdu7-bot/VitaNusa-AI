@@ -173,9 +173,8 @@ python -m unittest discover -s tests -v
 python -m compileall -q app tests
 ```
 
-Untuk smoke test HTTP:
+Smoke test memakai FastAPI `TestClient` dan tidak memerlukan server aktif:
 
 ```bash
-uvicorn app.main:app --host 127.0.0.1 --port 8000
 python tests/ci_smoke_test.py
 ```

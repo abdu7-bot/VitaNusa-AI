@@ -65,7 +65,7 @@ class LlmGuardTests(unittest.TestCase):
         self.assertEqual(result.reason, "generative_response_prohibited")
 
     def test_empty_request_prevents_llm_execution(self) -> None:
-        empty = LlmRequest.model_construct(system_prompt="", user_message="")
+        empty = LlmRequest(system_prompt=" ", user_message=" ")
         result = evaluate_llm_guard(safe_context(), empty)
         self.assertFalse(result.allowed)
         self.assertEqual(result.reason, "empty_llm_request")

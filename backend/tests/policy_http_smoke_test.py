@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
-"""Dependency-free HTTP checks for the hierarchy policy payload."""
+"""Dependency-free HTTP checks for the hierarchy policy payload.
 
-import json
-import os
+Uses FastAPI's in-process TestClient so the suite does not require a
+running uvicorn server on port 8000.
+"""
+
 import sys
-import urllib.error
-import urllib.request
+from pathlib import Path
 from typing import Any
 
-BASE_URL = os.environ.get("VITANUSA_CI_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from fastapi.testclient import TestClient
+
+from app.main import ASK_RATE_LIMITER, app
 
 
 def post_ask(question: str) -> dict[str, Any]:
-    request = urllib.request.Request(
-        f"{BASE_URL}/ask",
-        data=json.dumps({"question": question}).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=5) as response:
-        if response.status != 200:
-            raise AssertionError(f"HTTP {response.status} for question: {question}")
-        payload = json.loads(response.read().decode("utf-8"))
+    ASK_RATE_LIMITER.clear()
+    with TestClient(app) as client:
+        response = client.post("/ask", json={"question": question})
+    if response.status_code != 200:
+        raise AssertionError(f"HTTP {response.status_code} for question: {question}")
+    payload = response.json()
     if not isinstance(payload, dict):
         raise AssertionError("response must be a JSON object")
     return payload
@@ -81,7 +82,7 @@ def main() -> int:
     for test in TESTS:
         try:
             test()
-        except (AssertionError, KeyError, StopIteration, urllib.error.URLError) as error:
+        except (AssertionError, KeyError, StopIteration) as error:
             failures.append(f"{test.__name__}: {error}")
             print(f"[FAIL] {test.__name__}: {error}", file=sys.stderr)
         else:

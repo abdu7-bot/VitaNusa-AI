@@ -127,7 +127,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q app tests
 ```
 
-Dengan server aktif:
+Smoke test memakai FastAPI `TestClient` dan tidak memerlukan server aktif:
 
 ```bash
 python tests/ci_smoke_test.py

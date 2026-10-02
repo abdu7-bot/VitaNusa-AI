@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-"""Dependency-free HTTP smoke tests for the VitaNusa AI FastAPI backend."""
+"""Dependency-free HTTP smoke tests for the VitaNusa AI FastAPI backend.
+
+Uses FastAPI's in-process TestClient so the suite does not require a
+running uvicorn server on port 8000.
+"""
 
 import json
-import os
 import re
 import sys
-import urllib.error
-import urllib.request
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-BASE_URL = os.environ.get(
-    "VITANUSA_CI_BASE_URL",
-    "http://127.0.0.1:8000",
-).rstrip("/")
+from fastapi.testclient import TestClient
+
+from app.main import ASK_RATE_LIMITER, app
+
 
 REQUIRED_ASK_FIELDS = {
     "question",
@@ -38,6 +41,11 @@ def ensure(condition: bool, case: str, reason: str) -> None:
         raise SmokeTestFailure(f"{case}: {reason}")
 
 
+def _client() -> TestClient:
+    ASK_RATE_LIMITER.clear()
+    return TestClient(app)
+
+
 def request(
     case: str,
     path: str,
@@ -45,30 +53,12 @@ def request(
     method: str = "GET",
     payload: dict[str, Any] | None = None,
 ) -> tuple[int, str]:
-    data = None
-    headers: dict[str, str] = {}
-    if payload is not None:
-        data = json.dumps(payload).encode("utf-8")
-        headers["Content-Type"] = "application/json"
-
-    req = urllib.request.Request(
-        f"{BASE_URL}{path}",
-        data=data,
-        headers=headers,
-        method=method,
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=5) as response:
-            return response.status, response.read().decode("utf-8")
-    except urllib.error.HTTPError as error:
-        raise SmokeTestFailure(
-            f"{case}: expected HTTP 200, received HTTP {error.code}"
-        ) from error
-    except urllib.error.URLError as error:
-        raise SmokeTestFailure(
-            f"{case}: backend request failed: {error.reason}"
-        ) from error
+    with _client() as client:
+        if method == "GET":
+            response = client.get(path)
+        else:
+            response = client.post(path, json=payload)
+        return response.status_code, response.text
 
 
 def decode_json(case: str, body: str) -> dict[str, Any]:
