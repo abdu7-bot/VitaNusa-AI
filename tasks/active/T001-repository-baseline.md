@@ -1,7 +1,7 @@
 # T001 — Repository Baseline Audit
 
 **Priority:** P0  
-**State:** READY  
+**State:** DONE
 **Dependency:** none  
 **Owner:** autonomous agent
 
@@ -47,8 +47,17 @@ Laporan minimal berisi:
 
 ## Acceptance criteria
 
-- [ ] `docs/architecture/BASELINE.md` dibuat.
-- [ ] Semua klaim memiliki dasar command/output atau referensi file.
-- [ ] Tidak ada secret yang ditulis ke laporan.
-- [ ] Test baseline dijalankan bila aman dan tersedia.
-- [ ] Diff direview.
+- [x] `docs/architecture/BASELINE.md` dibuat.
+- [x] Semua klaim memiliki dasar command/output atau referensi file.
+- [x] Tidak ada secret yang ditulis ke laporan.
+- [x] Test baseline dijalankan bila aman dan tersedia.
+- [x] Diff direview.
+
+## Hasil akhir
+
+- Baseline diperiksa pada `/root/VitaNusa-AI`; workspace lain tidak diakses atau diubah.
+- Tidak ada production code yang berubah.
+- Backend: 330 unittest, 9 CI smoke cases, dan 3 policy smoke cases lulus.
+- Frontend: `npm run check` dan seluruh suite npm yang dicantumkan dalam workflow CI selain Firestore Emulator lulus; 15 suite Mandiri (termasuk `offline` dan `phase-2-exit`) juga lulus. Langkah CI `node --check` tidak dijalankan ulang; rincian ada di `docs/architecture/BASELINE.md`.
+- `git diff --check` lulus sebelum commit.
+- Tidak dipindahkan ke `tasks/completed/`: `.agents/WORKFLOW.md` menetapkan lifecycle status tetapi tidak mensyaratkan pemindahan file.

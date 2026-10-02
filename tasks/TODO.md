@@ -12,7 +12,7 @@ Jika terblokir: `ACTIVE → BLOCKED`.
 
 ## P0 — Governance & Safety
 
-- [ ] T001 Audit repository dan catat baseline struktur, test, dependency, dan runtime.
+- [x] T001 Audit repository dan catat baseline struktur, test, dependency, dan runtime. (DONE; `docs/architecture/BASELINE.md`)
 - [ ] T002 Validasi `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`, dan `.agents/ARCHITECTURE.md` terhadap kondisi repository.
 - [ ] T003 Tetapkan mekanisme task locking agar dua agent tidak mengerjakan file/task yang sama.
 - [ ] T004 Buat checkpoint/rollback workflow yang aman untuk autonomous coding.
