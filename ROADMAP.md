@@ -107,7 +107,7 @@ Agent tidak boleh berjalan sebagai satu proses tanpa pagar.
 - Memecah pekerjaan menjadi task kecil.
 - Tidak mengubah kode tanpa task.
 
-## Tier 2 — Worker
+## Tier 2 — Implementer (worker)
 - Mengerjakan satu task.
 - Menjalankan test.
 - Menghasilkan perubahan terukur.

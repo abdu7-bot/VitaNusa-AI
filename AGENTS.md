@@ -73,6 +73,10 @@ Jangan mengubah kecuali dibutuhkan oleh scope:
 
 Gunakan article.vitanusa-article, header dengan h1 dan summary, section isi, article-note, serta article-references bila ada. Jangan memasukkan full document HTML ke contentHtml.
 
+## Agent Governance
+
+`.agents/AGENTS.md` adalah kontrak kerja yang mengikat untuk setiap agent (Kilo, Copilot, Codex, atau lainnya): canonical workspace `/root/VitaNusa-AI`, read-only secondary copy `/home/vita/VitaNusa-AI`, peran Planner/Implementer/Reviewer, alur PLAN → IMPLEMENT → VALIDATE → REVIEW → COMMIT → DONE, kelas task, stop condition, dan gate verifikasi. Baca `.agents/RULES.md` dan `.agents/WORKFLOW.md` sebelum mengubah file apa pun. Test hijau tidak menambah scope.
+
 ## Workflow
 
 1. Audit aliran sebelum refactor.
