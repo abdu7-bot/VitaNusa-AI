@@ -15,24 +15,52 @@ bukan hanya mengurangi kualitas.
 - Test hijau, review positif, atau permintaan "perbaiki sekalian" tidak menambah scope.
 - Temuan di luar scope dicatat pada file task sebagai pekerjaan lanjutan, bukan dikerjakan saat itu juga.
 - Perubahan di luar scope dalam commit yang sama membatalkan commit tersebut.
+- Traceability berarti dapat dibaca dua arah: dari commit ke task ID, dari task ID
+  ke requirement, dan dari requirement ke file yang berubah.
+- File task wajib mencatat kelas task per kategori perubahan, perintah validasi
+  yang dijalankan beserta hasil ringkasnya, dan nomor commit. Bukti approval
+  manusia dicatat pada file task bila task menyentuhnya.
 
 ## Task class
-- `DOC`: hanya dokumen. Tidak menyentuh kode, config, atau test.
+- `DOC`: hanya dokumen. Tidak menyentuh kode, config, test, atau tooling.
 - `TEST`: hanya test dan fixture. Tidak menyentuh production code.
-- `CODE`: production code. Memerlukan scope eksplisit per file dan regression suite.
+- `TOOL`: script dan utilitas non-runtime, misalnya pemeriksa di `scripts/`.
+  Tidak boleh mengubah production behaviour dan wajib punya smoke check atau
+  kasus negatif.
+- `CONFIG`: manifest dan konfigurasi non-deployment. Memerlukan scope eksplisit
+  per file dan pemeriksaan sinkronisasi yang relevan.
+- `CI`: workflow continuous integration. Memerlukan human approval tertulis.
+- `DEPLOY`: konfigurasi deployment. Memerlukan human approval tertulis dan
+  rollback path; tidak dijalankan agent tanpa perintah manusia.
+- `CODE`: production code. Memerlukan scope eksplisit per file, human approval
+  tertulis sebelum perubahan, traceability, dan regression suite.
 - `ADR`: keputusan arsitektur. Memerlukan human approval; agent tidak menutupnya sendiri.
 - Task yang class-nya tidak diketahui diperlakukan sebagai `CODE`, yaitu klas paling ketat.
+- Task yang menyentuh lebih dari satu kategori menyebut semuanya pada file task,
+  misalnya `**Class:** DOC + TOOL`, dan menjalankan seluruh gate kategori yang
+  disebut. Kategori yang tidak disebut tetapi ternyata disentuh adalah pelanggaran
+  scope, bukan promosi kelas otomatis.
+- Documentation dan test tidak memerlukan human approval. `CONFIG`, `CI`, dan
+  `DEPLOY` memerlukan human approval tertulis. Approval tidak boleh dianggap
+  sudah ada hanya karena test hijau atau karena reviewer menyetujui.
 
 ## Production code
 - Perubahan production code memerlukan task class `CODE` yang menyebut file target.
+- Perubahan production code memerlukan tiga syarat sekaligus, bukan salah satu:
+  scope eksplisit, human approval tertulis sebelum perubahan dibuat, dan traceability.
+- Production code mencakup `backend/app/`, halaman dan aset runtime, `service-worker.js`,
+  `firestore.rules`, `storage.rules`, dan `firebase.json`.
 - Area terlindungi memerlukan human approval tertulis sebelum disentuh:
   homepage publik, layout utama, chat UI Nusa AI, logika VitaCheck, halaman produk,
-  halaman kontak, Firebase config, Firestore rules, WhatsApp/email, asset path,
-  service worker, deployment config.
+  halaman kontak, backend aplikasi `backend/app/`, Firebase config, Firestore rules,
+  storage rules, WhatsApp/email, asset path, service worker, workflow CI
+  (`.github/workflows/`), konfigurasi deployment (`render.yaml`, `.replit`,
+  hosting config), dan manifest dependency runtime.
 - Perubahan tidak boleh mengubah perilaku yang terlihat pengguna kecuali itu
   memang objective task dan sudah disetujui.
 - Jangan menambah fitur aplikasi di luar objective task.
 - Jangan mengubah backend atau frontend behavior pada task governance, dokumentasi, atau test.
+- Jangan mengarang approval. Approval yang tidak tercatat pada file task dianggap tidak ada.
 
 ## Anti-tabrakan antar agent
 - Satu task hanya boleh punya satu owner pada satu waktu.
@@ -74,6 +102,9 @@ bukan hanya mengurangi kualitas.
 - Jangan menandai status DONE hanya karena kode berhasil ditulis.
 
 ## Human approval wajib
+- Setiap perubahan production code, apa pun kategorinya (§ Production code).
+- Perubahan pada workflow CI dan konfigurasi deployment.
+- Perubahan manifest dependency runtime.
 - Perubahan keamanan besar.
 - Perubahan arsitektur fundamental.
 - Penghapusan data massal.
@@ -82,3 +113,18 @@ bukan hanya mengurangi kualitas.
 - Perubahan yang menghapus atau mengganti file existing.
 - Deployment produksi yang berisiko.
 - Autonomous loop yang lebih luas dari yang tertulis di `.agents/WORKFLOW.md`.
+- Approval dicatat pada file task sebelum perubahan dibuat. Approval lisan,
+  asumsi, atau "kayaknya tidak berisiko" bukan approval.
+
+## Governance check
+- `scripts/check_agent_governance.py` adalah anchor guard dan smoke guard.
+  Ia memeriksa keberadaan path governance, keberadaan string anchor tertentu, dan
+  bentuk baris task. Ia bukan validator semantik dan bukan sumber otoritatif.
+- PASS dari anchor guard berarti kontrak yang diawasi masih tertulis di tempat
+  yang diawasi. PASS tidak berarti kontrak tersebut benar, tidak ambigu, atau
+  benar-benar dijalankan.
+- Keputusan PASS tetap milik reviewer terhadap checklist
+  `.agents/WORKFLOW.md` §7, bukan milik guard.
+- Anchor guard belum dijalankan di CI. Integrasi ke workflow CI dan
+  perluasan cakupan anchor adalah pekerjaan terpisah yang memerlukan approval
+  manusia; jangan mengklaim pekerjaan itu sebagai bagian task governance.

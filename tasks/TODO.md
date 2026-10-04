@@ -13,7 +13,7 @@ Jika terblokir: `ACTIVE → BLOCKED`.
 ## P0 — Governance & Safety
 
 - [x] T001 Audit repository dan catat baseline struktur, test, dependency, dan runtime. (DONE; `docs/architecture/BASELINE.md`)
-- [x] T002 Validasi `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`, dan `.agents/ARCHITECTURE.md` terhadap kondisi repository. (DONE; kontrak governance finalized di `.agents/*`, pemeriksa `scripts/check_agent_governance.py`, rincian di `tasks/active/T002-agent-governance.md`)
+- [x] T002 Validasi `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`, dan `.agents/ARCHITECTURE.md` terhadap kondisi repository. (DONE; kontrak governance di `.agents/*` dengan kelas task per kategori dan anchor guard `scripts/check_agent_governance.py`, rincian dan remediasi R1-R5 di `tasks/active/T002-agent-governance.md`)
 - [ ] T003 Tetapkan mekanisme task locking agar dua agent tidak mengerjakan file/task yang sama.
 - [ ] T004 Buat checkpoint/rollback workflow yang aman untuk autonomous coding.
 - [ ] T005 Tambahkan audit log untuk setiap autonomous task.

@@ -122,6 +122,11 @@ Agent tidak boleh berjalan sebagai satu proses tanpa pagar.
 - Menggabungkan perubahan yang lolos.
 - Menjaga build/test tetap hijau.
 
+> Kontrak operasional tier ini: `.agents/AGENTS.md` §2 mendefinisikan Planner,
+> Implementer, Reviewer, dan Integrator sebagai empat peran terpisah, dan
+> `.agents/WORKFLOW.md` §8 menetapkan kapan commit dan penggabungan dilakukan.
+> Roadmap tetap menjadi sumber arah; `.agents/` menjadi sumber kewajiban.
+
 # 6. Autonomous Coding Orchestrator
 
 Target konfigurasi model/agent:

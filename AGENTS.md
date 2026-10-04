@@ -45,7 +45,8 @@ Jangan membuat hierarchy logic baru di frontend, prompt, atau response builder b
 
 ## Area yang Dilindungi
 
-Jangan mengubah kecuali dibutuhkan oleh scope:
+Jangan diubah kecuali ada scope eksplisit per file **dan** approval manusia
+tertulis yang tercatat pada file task:
 
 - homepage publik;
 - chat UI Nusa AI;
@@ -53,11 +54,19 @@ Jangan mengubah kecuali dibutuhkan oleh scope:
 - VitaCheck logic;
 - halaman produk;
 - halaman kontak;
+- backend aplikasi `backend/app/`;
 - Firebase config;
-- Firestore rules;
+- Firestore rules dan storage rules;
 - WhatsApp/email;
 - asset path;
-- service worker dan deployment config.
+- service worker;
+- workflow CI (`.github/workflows/`);
+- konfigurasi deployment (`render.yaml`, `.replit`);
+- manifest dependency runtime.
+
+Setiap perubahan production code memerlukan tiga syarat sekaligus: scope
+eksplisit, approval manusia tertulis sebelum perubahan, dan traceability ke task
+ID serta requirement. Daftar lengkap dan definisi path ada di `.agents/RULES.md`.
 
 ## Aturan Artikel Admin
 
@@ -75,7 +84,7 @@ Gunakan article.vitanusa-article, header dengan h1 dan summary, section isi, art
 
 ## Agent Governance
 
-`.agents/AGENTS.md` adalah kontrak kerja yang mengikat untuk setiap agent (Kilo, Copilot, Codex, atau lainnya): canonical workspace `/root/VitaNusa-AI`, read-only secondary copy `/home/vita/VitaNusa-AI`, peran Planner/Implementer/Reviewer, alur PLAN → IMPLEMENT → VALIDATE → REVIEW → COMMIT → DONE, kelas task, stop condition, dan gate verifikasi. Baca `.agents/RULES.md` dan `.agents/WORKFLOW.md` sebelum mengubah file apa pun. Test hijau tidak menambah scope.
+`.agents/AGENTS.md` adalah kontrak kerja yang mengikat untuk setiap agent (Kilo, Copilot, Codex, atau lainnya): canonical workspace `/root/VitaNusa-AI`, read-only secondary copy `/home/vita/VitaNusa-AI`, peran Planner/Implementer/Reviewer/Integrator, alur PLAN → IMPLEMENT → VALIDATE → REVIEW → COMMIT → DONE, kelas task per kategori perubahan, stop condition, dan gate verifikasi. Baca `.agents/RULES.md` dan `.agents/WORKFLOW.md` sebelum mengubah file apa pun. Test hijau tidak menambah scope.
 
 ## Workflow
 
