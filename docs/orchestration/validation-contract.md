@@ -18,9 +18,11 @@ benar-benar berjalan tetap perintah yang tercantum pada `.agents/WORKFLOW.md` §
 | 7 | Approval state | Approval yang diwajibkan tercatat pada file task dan mendahului perubahan | Field `**Approval:**` | `BLOCKED` |
 | 8 | Commit traceability | Commit menyebut task ID dan tercatat pada file task | `**Commit:**` pada file task | `BLOCKED` |
 
-Pemeriksaan 1 sampai 8 adalah syarat masuk Integrator
-(`review-approval-integration.md` §4.1). Pemeriksaan tambahan per kelas task
-tetap berlaku pada `.agents/WORKFLOW.md` §6.
+Pemeriksaan 1 sampai 8 adalah syarat task `DONE` untuk semua task, bukan syarat
+Integrator semata: Implementer juga harus memenuhinya pada sesi satu task.
+Pemeriksaan yang sama menjadi syarat masuk Integrator hanya bila Integrator
+diperlukan (`review-approval-integration.md` §4.1 dan §4.2). Pemeriksaan tambahan
+per kelas task tetap berlaku pada `.agents/WORKFLOW.md` §6.
 
 ## 2. Pemetaan ke kelas task
 

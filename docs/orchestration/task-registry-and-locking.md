@@ -39,11 +39,16 @@ follow-up.
 | Acceptance criteria | `## Acceptance criteria` dengan checkbox | Ya |
 | Validation status | Hasil perintah validasi beserta ringkasan | Ya |
 | Commit SHA | `**Commit:**` | Ya |
-| Audit | Rujukan ke entri audit pada `audit-trail.md` | Ya |
+| Audit reference | Field `**Audit reference:**` yang memuat ringkasan manual yang dapat ditelusuri: task ID, commit SHA, reviewer, dan hasil validation | Ya |
 
-Field `**Workspace:**`, `**Branch:**`, dan `**Reviewer:**` adalah tambahan T003.
-Task record lama (`T001`, `T002`) belum memfield tersebut; keduanya tidak
-diubah pada T003 dan kesenjangan itu dicatat sebagai follow-up.
+Field `**Workspace:**`, `**Branch:**`, `**Reviewer:**`, dan
+`**Audit reference:**` adalah tambahan T003. Task record lama (`T001`, `T002`)
+belum memfield tersebut; keduanya tidak diubah pada T003 atau T003-R1 dan
+kesenjangan itu dicatat sebagai follow-up.
+
+Isi minimum `**Audit reference:**` ditentukan oleh `audit-trail.md` §4. Ringkasan
+itu ditulis tangan oleh agent pada file task dan dapat diverifikasi terhadap Git;
+keduanya bukan audit log otomatis. Audit log otomatis adalah T005.
 
 ## 3. Lifecycle
 
@@ -68,7 +73,7 @@ tanpa menambah state:
 | VALIDATED | `TESTING` | Validasi dijalankan pada state ini |
 | REVIEWED | `REVIEW` | Checklist reviewer dan keputusan PASS atau BLOCKED |
 | APPROVAL_REQUIRED, APPROVED | bukan state | Approval adalah gate yang direkam pada file task, bukan state |
-| INTEGRATION | aktivitas Integrator setelah review PASS | Dijelaskan di `review-approval-integration.md` |
+| INTEGRATION | aktivitas Integrator setelah review PASS, hanya bila kondisi `review-approval-integration.md` §4.1 terpenuhi | Sesi satu task tanpa branch tidak melalui tahap ini |
 | MERGED | `DONE` | Satu commit dengan task ID dan status task diperbarui |
 
 Aturan: jangan menambah state baru hanya karena istilah lain lebih lengkap.
@@ -96,6 +101,8 @@ dihapus, hanya berubah statusnya, sehingga jejaknya tetap dapat diaudit:
 **Class:** <kelas per kategori>
 **Claimed files:** <daftar path eksplisit>
 **Approval:** <bukti approval atau "not required">
+**Audit reference:** <diisi saat task selesai: task ID, commit SHA, reviewer,
+hasil validation, dan rujukan kontrak pada `audit-trail.md`>
 ```
 
 ### 4.3 Claim

@@ -6,7 +6,7 @@ Peran tetap sumber kebenaran; provider hanyalah implementasi peran.
 ## 1. Peran adalah kewenangan, bukan nama provider
 
 `.agents/AGENTS.md` §2 menetapkan empat peran: Planner, Implementer, Reviewer,
-dan Integrator. Kewenangan attach pada peran tersebut, bukan pada nama tool:
+dan Integrator. Kewenangan melekat pada peran tersebut, bukan pada nama tool:
 
 | Peran | Kewenangan | Larangan |
 |---|---|---|
@@ -24,7 +24,8 @@ dan Integrator. Kewenangan attach pada peran tersebut, bukan pada nama tool:
 | Implementasi | Implementer | Scope eksplisit, kelas task jelas, approval tertulis bila `CODE`, `CONFIG`, `CI`, atau `DEPLOY` |
 | Validasi perintah | Implementer atau Reviewer | Sesuai `.agents/WORKFLOW.md` §6 |
 | Review dan keputusan PASS | Reviewer | Terpisah dari implementer untuk `TOOL`, `CONFIG`, `CI`, `CODE`, `ADR`; self-review hanya untuk `DOC` dan `TEST` |
-| Merge dan penggabungan | Integrator | Semua gate pada `review-approval-integration.md` terpenuhi |
+| Commit sesi satu task tanpa branch | Implementer | Reviewer PASS; `.agents/WORKFLOW.md` §8 |
+| Merge dan penggabungan multi-task atau merge branch task | Integrator | Semua gate pada `review-approval-integration.md` §4.1 dan §4.2 terpenuhi |
 | Persetujuan manusia | Manusia | Tercatat pada file task; tidak dapat diwakili agent |
 
 ## 3. Slot provider
@@ -60,15 +61,18 @@ Setiap task record menuliskan assignment dengan field berikut:
 ```text
 **Owner:** <agent yang mengimplementasikan>
 **Reviewer:** <agent atau manusia yang mereview; "self-review" hanya untuk DOC dan TEST>
-**Integrator:** <agent yang menggabungkan bila lebih dari satu task>
+**Integrator:** <agent yang menggabungkan bila syarat Integrator diperlukan>
+**Integrator required:** <`no` untuk sesi satu task tanpa branch; `yes` bila multi-task atau merge branch task>
 **Branch:** task/<TASK-ID>
 **Workspace:** <path bila isolation dipakai>
 **Approval:** <bukti approval manusia, atau "not required" untuk DOC dan TEST>
+**Audit reference:** <task ID, commit SHA, reviewer, hasil validation>
 ```
 
-Field `**Reviewer:**`, `**Integrator:**`, `**Branch:**`, dan `**Workspace:**`
-wajib diisi sebelum implementasi dimulai dan tidak boleh diisi setelah diff
-selesai.
+Field `**Reviewer:**`, `**Integrator:**`, `**Integrator required:**`,
+`**Branch:**`, dan `**Workspace:**` wajib diisi sebelum implementasi dimulai dan
+tidak boleh diisi setelah diff selesai. Field `**Audit reference:**` diisi saat task
+selesai karena isinya bergantung pada commit dan hasil validasi.
 
 ## 5. Pelanggaran yang paling sering terjadi
 
@@ -78,7 +82,7 @@ selesai.
 | Mengisi approval setelah diff selesai | Approval dianggap tidak ada (`.agents/RULES.md`) |
 | Menganggap semua provider selalu tersedia | Klaim palsu soal kuota dan kemampuan |
 | Mengganti provider agar gate dilewati | Perubahan di luar scope dan risk tidak tercatat |
-| Melewati Integrator dan langsung merge dari branch implementer | Pelanggaran `review-approval-integration.md` |
+| Merge branch task atau multi-task tanpa Integrator | Pelanggaran `review-approval-integration.md` §4.1 |
 
 ## 6. Yang tidak dikerjakan pada T003
 

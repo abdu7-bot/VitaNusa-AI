@@ -39,13 +39,35 @@ data yang sudah terekam:
 {"schema":"vitanusa.audit.v1","task_id":"T011","actor":"kilo-auto","role":"implementer","timestamp":"2026-10-05T02:10:00Z","action":"implement","workspace":"canonical","branch":"task/T011","class":"CODE","reviewer":null,"validation":null,"approval":{"by":"human","at":"2026-10-05T01:00:00Z","scope":["backend/app/x.py"]},"commit_sha":"0000000000000000000000000000000000000000","result":"pass","note":""}
 ```
 
-## 4. Keputusan storage
+## 4. Minimum audit reference manual
+
+Sebelum persistence ada, setiap task record **wajib** memuat field
+`**Audit reference:**`. Isinya adalah ringkasan manual yang dapat ditelusuri:
+
+| Isi | Sumber verifikasi |
+|---|---|
+| Task ID | Task record dan pesan commit |
+| Commit SHA | `git log` dan field `**Commit:**` |
+| Nama reviewer | Bagian Review pada task record |
+| Hasil validation | Ringkasan perintah validasi pada task record |
+| Approval bila diwajibkan | Field `**Approval:**` |
+| Rujukan kontrak | `docs/orchestration/audit-trail.md` |
+
+Syarat minimum ini adalah yang berlaku sekarang. Field itu diminta oleh
+`task-registry-and-locking.md` §2 dan harus ada pada task record mana pun,
+termasuk `T003`. Audit reference bukan audit log otomatis: tidak ada entri yang
+dihasilkan program, tidak ada persistence, dan tidak ada integrasi CI. Penulisan
+otomatis adalah T005.
+
+Field itu pada task record T003 terisi pada header `**Audit reference:**`.
+
+## 5. Keputusan storage
 
 | Opsi | Status | Alasan |
 |---|---|---|
 | Berkas JSON Lines append-only per task, contoh `tasks/audit/<TASK-ID>.jsonl` | Kontrak, belum dibuat | Tidak menambah dependency, mudah dibaca dan diaudit, sesuai `.agents/WORKFLOW.md` §4 bahwa claim dicatat pada file task bukan sistem eksternal |
 | Database orchestration | Ditolak | Tidak ada kebutuhan nyata; menambah permukaan risiko tanpa bukti |
-| Branch atau tag Git untuk audit | Ditolak | Audit bukan riwayat kode; histone Git bukan jejak tindakan |
+| Branch atau tag Git untuk audit | Ditolak | Audit bukan riwayat kode; histori Git bukan jejak tindakan |
 
 Aturan penyimpanan yang berlaku begitu persistence dibuat:
 
@@ -60,7 +82,7 @@ Aturan penyimpanan yang berlaku begitu persistence dibuat:
    entri audit (`.agents/RULES.md` §Secrets).
 6. Audit log otomatis adalah T005. T003 hanya menetapkan skema.
 
-## 5. Pemisahan terhadap T005
+## 6. Pemisahan terhadap T005
 
 | Termasuk T003 | Bukan T003 |
 |---|---|
@@ -69,7 +91,7 @@ Aturan penyimpanan yang berlaku begitu persistence dibuat:
 | Keputusan storage dan alasannya | Audit viewer di UI (`tasks/BACKLOG.md` Phase H) |
 | Aturan append-only dan verifikasi terhadap Git | Integrasi audit ke CI |
 
-## 6. Verifikasi yang bisa dilakukan sekarang
+## 7. Verifikasi yang bisa dilakukan sekarang
 
 Tanpa persistence, jejak audit sudah dapat diverifikasi dari Git dan berkas task:
 

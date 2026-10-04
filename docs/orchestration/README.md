@@ -14,16 +14,33 @@ bootstrap workspace, lock terotomasi, dan persistence audit. Batas itu disengaja
 terbukti, dan `.agents/WORKFLOW.md` §9 menahan loop multi-task sampai task
 locking dan rollback tersedia.
 
+## Model aktif saat ini
+
+Tiga hal berlaku dan tidak boleh disalahbaca dari dokumen di folder ini:
+
+1. **Execution workspace adalah canonical workspace.** Isolated worktree adalah
+   rancangan target yang belum diotorisasi; `.agents/AGENTS.md` §0 masih
+   menjadikan canonical workspace satu-satunya lokasi baca/tulis agent. Lihat
+   `workspace-isolation.md` §1 sampai §5.
+2. **Urutan pipeline kanonik adalah IMPLEMENT → VALIDATE → REVIEW →
+   INTEGRATOR HANDOFF bila perlu → HUMAN APPROVAL bila diwajibkan → COMMIT atau
+   MERGE.** Validasi selalu mendahului review, dan tidak ada diagram lain di
+   folder ini yang memakai urutan berbeda. Lihat `review-approval-integration.md` §1.
+3. **Integrator bukan syarat untuk setiap task.** Sesi satu task pada branch saat
+   ini selesai dengan commit Implementer setelah reviewer PASS; Integrator
+   diperlukan untuk integrasi multi-task atau merge branch task. Lihat
+   `review-approval-integration.md` §4.1.
+
 ## Dokumen
 
 | Dokumen | Isi |
 |---|---|
-| `workspace-isolation.md` | Model canonical repository, agent workspace, task branch, dan merge |
-| `task-registry-and-locking.md` | Struktur task registry, lifecycle, claim, lock, release, stale lock |
+| `workspace-isolation.md` | Model canonical repository, konflik governance §0, rancangan agent workspace yang belum diotorisasi, dan gate untuk mengaktifkannya |
+| `task-registry-and-locking.md` | Struktur task registry, lifecycle, claim, lock, release, stale lock, audit reference |
 | `agent-assignment.md` | Pemetaan peran governance ke agent dan provider |
 | `review-approval-integration.md` | Pipeline review, human approval gate, kontrak integrator |
 | `validation-contract.md` | Kontrak validation dan pemetaannya per kelas task |
-| `audit-trail.md` | Skema audit trail minimum dan keputusan storage |
+| `audit-trail.md` | Skema audit trail, minimum audit reference manual, dan keputusan storage |
 
 ## Sumber kebenaran
 

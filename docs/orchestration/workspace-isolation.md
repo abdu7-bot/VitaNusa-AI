@@ -1,110 +1,119 @@
 # Workspace Isolation Model
 
-Model ini memungkinkan beberapa agent bekerja secara paralel tanpa saling
-menimpa perubahan. Model ini memakai Git karena canonical workspace sudah Git
-(`git worktree list` dan `git branch --list` terverifikasi), dan karena
-`.agents/RULES.md` §Git mengizinkan checkpoint serta melarang destructive
-operation tanpa approval.
+Dokumen ini merekonsiliasi model workspace dengan governance yang berlaku. Pada
+revisi T003-R1, governance `.agents/` tidak diubah; dokumen ini disesuaikan dengan
+governance itu dan rancangan yang belum diotorisasi ditandai secara eksplisit.
 
-## Alur konseptual
+## 1. Konflik yang ditemukan
+
+| Sumber | Isi |
+|---|---|
+| `.agents/AGENTS.md` §0 | Canonical workspace adalah satu-satunya tempat agent boleh membaca dan menulis; agent wajib BERHENTI bila pekerjaan dilakukan di checkout lain |
+| `AGENTS.md` root §Workflow butir 3 | "Gunakan branch/worktree bersih" |
+| `docs/orchestration/workspace-isolation.md` versi T003 awal | Menjelaskan isolated agent workspace berbasis `git worktree` sebagai model aktif |
+
+Dua sumber pertama tidak pernah direkonsiliasi pada T003 awal, sehingga dokumen
+orchestration menyebut model itu berjalan tanpa dasar governance.
+
+## 2. Keputusan T003-R1
+
+Governance tidak diubah oleh task ini. Governance itu yang berlaku, dan worktree
+di luar canonical **tidak diotorisasi**:
+
+1. Canonical repository `/root/VitaNusa-AI` tetap sumber kebenaran dan satu-satunya
+   lokasi baca/tulis agent (`.agents/AGENTS.md` §0).
+2. Execution workspace yang sah saat ini adalah canonical workspace itu sendiri.
+3. Isolated worktree adalah rancangan target, bukan model aktif. Rancangan itu
+   hanya sah setelah ada task governance kelas `ADR` dengan approval manusia yang
+   tercatat (lihat §5).
+4. Pembacaan atas konflik §1 bukan solusi final. `.agents/AGENTS.md` §1
+   memerintahkan agent escalate konflik, bukan menebaknya.
+   Task ini memilih pembacaan paling aman sambil mengescalasi konflik tersebut ke
+   manusia; keputusan akhir tetap milik manusia.
+
+## 3. Model aktif sekarang: single workspace
 
 ```text
-canonical repository (/root/VitaNusa-AI, branch main)
+canonical workspace (/root/VitaNusa-AI, branch saat ini)
   ↓
-isolated agent workspace (git worktree, branch task/<TASK-ID>)
+IMPLEMENT pada file dalam scope
   ↓
-implementation di dalam workspace itu
+VALIDATE
   ↓
-review
+REVIEW
   ↓
-validation
+INTEGRATOR HANDOFF bila Integrator diperlukan
   ↓
-integrator handoff
+HUMAN APPROVAL bila diwajibkan
   ↓
-human approval bila diwajibkan
-  ↓
-merge oleh Integrator
+COMMIT oleh Implementer setelah reviewer PASS
+  Urutan ini persis urutan repository pada `.agents/WORKFLOW.md` §1 dan §2.
+  Lihat `review-approval-integration.md`.
 ```
 
-Urutan langkah di dalam folder ini mengikuti urutan repository pada
-`.agents/WORKFLOW.md` §1: IMPLEMENT, VALIDATE, REVIEW, COMMIT. Lihat
-`review-approval-integration.md` untuk pemetaannya ke pipeline konseptual.
+Aturan yang berlaku sekarang:
 
-## Lapisan dan aturan
+1. Semua agent bekerja di canonical workspace. Tidak ada agent yang bekerja di
+   checkout, salinan, atau worktree lain (`.agents/AGENTS.md` §0).
+2. `/home/vita/VitaNusa-AI` tetap read-only dan tidak boleh dipakai sebagai
+   execution workspace.
+3. Claim dicatat pada file task sebelum file pertama disentuh; claim adalah satu
+   satu-satunya pagar anti-tabrakan yang berjalan saat ini.
+4. Pembuatan branch di dalam canonical workspace tidak melanggar §0 karena lokasi
+   tidak berubah, tetapi governance tidak mewajibkannya dan instruksi task
+   tertentu dapat melarangnya. Branch dipakai hanya bila task record
+   menyatakannya.
+5. Commit pada branch saat ini dilakukan oleh Implementer setelah reviewer PASS
+   (`.agents/WORKFLOW.md` §8). Integrator tidak menjadi syarat tambahan untuk
+   sesi satu task; lihat `review-approval-integration.md` §4.
+6. Destructive operation tetap dilarang tanpa approval manusia.
 
-| Lapisan | Definisi | Aturan |
-|---|---|---|
-| Canonical repository | `/root/VitaNusa-AI` pada branch `main`, satu-satunya lokasi yang boleh dibaca agent lain di luar workspace miliknya | Tidak boleh dipakai sebagai tempat kerja paralel. Hanya Integrator yang menulis ke `main` setelah gate lulus. |
-| Agent workspace | Satu `git worktree` per agent yang mengerjakan task | Path di luar canonical hanya sah bila dicatat pada file task. `/home/vita/VitaNusa-AI` tetap read-only dan tidak boleh dipakai. |
-| Task branch | `task/<TASK-ID>` yang dibuat dari `main` pada saat task dimulai | Satu task, satu branch. Nama branch memakai ID task yang ada di `tasks/`. |
-| Integrator lane | Penyatuan beberapa branch task yang sudah PASS review | Dijalankan Integrator (`.agents/AGENTS.md` §2). Tidak boleh membuat perubahan baru di dalam lane ini. |
+## 4. Rancangan target: isolated worktree
 
-## Konvensi nama
+Bagian ini **design, bukan aturan yang sedang berlaku**. Tujuh hal yang diminta
+dijawab lengkap supaya task governance berikutnya punya desain siap pakai.
 
-| Objek | Format | Contoh |
-|---|---|---|
-| Branch task | `task/<TASK-ID>` | `task/T011` |
-| Worktree agent | `<canonical-parent>/../<agent>-<TASK-ID>` | `/root/agent-copilot-T011` |
-| Label audit | `task:<TASK-ID>` | `task:T011` |
+| Pertanyaan | Rancangan |
+|---|---|
+| Canonical tetap sumber kebenaran? | Ya. Merge, `main`, dan status task ada di canonical; worktree hanya tempat mengerjakan diff |
+| Worktree resmi untuk apa? | Menjalankan implementasi task tanpa disturbing workspace agent lain |
+| Siapa yang boleh membuatnya? | Implementer yang sudah mencatat claim pada file task. Planner menentukan kebutuhan, tidak membuat worktree |
+| Bagaimana claim dicatat sebelum worktree dibuat? | `**Claimed files:**`, `**Owner:**`, `**Claimed at:**`, dan `**Workspace:**` terisi di file task lebih dulu; barulah `git worktree add` dijalankan |
+| Bagaimana branch diidentifikasi? | `task/<TASK-ID>`, satu task satu branch, dibuat dari `main` yang bersih |
+| Bagaimana hasilnya kembali ke canonical? | Commit pada branch task, lalu Integrator melakukan merge ke branch tujuan setelah gate terpenuhi |
+| Kapan workspace dilepas? | Setelah task `DONE` atau `BLOCKED`, claim dicatat penutupannya dan worktree dihapus; worktree tanpa task tidak boleh dibiarkan |
+| Bagaimana dua agent tidak memakai task yang sama? | Satu owner per task dan satu agent per file (`.agents/RULES.md`), claim tercatat sebelum worktree dibuat, dan verifikasi `git worktree list` sebelum mulai |
 
-Nama worktree adalah konvensi, bukan lokasi yang sudah ada. Belum ada worktree
-agent yang dibuat pada T003.
+## 5. Gate yang harus dilalui sebelum worktree boleh dipakai
 
-## Aturan isolation yang wajib
+Worktree adalah perubahan aturan workspace, bukan detail teknis. Syaratnya
+menurut urutan berikut:
 
-1. Satu agent, satu task, satu branch. Dua agent tidak boleh menulis branch yang
-   sama (`.agents/RULES.md` §Anti-tabrakan).
-2. Claim dicatat pada file task **sebelum** workspace dan branch dibuat
-   (`.agents/WORKFLOW.md` §4). Claim yang tidak tercatat bukan claim.
-3. Branch dibuat dari `main` yang bersih. Condition `git status --short` dicatat
-   sebelum dan sesudah pekerjaan (`.agents/RULES.md` §Git).
-4. Perubahan hanya boleh menyentuh file pada `**Claimed files:**`. Perubahan di
-   luar scope membatalkan commit, bukan sekadar diperbaiki.
-5. Reviewer dan validator membaca branch task, bukan working tree reviewer.
-   Reviewer tidak boleh mengedit branch yang sedang direview.
-6. Merge hanya oleh Integrator, hanya dari branch yang review PASS, validation
-   PASS, acceptance criteria PASS, dan approval yang diwajibkan sudah ada.
-7. Tidak ada destructive operation: `git reset --hard`, `git clean -fd`,
-   force-push, dan rewrite history tetap dilarang tanpa approval manusia
-   (`.agents/RULES.md` §Git).
-8. Canonical repository tidak pernah dipakai untuk bereksperimen. Perubahan di
-   `main` tanpa gate adalah pelanggaran, bukan cara cepat.
+1. Task governance baru dengan class `ADR`.
+2. Approval manusia tertulis yang tercatat pada file task.
+3. Perubahan eksplisit pada `.agents/AGENTS.md` §0 dan §1 sehingga canonical
+   workspace dan agent workspace dibedakan secara eksplisit, dan Konflik dengan
+   `AGENTS.md` root §Workflow butir 3 ikut diselesaikan di teks yang sama.
+4. Rujukan dari `.agents/WORKFLOW.md` §3 dan §4 ke aturan workspace yang baru.
+5. Pemeriksaan bahwa `/home/vita/VitaNusa-AI` tetap read-only dan tidak pernah
+   dipakai sebagai execution workspace.
 
-## Bootstrap worker: sengaja ditunda
+Sebelum lima hal itu terpenuhi, agent yang membuat worktree di luar canonical
+melanggar `.agents/AGENTS.md` §0 dan wajib BERHENTI serta melaporkan.
 
-T003 **tidak** membuat worktree worker. Yang dilakukan T003 adalah kontrak di atas
-agar bootstrap dapat dilakukan aman pada task berikutnya:
+## 6. Aturan yang berlaku sekarang tentang worktree
 
-- banyak worktree dibuat bersamaan pada percobaan pertama, atau dengan
-  path yang tidak tercatat pada file task;
-- branch dibuat tanpa claim, sehingga dua agent bisa klaim file yang sama tanpa
-  ada yang menyadarinya;
-- jumlah worktree tumbuh tanpa batas karena tidak ada aturan lifecycle.
+1. Tidak ada worktree agent yang dibuat pada T003 maupun T003-R1.
+2. `git worktree list` hanya berisi canonical repository; keadaan itu harus
+   direkam pada file task saat claim diambil.
+3. Bootstrap worker massal dilarang. Bootstrap
+   worker adalah pekerjaan terpisah dengan scope dan approval sendiri.
+4. Agent yang membutuhkan paralelisme sebelum gate §5 terpenuhi memakai
+   mekanisme lain: penjadwalan task berurutan dengan claim manual, bukan worktree.
 
-Aturan bootstrap yang harus dipakai task berikutnya:
+## 7. Yang tidak dikerjakan pada T003 dan T003-R1
 
-1. Bootstrap satu worker pada satu waktu, dengan claim task yang sudah tercatat.
-2. Catat path workspace, branch, dan owner pada file task sebelum file pertama
-   disentuh.
-3. Verifikasi `git worktree list` hanya berisi canonical dan workspace task itu
-   sebelum pekerjaan dimulai.
-4. Setelah task selesai atau `BLOCKED`, release claim dan hapus workspace sesuai
-   `workspace-isolation.md` bagian release.
-5. Jangan membuat worker yang tidak punya task. Workspace kosong adalah state
-   yang tidak punya owner dan tidak boleh dibiarkan menggantung.
-
-## Workspace lifecycle
-
-| Urutan | Aksi | Pemeriksa yang boleh |
-|---|---|---|
-| 1 | Claim task tercatat | Implementer/Planner yang mengclaim |
-| 2 | `git worktree add` dengan branch `task/<TASK-ID>` | Implementer |
-| 3 | Verifikasi `git status --short` bersih dan `git worktree list` sesuai | Implementer |
-| 4 | Implementasi pada workspace itu | Implementer |
-| 5 | Review dan validation pada branch task | Reviewer, validator |
-| 6 | Handoff ke Integrator dengan bukti gate | Implementer |
-| 7 | Merge atau penolakan | Integrator |
-| 8 | Release claim dan hapus workspace bila tidak dipakai lagi | Implementer atau Integrator |
-
-Langkah 1 sampai 3 adalah batas T003 sebagai kontrak. Eksekusi aktualnya
-adalah pekerjaan lanjutan, bukan bagian task ini.
+- Tidak ada worktree yang dibuat.
+- Tidak ada branch baru yang dibuat.
+- Tidak ada bootstrap worker.
+- Tidak ada perubahan pada `.agents/AGENTS.md` atau `.agents/RULES.md`.
