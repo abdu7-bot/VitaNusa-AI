@@ -8,7 +8,7 @@
 **Claimed at:** 2026-10-03T13:24:31Z
 **Claimed files:** `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`, `.agents/ARCHITECTURE.md`, `scripts/check_agent_governance.py`, `AGENTS.md`, `ROADMAP.md`, `tasks/TODO.md`, `tasks/active/T002-agent-governance.md`
 **Approval:** not required for `DOC`; `TOOL` sudah ada dalam scope yang diklaim dan direview reviewer independen pada 2026-10-04.
-**Commit:** `c11bf38` (bagian T002 awal); revisi T002-R1 dicatat pada bagian Remediasi T002-R1.
+**Commit:** `c11bf38` (T002 awal); `11d8ef7001b1a418567235c1b355932f35c041bb` (remediasi T002-R1).
 
 Catatan kelas: task ini `DOC` + `TOOL` karena diff T002 awal menambahkan
 `scripts/check_agent_governance.py`, yaitu tooling repository non-runtime, bukan
@@ -234,6 +234,21 @@ Perintah yang dijalankan pada revisi ini:
 Anchor guard tidak menguji tabel peran dan kelas task yang baru, sehingga
 konsistensi dokumen diverifikasi lewat checklist review di atas, bukan lewat
 output skrip.
+
+### Penyelesaian T002-R1
+
+- **Commit remediasi:** `11d8ef7001b1a418567235c1b355932f35c041bb`
+  (`docs: remediate T002 governance review (T002-R1)`).
+- **Isi commit:** delapan file dokumentasi, yaitu `.agents/AGENTS.md`,
+  `.agents/ARCHITECTURE.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`,
+  `AGENTS.md`, `ROADMAP.md`, `tasks/TODO.md`, dan file task ini. Nol file
+  production code, test, tooling, konfigurasi, CI, atau deployment.
+- **Review independen:** Copilot, 2026-10-04. Semua temuan selain traceability
+  dicatat PASS; satu-satunya blocker adalah hash commit remediasi yang belum
+  tertulis pada file ini, dan blocker itu ditutup pada commit traceability
+  yang mengikuti.
+- Traceability commit ini dicatat pada bagian ini setelah commit dibuat; hash-nya
+  dapat dibaca dari `git log` untuk `tasks/active/T002-agent-governance.md`.
 
 ## Catatan
 
