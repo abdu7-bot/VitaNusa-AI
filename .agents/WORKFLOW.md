@@ -100,9 +100,11 @@ Aturan:
   task selesai.
 - Jika dua agen mengklaim file yang sama, keduanya berhenti dan escalate ke manusia.
 - Claim dicatat pada file task, bukan pada sistem eksternal.
-- Otomasi claim terpusat (task locking) adalah pekerjaan T003; sebelum itu,
-  disiplin claim manual di atas adalah satu-satunya pagar dan tidak boleh
-  dilewati karena tidak ada tool.
+- Otomasi claim terpusat (task locking) adalah follow-up T003 yang tercatat pada
+  `tasks/active/T003-multi-agent-orchestration.md`; kontraknya sudah ada di
+  `docs/orchestration/task-registry-and-locking.md`, tetapi implementasinya
+  belum. Sampai automasi itu ada, disiplin claim manual di atas adalah
+  satu-satunya pagar dan tidak boleh dilewati karena tidak ada tool.
 
 ## 5. Saat coding
 1. Kerjakan hanya scope task.
@@ -195,10 +197,11 @@ Agent boleh mengambil task berikutnya hanya jika:
 
 Jika syarat gagal, hentikan loop dan catat alasan.
 
-Batas loop yang berlaku saat ini: satu task per sesi agent. Loop multi-task
-autonomous, task locking terotomasi, checkpoint/rollback otomatis, dan audit
-log adalah pekerjaan T003, T004, dan T005. Jangan menambahkannya
-di luar scope task tersebut.
+Batas loop yang berlaku saat ini: satu task per sesi agent. Task locking
+terotomasi adalah follow-up T003, checkpoint dan rollback otomatis adalah T004,
+serta audit log otomatis adalah T005. Kontrak orchestration untuk ketiganya ada
+di `docs/orchestration/`, tetapi tidak ada automasi yang berjalan. Jangan
+menambahkannya di luar scope task tersebut.
 
 Batas ini adalah deviasi yang terdokumentasi dari target `ROADMAP.md` §15,
 bukan steady state. Jangan menuliskan autonomous multi-task sebagai capability

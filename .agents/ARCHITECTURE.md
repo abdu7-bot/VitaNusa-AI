@@ -36,10 +36,16 @@ dengan gate apa.
 | `.agents/ARCHITECTURE.md` | Peta lapisan dan hubungan governance dengan sistem |
 | `tasks/TODO.md` | Antrean kerja dan status |
 | `tasks/active/T*.md` | Task record: objective, scope, class, acceptance, hasil |
+| `docs/orchestration/README.md` | Indeks fondasi orchestration multi-agent: isolation, registry, locking, assignment, review, validation, audit |
 | `scripts/check_agent_governance.py` | Anchor guard dan smoke guard untuk kontrak governance |
 
 Governance berlaku pada semua agent apa pun providernya: Kilo, Copilot, Codex,
 atau agent lain. Provider dapat diganti; governance tidak.
+
+Lapisan 7 dan 8 dikonfigurasi oleh kontrak di `docs/orchestration/`, yang berstatus
+FOUNDATION: model isolation, task registry, locking, assignment, review,
+validation contract, dan audit trail contract. Kontrak itu merinci aturan di
+dokumen ini; ia tidak menambah aturan baru dan tidak menambah state machine.
 
 ### 3.1 Status `scripts/check_agent_governance.py`
 
