@@ -13,6 +13,8 @@
 **Approval:** not required for `DOC`; tidak ada production code, configuration, CI, atau deployment yang disentuh.
 **Commit:** `ff48f91a0a69d990c35e1496aac74e7f68608a6b`
 **Commit subject:** `feat: establish multi-agent workspace orchestration foundation`
+**Remediation T003-R1 SHA:** `9945b18ef116561470103cb8d3f9d65b919f3e96`
+**Remediation T003-R1 subject:** `docs: remediate T003 orchestration review (T003-R1)`
 **Audit reference:** task `T003`; commit `ff48f91a0a69d990c35e1496aac74e7f68608a6b`; reviewer self-review untuk kelas `DOC` (`.agents/AGENTS.md` §2); validation PASS pada `python3 scripts/check_agent_governance.py`, `python3 scripts/check_suspicious_unicode.py`, dan `git diff --check`; approval "not required" untuk `DOC`; kontrak audit pada `docs/orchestration/audit-trail.md` §4.
 
 ## Objective

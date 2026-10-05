@@ -74,14 +74,22 @@ Aturan T002-R1 dipertahankan apa adanya. Ringkasnya:
 4. Approval lisan, asumsi, "kayaknya tidak berisiko", atau persetujuan setelah
    review bukan approval.
 
-Ada dua titik approval yang berbeda dan keduanya dapat berlaku:
+Semua human approval yang diwajibkan oleh kelas task atau area terlindungi harus
+tercatat **sebelum** perubahan dibuat (pra-perubahan). T002-R1 tidak mengakui
+"approval integrasi" sebagai gate tambahan sebelum merge: Integrator tidak
+membuat, menambah, atau mengganti keputusan approval (`Integrator tidak menambah
+langkah approval baru` pada `.agents/AGENTS.md` §2 dan
+`.agents/WORKFLOW.md` §8). Peran Integrator hanyalah memastikan semua approval
+yang sudah diperlukan governance tercatat pada file task sebelum
+menggabungkan perubahan; bila approval tidak ada, Integrator mengembalikan task
+ke `REVIEW` atau `BLOCKED`.
 
-| Titik | Waktu | Pemicu |
-|---|---|---|
-| Approval pra-perubahan | Sebelum file pertama disentuh | Perubahan production code, CI, deployment, atau dependency manifest |
-| Approval integrasi | Sebelum merge | Area terlindungi yang diubah, atau task dengan `DEPLOY` |
+| Titik approval | Waktu | Pemicu | Bukti |
+|---|---|---|---|
+| Approval pra-perubahan | Sebelum file pertama disentuh | Perubahan production code, CI, deployment, dependency manifest, area terlindungi, atau task dengan `DEPLOY` | Field `**Approval:**` pada file task |
 
-Keduanya direkam pada file task dengan field `**Approval:**`.
+Field `**Approval:**` adalah satu-satunya bentuk catatan approval yang
+diakui.
 
 ## 4. Integrator
 
