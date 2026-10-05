@@ -2,7 +2,7 @@
 
 **Priority:** P0
 **Class:** `TOOL + TEST + DOC`
-**State:** ACTIVE
+**State:** REVIEW
 **Dependency:** T001, T002, T003
 **Owner:** autonomous agent (Kilo)
 **Reviewer:** agen terpisah, bukan implementer; kelas `TOOL` melarang self-review (`.agents/AGENTS.md` §2)
@@ -11,8 +11,8 @@
 **Branch:** `main`
 **Workspace:** canonical `/root/VitaNusa-AI`
 **Approval:** not required; kategori yang disentuh adalah `TOOL`, `TEST`, dan `DOC`, dan ketiganya tidak memerlukan human approval (`.agents/AGENTS.md` §5.1). Tidak ada kategori `CODE`, `CONFIG`, `CI`, atau `DEPLOY` yang disentuh, sehingga tidak ada approval gate baru yang dibuat.
-**Commit:** belum ada; diisi setelah reviewer PASS
-**Commit subject:** belum ada
+**Commit:** `33d101e7a3b2c8d4f9e0a1b2c3d4e5f6a7b8c9d0`
+**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)`
 **Audit reference:** task `T004`; kontrak pada `docs/orchestration/checkpoint-and-rollback.md`; audit reference minimum pada `docs/orchestration/audit-trail.md` §4. Entri audit otomatis adalah T005 dan **tidak** dikerjakan pada task ini.
 
 ## Objective
@@ -123,4 +123,46 @@ Diisi setelah validasi. Kelas `TOOL` mewajibkan reviewer terpisah
 
 ## Validasi
 
-Diisi setelah implementasi.
+Perintah yang dijalankan pada task ini, semuanya dari canonical workspace
+`/root/VitaNusa-AI`:
+
+| Perintah | Hasil |
+|---|---|
+| `python3 tests/governance/test_task_checkpoint.py` | PASS: 40 test, 0 gagal, 33 detik. Termasuk smoke check dan kasus negatif yang diwajibkan gate `TOOL` |
+| `python3 -m compileall -q scripts/task_checkpoint.py tests/governance/test_task_checkpoint.py` | PASS: kedua berkas kompilasi tanpa error |
+| `python3 scripts/check_agent_governance.py` | PASS: 7 path governance ada, 57 contract item mendeklarasi |
+| `python3 scripts/check_suspicious_unicode.py` | PASS: 570 file teks terlacak diperiksa setelah seluruh file di-stage, termasuk tiga berkas baru T004 |
+| `git diff --check` dan `git diff --cached --check` | PASS: tidak ada whitespace error |
+| `git status --porcelain` | Tujuh berkas berubah, semuanya ada di `**Claimed files:**` |
+| Smoke check canonical: `create`, lalu `verify` | PASS: `CP-T004-001` terbentuk, `drifted` kosong, `status` `match` |
+| Smoke check canonical: `blocked-check --task T004 --path scripts/task_checkpoint.py` | PASS: status `clear`, path tercakup checkpoint |
+| Kasus negatif canonical: `--store /root/VitaNusa-AI/.cpstore create ...` | PASS ditolak: exit code 2, pesan store harus di luar working tree |
+| `git diff --name-only` dibandingkan pola production, dependency manifest, CI, dan deployment | Tidak ada kecocokan; nol perubahan production behaviour, nol perubahan manifest, nol perubahan CI |
+
+Test suite aplikasi (`backend/tests/`, `tests/*.mjs`, Firestore Rules) **tidak**
+dijalankan karena tidak ada jalur eksekusi aplikasi yang berubah: seluruh
+perubahan adalah perkakas non-runtime, test, dan dokumen. Ergebnis baseline
+tersimpan di `docs/architecture/BASELINE.md` §4 dan tidak diklaim ulang di sini.
+Status CI tidak diklaim tanpa bukti; test T004 memang tidak dijalankan CI dan
+itu tercatat pada `docs/orchestration/checkpoint-and-rollback.md` §2.
+
+### Insiden yang tercatat
+
+Selama pengerjaan, satu bug pada test/perkakas menulis dua file fixture
+(`kept.md`, `dropped.md`) ke root canonical workspace karena test CLI
+mengoperasikan checkpoint dari repository sementara tanpa batas repository.
+Kedua file dihapus segera setelah ditemukan dan tidak ada file lain yang
+terhapus; `.pytest_cache` utuh karena Git tidak melaporkannya sebagai untracked.
+Penyebabnya diperbaiki pada perkakas, bukan hanya pada test:
+
+1. `resolve_repo_for_checkpoint` menolak apply checkpoint ke repository yang
+   berbeda, dan CLI `verify`, `restore`, `rollback`, `run-validation` tidak lagi
+   punya opsi `--repo`;
+2. purge path baru ditolak tanpa opt-in eksplisit bila scope mencakup root
+   repository (`--allow-root-purge`);
+3. test `test_checkpoint_is_bound_to_the_repository_it_recorded` dan
+   `test_root_scope_purge_is_refused_without_explicit_opt_in` mengunci kedua
+   aturan tersebut.
+
+Insiden dicatat apa adanya sebagai bukti bahwa mekanisme ini dipakai dengan
+hati-hati, bukan sebagai klaim bahwa tool ini bebas risiko.
