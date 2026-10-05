@@ -7,6 +7,28 @@ awal.
 
 ## 1. Urutan pipeline kanonik
 
+Ada dua alur, ditentukan oleh apakah task memerlukan human approval bagi perubahan
+production code, CI, deployment, dependency manifest, atau area terlindungi
+(`.agents/AGENTS.md` §5 dan `.agents/RULES.md` §Human approval wajib):
+
+**Task yang memerlukan human approval:**
+
+```text
+HUMAN APPROVAL (sebelum file pertama disentuh)
+  ↓
+IMPLEMENT
+  ↓
+VALIDATE
+  ↓
+REVIEW
+  ↓
+INTEGRATOR HANDOFF (bila diperlukan, lihat §4.1)
+  ↓
+COMMIT atau MERGE
+```
+
+**Task yang tidak memerlukan human approval:**
+
 ```text
 IMPLEMENT
   ↓
@@ -14,15 +36,31 @@ VALIDATE
   ↓
 REVIEW
   ↓
-INTEGRATOR HANDOFF (bila Integrator diperlukan)
-  ↓
-HUMAN APPROVAL (bila diwajibkan)
+INTEGRATOR HANDOFF (bila diperlukan, lihat §4.1)
   ↓
 COMMIT atau MERGE
 ```
 
-Urutan ini adalah urutan canonical untuk seluruh dokumen T003. Urutannya diambil
-dari governance repository, bukan dari pipeline generik:
+Prinsip yang tidak bisa dilanggar:
+
+- **HUMAN APPROVAL adalah prerequisite, bukan stage tambahan.** Ia harus
+  tercatat pada file task **sebelum** file pertama disentuh, bukan setelah
+  implementasi, validation, atau review selesai. Governance T002-R1 menetapkan
+  human approval tertulis **sebelum** perubahan dibuat (`.agents/AGENTS.md` §5.1,
+  `.agents/RULES.md` §Human approval wajib).
+- **Approval setelah review bukan approval.** Persetujuan yang diberikan setelah
+  perubahan selesai tidak memenuhi governance (`.agents/AGENTS.md` §2,
+  `.agents/WORKFLOW.md` §4).
+- **Integrator bukan approval authority.** Integrator tidak menciptakan,
+  menambah, atau mengganti keputusan approval (`Integrator tidak menambah langkah
+  approval baru` pada `.agents/AGENTS.md` §2 dan `.agents/WORKFLOW.md` §8).
+- **Review ≠ human approval.** Review menilai kebenaran dan kualitas perubahan;
+  human approval memperizinkan perubahan pada kategori yang membutuhkannya.
+- **Validation ≠ human approval.** Validation memverifikasi teknis; human approval
+  memutuskan izin.
+
+Urutan ini adalah urutan canonical untuk seluruh dokumen T003. Urutannya
+diambil dari governance repository, bukan dari pipeline generik:
 
 - `.agents/WORKFLOW.md` §1 memetakan `IMPLEMENT` ke `ACTIVE`, `VALIDATE` ke
   `TESTING`, `REVIEW` ke `REVIEW`, dan `COMMIT` ke `DONE`.
@@ -36,14 +74,22 @@ baru.
 
 ## 2. Stage dan syaratnya
 
+Stage berikut berlaku setelah HUMAN APPROVAL tercapai (bila diwajibkan oleh kelas
+task atau area terlindungi). Untuk task yang tidak memerlukan human approval,
+IMPLEMENT dapat dimulai segera setelah claim tercatat.
+
 | Stage | Syarat masuk | Syarat keluar | Siapa yang melakukan |
 |---|---|---|---|
-| IMPLEMENT | Claim tercatat, scope eksplisit, kelas task jelas, approval tertulis bila diwajibkan | Diff hanya pada scope; kategori sesuai `**Class:**` | Implementer |
+| IMPLEMENT | Claim tercatat, scope eksplisit, kelas task jelas, approval pra-perubahan sudah tercatat bila diwajibkan | Diff hanya pada scope; kategori sesuai `**Class:**` | Implementer |
 | VALIDATE | Diff lengkap | Semua perintah validasi pada `.agents/WORKFLOW.md` §6 lulus dan tercatat | Implementer atau Reviewer |
 | REVIEW | Validation PASS | Checklist `.agents/WORKFLOW.md` §7 PASS dan tercatat | Reviewer terpisah, atau self-review untuk `DOC` dan `TEST` |
 | INTEGRATOR HANDOFF | Review PASS dan Integrator diperlukan (§4.1) | Bukti gate terkumpul dan handoff dicatat | Implementer |
-| HUMAN APPROVAL | Approval diwajibkan oleh kelas task atau area terlindungi | Approval tercatat pada file task | Manusia |
 | COMMIT atau MERGE | Semua gate yang berlaku PASS | Satu commit dengan task ID; status task diperbarui | Implementer untuk sesi satu task tanpa branch; Integrator bila Integrator diperlukan |
+
+Human approval (§3) adalah prerequisite **sebelum** IMPLEMENT dimulai untuk task
+yang memerlukannya, bukan stage tambahan di antara VALIDATE dan COMMIT. Integrator
+tidak menambah gate approval; ia hanya memastikan approval yang sudah ada tercatat
+sebelum menggabungkan (`.agents/AGENTS.md` §2, `.agents/WORKFLOW.md` §8).
 
 Aturan yang tidak bisa dilanggar:
 
@@ -103,7 +149,7 @@ itu, sesi satu task selesai tanpa Integrator.
 | Sesi satu task, perubahan dikomit pada branch saat ini, reviewer PASS | **Tidak diperlukan**; Implementer commit | `.agents/WORKFLOW.md` §8 |
 | Sesi satu task pada `task/<TASK-ID>`, reviewer PASS, lalu branch itu digabungkan ke branch tujuan | **Diperlukan** untuk merge branch tersebut | `ROADMAP.md` §5 Tier 4 |
 | Dua atau lebih task digabungkan menjadi satu hasil | **Wajib** | `.agents/AGENTS.md` §2 dan `ROADMAP.md` §5 Tier 4 |
-| Merge yang menyentuh area terlindungi atau konfigurasi deployment | **Wajib**, ditambah approval manusia | `.agents/RULES.md` §Human approval wajib |
+| Merge yang menyentuh area terlindungi atau konfigurasi deployment | **Wajib**; Integrator memastikan approval pra-perubahan sudah tercatat | `.agents/RULES.md` §Human approval wajib |
 
 Dengan model workspace yang berlaku sekarang (lihat `workspace-isolation.md`
 §2), case kedua belum terjadi karena tidak ada task branch. Case pertama adalah

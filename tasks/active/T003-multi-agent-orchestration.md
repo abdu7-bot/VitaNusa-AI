@@ -15,6 +15,8 @@
 **Commit subject:** `feat: establish multi-agent workspace orchestration foundation`
 **Remediation T003-R1 SHA:** `9945b18ef116561470103cb8d3f9d65b919f3e96`
 **Remediation T003-R1 subject:** `docs: remediate T003 orchestration review (T003-R1)`
+**Remediation T003-R2 SHA:** `708f13bca5a4adb963415d96070d00063a147414`
+**Remediation T003-R2 subject:** `docs: remediate T003-R2 governance review`
 **Audit reference:** task `T003`; commit `ff48f91a0a69d990c35e1496aac74e7f68608a6b`; reviewer self-review untuk kelas `DOC` (`.agents/AGENTS.md` §2); validation PASS pada `python3 scripts/check_agent_governance.py`, `python3 scripts/check_suspicious_unicode.py`, dan `git diff --check`; approval "not required" untuk `DOC`; kontrak audit pada `docs/orchestration/audit-trail.md` §4.
 
 ## Objective
@@ -218,7 +220,7 @@ REMEDIATION REQUIRED, dengan blocker dan finding R1-01 sampai R1-05.
 | R1-01 | `workspace-isolation.md` versi T003 memperlakukan isolated worktree sebagai model aktif, padahal `.agents/AGENTS.md` §0 menetapkan canonical workspace sebagai satu-satunya lokasi baca/tulis dan memerintahkan agent BERHENTI bila bekerja di checkout lain. | Governance **tidak diubah**. Dokumen direkonsiliasi: model aktif adalah single canonical workspace; worktree ditandai sebagai rancangan target yang belum diotorisasi, dengan gate `ADR` plus approval manusia tertulis. Tujuh pertanyaan yang diminta dijawab penuh di `workspace-isolation.md` §4. Konflik dengan `AGENTS.md` root §Workflow butir 3 dicatat di §1 dan di-escalate ke manusia. |
 | R1-02 | Kontrak T003 memaksa Integrator melakukan merge untuk setiap task, bertentangan dengan `.agents/WORKFLOW.md` §8 yang menyatakan commit sesi satu task dilakukan Implementer setelah reviewer PASS dan Integrator menggabungkan beberapa task yang sudah PASS. | Diganti tabel kondisi: Integrator diperlukan hanya untuk merge branch task, integrasi dua task atau lebih, dan merge yang menyentuh area terlindungi atau `DEPLOY`. Sesi satu task tanpa branch selesai tanpa Integrator. Tidak ada state baru; state repository tetap sumber kebenaran. |
 | R1-03 | Task record tidak memuat hash commit T003. | Dicatat eksplisit di header: SHA `ff48f91a0a69d990c35e1496aac74e7f68608a6b` dan subject `feat: establish multi-agent workspace orchestration foundation`. |
-| R1-04 | Diagram `workspace-isolation.md` menampilkan review sebelum validation, berbeda dari urutan governance dan dari dokumen lain. | Satu urutan kanonik ditetapkan: IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR HANDOFF bila perlu → HUMAN APPROVAL bila diwajibkan → COMMIT atau MERGE. Semua diagram dan dokumen T003 memakai urutan itu; disebut eksplisit di `README.md` dan `review-approval-integration.md` §1. |
+| R1-04 | Diagram `workspace-isolation.md` menampilkan review sebelum validation, berbeda dari urutan governance dan dari dokumen lain. | Satu urutan kanonik ditetapkan di `review-approval-integration.md` §1. **T003-R3:** urutan yang benar adalah HUMAN APPROVAL (sebelum file pertama disentuh) → IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR HANDOFF bila perlu → COMMIT/MERGE untuk task yang memerlukan approval; atau IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR HANDOFF bila perlu → COMMIT/MERGE untuk task yang tidak memerlukan. README.md §2 dan workspace-isolation.md §3 masih menggunakan urutan lama (lihat discrepancy T003-R3 di §6 di bawah). |
 | R1-05 | `task-registry-and-locking.md` mewajibkan audit reference pada setiap task record, tetapi task record T003 tidak memilikinya. | Field `**Audit reference:**` ditambahkan ke kontrak dengan isi minimum yang dapat ditelusuri (task ID, commit SHA, reviewer, hasil validation, approval, rujukan kontrak). Task record T003 kini memilikinya. Tidak ada persistence, database, atau automation; audit log otomatis tetap T005. |
 
 ### Discrepancy pesan commit yang dicatat tanpa rewrite history
@@ -323,12 +325,81 @@ Perintah yang dijalankan pada remediasi ini:
 | `git status --short` | Sembilan file berubah, semuanya dalam `Claimed files` T003-R1 |
 | `git diff --name-only` terhadap pola `.agents/`, `AGENTS.md`, `ROADMAP.md`, `scripts/`, `backend/`, `tests/`, `.github/`, manifest, dan konfigurasi deployment | Tidak ada kecocokan; governance, tooling, production code, dan CI tidak disentuh |
 | `git worktree list` dan `git branch --list` | Tetap satu worktree dan satu branch; nol worktree dan branch baru |
-| Pemeriksaan seluruh diagram `text` di `docs/orchestration/` | Lima diagram diperiksa; semuanya memakai urutan IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR HANDOFF bila perlu → HUMAN APPROVAL bila diwajibkan → COMMIT atau MERGE |
+| Pemeriksaan seluruh diagram `text` di `docs/orchestration/` | Pada T003-R1, lima diagram diperiksa. **T003-R3:** urutan diperbaiki di `review-approval-integration.md` §1 — HUMAN APPROVAL kini ditempatkan sebelum IMPLEMENT. README.md §2 dan workspace-isolation.md §3 masih menggunakan urutan lama yang perlu pembaruan (lihat discrepancy T003-R3). |
 | Verifikasi kutipan governance | `.agents/AGENTS.md` §0, `.agents/WORKFLOW.md` §8, `.agents/RULES.md` §Git, dan `AGENTS.md` root §Workflow butir 3 dibaca langsung pada file |
 
 Tidak ada test suite aplikasi yang dijalankan karena tidak ada jalur eksekusi
 aplikasi yang berubah. Tidak ada commands yang mengubah `.agents/`, `scripts/`,
 CI, atau production code pada task ini.
+
+## Remediasi T003-R3
+
+**Class:** `DOC`
+**Trigger:** independent Copilot review terhadap T003-R2. Putusan: T003 NOT
+APPROVED, REMEDIATION REQUIRED, dengan blocker R3-01 (approval timing).
+**Claimed at:** 2026-10-05T08:20:00Z
+**Claimed files:** `docs/orchestration/review-approval-integration.md`,
+`tasks/active/T003-multi-agent-orchestration.md`
+**Approval:** not required untuk `DOC`. Tidak ada file production code, test,
+tooling, configuration, CI, atau deployment yang disentuh, dan tidak ada
+perubahan pada `.agents/`.
+**Tidak diubah:** `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`,
+`.agents/ARCHITECTURE.md`, `AGENTS.md`, `ROADMAP.md`, `scripts/`, dan seluruh
+production code.
+
+### Apa yang diperbaiki (R3-01)
+
+`docs/orchestration/review-approval-integration.md` §1 dan §2 direvisi agar
+lifecycle konsisten dengan governance T002-R1:
+
+- Diagram §1 diganti menjadi dua alur: task yang **memerlukan** human approval
+  (HUMAN APPROVAL → IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR HANDOFF → COMMIT/MERGE)
+  dan task yang **tidak memerlukan** (IMPLEMENT → VALIDATE → REVIEW → INTEGRATOR
+  HANDOFF → COMMIT/MERGE). HUMAN APPROVAL ditempatkan **sebelum** IMPLEMENT,
+  bukan setelah INTEGRATOR HANDOFF.
+- Tabel §2: stage HUMAN APPROVAL dihapus dari posisi pasca-integrator; HUMAN
+  APPROVAL dinyatakan sebagai prerequisite sebelum IMPLEMENT bersama penjelasan
+  bahwa Integrator tidak menambah gate approval.
+- §4.1: baris "Merge yang menyentuh area terlindungi" diubah dari
+  "**Wajib**, ditambah approval manusia" menjadi "**Wajib**; Integrator
+  memastikan approval pra-perubahan sudah tercatat" agar tidak
+  menggambarkan approval tambahan.
+
+Prinsip yang ditegaskan ulang di §1:
+
+- HUMAN APPROVAL adalah prerequisite, bukan stage tambahan.
+- Approval setelah review bukan approval.
+- Integrator bukan approval authority.
+- Review ≠ human approval.
+- Validation ≠ human approval.
+
+### Discrepancy yang masih ada (di luar scope T003-R3)
+
+File yang tidak diperbolehkan diubah pada T003-R3 masih mengandung urutan lama
+diagram yang menempatkan HUMAN APPROVAL setelah INTEGRATOR HANDOFF:
+
+- `docs/orchestration/README.md` §2, line 26: urutan
+  `INTEGRATOR HANDOFF bila perlu → HUMAN APPROVAL bila diwajibkan → COMMIT`
+  perlu koreksi.
+- `docs/orchestration/workspace-isolation.md` §3, line 47: diagram model aktif
+  menempatkan `HUMAN APPROVAL bila diwajibkan` setelah `INTEGRATOR HANDOFF`.
+
+Koreksi pada kedua file tersebut memerlukan scope eksplisit task terbaru dan
+dicatat sebagai pekerjaan lanjutan; tidak dilakukan pada T003-R3 karena batas
+file yang diperbolehkan.
+
+### Validasi T003-R3
+
+| Perintah | Hasil |
+|---|---|
+| `python3 scripts/check_agent_governance.py` | PASS |
+| `python3 scripts/check_suspicious_unicode.py` | PASS |
+| `git diff --check` | PASS |
+| `git status --short` | Dua file berubah: `review-approval-integration.md` dan task record T003 |
+| `git worktree list` | Satu worktree, canonical pada `main` |
+| `git branch --list` | Hanya `main` |
+| `grep` atas pola `approval integrasi\|approval.*setelah\|HUMAN APPROVAL` di `docs/orchestration/` | Tidak ada "approval integrasi" sebagai gate; `HUMAN APPROVAL` hanya muncul sebagai prasyarat sebelum IMPLEMENT di `review-approval-integration.md`. Discrepancy tersisa di `README.md` dan `workspace-isolation.md` (lihat di atas). |
+
 
 ## Follow-up di luar scope
 
@@ -365,6 +436,16 @@ sendiri dengan scope dan approval yang sesuai.
     sedangkan root menyatakan `.agents/AGENTS.md` sebagai kontrak yang mengikat.
     T003-R1 tidak menyelesaikan konflik itu; task ini memilih pembacaan paling
     aman dan melaporkannya.
+
+### Follow-up tambahan dari T003-R3
+
+11. Koreksi urutan diagram pipeline di `docs/orchestration/README.md` §2 dan
+    `docs/orchestration/workspace-isolation.md` §3 agar HUMAN APPROVAL
+    ditempatkan sebelum IMPLEMENT, konsisten dengan prinsip T003-R3 dan
+    `.agents/AGENTS.md` §5.1 / `.agents/RULES.md` §Human approval wajib. Kedua
+    file berada di luar batas file yang diperbolehkan pada T003-R3 (hanya
+    `review-approval-integration.md` dan task record); membutuhkan task baru
+    dengan scope eksplisit.
 
 ## Catatan
 
