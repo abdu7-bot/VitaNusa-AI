@@ -15,7 +15,7 @@ Jika terblokir: `ACTIVE → BLOCKED`.
 - [x] T001 Audit repository dan catat baseline struktur, test, dependency, dan runtime. (DONE; `docs/architecture/BASELINE.md`)
 - [x] T002 Validasi `.agents/AGENTS.md`, `.agents/RULES.md`, `.agents/WORKFLOW.md`, dan `.agents/ARCHITECTURE.md` terhadap kondisi repository. (DONE; kontrak governance di `.agents/*` dengan kelas task per kategori dan anchor guard `scripts/check_agent_governance.py`, rincian dan remediasi R1-R5 di `tasks/active/T002-agent-governance.md`)
 - [x] T003 Tetapkan mekanisme task locking agar dua agent tidak mengerjakan file/task yang sama. (DONE; kontrak fondasi multi-agent di `docs/orchestration/`: isolation, registry, locking, assignment, review, validation contract, dan audit trail contract; automasi lock dan bootstrap worker dicatat sebagai follow-up di `tasks/active/T003-multi-agent-orchestration.md`; revisi T003-R1 merekonsiliasi model workspace, kewenangan Integrator, urutan pipeline, dan audit reference)
-- [ ] T004 Buat checkpoint/rollback workflow yang aman untuk autonomous coding.
+- [ ] T004 Buat checkpoint/rollback workflow yang aman untuk autonomous coding. (IMPLEMENTED, menunggu reviewer terpisah untuk kelas `TOOL` dan commit; kontrak checkpoint/rollback di `docs/orchestration/checkpoint-and-rollback.md`, perkakas non-runtime `scripts/task_checkpoint.py` dengan checkpoint berbasis isi, restore terverifikasi, rollback saat worker atau validation gagal, kegagalan rollback yang eksplisit, dan `blocked-check` agar status `BLOCKED` tidak meninggalkan perubahan tak terkontrol; test di `tests/governance/test_task_checkpoint.py`; task record `tasks/active/T004-checkpoint-and-rollback.md`)
 - [ ] T005 Tambahkan audit log untuk setiap autonomous task.
 
 ## P1 — Task Orchestrator

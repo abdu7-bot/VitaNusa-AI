@@ -38,6 +38,7 @@ dengan gate apa.
 | `tasks/active/T*.md` | Task record: objective, scope, class, acceptance, hasil |
 | `docs/orchestration/README.md` | Indeks fondasi orchestration multi-agent: isolation, registry, locking, assignment, review, validation, audit |
 | `scripts/check_agent_governance.py` | Anchor guard dan smoke guard untuk kontrak governance |
+| `scripts/task_checkpoint.py` | Perkakas checkpoint, restore, rollback, dan cek status `BLOCKED` (T004); non-runtime, dipanggil eksplisit, tidak dijalankan CI |
 
 Governance berlaku pada semua agent apa pun providernya: Kilo, Copilot, Codex,
 atau agent lain. Provider dapat diganti; governance tidak.

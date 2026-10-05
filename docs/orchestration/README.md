@@ -31,6 +31,15 @@ Tiga hal berlaku dan tidak boleh disalahbaca dari dokumen di folder ini:
    diperlukan untuk integrasi multi-task atau merge branch task. Lihat
    `review-approval-integration.md` §4.1.
 
+## Automasi yang sudah ada di luar folder ini
+
+Checkpoint dan rollback sudah diimplementasikan pada T004 di
+`scripts/task_checkpoint.py`, dengan kontrak di
+`checkpoint-and-rollback.md`. Automasi itu adalah perkakas non-runtime yang
+dipanggil agent secara eksplisit; ia tidak menjalankan task, tidak Holding lock,
+dan tidak menjalankan loop autonomous. Task locking, bootstrap worker, dan audit
+log otomatis tetap belum ada.
+
 ## Dokumen
 
 | Dokumen | Isi |
@@ -41,6 +50,7 @@ Tiga hal berlaku dan tidak boleh disalahbaca dari dokumen di folder ini:
 | `review-approval-integration.md` | Pipeline review, human approval gate, kontrak integrator |
 | `validation-contract.md` | Kontrak validation dan pemetaannya per kelas task |
 | `audit-trail.md` | Skema audit trail, minimum audit reference manual, dan keputusan storage |
+| `checkpoint-and-rollback.md` | Kontrak checkpoint/rollback (T004) dan perkakas `scripts/task_checkpoint.py` yang menghasilkannya |
 
 ## Sumber kebenaran
 
