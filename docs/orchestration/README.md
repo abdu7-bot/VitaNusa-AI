@@ -33,12 +33,12 @@ Tiga hal berlaku dan tidak boleh disalahbaca dari dokumen di folder ini:
 
 ## Automasi yang sudah ada di luar folder ini
 
-Checkpoint dan rollback sudah diimplementasikan pada T004 di
-`scripts/task_checkpoint.py`, dengan kontrak di
-`checkpoint-and-rollback.md`. Automasi itu adalah perkakas non-runtime yang
-dipanggil agent secara eksplisit; ia tidak menjalankan task, tidak Holding lock,
-dan tidak menjalankan loop autonomous. Task locking, bootstrap worker, dan audit
-log otomatis tetap belum ada.
+Perkakas checkpoint dan rollback T004 ada di `scripts/task_checkpoint.py`,
+dengan kontrak di `checkpoint-and-rollback.md`. Status penyelesaian task tetap
+mengikuti `tasks/active/T004-checkpoint-and-rollback.md`; perkakas ini
+non-runtime, dipanggil agent secara eksplisit, tidak menjalankan task, tidak
+memegang lock, dan tidak menjalankan loop autonomous. Task locking, bootstrap
+worker, dan audit log otomatis tetap belum ada.
 
 ## Dokumen
 

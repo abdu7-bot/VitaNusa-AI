@@ -167,6 +167,26 @@ class CheckpointCreationTests(TemporaryRepositoryTestCase):
         with self.assertRaises(tool.CheckpointError):
             tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=[])
 
+    def test_task_id_cannot_escape_checkpoint_store(self) -> None:
+        for task_id in ("../escape", "/../../repo/pwn", r"..\escape"):
+            with self.subTest(task_id=task_id):
+                with self.assertRaises(tool.CheckpointError):
+                    self.create(task_id=task_id)
+        self.assertEqual(list(self.store.iterdir()) if self.store.exists() else [], [])
+
+    def test_checkpoint_refuses_symlinked_parent(self) -> None:
+        target = self.repo / "target"
+        target.mkdir()
+        (target / "file.md").write_text("target\n", encoding="utf-8")
+        (self.repo / "link").symlink_to(target, target_is_directory=True)
+
+        with self.assertRaises(tool.CheckpointError) as raised:
+            tool.create_checkpoint(
+                self.repo, self.store, task_id="T004", paths=["link/file.md"]
+            )
+
+        self.assertIn("symlinked parent", str(raised.exception))
+
 
 class RestoreTests(TemporaryRepositoryTestCase):
     """Property 2: state can be restored."""
@@ -242,6 +262,32 @@ class RestoreTests(TemporaryRepositoryTestCase):
         self.assertTrue((self.repo / "link.md").is_symlink())
         self.assertEqual(os.readlink(self.repo / "link.md"), "kept.md")
 
+    def test_restore_refuses_parent_symlink_redirect(self) -> None:
+        scope = self.repo / "scope"
+        target = self.repo / "target"
+        scope.mkdir()
+        target.mkdir()
+        (scope / "file.md").write_text("checkpointed\n", encoding="utf-8")
+        (target / "file.md").write_text("out of scope\n", encoding="utf-8")
+        git(self.repo, "add", "scope/file.md", "target/file.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped and target files")
+
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scope/file.md"]
+        )
+        (scope / "file.md").unlink()
+        scope.rmdir()
+        scope.symlink_to(target, target_is_directory=True)
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.restore_checkpoint(self.load(checkpoint), self.repo)
+
+        report = raised.exception.report
+        self.assertEqual(report.status, "failed")
+        self.assertEqual(report.failed, ("scope/file.md",))
+        self.assertTrue(report.manual_intervention_required)
+        self.assertEqual((target / "file.md").read_text(encoding="utf-8"), "out of scope\n")
+
     def test_restore_removes_a_file_that_did_not_exist_at_checkpoint_time(self) -> None:
         checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["fresh.md"])
         (self.repo / "fresh.md").write_text("worker output\n", encoding="utf-8")
@@ -310,8 +356,12 @@ class WorkerFailureRollbackTests(TemporaryRepositoryTestCase):
         checkpoint = self.create(paths=["kept.md"])
         (self.repo / "worker-output.md").write_text("new\n", encoding="utf-8")
 
-        guarded = tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
-        self.assertEqual(guarded.removed, ())
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
+        guarded = raised.exception.report
+        self.assertEqual(guarded.status, "failed")
+        self.assertEqual(guarded.failed, ("worker-output.md",))
+        self.assertTrue(guarded.manual_intervention_required)
         self.assertTrue((self.repo / "worker-output.md").exists())
         self.assertTrue(any("repository root" in note for note in guarded.notes))
 
@@ -341,11 +391,13 @@ class WorkerFailureRollbackTests(TemporaryRepositoryTestCase):
         (scoped_directory / "tracked.md").write_text("half finished\n", encoding="utf-8")
         (scoped_directory / "worker-output.md").write_text("new\n", encoding="utf-8")
 
-        report = tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
 
-        self.assertEqual(report.status, "restored")
-        # Subdirectory purge is not supported; worker-output.md should NOT be removed
-        self.assertEqual(report.removed, ())
+        report = raised.exception.report
+        self.assertEqual(report.status, "partial")
+        self.assertEqual(report.failed, ("scoped/worker-output.md",))
+        self.assertTrue(report.manual_intervention_required)
         self.assertEqual((scoped_directory / "tracked.md").read_text(encoding="utf-8"), "tracked\n")
         self.assertTrue((scoped_directory / "untracked-before.md").exists())
         self.assertTrue((scoped_directory / "worker-output.md").exists())
@@ -771,20 +823,42 @@ class BlockerRegressionTests(TemporaryRepositoryTestCase):
             paths=["scoped/tracked.md"],
         )
         # Create a new file in the same directory (not in checkpoint)
+        (scoped_directory / "tracked.md").write_text("worker changed\n", encoding="utf-8")
         (scoped_directory / "neighbor.txt").write_text("neighbor\n", encoding="utf-8")
 
-        report = tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
 
-        self.assertEqual(report.status, "restored")
-        self.assertEqual(report.removed, ())
-        self.assertTrue(
-            (scoped_directory / "neighbor.txt").exists(),
-            "neighbor.txt should not be purged; subdirectory purge is not supported",
+        report = raised.exception.report
+        self.assertEqual(report.status, "partial")
+        self.assertEqual(report.failed, ("scoped/neighbor.txt",))
+        self.assertTrue(report.manual_intervention_required)
+        self.assertEqual(report.restored, ("scoped/tracked.md",))
+        self.assertTrue((scoped_directory / "neighbor.txt").exists())
+        self.assertIn("subdirectory purge is not supported", " ".join(report.notes))
+
+    def test_worker_session_surfaces_incomplete_subdirectory_rollback(self) -> None:
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        session = tool.create_worker_session(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
         )
-        self.assertIn(
-            "subdirectory purge is not supported",
-            " ".join(report.notes),
-        )
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            with session:
+                (scoped_directory / "tracked.md").write_text("changed\n", encoding="utf-8")
+                (scoped_directory / "neighbor.txt").write_text("worker output\n", encoding="utf-8")
+                raise RuntimeError("worker failed")
+
+        report = raised.exception.report
+        self.assertEqual(report.status, "partial")
+        self.assertTrue(report.manual_intervention_required)
+        self.assertEqual(report.failed, ("scoped/neighbor.txt",))
+        self.assertEqual((scoped_directory / "tracked.md").read_text(encoding="utf-8"), "tracked\n")
+        self.assertTrue((scoped_directory / "neighbor.txt").exists())
 
 
 class CliTests(TemporaryRepositoryTestCase):

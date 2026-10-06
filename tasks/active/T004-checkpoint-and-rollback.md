@@ -2,17 +2,17 @@
 
 **Priority:** P0
 **Class:** `TOOL + TEST + DOC`
-**State:** BLOCKED
+**State:** REVIEW
 **Dependency:** T001, T002, T003
-**Owner:** autonomous agent (Kilo)
-**Reviewer:** Copilot (independent review), 2026-10-06; kelas `TOOL` melarang self-review (`.agents/AGENTS.md` §2)
+**Owner:** Kilo (initial implementation); Copilot (remediation implementer, authorized by user 2026-10-06)
+**Reviewer:** independent code-review agent, PASS 2026-10-06; kelas `TOOL` melarang self-review (`.agents/AGENTS.md` §2)
 **Claimed at:** 2026-10-05T14:25:13Z
 **Claimed files:** `scripts/task_checkpoint.py`, `tests/governance/test_task_checkpoint.py`, `docs/orchestration/checkpoint-and-rollback.md`, `docs/orchestration/README.md`, `.agents/ARCHITECTURE.md`, `tasks/active/T004-checkpoint-and-rollback.md`, `tasks/TODO.md`
 **Branch:** `main`
 **Workspace:** canonical `/root/VitaNusa-AI`
 **Approval:** not required; kategori yang disentuh adalah `TOOL`, `TEST`, dan `DOC`, dan ketiganya tidak memerlukan human approval (`.agents/AGENTS.md` §5.1). Tidak ada kategori `CODE`, `CONFIG`, `CI`, atau `DEPLOY` yang disentuh, sehingga tidak ada approval gate baru yang dibuat.
-**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3` (implementasi), `6aff25bc891325c9258267442c85e016bc9182d3` (remediasi blocker), `b7aa27e27ea96e19d11e19cdb50cc0c115cc4a01` (pembaruan task record)
-**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)` / `fix(T004): remediate checkpoint/rollback blockers` / `doc(T004): update task record with remediation details and REVIEW state`
+**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3` (implementasi), `6aff25bc891325c9258267442c85e016bc9182d3` (remediasi blocker), `b7aa27e27ea96e19d11e19cdb50cc0c115cc4a01` (pembaruan task record), `3df1702b2aaafec2e5e105f3df6a9251de06e774` (subdirectory purge guard)
+**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)` / `fix(T004): remediate checkpoint/rollback blockers` / `doc(T004): update task record with remediation details and REVIEW state` / `fix(T004): disable subdirectory purge to prevent sibling file deletion`
 **Audit reference:** task `T004`; kontrak pada `docs/orchestration/checkpoint-and-rollback.md`; audit reference minimum pada `docs/orchestration/audit-trail.md` §4. Entri audit otomatis adalah T005 dan **tidak** dikerjakan pada task ini.
 
 ## Objective
@@ -85,24 +85,24 @@ terpisah.
 
 ## Acceptance criteria
 
-- [ ] Checkpoint dapat dibuat untuk sekumpulan path eksplisit dan menyimpan isi
+- [x] Checkpoint dapat dibuat untuk sekumpulan path eksplisit dan menyimpan isi
       file, mode, status keberadaan file, HEAD, branch, dan status working tree.
-- [ ] Checkpoint menolak path di luar repository, path berupa direktori, dan
+- [x] Checkpoint menolak path di luar repository, path berupa direktori, dan
       lokasi store di dalam working tree.
-- [ ] State dapat dipulihkan persis ke kondisi sebelum checkpoint, termasuk file
+- [x] State dapat dipulihkan persis ke kondisi sebelum checkpoint, termasuk file
       baru yang dihapus dan file yang sebelumnya hilang dikembalikan.
-- [ ] Rollback berjalan otomatis ketika worker gagal.
-- [ ] Rollback berjalan otomatis ketika validation/test gagal.
-- [ ] Kegagalan rollback dilaporkan eksplisit sebagai `failed` atau `partial`
+- [x] Rollback berjalan otomatis ketika worker gagal.
+- [x] Rollback berjalan otomatis ketika validation/test gagal.
+- [x] Kegagalan rollback dilaporkan eksplisit sebagai `failed` atau `partial`
       dengan `manual_intervention_required`, exit code non-zero, dan tidak
       pernah dilaporkan sukses.
-- [ ] Status `BLOCKED` dilaporkan leaving uncontrolled changes pada path scope
+- [x] Status `BLOCKED` dilaporkan leaving uncontrolled changes pada path scope
       sebagai pelanggaran yang terlihat, dan dapat diselesaikan lewat checkpoint
       atau acknowledge eksplisit yang tercatat.
-- [ ] Test baru lulus, test lama yang relevan tetap lulus, dan nol perubahan
+- [x] Test baru lulus, test lama yang relevan tetap lulus, dan nol perubahan
       production behaviour.
-- [ ] Hanya baris T004 pada `tasks/TODO.md` yang diubah.
-- [ ] `git diff --check` bersih dan `git status` menunjukkan hanya berkas scope.
+- [x] Hanya baris T004 pada `tasks/TODO.md` yang diubah.
+- [x] `git diff --check` bersih dan `git status` menunjukkan hanya berkas scope.
 
 ## Safety
 
@@ -256,3 +256,53 @@ hati-hati, bukan sebagai klaim bahwa tool ini bebas risiko.
 **Validasi reviewer:** 50 test T004 PASS. Reproduksi sibling-file deletion gagal terhadap safety requirement. Status governance dan review sendiri belum PASS.
 
 **Syarat membuka BLOCKED:** batasi rollback/purge ke scope yang disetujui dan tercatat, tambahkan regression test bahwa sibling/out-of-scope file tetap ada, sinkronkan status TODO dengan state task, lengkapi acceptance checklist dan traceability, jalankan ulang validasi, lalu minta independent review ulang. Implementasi tidak diubah dalam review ini.
+
+### Independent re-review of subdirectory purge fix — 2026-10-06
+
+**Review decision: BLOCKED.** Commit diperiksa: `3df1702b2aaafec2e5e105f3df6a9251de06e774`. Perbaikan mencegah sibling file dihapus, tetapi rollback subdirectory sekarang dapat selesai dengan laporan sukses saat file baru masih tertinggal.
+
+1. **Scope — PASS.** Commit hanya menyentuh `scripts/task_checkpoint.py`, `tests/governance/test_task_checkpoint.py`, `tasks/TODO.md`, dan task record ini; seluruhnya masuk scope T004. Tidak ada perubahan production code, CI, dependency manifest, atau deployment.
+2. **Correctness — BLOCKED.** Untuk checkpoint `dir/scoped.txt`, bila worker membuat `dir/neighbor.txt`, `rollback(..., "worker-failure")` mempertahankan sibling tersebut tetapi mengembalikan `status="restored"` dan `manual_intervention_required=False`, dengan warning hanya di `notes`. `WorkerSession.__exit__` mengabaikan report itu dan mempropagasikan exception worker seolah rollback selesai. Reproduksi independen pada temporary Git repository membuktikan file tertinggal dan laporan success-shaped. Ini tidak boleh dianggap rollback bersih; temuan ini berbeda dari penghapusan sibling sebelumnya.
+3. **Regression — BLOCKED.** `python3 tests/governance/test_task_checkpoint.py` PASS (51 test), termasuk test yang membuktikan sibling tidak dihapus. Namun test tersebut justru menerima `status="restored"` dan tidak menegaskan bahwa file tertinggal memerlukan intervensi manual atau status non-success.
+4. **Architecture consistency — PASS.** Tidak ditemukan perubahan production behavior atau pelanggaran runtime boundary.
+5. **Documentation consistency — BLOCKED.** Kontrak `docs/orchestration/checkpoint-and-rollback.md` §7 menyatakan rollback yang tidak tuntas tidak boleh dilaporkan sukses; implementasi tidak memenuhi jaminan itu ketika purge dilewati. Selain itu, header task belum mencantumkan commit `3df1702b2aaafec2e5e105f3df6a9251de06e774` maupun commit `b7aa27e27ea96e19d11e19cdb50cc0c115cc4a01`, dan acceptance criteria masih belum dicentang. TODO sudah benar tetap `[ ] / BLOCKED`.
+6. **Git diff — PASS untuk commit yang direview.** Working tree bersih sebelum catatan review ini; `git diff --check HEAD~1..HEAD` bersih.
+
+**Validasi reviewer:** T004 suite PASS (51 test); `compileall`, `check_agent_governance.py`, `check_suspicious_unicode.py` dan `git diff --check` PASS. Reproduksi sibling-file menunjukkan report `restored`, `manual_intervention_required=False`, sementara sibling tetap ada.
+
+**Syarat membuka BLOCKED:** jika ada file baru yang tidak dapat dipurge dalam batas aman, rollback wajib menyatakan hasil non-success yang terlihat (`partial`/`failed` atau status khusus yang tidak sukses), menandai `manual_intervention_required=True`, dan membuat CLI/context manager tidak memberi kesan rollback tuntas. Tambahkan regression test untuk status/report serta alur worker session; sinkronkan dokumentasi, commit SHA, dan acceptance checklist; lalu minta independent review ulang. Implementasi tidak diubah dalam review ini.
+
+### T004 remediation — incomplete rollback reporting
+
+Atas permintaan pengguna, Copilot mengambil implementasi remediasi setelah Kilo menyerahkan perbaikan subdirectory purge untuk review independen.
+
+- `restore_checkpoint` kini mencatat setiap file baru yang tidak aman dipurge sebagai kegagalan pemulihan. Report menjadi `partial` atau `failed`, mengisi `failed`/`failures`, dan meminta intervensi manual; `RollbackError` membuat CLI dan `WorkerSession` tidak melaporkan rollback itu sukses.
+- Aturan tersebut berlaku untuk subdirectory purge yang tidak didukung serta root-scope purge tanpa opt-in. Root purge eksplisit dengan `allow_root_scope_purge=True` tetap berjalan.
+- Tes memastikan sibling tetap utuh, rollback parsial terlihat dan memerlukan intervensi, serta `WorkerSession` meneruskan kegagalan rollback. Kontrak `docs/orchestration/checkpoint-and-rollback.md` diselaraskan.
+- Validasi implementer: `python3 tests/governance/test_task_checkpoint.py` PASS (52 test); `python3 -m compileall -q scripts/task_checkpoint.py tests/governance/test_task_checkpoint.py` PASS; `python3 scripts/check_agent_governance.py` PASS; `python3 scripts/check_suspicious_unicode.py` PASS (570 file); `git diff --check` PASS.
+
+**Current implementation status: independent review PASS; pending completion commit and final traceability update.**
+
+### Independent review findings and remediation — 2026-10-06
+
+The independent reviewer found two additional issues; both were fixed in the current T004 diff:
+
+1. **Parent symlink redirect.** Scope validation previously resolved in-repository symlinked parent directories, allowing restore of `scope/file` to redirect into a different in-repository directory. Scoped paths now reject symlinked parent components, and restore records a path-resolution failure in `RollbackError` rather than writing through the link. Regression tests cover rejection at checkpoint creation and verify that a replaced parent symlink cannot overwrite the target file.
+2. **Task-ID path traversal.** Checkpoint IDs were constructed from unchecked task IDs, allowing path separators to escape the external checkpoint store. Task IDs are now restricted to a single safe ASCII path component; regression tests cover POSIX traversal, absolute paths, and backslash traversal and verify no store artifact is created.
+
+The same remediation keeps incomplete purge outcomes fail-closed: unsafe skipped purge paths are included in `failed`/`failures`, making restore raise `RollbackError` with manual intervention required. Regression tests cover explicit rollback, root purge without opt-in, and propagation through `WorkerSession`.
+
+**Validation after remediation:** `python3 tests/governance/test_task_checkpoint.py` PASS (55 tests); `python3 -m compileall -q scripts/task_checkpoint.py tests/governance/test_task_checkpoint.py` PASS; `python3 scripts/check_agent_governance.py` PASS; `python3 scripts/check_suspicious_unicode.py` PASS (570 files); `git diff --check` PASS. Independent reviewer re-review PASS.
+
+### Final independent review — 2026-10-06
+
+**Review decision: PASS.** Independent code-review agent reviewed the full T004 implementation and current remediation diff, confirming fail-closed rollback reporting, no sibling deletion, symlink-parent rejection, safe task ID validation, and consistent task state. No blocking findings remain.
+
+1. **Scope — PASS.** All changed files are in the task's claimed scope; no production code, dependency manifests, CI, deployment, or runtime behavior changed.
+2. **Correctness — PASS.** Checkpoint/restore and mode verification work; validation launch failures trigger rollback; worker exceptions trigger rollback; unsafe residual files produce `RollbackError` and require manual intervention; symlink parent redirects are rejected; task IDs cannot escape the external store.
+3. **Regression — PASS.** All 55 T004 tests pass, including tests for all reported blockers and the worker-session propagation path.
+4. **Architecture consistency — PASS.** The tool remains repository tooling outside application runtime and does not change application policy or architecture boundaries.
+5. **Documentation consistency — PASS.** The checkpoint contract, orchestration index, task record, and TODO describe the implemented safe-purge behavior and review state consistently.
+6. **Git diff — PASS.** The independent reviewer confirmed the diff remains within scope; local `git diff --check` is clean.
+
+The task may transition to DONE after the reviewed changes are committed and the final commit SHA is recorded below.

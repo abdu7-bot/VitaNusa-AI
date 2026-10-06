@@ -45,6 +45,7 @@ Checkpoint adalah snapshot **berbasis isi**, bukan manipulasi history:
 | Apa yang disimpan | Isi byte, mode file, jenis entri (`file`, `symlink`, `absent`), sha256, ukuran |
 | Di mana | Store di luar working tree, default `~/.local/state/vitanusa-agent/checkpoints` |
 | Bentuk | `<store>/CP-<TASK-ID>-<NNN>/manifest.json` plus `blobs/<sha256>` |
+| Validasi identitas/path | Task ID satu komponen yang aman; path scope menolak parent directory symlink |
 | Git | Hanya `rev-parse HEAD`, `branch --show-current`, `status --porcelain`, `ls-files --error-unmatch` |
 | Perintah destruktif | Tidak ada. Perkakas tidak pernah menjalankan `git reset --hard`, `git clean`, `git checkout --`, atau force-push |
 
@@ -80,8 +81,8 @@ BLOCKED                                        →  blocked-check, lalu rollback
 |---|---|---|
 | `manifest` | `checkpoint_id`, `task_id`, `created_at`, `store`, `repo_root`, `note`, `git`, `entries` | 0 |
 | `verify` | `checkpoint_id`, `drifted`, `status` | 0 saat cocok, 5 saat drift |
-| `restore` | `checkpoint_id`, `task_id`, `reason`, `status`, `restored`, `removed`, `unchanged`, `failed`, `failures`, `manual_intervention_required`, `notes` | 0 |
-| `validation` | `checkpoint_id`, `task_id`, `command`, `exit_code`, `status`, `restore` | 0 saat lulus, 1 saat rollback |
+| `restore` | `checkpoint_id`, `task_id`, `reason`, `status`, `restored`, `removed`, `unchanged`, `failed`, `failures`, `manual_intervention_required`, `notes` | 0 saat lengkap; 3 jika gagal/parsial |
+| `validation` | `checkpoint_id`, `task_id`, `command`, `exit_code`, `status`, `restore` | 0 saat lulus, 1 saat rollback lengkap, 3 jika rollback gagal/parsial |
 | `blocked` | `task_id`, `status`, `uncontrolled`, `checkpointed`, `clean`, `head_clean`, `acknowledgement`, `notes` | 0, atau 4 saat ada perubahan tak terkontrol |
 
 Nilai `status` pada laporan restore hanya `restored`, `partial`, atau `failed`.
@@ -92,11 +93,12 @@ Tidak ada status yang berarti "rollback gagal tetapi dilaporkan sukses".
 | aturan | Alasan |
 |---|---|
 | Rollback hanya menulis path yang tercatat di manifest | `.agents/RULES.md` §Scope |
-| Rollback menghapus path `absent` dan path untracked baru di dalam scope direktori | Mengembalikan tree ke kondisi aman |
+| Rollback menghapus path eksplisit berjenis `absent`; file baru lain hanya dapat dipurge pada root scope dengan opt-in | Tidak menghapus sibling/out-of-scope secara diam-diam |
 | File yang sudah untracked saat checkpoint tidak pernah dihapus | Bukan hasil worker |
 | File ignored tidak pernah disentuh | Git tidak melaporkannya |
 | Direktori tidak pernah dihapus rekursif | Di luar scope eksplisit |
 | Purge saat scope mencakup repository root ditolak tanpa opt-in eksplisit | Mencegah penghapusan massal di luar scope |
+| File baru yang tidak dapat dipurge dengan aman (subdirectory atau root tanpa opt-in) dilaporkan sebagai `failed`/`partial` dan memerlukan intervensi manual | Rollback tidak boleh mengklaim sukses saat perubahan tertinggal |
 | Kegagalan per file tidak berhenti rollback; semuanya dicatat | Laporan jujur tentang apa yang berhasil |
 | Restore manual tidak purge file baru kecuali diminta | Restore manual tidak menghapus pekerjaan yang tidak tercatat |
 

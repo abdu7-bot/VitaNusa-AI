@@ -46,6 +46,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -67,6 +68,7 @@ EXIT_DRIFT = 5
 
 SENSITIVE_NAMES = {".env", ".env.local", ".env.production"}
 SENSITIVE_SUFFIXES = {".pem", ".key"}
+TASK_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 
 RESTORE_REASONS = ("manual", "worker-failure", "validation-failure", "blocked")
 ROLLBACK_CAUSES = ("worker-failure", "validation-failure", "blocked")
@@ -351,18 +353,24 @@ def resolve_scoped_path(root: Path, raw_path: str) -> Path:
 
     root_resolved = root.resolve()
     candidate = Path(raw_path)
-    raw = candidate if candidate.is_absolute() else root / candidate
-    normalised = Path(os.path.normpath(str(raw)))
-
-    parent = normalised.parent.resolve()
-    absolute = parent / normalised.name
-
-    if not _is_within(absolute, root_resolved):
+    raw = candidate if candidate.is_absolute() else root_resolved / candidate
+    normalised = Path(os.path.abspath(os.path.normpath(str(raw))))
+    try:
+        relative = normalised.relative_to(root_resolved)
+    except ValueError:
         raise CheckpointError(f"path is outside the repository: {raw_path}")
-    if absolute == root_resolved:
+    if not relative.parts:
         raise CheckpointError("the repository root itself cannot be scoped")
 
-    relative = absolute.relative_to(root_resolved)
+    parent = root_resolved
+    for part in relative.parts[:-1]:
+        parent /= part
+        if parent.is_symlink():
+            raise CheckpointError(
+                f"scoped path has a symlinked parent: {relative.as_posix()}"
+            )
+
+    absolute = normalised
     if _is_sensitive(relative):
         raise CheckpointError(
             f"refusing to snapshot a secret-bearing path: {relative.as_posix()}"
@@ -448,8 +456,11 @@ def create_checkpoint(
     store_root = _validate_store(Path(store) if store is not None else DEFAULT_STORE, root)
 
     task = task_id.strip()
-    if not task:
-        raise CheckpointError("task id is required")
+    if not TASK_ID_PATTERN.fullmatch(task):
+        raise CheckpointError(
+            "task id must be a single path-safe identifier using letters, digits, "
+            "periods, underscores, or hyphens"
+        )
 
     scoped = [resolve_scoped_path(root, raw) for raw in paths]
     if not scoped:
@@ -609,8 +620,8 @@ def restore_checkpoint(
     notes: list[str] = []
 
     for entry in checkpoint.entries:
-        target = resolve_scoped_path(root, entry.path)
         try:
+            target = resolve_scoped_path(root, entry.path)
             outcome = _restore_one(checkpoint, entry, target)
         except CheckpointError as error:
             failed.append(entry.path)
@@ -630,37 +641,41 @@ def restore_checkpoint(
 
     if purge_new:
         directories = _scope_directories(checkpoint)
-        if "." in directories:
-            if not allow_root_scope_purge:
-                notes.append(
+        if "." in directories and allow_root_scope_purge:
+            for relative in discover_new_paths(checkpoint, root):
+                try:
+                    target = resolve_scoped_path(root, relative)
+                except CheckpointError as error:
+                    failed.append(relative)
+                    failures.append(f"{relative}: {error}")
+                    continue
+                try:
+                    if target.is_dir() and not target.is_symlink():
+                        raise CheckpointError("refusing to remove a directory recursively")
+                    target.unlink()
+                    if target.exists() or target.is_symlink():
+                        raise CheckpointError("path still exists after removal")
+                except (CheckpointError, OSError) as error:
+                    failed.append(relative)
+                    failures.append(f"{relative}: {error}")
+                    continue
+                removed.append(relative)
+        else:
+            if "." in directories:
+                purge_note = (
                     "purge of newly created paths skipped: the checkpoint scope covers "
                     "the repository root, so removing untracked files tree-wide is not "
                     "inside an explicit scope; pass allow_root_scope_purge=True to opt in"
                 )
             else:
-                for relative in discover_new_paths(checkpoint, root):
-                    try:
-                        target = resolve_scoped_path(root, relative)
-                    except CheckpointError as error:
-                        failed.append(relative)
-                        failures.append(f"{relative}: {error}")
-                        continue
-                    try:
-                        if target.is_dir() and not target.is_symlink():
-                            raise CheckpointError("refusing to remove a directory recursively")
-                        target.unlink()
-                        if target.exists() or target.is_symlink():
-                            raise CheckpointError("path still exists after removal")
-                    except (CheckpointError, OSError) as error:
-                        failed.append(relative)
-                        failures.append(f"{relative}: {error}")
-                        continue
-                    removed.append(relative)
-        else:
-            notes.append(
-                "purge of newly created paths skipped: checkpoint scope does not cover "
-                "the repository root; subdirectory purge is not supported"
-            )
+                purge_note = (
+                    "purge of newly created paths skipped: checkpoint scope does not cover "
+                    "the repository root; subdirectory purge is not supported"
+                )
+            notes.append(purge_note)
+            for relative in discover_new_paths(checkpoint, root):
+                failed.append(relative)
+                failures.append(f"{relative}: {purge_note}")
 
     status = "restored"
     if failed:
