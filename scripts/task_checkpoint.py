@@ -630,31 +630,37 @@ def restore_checkpoint(
 
     if purge_new:
         directories = _scope_directories(checkpoint)
-        if "." in directories and not allow_root_scope_purge:
-            notes.append(
-                "purge of newly created paths skipped: the checkpoint scope covers "
-                "the repository root, so removing untracked files tree-wide is not "
-                "inside an explicit scope; pass allow_root_scope_purge=True to opt in"
-            )
+        if "." in directories:
+            if not allow_root_scope_purge:
+                notes.append(
+                    "purge of newly created paths skipped: the checkpoint scope covers "
+                    "the repository root, so removing untracked files tree-wide is not "
+                    "inside an explicit scope; pass allow_root_scope_purge=True to opt in"
+                )
+            else:
+                for relative in discover_new_paths(checkpoint, root):
+                    try:
+                        target = resolve_scoped_path(root, relative)
+                    except CheckpointError as error:
+                        failed.append(relative)
+                        failures.append(f"{relative}: {error}")
+                        continue
+                    try:
+                        if target.is_dir() and not target.is_symlink():
+                            raise CheckpointError("refusing to remove a directory recursively")
+                        target.unlink()
+                        if target.exists() or target.is_symlink():
+                            raise CheckpointError("path still exists after removal")
+                    except (CheckpointError, OSError) as error:
+                        failed.append(relative)
+                        failures.append(f"{relative}: {error}")
+                        continue
+                    removed.append(relative)
         else:
-            for relative in discover_new_paths(checkpoint, root):
-                try:
-                    target = resolve_scoped_path(root, relative)
-                except CheckpointError as error:
-                    failed.append(relative)
-                    failures.append(f"{relative}: {error}")
-                    continue
-                try:
-                    if target.is_dir() and not target.is_symlink():
-                        raise CheckpointError("refusing to remove a directory recursively")
-                    target.unlink()
-                    if target.exists() or target.is_symlink():
-                        raise CheckpointError("path still exists after removal")
-                except (CheckpointError, OSError) as error:
-                    failed.append(relative)
-                    failures.append(f"{relative}: {error}")
-                    continue
-                removed.append(relative)
+            notes.append(
+                "purge of newly created paths skipped: checkpoint scope does not cover "
+                "the repository root; subdirectory purge is not supported"
+            )
 
     status = "restored"
     if failed:

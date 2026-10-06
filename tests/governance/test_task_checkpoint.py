@@ -344,10 +344,11 @@ class WorkerFailureRollbackTests(TemporaryRepositoryTestCase):
         report = tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
 
         self.assertEqual(report.status, "restored")
-        self.assertEqual(report.removed, ("scoped/worker-output.md",))
+        # Subdirectory purge is not supported; worker-output.md should NOT be removed
+        self.assertEqual(report.removed, ())
         self.assertEqual((scoped_directory / "tracked.md").read_text(encoding="utf-8"), "tracked\n")
         self.assertTrue((scoped_directory / "untracked-before.md").exists())
-        self.assertFalse((scoped_directory / "worker-output.md").exists())
+        self.assertTrue((scoped_directory / "worker-output.md").exists())
 
     def test_rollback_rejects_unknown_cause(self) -> None:
         checkpoint = self.create()
@@ -754,6 +755,36 @@ class BlockerRegressionTests(TemporaryRepositoryTestCase):
 
         # The file should still be in the corrupted state (rollback failed)
         # but the RollbackError should have been raised
+
+    def test_subdirectory_purge_not_supported(self) -> None:
+        """Rollback must not purge new files in subdirectories outside checkpoint scope."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+
+        checkpoint = tool.create_checkpoint(
+            self.repo,
+            self.store,
+            task_id="T004",
+            paths=["scoped/tracked.md"],
+        )
+        # Create a new file in the same directory (not in checkpoint)
+        (scoped_directory / "neighbor.txt").write_text("neighbor\n", encoding="utf-8")
+
+        report = tool.rollback(self.load(checkpoint), "worker-failure", self.repo)
+
+        self.assertEqual(report.status, "restored")
+        self.assertEqual(report.removed, ())
+        self.assertTrue(
+            (scoped_directory / "neighbor.txt").exists(),
+            "neighbor.txt should not be purged; subdirectory purge is not supported",
+        )
+        self.assertIn(
+            "subdirectory purge is not supported",
+            " ".join(report.notes),
+        )
 
 
 class CliTests(TemporaryRepositoryTestCase):
