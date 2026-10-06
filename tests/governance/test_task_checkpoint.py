@@ -589,6 +589,173 @@ class BlockedStateTests(TemporaryRepositoryTestCase):
             tool.blocked_check(self.repo, self.store, task_id="T004", paths=[])
 
 
+class BlockerRegressionTests(TemporaryRepositoryTestCase):
+    """Regression tests for the four blockers identified in T004 review."""
+
+    def test_blocked_check_fails_closed_for_uncovered_modified_file(self) -> None:
+        """blocked_check must NOT report 'clear' for a modified file not in checkpoint."""
+        # Create checkpoint only for kept.md
+        checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+
+        # Modify dropped.md (not in checkpoint)
+        (self.repo / "dropped.md").write_text("modified but not snapshotted\n", encoding="utf-8")
+
+        # blocked_check on dropped.md should report uncontrolled-changes
+        report = tool.blocked_check(self.repo, self.store, task_id="T004", paths=["dropped.md"])
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertIn("dropped.md", report.uncontrolled)
+        self.assertNotIn("dropped.md", report.checkpointed)
+        self.assertTrue(any("not covered by checkpoint" in note for note in report.notes))
+
+    def test_blocked_check_fails_closed_for_uncovered_new_file(self) -> None:
+        """blocked_check must NOT report 'clear' for a new file not in checkpoint."""
+        tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+
+        # Create a new file not in checkpoint
+        (self.repo / "new_file.md").write_text("new\n", encoding="utf-8")
+
+        report = tool.blocked_check(self.repo, self.store, task_id="T004", paths=["new_file.md"])
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertIn("new_file.md", report.uncontrolled)
+        self.assertNotIn("new_file.md", report.checkpointed)
+
+    def test_blocked_check_fails_closed_for_uncovered_deleted_file(self) -> None:
+        """blocked_check must NOT report 'clear' for a deleted file not in checkpoint."""
+        tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+        (self.repo / "dropped.md").write_text("to be deleted\n", encoding="utf-8")
+        git(self.repo, "add", "dropped.md")
+        git(self.repo, "commit", "--quiet", "-m", "add dropped")
+        (self.repo / "dropped.md").unlink()
+
+        report = tool.blocked_check(self.repo, self.store, task_id="T004", paths=["dropped.md"])
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertIn("dropped.md", report.uncontrolled)
+
+    def test_verify_checkpoint_detects_mode_change(self) -> None:
+        """verify_checkpoint must detect file mode/permission changes."""
+        checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+
+        # Change mode from 0644 to 0755
+        (self.repo / "kept.md").chmod(0o755)
+
+        drifted = tool.verify_checkpoint(self.load(checkpoint), self.repo)
+
+        self.assertIn("kept.md", drifted)
+
+    def test_verify_checkpoint_restores_mode(self) -> None:
+        """Restored file should have the original mode from checkpoint."""
+        checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+
+        # Change content and mode
+        (self.repo / "kept.md").write_text("corrupted\n", encoding="utf-8")
+        (self.repo / "kept.md").chmod(0o755)
+
+        report = tool.restore_checkpoint(self.load(checkpoint), self.repo, reason="manual")
+
+        self.assertEqual(report.status, "restored")
+        restored_mode = oct((self.repo / "kept.md").stat().st_mode & 0o777)
+        self.assertEqual(restored_mode, "0o644")
+
+    def test_run_guarded_validation_rolls_back_on_executable_not_found(self) -> None:
+        """run_guarded_validation must rollback when executable is not found."""
+        checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Use a non-existent executable
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            ["/this/executable/does/not/exist", "arg"],
+            self.repo,
+        )
+
+        self.assertEqual(outcome.exit_code, -1)
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.status, "restored")
+        self.assertEqual(outcome.restore.reason, "validation-failure")
+        self.assertIn("kept.md", outcome.restore.restored)
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+    def test_run_guarded_validation_rolls_back_on_permission_error(self) -> None:
+        """run_guarded_validation must rollback when command fails with PermissionError."""
+        checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        def permission_error_runner(command, **kwargs):
+            raise PermissionError("Permission denied")
+
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            ["some_command"],
+            self.repo,
+            runner=permission_error_runner,
+        )
+
+        self.assertEqual(outcome.exit_code, -1)
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.status, "restored")
+
+    def test_worker_session_auto_rollback_on_exception(self) -> None:
+        """Worker session context manager must auto-rollback on exception."""
+        session = tool.create_worker_session(
+            self.repo, self.store, task_id="T004", paths=["kept.md", "dropped.md"]
+        )
+
+        # Verify checkpoint was created
+        self.assertIsNotNone(session.checkpoint)
+
+        # Modify files inside the session
+        (self.repo / "kept.md").write_text("worker output\n", encoding="utf-8")
+        (self.repo / "dropped.md").write_text("more output\n", encoding="utf-8")
+
+        # Simulate worker failure by raising exception in context
+        with self.assertRaises(RuntimeError):
+            with session:
+                raise RuntimeError("worker crashed")
+
+        # After exception, files should be restored
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+        self.assertEqual((self.repo / "dropped.md").read_text(encoding="utf-8"), "beta\n")
+        self.assertEqual(git(self.repo, "status", "--porcelain").strip(), "")
+
+    def test_worker_session_no_rollback_on_success(self) -> None:
+        """Worker session must NOT rollback on successful completion."""
+        session = tool.create_worker_session(
+            self.repo, self.store, task_id="T004", paths=["kept.md"]
+        )
+
+        with session:
+            (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+
+        # Changes should persist
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "intentional change\n")
+
+    def test_worker_session_rollback_failure_propagates(self) -> None:
+        """If rollback itself fails during worker session, it should propagate."""
+        session = tool.create_worker_session(
+            self.repo, self.store, task_id="T004", paths=["kept.md"]
+        )
+
+        # Corrupt the checkpoint store
+        stored = self.load(session.checkpoint)
+        kept = next(entry for entry in stored.entries if entry.path == "kept.md")
+        blob = Path(stored.store) / stored.checkpoint_id / "blobs" / kept.blob
+        blob.write_bytes(b"tampered\n")
+        (self.repo / "kept.md").write_text("worker output\n", encoding="utf-8")
+
+        # Exception in session should trigger rollback, which should fail
+        with self.assertRaises(tool.RollbackError):
+            with session:
+                raise RuntimeError("worker crashed")
+
+        # The file should still be in the corrupted state (rollback failed)
+        # but the RollbackError should have been raised
+
+
 class CliTests(TemporaryRepositoryTestCase):
     """The CLI is the interface an agent uses, so its exit codes are covered."""
 

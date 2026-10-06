@@ -738,7 +738,7 @@ def verify_checkpoint(
 
     Two kinds of difference count as drift: a recorded path whose content
     changed, and a path that appeared inside a recorded scope directory after
-    the checkpoint was taken.
+    the checkpoint was taken. File mode/permission changes are also detected.
     """
 
     root = resolve_repo_for_checkpoint(checkpoint, repo_root, allow_repo_mismatch=allow_repo_mismatch)
@@ -751,7 +751,15 @@ def verify_checkpoint(
             elif entry.kind == "symlink":
                 matches = target.is_symlink() and os.readlink(target) == entry.link_target
             else:
-                matches = target.is_file() and _sha256(target.read_bytes()) == entry.digest
+                content_matches = target.is_file() and _sha256(target.read_bytes()) == entry.digest
+                mode_matches = True
+                if content_matches and entry.mode:
+                    try:
+                        current_mode = oct(target.stat().st_mode & 0o777)
+                        mode_matches = current_mode == entry.mode
+                    except OSError:
+                        mode_matches = False
+                matches = content_matches and mode_matches
         except OSError:
             matches = False
         if not matches:
@@ -866,6 +874,100 @@ def rollback(
     return report
 
 
+@dataclass(frozen=True)
+class WorkerSession:
+    """Context manager for a worker session with automatic rollback on failure.
+
+    Usage:
+        with worker_session(checkpoint, task_id, paths) as session:
+            do_risky_work()
+            # If an exception is raised, rollback is automatic
+            # If no exception, session.checkpoint can be used for manual
+            # restore/verify if needed
+
+    The session creates a checkpoint on entry if none is provided, and on
+    any exception it triggers a rollback with cause "worker-failure".
+    """
+
+    checkpoint: Checkpoint
+    task_id: str
+    paths: tuple[str, ...]
+    repo_root: Path
+    store: Path
+    created_checkpoint: bool = False
+
+    def __enter__(self) -> "WorkerSession":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object | None,
+    ) -> bool:
+        if exc_type is not None:
+            # An exception occurred - trigger automatic rollback
+            try:
+                rollback(
+                    self.checkpoint,
+                    "worker-failure",
+                    self.repo_root,
+                    detail=f"{exc_type.__name__}: {exc_val}",
+                    purge_new=True,
+                    allow_root_scope_purge=False,
+                )
+            except RollbackError:
+                # Rollback itself failed - propagate both errors
+                raise
+            except Exception:
+                # Unexpected error during rollback - propagate
+                raise
+            # Return False to propagate the original exception
+            return False
+        return True
+
+
+def create_worker_session(
+    repo_root: Path | str,
+    store: Path | str | None = None,
+    *,
+    task_id: str,
+    paths: Iterable[str],
+    note: str = "worker session",
+) -> WorkerSession:
+    """Create a worker session with an initial checkpoint.
+
+    This is the recommended way to run worker tasks that need automatic
+    rollback on failure. The returned context manager will:
+    1. Create a checkpoint on entry
+    2. On any exception, automatically rollback with cause "worker-failure"
+    3. On success, leave the checkpoint available for manual restore/verify
+
+    Example:
+        session = create_worker_session(repo, store, task_id="T004", paths=["a.txt"])
+        with session:
+            risky_operation()
+        # If we reach here, no rollback was needed
+    """
+    root = _validate_repo_root(Path(repo_root))
+    store_root = _validate_store(Path(store) if store is not None else DEFAULT_STORE, root)
+
+    scoped_paths = tuple(str(resolve_scoped_path(root, raw).relative_to(root.resolve())) for raw in paths)
+    if not scoped_paths:
+        raise CheckpointError("at least one --path is required for a worker session")
+
+    checkpoint = create_checkpoint(root, store_root, task_id=task_id, paths=paths, note=note)
+
+    return WorkerSession(
+        checkpoint=checkpoint,
+        task_id=task_id,
+        paths=scoped_paths,
+        repo_root=root,
+        store=store_root,
+        created_checkpoint=True,
+    )
+
+
 def run_guarded_validation(
     checkpoint: Checkpoint,
     command: Sequence[str],
@@ -879,15 +981,37 @@ def run_guarded_validation(
 
     A zero exit code means the validation passed and nothing was restored. Any
     non-zero exit code triggers a rollback whose reason is `validation-failure`.
-    A rollback that itself fails raises `RollbackError` so the caller cannot
-    mistake a failed validation for a clean rollback.
+    If the validation command cannot be started (e.g. executable not found),
+    a rollback is also triggered. A rollback that itself fails raises
+    `RollbackError` so the caller cannot mistake a failed validation for a
+    clean rollback.
     """
 
     if not command:
         raise CheckpointError("a validation command is required")
 
     root = resolve_repo_for_checkpoint(checkpoint, repo_root, allow_repo_mismatch=allow_repo_mismatch)
-    completed = runner(list(command), cwd=str(root), check=False, capture_output=True, text=True)
+
+    try:
+        completed = runner(list(command), cwd=str(root), check=False, capture_output=True, text=True)
+    except Exception as exc:
+        # Validation command could not be started (e.g., FileNotFoundError,
+        # PermissionError, OSError). Trigger rollback and report the failure.
+        report = restore_checkpoint(
+            checkpoint,
+            root,
+            reason="validation-failure",
+            purge_new=True,
+            allow_root_scope_purge=allow_root_scope_purge,
+        )
+        return ValidationOutcome(
+            checkpoint_id=checkpoint.checkpoint_id,
+            task_id=checkpoint.task_id,
+            command=tuple(command),
+            exit_code=-1,
+            status="rolled-back",
+            restore=report,
+        )
 
     if completed.returncode == 0:
         return ValidationOutcome(
@@ -953,6 +1077,9 @@ def blocked_check(
     A scoped path counts as controlled when it matches a checkpoint of the same
     task, when it has no uncommitted difference against HEAD, or when the caller
     records an explicit acknowledgement naming that path set.
+
+    If a path is not covered by any checkpoint (never snapshotted), it is
+    treated as uncontrolled unless it has no difference from HEAD.
     """
 
     root = _validate_repo_root(Path(repo_root))
@@ -970,21 +1097,33 @@ def blocked_check(
                 f"checkpoint {latest.checkpoint_id} belongs to {latest_root}, not {root}; "
                 "run the BLOCKED check for the repository that recorded it"
             )
+
     relative_paths = [absolute.relative_to(root.resolve()).as_posix() for absolute in scoped]
     drifted = set(verify_checkpoint(latest)) if latest is not None else set()
+    # Paths recorded in the latest checkpoint
+    checkpointed_paths = {entry.path for entry in latest.entries} if latest is not None else set()
 
     controlled_by_checkpoint: list[str] = []
+    uncovered: list[str] = []
     clean: list[str] = []
     uncommitted: list[str] = []
     uncontrolled: list[str] = []
 
     for relative in relative_paths:
-        if latest is not None and relative not in drifted:
-            controlled_by_checkpoint.append(relative)
+        if latest is not None and relative in checkpointed_paths:
+            if relative not in drifted:
+                controlled_by_checkpoint.append(relative)
+                continue
+            # Path is in checkpoint but has drift - it's uncontrolled
+            uncontrolled.append(relative)
             continue
-        if not _has_uncommitted_difference(root, relative):
-            clean.append(relative)
-            continue
+        # Path is not covered by checkpoint
+        if latest is None or relative not in checkpointed_paths:
+            uncovered.append(relative)
+            # If it has no difference from HEAD, it's clean; otherwise uncontrolled
+            if not _has_uncommitted_difference(root, relative):
+                clean.append(relative)
+                continue
         uncommitted.append(relative)
         uncontrolled.append(relative)
 
@@ -1004,6 +1143,8 @@ def blocked_check(
         )
     if latest is None:
         notes.append(f"no checkpoint found for task {task_id} in {store_root}")
+    if uncovered:
+        notes.append(f"paths not covered by checkpoint: {', '.join(sorted(uncovered))}")
 
     return BlockedReport(
         task_id=task_id,
