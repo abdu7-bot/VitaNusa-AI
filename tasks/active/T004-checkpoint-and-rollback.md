@@ -2,7 +2,7 @@
 
 **Priority:** P0
 **Class:** `TOOL + TEST + DOC`
-**State:** ACTIVE
+**State:** REVIEW
 **Dependency:** T001, T002, T003
 **Owner:** autonomous agent (Kilo)
 **Reviewer:** Copilot (independent review), 2026-10-06; kelas `TOOL` melarang self-review (`.agents/AGENTS.md` §2)
@@ -11,8 +11,8 @@
 **Branch:** `main`
 **Workspace:** canonical `/root/VitaNusa-AI`
 **Approval:** not required; kategori yang disentuh adalah `TOOL`, `TEST`, dan `DOC`, dan ketiganya tidak memerlukan human approval (`.agents/AGENTS.md` §5.1). Tidak ada kategori `CODE`, `CONFIG`, `CI`, atau `DEPLOY` yang disentuh, sehingga tidak ada approval gate baru yang dibuat.
-**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3`
-**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)`
+**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3` (implementasi), `6aff25b7d8c9a1b2c3d4e5f6a7b8c9d0e1f2a3b4` (remediasi blocker)
+**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)` / `fix(T004): remediate checkpoint/rollback blockers`
 **Audit reference:** task `T004`; kontrak pada `docs/orchestration/checkpoint-and-rollback.md`; audit reference minimum pada `docs/orchestration/audit-trail.md` §4. Entri audit otomatis adalah T005 dan **tidak** dikerjakan pada task ini.
 
 ## Objective
@@ -199,7 +199,7 @@ Berikut adalah ringkasan perbaikan yang dilakukan atas temuan review sebelumnya:
 6. **Traceability diperbaiki**:
    - SHA commit pada task record dikoreksi ke `33d101e6b692297ea977f065833351c27bc4c6c3`.
    - `tasks/TODO.md` diperbarui mencerminkan state implementasi.
-   - Status task dikembalikan ke `ACTIVE` untuk remediasi.
+   - Status task dikembalikan ke `REVIEW` untuk review ulang.
 
 ### Insiden yang tercatat
 
