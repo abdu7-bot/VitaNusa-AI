@@ -2,7 +2,7 @@
 
 **Priority:** P0
 **Class:** `TOOL + TEST + DOC`
-**State:** REVIEW
+**State:** DONE
 **Dependency:** T001, T002, T003
 **Owner:** Kilo (initial implementation); Copilot (remediation implementer, authorized by user 2026-10-06)
 **Reviewer:** independent code-review agent, PASS 2026-10-06; kelas `TOOL` melarang self-review (`.agents/AGENTS.md` §2)
@@ -11,8 +11,8 @@
 **Branch:** `main`
 **Workspace:** canonical `/root/VitaNusa-AI`
 **Approval:** not required; kategori yang disentuh adalah `TOOL`, `TEST`, dan `DOC`, dan ketiganya tidak memerlukan human approval (`.agents/AGENTS.md` §5.1). Tidak ada kategori `CODE`, `CONFIG`, `CI`, atau `DEPLOY` yang disentuh, sehingga tidak ada approval gate baru yang dibuat.
-**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3` (implementasi), `6aff25bc891325c9258267442c85e016bc9182d3` (remediasi blocker), `b7aa27e27ea96e19d11e19cdb50cc0c115cc4a01` (pembaruan task record), `3df1702b2aaafec2e5e105f3df6a9251de06e774` (subdirectory purge guard)
-**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)` / `fix(T004): remediate checkpoint/rollback blockers` / `doc(T004): update task record with remediation details and REVIEW state` / `fix(T004): disable subdirectory purge to prevent sibling file deletion`
+**Commit:** `33d101e6b692297ea977f065833351c27bc4c6c3` (implementasi), `6aff25bc891325c9258267442c85e016bc9182d3` (remediasi blocker), `b7aa27e27ea96e19d11e19cdb50cc0c115cc4a01` (pembaruan task record), `3df1702b2aaafec2e5e105f3df6a9251de06e774` (subdirectory purge guard), `a2329a8bedf77a0bb5740ab5cbedba3bdfd0c201` (final remediation and independent review)
+**Commit subject:** `feat(tool): checkpoint & rollback for autonomous coding (T004)` / `fix(T004): remediate checkpoint/rollback blockers` / `doc(T004): update task record with remediation details and REVIEW state` / `fix(T004): disable subdirectory purge to prevent sibling file deletion` / `fix(T004): fail closed on incomplete rollback (T004)`
 **Audit reference:** task `T004`; kontrak pada `docs/orchestration/checkpoint-and-rollback.md`; audit reference minimum pada `docs/orchestration/audit-trail.md` §4. Entri audit otomatis adalah T005 dan **tidak** dikerjakan pada task ini.
 
 ## Objective
@@ -305,4 +305,4 @@ The same remediation keeps incomplete purge outcomes fail-closed: unsafe skipped
 5. **Documentation consistency — PASS.** The checkpoint contract, orchestration index, task record, and TODO describe the implemented safe-purge behavior and review state consistently.
 6. **Git diff — PASS.** The independent reviewer confirmed the diff remains within scope; local `git diff --check` is clean.
 
-The task may transition to DONE after the reviewed changes are committed and the final commit SHA is recorded below.
+**Final status: DONE.** Independent review passed; implementation, regression tests, documentation, and the final commit SHA are recorded.
