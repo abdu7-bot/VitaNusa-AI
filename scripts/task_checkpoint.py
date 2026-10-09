@@ -24,10 +24,13 @@ Design constraints that come from governance, not from preference:
    non-zero exit code. There is no path in this module where a failed rollback
    is reported as success.
 5. **BLOCKED must not leave uncontrolled changes.** `blocked_check` reports
-   scoped paths that still differ from their checkpoint, from HEAD, or from the
-   committed tree, and exits non-zero. Resolving that is either restoring the
-   checkpoint or recording an explicit acknowledgement. This is enforcement of
-   the existing governance rules, not a new approval gate.
+   caller-named paths that still differ from their checkpoint or from HEAD,
+   and fails closed over the whole checkpoint scope: every uncommitted
+   change inside a checkpoint scope directory that the checkpoint does not
+   cover is reported as uncontrolled, whether or not the caller named it.
+   It exits non-zero. Resolving that is either restoring the checkpoint or
+   recording an explicit acknowledgement. This is enforcement of the
+   existing governance rules, not a new approval gate.
 
 Usage:
 
@@ -110,6 +113,8 @@ class GitState:
     head: str | None
     branch: str | None
     status_porcelain: tuple[str, ...]
+    ignored_porcelain: tuple[str, ...] = ()
+    ignored_digests: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -132,6 +137,8 @@ class Checkpoint:
             "head": self.git.head,
             "branch": self.git.branch,
             "status_porcelain": list(self.git.status_porcelain),
+            "ignored_porcelain": list(self.git.ignored_porcelain),
+            "ignored_digests": [list(item) for item in self.git.ignored_digests],
         }
         payload["entries"] = [asdict(entry) for entry in self.entries]
         return json.dumps(payload, indent=2, sort_keys=True) + "\n"
@@ -275,16 +282,80 @@ def _run_git(repo_root: Path, arguments: Sequence[str]) -> str | None:
     return completed.stdout
 
 
+def _run_git_or_raise(repo_root: Path, arguments: Sequence[str]) -> str:
+    """Run a read-only Git command and raise CheckpointError on failure.
+
+    Unlike `_run_git`, this helper treats a Git error as a hard failure.
+    Discovery functions must use this helper so a Git error cannot be
+    silently treated as "no changes found" and produce a false "restored".
+    """
+
+    try:
+        completed = subprocess.run(
+            ["git", *arguments],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as error:
+        raise CheckpointError(
+            f"git {' '.join(arguments)} failed: {error}"
+        ) from error
+    if completed.returncode != 0:
+        raise CheckpointError(
+            f"git {' '.join(arguments)} failed with exit code {completed.returncode}: "
+            f"{completed.stderr.strip()}"
+        )
+    return completed.stdout
+
+
 def read_git_state(repo_root: Path) -> GitState:
     """Collect the read-only Git facts recorded with every checkpoint."""
 
     head = (_run_git(repo_root, ["rev-parse", "HEAD"]) or "").strip() or None
     branch = (_run_git(repo_root, ["branch", "--show-current"]) or "").strip() or None
     status_text = _run_git(repo_root, ["status", "--porcelain"]) or ""
+    # Also capture ignored files at checkpoint time for baseline comparison
+    ignored_text = _run_git_or_raise(
+        repo_root, ["ls-files", "--others", "--ignored", "--exclude-standard"]
+    )
+    ignored_lines = tuple(line for line in ignored_text.splitlines() if line.strip())
+    # Capture fingerprints of ignored files so content changes can be detected.
+    # A failure to fingerprint any ignored file is a hard error: the baseline
+    # must be complete or subsequent rollback cannot distinguish worker output
+    # from pre-existing state.
+    ignored_digests: list[tuple[str, str]] = []
+    for line in ignored_lines:
+        candidate = line.strip().strip('"')
+        if not candidate:
+            continue
+        target = repo_root / candidate
+        try:
+            if target.is_symlink():
+                link_target = os.readlink(target)
+                payload = link_target.encode("utf-8")
+                ignored_digests.append((candidate, _sha256(payload)))
+            elif target.is_file():
+                data = target.read_bytes()
+                ignored_digests.append((candidate, _sha256(data)))
+            else:
+                raise CheckpointError(
+                    f"cannot fingerprint ignored baseline path {candidate}: "
+                    f"not a regular file or symlink"
+                )
+        except CheckpointError:
+            raise
+        except OSError as error:
+            raise CheckpointError(
+                f"cannot fingerprint ignored baseline path {candidate}: {error}"
+            ) from error
     return GitState(
         head=head,
         branch=branch,
         status_porcelain=tuple(line for line in status_text.splitlines() if line.strip()),
+        ignored_porcelain=ignored_lines,
+        ignored_digests=tuple(ignored_digests),
     )
 
 
@@ -558,6 +629,10 @@ def load_checkpoint(raw: str) -> Checkpoint:
             head=git_payload.get("head"),
             branch=git_payload.get("branch"),
             status_porcelain=tuple(git_payload.get("status_porcelain") or []),
+            ignored_porcelain=tuple(git_payload.get("ignored_porcelain") or []),
+            ignored_digests=tuple(
+                tuple(item) for item in (git_payload.get("ignored_digests") or [])
+            ),
         ),
         entries=entries,
     )
@@ -639,6 +714,66 @@ def restore_checkpoint(
         else:
             unchanged.append(entry.path)
 
+    # Post-restore index verification: even if working tree content matches the
+    # checkpoint, a staged change in the Git index is still worker residue.
+    # The tool never runs git reset --hard, so the index must be checked
+    # explicitly and reported as a failure when it diverges from HEAD.
+    #
+    # This check covers not only manifest entries but also any path that
+    # was purged from the working tree (root-scope purge with opt-in): a
+    # staged addition that was removed from disk still lives in the index.
+    index_paths = [entry.path for entry in checkpoint.entries]
+    if purge_new and "." in _scope_directories(checkpoint) and allow_root_scope_purge:
+        index_paths = discover_new_paths(checkpoint, root)
+    for entry in checkpoint.entries:
+        if entry.path not in index_paths:
+            index_paths.append(entry.path)
+
+    for entry in checkpoint.entries:
+        try:
+            relative = entry.path
+            index_diff = _run_git_or_raise(
+                root, ["diff", "--cached", "--name-only", "--", relative]
+            )
+            if index_diff and index_diff.strip():
+                failed.append(relative)
+                failures.append(
+                    f"{relative}: staged change remains in Git index after restore; "
+                    "working tree matches checkpoint but index does not"
+                )
+        except CheckpointError:
+            # A Git error during index verification is a hard failure: we
+            # cannot confirm the rollback completed cleanly.
+            failed.append(relative)
+            failures.append(
+                f"{relative}: git diff --cached failed during post-restore "
+                "index verification; rollback cannot be confirmed clean"
+            )
+
+    # Also verify index residue for purged paths (root-scope purge with opt-in)
+    if purge_new and "." in _scope_directories(checkpoint) and allow_root_scope_purge:
+        purged = discover_new_paths(checkpoint, root)
+        for relative in purged:
+            try:
+                index_diff = _run_git_or_raise(
+                    root, ["diff", "--cached", "--name-only", "--", relative]
+                )
+                if index_diff and index_diff.strip():
+                    if relative not in failed:
+                        failed.append(relative)
+                        failures.append(
+                            f"{relative}: staged change remains in Git index "
+                            "after purge from working tree"
+                        )
+            except CheckpointError:
+                if relative not in failed:
+                    failed.append(relative)
+                    failures.append(
+                        f"{relative}: git diff --cached failed during post-restore "
+                        "index verification for purged path; rollback cannot be "
+                        "confirmed clean"
+                    )
+
     if purge_new:
         directories = _scope_directories(checkpoint)
         if "." in directories and allow_root_scope_purge:
@@ -674,8 +809,19 @@ def restore_checkpoint(
                 )
             notes.append(purge_note)
             for relative in discover_new_paths(checkpoint, root):
-                failed.append(relative)
-                failures.append(f"{relative}: {purge_note}")
+                # Distinguish between purge-blocked new files and pre-existing
+                # ignored files whose content drifted. The latter must not be
+                # reported as "purge skipped" because the file was never meant
+                # to be deleted.
+                if relative in _ignored_content_drift(checkpoint, root, directories):
+                    failed.append(relative)
+                    failures.append(
+                        f"{relative}: pre-existing ignored file content changed "
+                        "after checkpoint; worker output detected, file preserved"
+                    )
+                else:
+                    failed.append(relative)
+                    failures.append(f"{relative}: {purge_note}")
 
     status = "restored"
     if failed:
@@ -814,6 +960,125 @@ def _untracked_in_directories(root: Path, directories: Sequence[str]) -> list[st
     return untracked
 
 
+def _changed_paths_in_directories(root: Path, directories: Sequence[str]) -> list[str]:
+    """List every path with uncommitted changes inside the directories.
+
+    Unlike `_untracked_in_directories`, this also reports tracked files
+    that were modified or deleted, so a change the checkpoint does not
+    cover cannot hide inside a checkpoint scope directory.
+    """
+
+    status = _run_git_or_raise(
+        root,
+        ["status", "--porcelain", "--untracked-files=all", "--", *directories],
+    )
+    changed = []
+    for line in status.splitlines():
+        if len(line) < 3:
+            continue
+        candidate = line[3:].strip()
+        if " -> " in candidate:
+            candidate = candidate.split(" -> ", 1)[1]
+        candidate = candidate.strip('"')
+        if candidate:
+            changed.append(PurePosixPath(candidate).as_posix())
+    return changed
+
+
+def _all_paths_at_checkpoint(checkpoint: Checkpoint) -> set[str]:
+    """All paths Git reported at checkpoint time (tracked, untracked, ignored, etc.)."""
+
+    paths: set[str] = set()
+    for line in checkpoint.git.status_porcelain:
+        if len(line) < 3:
+            continue
+        candidate = line[3:].strip()
+        if " -> " in candidate:
+            candidate = candidate.split(" -> ", 1)[1]
+        candidate = candidate.strip('"')
+        if candidate:
+            paths.add(PurePosixPath(candidate).as_posix())
+    # Also include ignored files from checkpoint baseline
+    for line in checkpoint.git.ignored_porcelain:
+        candidate = line.strip().strip('"')
+        if candidate:
+            paths.add(PurePosixPath(candidate).as_posix())
+    return paths
+
+
+def _ignored_content_drift(checkpoint: Checkpoint, root: Path, directories: Sequence[str]) -> list[str]:
+    """Detect ignored files whose content changed since the checkpoint.
+
+    Pre-existing ignored files are never deleted, but a content change is
+    still worker output and must be reported. Symlinks are compared by
+    their resolved target string. Files that were not ignored at checkpoint
+    time are not pre-existing and are excluded here (they are handled by
+    the worker-created discovery path).
+    """
+
+    baseline_digests = dict(checkpoint.git.ignored_digests)
+    drifted: list[str] = []
+    current_ignored = _ignored_in_directories(root, directories)
+    for relative in current_ignored:
+        if relative not in baseline_digests:
+            # Not pre-existing at checkpoint time; handled by worker-created path
+            continue
+        target = root / relative
+        try:
+            if target.is_symlink():
+                current_digest = _sha256(os.readlink(target).encode("utf-8"))
+            elif target.is_file():
+                current_digest = _sha256(target.read_bytes())
+            else:
+                raise CheckpointError(
+                    f"ignored path {relative} is neither file nor symlink"
+                )
+            if current_digest != baseline_digests[relative]:
+                drifted.append(relative)
+        except CheckpointError:
+            raise
+        except OSError as error:
+            raise CheckpointError(
+                f"cannot fingerprint ignored path {relative} during drift check: {error}"
+            ) from error
+    return drifted
+
+
+def _ignored_in_directories(root: Path, directories: Sequence[str]) -> list[str]:
+    """List ignored files inside the directories."""
+
+    status = _run_git_or_raise(
+        root,
+        ["ls-files", "--others", "--ignored", "--exclude-standard", "--", *directories],
+    )
+    ignored = []
+    for line in status.splitlines():
+        candidate = line.strip().strip('"')
+        if candidate:
+            ignored.append(PurePosixPath(candidate).as_posix())
+    return ignored
+
+
+def _all_status_paths_in_directories(root: Path, directories: Sequence[str]) -> list[str]:
+    """List all paths with any status (staged, unstaged, untracked) inside directories."""
+
+    status = _run_git_or_raise(
+        root,
+        ["status", "--porcelain", "--untracked-files=all", "--", *directories],
+    )
+    paths = []
+    for line in status.splitlines():
+        if len(line) < 3:
+            continue
+        candidate = line[3:].strip()
+        if " -> " in candidate:
+            candidate = candidate.split(" -> ", 1)[1]
+        candidate = candidate.strip('"')
+        if candidate:
+            paths.append(PurePosixPath(candidate).as_posix())
+    return paths
+
+
 def _untracked_at_checkpoint(checkpoint: Checkpoint) -> set[str]:
     """Untracked paths Git already reported when the checkpoint was created."""
 
@@ -830,22 +1095,37 @@ def discover_new_paths(
     *,
     allow_repo_mismatch: bool = False,
 ) -> list[str]:
-    """Return untracked paths that appeared in the scope after the checkpoint.
+    """Return paths that appeared or changed in the scope after the checkpoint.
 
-    Ignored files are never reported because Git does not list them, and paths
-    that were already untracked at checkpoint time are excluded, so nothing that
-    existed before the checkpoint can be mistaken for worker output.
+    This includes:
+    - Untracked files (status ??)
+    - Staged new files (status A)
+    - Staged modifications (status M in index)
+    - Staged deletions (status D in index)
+    - Unstaged modifications/deletions
+    - Ignored files that appeared after checkpoint
+    - Pre-existing ignored files whose content changed
+
+    Paths that existed at checkpoint time (recorded in git.status_porcelain)
+    or are explicitly in the checkpoint manifest are excluded.
     """
 
     root = resolve_repo_for_checkpoint(checkpoint, repo_root, allow_repo_mismatch=allow_repo_mismatch)
     recorded = {entry.path for entry in checkpoint.entries}
-    already_untracked = _untracked_at_checkpoint(checkpoint)
-    candidates = _untracked_in_directories(root, _scope_directories(checkpoint))
-    return sorted(
-        candidate
-        for candidate in candidates
-        if candidate not in recorded and candidate not in already_untracked
-    )
+    baseline_paths = _all_paths_at_checkpoint(checkpoint)
+    directories = _scope_directories(checkpoint)
+
+    # All paths with any git status in scope directories
+    current_status_paths = set(_all_status_paths_in_directories(root, directories))
+    # All ignored files in scope directories
+    current_ignored_paths = set(_ignored_in_directories(root, directories))
+    # Pre-existing ignored files whose content changed
+    ignored_drift = set(_ignored_content_drift(checkpoint, root, directories))
+
+    # Worker-created paths = (current status paths ∪ current ignored paths) - baseline - recorded
+    worker_created = (current_status_paths | current_ignored_paths) - baseline_paths - recorded
+
+    return sorted(worker_created | ignored_drift)
 
 
 def rollback(
@@ -1101,6 +1381,12 @@ def blocked_check(
 
     If a path is not covered by any checkpoint (never snapshotted), it is
     treated as uncontrolled unless it has no difference from HEAD.
+
+    The check fails closed over the whole checkpoint scope: every
+    uncommitted change inside a checkpoint scope directory that the
+    checkpoint does not cover is reported as uncontrolled, whether or
+    not the caller named it. Files that were already untracked when the
+    checkpoint was taken are not worker output and stay unreported.
     """
 
     root = _validate_repo_root(Path(repo_root))
@@ -1127,7 +1413,6 @@ def blocked_check(
     controlled_by_checkpoint: list[str] = []
     uncovered: list[str] = []
     clean: list[str] = []
-    uncommitted: list[str] = []
     uncontrolled: list[str] = []
 
     for relative in relative_paths:
@@ -1139,14 +1424,26 @@ def blocked_check(
             uncontrolled.append(relative)
             continue
         # Path is not covered by checkpoint
-        if latest is None or relative not in checkpointed_paths:
-            uncovered.append(relative)
-            # If it has no difference from HEAD, it's clean; otherwise uncontrolled
-            if not _has_uncommitted_difference(root, relative):
-                clean.append(relative)
-                continue
-        uncommitted.append(relative)
+        uncovered.append(relative)
+        # If it has no difference from HEAD, it's clean; otherwise uncontrolled
+        if not _has_uncommitted_difference(root, relative):
+            clean.append(relative)
+            continue
         uncontrolled.append(relative)
+
+    # Fail closed over the whole checkpoint scope. A change inside a
+    # checkpoint scope directory that the caller did not name is still
+    # uncontrolled worker output unless the checkpoint covers it or it
+    # already existed, untracked, when the checkpoint was taken.
+    scope_detected: list[str] = []
+    if latest is not None:
+        classified = {*controlled_by_checkpoint, *clean, *uncontrolled}
+        already_untracked = _untracked_at_checkpoint(latest)
+        for changed in _changed_paths_in_directories(root, _scope_directories(latest)):
+            if changed in already_untracked or changed in classified:
+                continue
+            uncontrolled.append(changed)
+            scope_detected.append(changed)
 
     acknowledged = bool(acknowledgement and acknowledgement.strip())
     if acknowledged:
@@ -1166,6 +1463,11 @@ def blocked_check(
         notes.append(f"no checkpoint found for task {task_id} in {store_root}")
     if uncovered:
         notes.append(f"paths not covered by checkpoint: {', '.join(sorted(uncovered))}")
+    if scope_detected:
+        notes.append(
+            "uncontrolled changes detected inside the checkpoint scope: "
+            + ", ".join(sorted(scope_detected))
+        )
 
     return BlockedReport(
         task_id=task_id,
@@ -1173,7 +1475,7 @@ def blocked_check(
         uncontrolled=tuple(uncontrolled),
         checkpointed=tuple(controlled_by_checkpoint),
         clean=tuple(clean),
-        head_clean=tuple(uncommitted),
+        head_clean=tuple(clean),
         acknowledgement=acknowledgement if acknowledged else None,
         notes=tuple(notes),
     )

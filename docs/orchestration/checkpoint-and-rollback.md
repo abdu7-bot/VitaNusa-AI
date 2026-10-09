@@ -46,7 +46,7 @@ Checkpoint adalah snapshot **berbasis isi**, bukan manipulasi history:
 | Di mana | Store di luar working tree, default `~/.local/state/vitanusa-agent/checkpoints` |
 | Bentuk | `<store>/CP-<TASK-ID>-<NNN>/manifest.json` plus `blobs/<sha256>` |
 | Validasi identitas/path | Task ID satu komponen yang aman; path scope menolak parent directory symlink |
-| Git | Hanya `rev-parse HEAD`, `branch --show-current`, `status --porcelain`, `ls-files --error-unmatch` |
+| Git | Hanya `rev-parse HEAD`, `branch --show-current`, `status --porcelain`, `ls-files --error-unmatch`, `ls-files --others --ignored --exclude-standard` |
 | Perintah destruktif | Tidak ada. Perkakas tidak pernah menjalankan `git reset --hard`, `git clean`, `git checkout --`, atau force-push |
 
 Pemilihan snapshot berbasis isi disengaja. `.agents/RULES.md` §Git melarang
@@ -87,6 +87,8 @@ BLOCKED                                        →  blocked-check, lalu rollback
 
 Nilai `status` pada laporan restore hanya `restored`, `partial`, atau `failed`.
 Tidak ada status yang berarti "rollback gagal tetapi dilaporkan sukses".
+`head_clean` memuat path yang identik dengan HEAD; path kotor tidak pernah
+masuk ke dalamnya.
 
 ## 6. Aturan rollback
 
@@ -94,13 +96,48 @@ Tidak ada status yang berarti "rollback gagal tetapi dilaporkan sukses".
 |---|---|
 | Rollback hanya menulis path yang tercatat di manifest | `.agents/RULES.md` §Scope |
 | Rollback menghapus path eksplisit berjenis `absent`; file baru lain hanya dapat dipurge pada root scope dengan opt-in | Tidak menghapus sibling/out-of-scope secara diam-diam |
-| File yang sudah untracked saat checkpoint tidak pernah dihapus | Bukan hasil worker |
-| File ignored tidak pernah disentuh | Git tidak melaporkannya |
+| File yang sudah untracked **atau ignored** saat checkpoint tidak pernah dihapus | Bukan hasil worker |
+| File ignored yang sudah ada saat checkpoint tidak pernah dianggap perubahan worker | Baseline mencatat ignored files |
+| Perubahan isi terhadap pre-existing ignored file terdeteksi dan dilaporkan, tetapi file tidak diubah atau dihapus | Worker mengubah isi file yang diabaikan Git |
+| Git discovery error tidak pernah diubah menjadi result kosong | `_run_git_or_raise` melempar `CheckpointError` |
+| Post-restore index verification: `git diff --cached --name-only` dijalankan untuk setiap entry checkpoint | Staged change di index masih ada setelah working tree dipulihkan |
 | Direktori tidak pernah dihapus rekursif | Di luar scope eksplisit |
 | Purge saat scope mencakup repository root ditolak tanpa opt-in eksplisit | Mencegah penghapusan massal di luar scope |
 | File baru yang tidak dapat dipurge dengan aman (subdirectory atau root tanpa opt-in) dilaporkan sebagai `failed`/`partial` dan memerlukan intervensi manual | Rollback tidak boleh mengklaim sukses saat perubahan tertinggal |
-| Kegagalan per file tidak berhenti rollback; semuanya dicatat | Laporan jujur tentang apa yang berhasil |
+| Kegagalan per file tidak berhenti rollback; semuanya dicatat | Laporan jujur tentang apa yanghasil |
 | Restore manual tidak purge file baru kecuali diminta | Restore manual tidak menghapus pekerjaan yang tidak tercatat |
+
+## 6.1 Deteksi perubahan worker
+
+Rollback dan `verify` membandingkan state saat ini dengan baseline checkpoint.
+Baseline mencatat:
+- Semua path dari `git status --porcelain` (tracked, staged, unstaged, untracked)
+- Semua ignored files dari `git ls-files --others --ignored --exclude-standard`
+- SHA256 setiap ignored file (untuk deteksi perubahan isi)
+
+Perubahan worker yang terdeteksi:
+- Untracked files baru (status `??`)
+- Staged new files (status `A `)
+- Staged modifications (status `M ` di index)
+- Staged deletions (status `D ` di index)
+- Unstaged modifications/deletions
+- Ignored files yang muncul setelah checkpoint
+- Pre-existing ignored files yang isinya berubah
+
+File yang **dikecualikan** dari deteksi (bukan hasil worker):
+- Path yang tercakup manifest checkpoint
+- Path yang sudah ada di baseline (status_porcelain atau ignored_porcelain)
+- Pre-existing ignored files yang isinya sama dengan checkpoint (digest cocok)
+
+## 6.2 Post-restore index verification
+
+Setelah working tree dipulihkan, rollback memeriksa apakah Git index
+masih berisi perubahan yang tidak sesuai checkpoint. Perintah
+`git diff --cached --name-only` dijalankan untuk setiap entry checkpoint.
+Jika index masih berisi perubahan, path dilaporkan ke `failed` dengan
+catatan "staged change remains in Git index after restore". Ini
+mencegah rollback melaporkan `restored` sementara `git status`
+masih menunjukkan perubahan di index.
 
 ## 7. Kegagalan rollback tidak disembunyikan
 
@@ -130,9 +167,21 @@ itu tanpa menambah approval gate:
 | `uncontrolled-changes` | Ada path scope yang berbeda dari checkpoint dan dari HEAD |
 | `acknowledged` | Perubahan tidak terkontrol sengaja dibiarkan dan dicatat tertulis |
 
-`acknowledged` **bukan** PASS. Laporan memuat catatan yang menyatakannya, dan
-`git status` tetap menunjukkan perubahan tersebut. Yang membuat acknowledge
-layak adalah tertulisnya alasan pada file task, bukan flag di CLI.
+`blocked-check` gag-closed atas **seluruh** direktori cakupan
+checkpoint, bukan hanya path yang disebut pemanggil: setiap
+perubahan belum dikomit (file tracked yang berubah atau dihapus,
+maupun file untracked baru) di dalam direktori cakupan checkpoint
+yang tidak tercakup checkpoint dilaporkan `uncontrolled-changes`
+dan exit code `4`, walaupun pemanggil hanya menyebut path yang
+sudah di-checkpoint. File yang sudah untracked sejak checkpoint
+dibuat bukan hasil worker dan tidak dilaporkan. Ini menjaga
+janji kontrak: workspace tidak pernah dilaporkan aman selama
+masih ada perubahan dalam cakupan yang tidak dapat diverifikasi.
+
+`acknowledged` **bukan** PASS. Laporan memuat catatan yang
+menyatakannya, dan `git status` tetap menunjukkan perubahan
+tersebut. Yang membuat acknowledge layak adalah tertulisnya
+alasan pada file task, bukan flag di CLI.
 
 ## 9. Batas T004
 

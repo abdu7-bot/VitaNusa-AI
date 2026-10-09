@@ -563,6 +563,12 @@ class RollbackFailureTests(TemporaryRepositoryTestCase):
             "--untracked-files=all",
             "ls-files",
             "--error-unmatch",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "diff",
+            "--cached",
+            "--name-only",
             "--",
         }
         tree = ast.parse(MODULE_PATH.read_text(encoding="utf-8"))
@@ -860,6 +866,583 @@ class BlockerRegressionTests(TemporaryRepositoryTestCase):
         self.assertEqual((scoped_directory / "tracked.md").read_text(encoding="utf-8"), "tracked\n")
         self.assertTrue((scoped_directory / "neighbor.txt").exists())
 
+    def test_blocked_check_detects_new_file_in_checkpoint_scope(self) -> None:
+        """blocked_check must fail closed over the whole checkpoint scope.
+
+        A new untracked file inside a checkpoint scope directory is
+        uncontrolled worker output even when the caller names only the
+        checkpointed path.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        (scoped_directory / "neighbor.txt").write_text("worker output\n", encoding="utf-8")
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertEqual(report.uncontrolled, ("scoped/neighbor.txt",))
+        self.assertEqual(report.checkpointed, ("scoped/tracked.md",))
+        self.assertTrue(
+            any("checkpoint scope" in note for note in report.notes),
+            report.notes,
+        )
+
+    def test_blocked_check_detects_modified_tracked_file_in_checkpoint_scope(
+        self,
+    ) -> None:
+        """A modified tracked file inside the checkpoint scope is uncontrolled."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        (scoped_directory / "other.md").write_text("other\n", encoding="utf-8")
+        git(self.repo, "add", "scoped")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped files")
+        tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        (scoped_directory / "other.md").write_text("worker modified\n", encoding="utf-8")
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertIn("scoped/other.md", report.uncontrolled)
+
+    def test_blocked_check_detects_deleted_tracked_file_in_checkpoint_scope(
+        self,
+    ) -> None:
+        """A deleted tracked file inside the checkpoint scope is uncontrolled."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        (scoped_directory / "doomed.md").write_text("doomed\n", encoding="utf-8")
+        git(self.repo, "add", "scoped")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped files")
+        tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        (scoped_directory / "doomed.md").unlink()
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        self.assertEqual(report.status, "uncontrolled-changes")
+        self.assertIn("scoped/doomed.md", report.uncontrolled)
+
+    def test_blocked_check_ignores_files_untracked_before_the_checkpoint(
+        self,
+    ) -> None:
+        """Files already untracked at checkpoint time are not worker output."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        (scoped_directory / "preexisting.txt").write_text(
+            "was already untracked\n", encoding="utf-8"
+        )
+        tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        self.assertEqual(report.status, "clear")
+        self.assertEqual(report.uncontrolled, ())
+
+    def test_blocked_check_head_clean_lists_paths_matching_head(self) -> None:
+        """`head_clean` must list paths identical to HEAD, not dirty ones."""
+        (self.repo / "new_file.md").write_text("new\n", encoding="utf-8")
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["new_file.md", "dropped.md"]
+        )
+
+        self.assertEqual(report.clean, ("dropped.md",))
+        self.assertEqual(report.head_clean, ("dropped.md",))
+        self.assertIn("new_file.md", report.uncontrolled)
+        self.assertNotIn("new_file.md", report.head_clean)
+
+    def test_blocked_check_still_clear_when_scope_is_unchanged(self) -> None:
+        """A clean checkpoint scope with caller-named covered paths stays clear."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        report = tool.blocked_check(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+
+        self.assertEqual(report.status, "clear")
+        self.assertEqual(report.uncontrolled, ())
+
+    # === New regression tests for staged/ignored file detection ===
+
+    def test_rollback_detects_untracked_file_created_by_worker(self) -> None:
+        """Rollback must detect and fail on untracked file created by worker."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates untracked file
+        (scoped_directory / "worker_output.txt").write_text("worker\n", encoding="utf-8")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn("scoped/worker_output.txt", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        self.assertNotEqual(report.status, "restored")
+
+    def test_rollback_detects_staged_new_file_created_by_worker(self) -> None:
+        """Rollback must detect and fail on staged new file created by worker."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates new file and stages it
+        (scoped_directory / "staged_new.txt").write_text("staged\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/staged_new.txt")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn("scoped/staged_new.txt", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        self.assertNotEqual(report.status, "restored")
+
+    def test_rollback_detects_staged_modification_of_tracked_file(self) -> None:
+        """Rollback must fail when staged modification remains in Git index.
+
+        Even though working tree content is restored to checkpoint state,
+        the Git index still contains the worker's staged change. Rollback
+        must not report 'restored' in this case.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker modifies tracked file and stages it
+        (scoped_directory / "tracked.md").write_text("modified\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertIn("scoped/tracked.md", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        # Working tree content must still be restored to checkpoint
+        self.assertEqual((scoped_directory / "tracked.md").read_text(), "tracked\n")
+
+    def test_rollback_detects_staged_deletion_of_tracked_file(self) -> None:
+        """Rollback must detect and fail on staged deletion of tracked file."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        (scoped_directory / "other.md").write_text("other\n", encoding="utf-8")
+        git(self.repo, "add", "scoped")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped files")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker deletes other.md and stages deletion
+        (scoped_directory / "other.md").unlink()
+        git(self.repo, "add", "scoped/other.md")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn("scoped/other.md", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        self.assertNotEqual(report.status, "restored")
+
+    def test_rollback_detects_ignored_file_created_by_worker(self) -> None:
+        """Rollback must detect and fail on ignored file created by worker."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Add .gitignore for the scoped directory
+        (scoped_directory / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/.gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "add gitignore")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates ignored file
+        (scoped_directory / "secret.ignored").write_text("secret\n", encoding="utf-8")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn("scoped/secret.ignored", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        self.assertNotEqual(report.status, "restored")
+
+    def test_rollback_preserves_preexisting_untracked_file(self) -> None:
+        """Pre-existing untracked file at checkpoint time must not be removed."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Pre-existing untracked file
+        (scoped_directory / "preexisting.txt").write_text("pre-existing\n", encoding="utf-8")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker modifies tracked file
+        (scoped_directory / "tracked.md").write_text("worker\n", encoding="utf-8")
+
+        # Rollback should succeed - only checkpointed file changed
+        report = tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        self.assertEqual(report.status, "restored")
+        self.assertIn("scoped/tracked.md", report.restored)
+        # Pre-existing file must still exist
+        self.assertTrue((scoped_directory / "preexisting.txt").exists())
+        self.assertEqual((scoped_directory / "preexisting.txt").read_text(), "pre-existing\n")
+        self.assertFalse(report.manual_intervention_required)
+
+    def test_rollback_preserves_preexisting_ignored_file(self) -> None:
+        """Pre-existing ignored file at checkpoint time must not be treated as worker change."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Add .gitignore
+        (scoped_directory / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/.gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "add gitignore")
+        # Pre-existing ignored file
+        (scoped_directory / "preexisting.ignored").write_text("pre-existing\n", encoding="utf-8")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker modifies tracked file
+        (scoped_directory / "tracked.md").write_text("worker\n", encoding="utf-8")
+
+        # Rollback should succeed - only checkpointed file changed
+        report = tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        self.assertEqual(report.status, "restored")
+        self.assertIn("scoped/tracked.md", report.restored)
+        # Pre-existing ignored file must still exist and not be in failed
+        self.assertTrue((scoped_directory / "preexisting.ignored").exists())
+        self.assertNotIn("scoped/preexisting.ignored", report.failed)
+        self.assertFalse(report.manual_intervention_required)
+
+    def test_rollback_never_reports_restored_when_worker_files_remain(self) -> None:
+        """Rollback must not report 'restored' if any worker-created file remains."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates untracked file
+        (scoped_directory / "worker.txt").write_text("worker\n", encoding="utf-8")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        # Must not be "restored" - must be "partial" or "failed"
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertTrue(report.manual_intervention_required)
+        # Worker file must be in failed
+        self.assertIn("scoped/worker.txt", report.failed)
+
+    def test_rollback_failure_always_has_manual_intervention_required(self) -> None:
+        """Rollback failure must always set manual_intervention_required=True."""
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates untracked file
+        (scoped_directory / "worker.txt").write_text("worker\n", encoding="utf-8")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertTrue(report.manual_intervention_required)
+        self.assertIn("scoped/worker.txt", report.failed)
+
+    def test_rollback_fails_on_staged_modification_index_residue(self) -> None:
+        """Rollback must fail when Git index still contains staged worker change.
+
+        Even after working tree content is restored to checkpoint state,
+        the Git index may still hold the worker's staged modification.
+        Rollback must not report 'restored' in this case.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker modifies tracked file and stages it
+        (scoped_directory / "tracked.md").write_text("modified\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertIn("scoped/tracked.md", report.failed)
+        self.assertTrue(report.manual_intervention_required)
+        # Working tree content must still be restored to checkpoint
+        self.assertEqual((scoped_directory / "tracked.md").read_text(), "tracked\n")
+
+    def test_rollback_fails_on_git_discovery_error(self) -> None:
+        """Rollback must fail when Git discovery fails, not silently succeed.
+
+        A Git error during discovery must not be treated as "no changes found".
+        """
+
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker creates untracked file
+        (scoped_directory / "worker.txt").write_text("worker\n", encoding="utf-8")
+
+        # Force a Git error during discovery by patching _run_git_or_raise
+        def failing_git(*args, **kwargs):
+            raise tool.CheckpointError("injected git failure")
+
+        with mock.patch.object(tool, "_run_git_or_raise", side_effect=failing_git):
+            with self.assertRaises((tool.RollbackError, tool.CheckpointError)):
+                tool.rollback(checkpoint, "worker-failure", self.repo)
+
+    def test_rollback_fails_on_modified_preexisting_ignored_file(self) -> None:
+        """Rollback must fail when worker modifies content of pre-existing ignored file.
+
+        Pre-existing ignored files must not be deleted, but a content change
+        by the worker is still worker output and must be reported.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Add .gitignore
+        (scoped_directory / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/.gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "add gitignore")
+        # Pre-existing ignored file
+        (scoped_directory / "preexisting.ignored").write_text("pre-existing\n", encoding="utf-8")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker modifies tracked file AND modifies ignored file content
+        (scoped_directory / "tracked.md").write_text("worker\n", encoding="utf-8")
+        (scoped_directory / "preexisting.ignored").write_text("worker modified ignored\n", encoding="utf-8")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertTrue(report.manual_intervention_required)
+        # Pre-existing ignored file must still exist
+        self.assertTrue((scoped_directory / "preexisting.ignored").exists())
+        # Must NOT be deleted
+        self.assertNotIn("scoped/preexisting.ignored", report.removed)
+        # Must be reported as failed
+        self.assertIn("scoped/preexisting.ignored", report.failed)
+
+    def test_rollback_root_scope_purge_staged_addition_index_residue(self) -> None:
+        """Root-scope purge must detect staged addition that was removed from disk.
+
+        With allow_root_scope_purge=True, a staged new file is purged from
+        the working tree but still lives in the Git index. Rollback must
+        not report 'restored' in this case.
+        """
+        (self.repo / "tracked.md").write_text("alpha\n", encoding="utf-8")
+        git(self.repo, "add", "tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "baseline")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["tracked.md"]
+        )
+        # Worker creates a new file and stages it
+        (self.repo / "worker_new.txt").write_text("worker\n", encoding="utf-8")
+        git(self.repo, "add", "worker_new.txt")
+
+        # Rollback with root-scope purge opt-in
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(
+                self.load(checkpoint),
+                "worker-failure",
+                self.repo,
+                allow_root_scope_purge=True,
+            )
+
+        report = raised.exception.report
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertTrue(report.manual_intervention_required)
+        # The staged addition must be detected in the index
+        self.assertIn("worker_new.txt", report.failed)
+
+    def test_rollback_fails_on_cached_index_query_error(self) -> None:
+        """Post-restore index verification must not swallow Git errors.
+
+        A failure in git diff --cached during index verification must
+        produce a rollback failure, not silently pass.
+        """
+        (self.repo / "tracked.md").write_text("alpha\n", encoding="utf-8")
+        git(self.repo, "add", "tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "baseline")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["tracked.md"]
+        )
+        # Worker modifies tracked file
+        (self.repo / "tracked.md").write_text("worker\n", encoding="utf-8")
+
+        original = tool._run_git_or_raise
+
+        def failing_git(*args, **kwargs):
+            if "diff" in args[1] and "--cached" in args[1]:
+                raise tool.CheckpointError("injected git diff --cached failure")
+            return original(*args, **kwargs)
+
+        with mock.patch.object(tool, "_run_git_or_raise", side_effect=failing_git):
+            with self.assertRaises(tool.RollbackError) as raised:
+                tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertTrue(report.manual_intervention_required)
+        self.assertIn("tracked.md", report.failed)
+
+    def test_rollback_detects_modified_preexisting_ignored_symlink(self) -> None:
+        """Rollback must detect when worker modifies a pre-existing ignored symlink.
+
+        Pre-existing ignored symlinks must have their target fingerprinted
+        at checkpoint time. A change to the symlink target is worker output
+        and must be reported. The symlink itself must not be deleted.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Add .gitignore
+        (scoped_directory / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/.gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "add gitignore")
+        # Pre-existing ignored symlink
+        (scoped_directory / "link.ignored").symlink_to("tracked.md")
+        checkpoint = tool.create_checkpoint(
+            self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+        )
+        # Worker changes the symlink target
+        (scoped_directory / "link.ignored").unlink()
+        (scoped_directory / "link.ignored").symlink_to("other_target.md")
+
+        with self.assertRaises(tool.RollbackError) as raised:
+            tool.rollback(checkpoint, "worker-failure", self.repo)
+
+        report = raised.exception.report
+        self.assertIn(report.status, {"partial", "failed"})
+        self.assertTrue(report.manual_intervention_required)
+        # The pre-existing ignored symlink must not be deleted by rollback.
+        # The symlink itself is preserved; a worker-retargeted symlink may
+        # legitimately point at a non-existent target, in which case
+        # Path.exists() follows the link and returns False even though the
+        # symlink inode is intact. The correct invariant is that the path is
+        # still a symlink and still points at the worker's chosen target.
+        link = scoped_directory / "link.ignored"
+        self.assertTrue(link.is_symlink(), "pre-existing ignored symlink was deleted by rollback")
+        self.assertEqual(os.readlink(link), "other_target.md")
+        # Must NOT be deleted
+        self.assertNotIn("scoped/link.ignored", report.removed)
+        # Must be reported as failed
+        self.assertIn("scoped/link.ignored", report.failed)
+
+    def test_rollback_fails_on_ignored_baseline_read_failure(self) -> None:
+        """Rollback must fail closed when ignored baseline cannot be fingerprinted.
+
+        If a pre-existing ignored file cannot be read at checkpoint time,
+        the checkpoint creation must fail rather than silently producing
+        an incomplete baseline.
+        """
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        # Add .gitignore
+        (scoped_directory / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/.gitignore")
+        git(self.repo, "commit", "--quiet", "-m", "add gitignore")
+        # Pre-existing ignored file
+        (scoped_directory / "preexisting.ignored").write_text("pre-existing\n", encoding="utf-8")
+
+        # Simulate baseline fingerprint failure by patching read_bytes
+        original_read_bytes = Path.read_bytes
+
+        def failing_read_bytes(self_path):
+            if self_path.name == "preexisting.ignored":
+                raise OSError("injected read failure")
+            return original_read_bytes(self_path)
+
+        with mock.patch.object(Path, "read_bytes", failing_read_bytes):
+            with self.assertRaises(tool.CheckpointError):
+                tool.create_checkpoint(
+                    self.repo, self.store, task_id="T004", paths=["scoped/tracked.md"]
+                )
+
 
 class CliTests(TemporaryRepositoryTestCase):
     """The CLI is the interface an agent uses, so its exit codes are covered."""
@@ -922,6 +1505,47 @@ class CliTests(TemporaryRepositoryTestCase):
         )
         self.assertEqual(exit_code, tool.EXIT_BLOCKED)
         self.assertEqual(json.loads(stdout)["status"], "uncontrolled-changes")
+
+    def test_blocked_check_exits_non_zero_for_scope_detected_change(
+        self,
+    ) -> None:
+        scoped_directory = self.repo / "scoped"
+        scoped_directory.mkdir()
+        (scoped_directory / "tracked.md").write_text("tracked\n", encoding="utf-8")
+        git(self.repo, "add", "scoped/tracked.md")
+        git(self.repo, "commit", "--quiet", "-m", "add scoped file")
+        exit_code, stdout, stderr = self.run_cli(
+            "--store",
+            str(self.store),
+            "create",
+            "--repo",
+            str(self.repo),
+            "--task",
+            "T004",
+            "--path",
+            "scoped/tracked.md",
+        )
+        self.assertEqual(exit_code, tool.EXIT_OK, stderr)
+        (scoped_directory / "neighbor.txt").write_text(
+            "worker output\n", encoding="utf-8"
+        )
+
+        exit_code, stdout, stderr = self.run_cli(
+            "--store",
+            str(self.store),
+            "blocked-check",
+            "--repo",
+            str(self.repo),
+            "--task",
+            "T004",
+            "--path",
+            "scoped/tracked.md",
+        )
+
+        self.assertEqual(exit_code, tool.EXIT_BLOCKED)
+        payload = json.loads(stdout)
+        self.assertEqual(payload["status"], "uncontrolled-changes")
+        self.assertIn("scoped/neighbor.txt", payload["uncontrolled"])
 
     def test_store_inside_repository_exits_with_usage_error(self) -> None:
         exit_code, stdout, stderr = self.run_cli(
