@@ -34,7 +34,7 @@
     "check:mandiri:learning-content": "node scripts/mandiri/learning/verify-learning-packages.mjs",
     "review:mandiri:learning-content": "node scripts/mandiri/learning/print-content-review.mjs",
     "test:mandiri:learning-content": "node --test tests/mandiri/learning-content/*.test.mjs",
-    "test:mandiri:learning-reader": "node --test tests/mandiri/learning-reader/*.test.mjs",
+    "test:mandiri:learning-reader": "npm run build && node --test tests/mandiri/learning-reader/*.test.mjs",
     "test:mandiri:offline": "node --test tests/mandiri/offline/*.test.mjs",
     "test:mandiri:phase-2-exit": "node --test tests/mandiri/phase-2-exit/*.test.mjs",
     "test:mandiri:pos-domain": "node --test tests/mandiri/pos/*.test.mjs",

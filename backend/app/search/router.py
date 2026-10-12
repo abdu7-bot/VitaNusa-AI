@@ -203,7 +203,7 @@ class SearchRouter:
                 adapter.search(query),
                 timeout=self.config.timeout_seconds,
             )
-        except TimeoutError:
+        except asyncio.TimeoutError:
             return ProviderSearchResponse(
                 provider=provider_name,
                 status="timeout",

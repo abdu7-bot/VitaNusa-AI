@@ -472,6 +472,301 @@ class ValidationFailureRollbackTests(TemporaryRepositoryTestCase):
         self.assertEqual(outcome.status, "rolled-back")
         self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
 
+    def test_validation_timeout_triggers_rollback(self) -> None:
+        """Validation command that exceeds timeout triggers rollback."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Use a command that sleeps longer than the timeout
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+        )
+
+        self.assertEqual(outcome.exit_code, -1)
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.status, "restored")
+        self.assertEqual(outcome.restore.reason, "validation-failure")
+        self.assertIn("kept.md", outcome.restore.restored)
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+    def test_validation_within_timeout_does_not_rollback(self) -> None:
+        """Validation command that completes within timeout does not rollback."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+
+        # Command completes quickly within timeout
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(0.1); pass"],
+            self.repo,
+            timeout=2.0,
+        )
+
+        self.assertEqual(outcome.exit_code, 0)
+        self.assertEqual(outcome.status, "passed")
+        self.assertIsNone(outcome.restore)
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "intentional change\n")
+
+    def test_cli_run_validation_timeout_triggers_rollback(self) -> None:
+        """CLI run-validation with timeout triggers rollback when command times out."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+        stored = self.load(checkpoint)
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            exit_code = tool.main(
+                [
+                    "--store", str(self.store),
+                    "run-validation", "--id", stored.checkpoint_id,
+                    "--timeout", "0.5",
+                    "--", sys.executable, "-c", "import time; time.sleep(2)"
+                ]
+            )
+
+        self.assertEqual(exit_code, 1)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "rolled-back")
+        self.assertEqual(payload["restore"]["status"], "restored")
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+    def test_cli_run_validation_timeout_does_not_rollback_when_within_limit(self) -> None:
+        """CLI run-validation with timeout does not rollback when command finishes in time."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+        stored = self.load(checkpoint)
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            exit_code = tool.main(
+                [
+                    "--store", str(self.store),
+                    "run-validation", "--id", stored.checkpoint_id,
+                    "--timeout", "2.0",
+                    "--", sys.executable, "-c", "import time; time.sleep(0.1)"
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["status"], "passed")
+        self.assertIsNone(payload["restore"])
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "intentional change\n")
+
+    def test_timeout_preserves_preexisting_tracked_changes(self) -> None:
+        """Timeout rollback must not destroy pre-existing tracked modifications outside checkpoint."""
+        checkpoint = self.create()
+        # Create a pre-existing tracked change (committed before checkpoint)
+        (self.repo / "preexisting.md").write_text("original\n", encoding="utf-8")
+        git(self.repo, "add", "preexisting.md")
+        git(self.repo, "commit", "--quiet", "-m", "pre-existing change")
+        preexisting_head = git(self.repo, "rev-parse", "HEAD").strip()
+
+        # Now create checkpoint only for kept.md
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Trigger timeout
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+        )
+
+        # Timeout should trigger rollback
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.status, "restored")
+
+        # The pre-existing tracked file should be unchanged (it was committed before checkpoint)
+        self.assertEqual((self.repo / "preexisting.md").read_text(encoding="utf-8"), "original\n")
+        # The current HEAD should still be the pre-existing commit
+        self.assertEqual(git(self.repo, "rev-parse", "HEAD").strip(), preexisting_head)
+
+    def test_timeout_preserves_unrelated_untracked_files(self) -> None:
+        """Timeout rollback must not remove unrelated untracked files created before checkpoint."""
+        # Create an unrelated untracked file BEFORE checkpoint
+        (self.repo / "unrelated.txt").write_text("unrelated content\n", encoding="utf-8")
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Trigger timeout with allow_root_scope_purge=True since we created file in repo root
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+            allow_root_scope_purge=True,
+        )
+
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+
+        # The unrelated untracked file created before checkpoint should still exist
+        self.assertTrue((self.repo / "unrelated.txt").exists())
+        self.assertEqual((self.repo / "unrelated.txt").read_text(encoding="utf-8"), "unrelated content\n")
+
+    def test_zero_timeout_rejected(self) -> None:
+        """Zero timeout should be rejected as invalid."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        with self.assertRaises(tool.CheckpointError):
+            tool.run_guarded_validation(
+                self.load(checkpoint),
+                [sys.executable, "-c", "pass"],
+                self.repo,
+                timeout=0,
+            )
+
+    def test_negative_timeout_rejected(self) -> None:
+        """Negative timeout should be rejected as invalid."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        with self.assertRaises(tool.CheckpointError):
+            tool.run_guarded_validation(
+                self.load(checkpoint),
+                [sys.executable, "-c", "pass"],
+                self.repo,
+                timeout=-1,
+            )
+
+    def test_excessive_timeout_handled(self) -> None:
+        """Very large timeout should be accepted but not cause issues."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+
+        # Large timeout (1 hour) - should be accepted
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "pass"],
+            self.repo,
+            timeout=3600,
+        )
+
+        self.assertEqual(outcome.exit_code, 0)
+        self.assertEqual(outcome.status, "passed")
+
+    def test_nonzero_exit_triggers_rollback(self) -> None:
+        """Non-zero exit code from validation command triggers rollback."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import sys; sys.exit(42)"],
+            self.repo,
+        )
+
+        self.assertEqual(outcome.exit_code, 42)
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.reason, "validation-failure")
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+    def test_timeout_rollback_failure_visible(self) -> None:
+        """If rollback itself fails after timeout, both failures are visible."""
+        checkpoint = self.create()
+        stored = self.load(checkpoint)
+        # Corrupt the checkpoint store
+        kept = next(entry for entry in stored.entries if entry.path == "kept.md")
+        blob = Path(stored.store) / stored.checkpoint_id / "blobs" / kept.blob
+        blob.write_bytes(b"tampered\n")
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Trigger timeout which will attempt rollback
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+            allow_root_scope_purge=True,
+        )
+
+        # Timeout triggered, rollback attempted but failed
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        # Rollback should have failed
+        self.assertIn(outcome.restore.status, {"failed", "partial"})
+        self.assertTrue(outcome.restore.manual_intervention_required)
+        self.assertIn("kept.md", outcome.restore.failed)
+
+    def test_repeated_validation_attempts_consistent(self) -> None:
+        """Repeated validation attempts with timeout leave state consistent."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # First timeout
+        outcome1 = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+        )
+        self.assertEqual(outcome1.status, "rolled-back")
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+        # Second timeout
+        (self.repo / "kept.md").write_text("broken again\n", encoding="utf-8")
+        outcome2 = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            self.repo,
+            timeout=0.5,
+        )
+        self.assertEqual(outcome2.status, "rolled-back")
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "alpha\n")
+
+        # Third attempt with passing validation
+        (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+        outcome3 = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "pass"],
+            self.repo,
+        )
+        self.assertEqual(outcome3.status, "passed")
+        self.assertIsNone(outcome3.restore)
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "intentional change\n")
+
+    def test_interrupted_validation_leaves_checkpoint_usable(self) -> None:
+        """Keyboard interrupt during validation still leaves checkpoint usable."""
+        checkpoint = self.create()
+        (self.repo / "kept.md").write_text("broken change\n", encoding="utf-8")
+
+        # Simulate interrupt by sending SIGINT to the process
+        def interrupt_runner(command, **kwargs):
+            raise KeyboardInterrupt()
+
+        outcome = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "import time; time.sleep(10)"],
+            self.repo,
+            runner=interrupt_runner,
+        )
+
+        self.assertEqual(outcome.exit_code, -1)
+        self.assertEqual(outcome.status, "rolled-back")
+        self.assertIsNotNone(outcome.restore)
+        self.assertEqual(outcome.restore.status, "restored")
+
+        # Checkpoint should still be usable for another validation
+        (self.repo / "kept.md").write_text("intentional change\n", encoding="utf-8")
+        outcome2 = tool.run_guarded_validation(
+            self.load(checkpoint),
+            [sys.executable, "-c", "pass"],
+            self.repo,
+        )
+        self.assertEqual(outcome2.status, "passed")
+        self.assertEqual((self.repo / "kept.md").read_text(encoding="utf-8"), "intentional change\n")
+
 
 class RollbackFailureTests(TemporaryRepositoryTestCase):
     """Property 5: a failed rollback is explicit and never hidden."""
@@ -1602,6 +1897,66 @@ class CliTests(TemporaryRepositoryTestCase):
         payload = json.loads(stdout)
         self.assertEqual(payload["count"], 1)
         self.assertEqual(payload["checkpoints"], ["CP-T004-001"])
+
+
+class AdminPlaceholderTests(unittest.TestCase):
+    """Tests for admin placeholder safeguards (T007/T008).
+
+    These tests verify that unfinished admin features (Products, FAQ, VitaStory,
+    Media, Prompt Import) are properly disabled and cannot be invoked.
+    """
+
+    def setUp(self) -> None:
+        self.repo_root = Path(__file__).resolve().parents[2]
+        self.content_library_path = self.repo_root / "admin" / "content-library.js"
+
+    def test_placeholder_items_have_development_status(self) -> None:
+        """Placeholder items should have 'development' status."""
+        content = self.content_library_path.read_text(encoding="utf-8")
+
+        # Check that all placeholder items have status 'development'
+        # Count occurrences of 'development' status in PLACEHOLDER_ITEMS
+        self.assertIn("status: 'development'", content)
+        # There should be at least 5 placeholder items
+        self.assertGreaterEqual(content.count("status: 'development'"), 5)
+
+    def test_placeholder_buttons_are_disabled(self) -> None:
+        """Placeholder items should render disabled buttons."""
+        content = self.content_library_path.read_text(encoding="utf-8")
+
+        # Check that createLibraryButton is called with disabled=true for development status
+        # Look for the condition that creates disabled buttons for development status
+        self.assertIn("item.status === 'development'", content)
+        # Check that disabled=true is passed
+        self.assertIn("disabled", content)
+        # Check that title is set for disabled buttons
+        self.assertIn("Fitur belum tersedia", content)
+
+    def test_handle_library_action_ignores_disabled_buttons(self) -> None:
+        """handleLibraryAction should return early for disabled buttons."""
+        content = self.content_library_path.read_text(encoding="utf-8")
+
+        # Check that handleLibraryAction checks button.disabled
+        self.assertIn("if (button.disabled) return;", content)
+
+    def test_placeholder_actions_not_in_handle_library_action(self) -> None:
+        """Placeholder actions should not be handled in handleLibraryAction."""
+        content = self.content_library_path.read_text(encoding="utf-8")
+
+        # The 'open-panel' action should only be in createLibraryButton for development items
+        # but handleLibraryAction should not have special handling for 'placeholder' action
+        handle_action_section = content[content.find("async function handleLibraryAction"):content.find("async function handleLibraryAction") + 1000]
+        self.assertNotIn("'placeholder'", handle_action_section)
+
+    def test_existing_functional_actions_preserved(self) -> None:
+        """Existing functional admin actions (Edit, Delete) should remain available."""
+        content = self.content_library_path.read_text(encoding="utf-8")
+
+        # Edit and Delete buttons should still be created for non-development items
+        self.assertIn("'edit'", content)
+        self.assertIn("'delete'", content)
+        self.assertIn("'Edit'", content)
+        self.assertIn("'Hapus'", content)
 
 
 if __name__ == "__main__":

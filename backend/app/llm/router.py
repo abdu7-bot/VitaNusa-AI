@@ -205,7 +205,7 @@ class LocalLlmRouter:
                 adapter.generate(request),
                 timeout=self.config.timeout_seconds,
             )
-        except TimeoutError:
+        except asyncio.TimeoutError:
             return LlmResponse(
                 provider=provider_name,
                 model=request.model or self.config.model,

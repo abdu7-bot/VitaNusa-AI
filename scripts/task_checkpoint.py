@@ -50,6 +50,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -75,6 +76,110 @@ TASK_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 
 RESTORE_REASONS = ("manual", "worker-failure", "validation-failure", "blocked")
 ROLLBACK_CAUSES = ("worker-failure", "validation-failure", "blocked")
+
+
+def _terminate_process_tree(pid: int) -> bool:
+    """Terminate a process and all its children cross-platform.
+
+    Returns True if the process was terminated, False if it was already gone.
+    """
+    try:
+        if os.name == "nt":
+            # Windows: use taskkill /F /T /PID to kill the process tree
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                capture_output=True,
+                check=False,
+            )
+        else:
+            # Unix: send SIGTERM to the process group
+            os.killpg(os.getpgid(pid), signal.SIGTERM)
+        return True
+    except (ProcessLookupError, OSError):
+        # Process already gone
+        return False
+
+
+def _run_with_timeout(
+    command: Sequence[str],
+    cwd: str,
+    timeout: float | None,
+    *,
+    capture_output: bool = True,
+    text: bool = True,
+    check: bool = False,  # accepted for compatibility with subprocess.run signature
+) -> subprocess.CompletedProcess[str]:
+    """Run a command with timeout and ensure process tree termination on timeout.
+
+    This is a cross-platform replacement for subprocess.run(..., timeout=...)
+    that ensures the entire process tree is terminated on timeout, not just
+    the immediate child process.
+    """
+    # Platform-specific process creation flags
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        # On Unix, start a new process group so we can kill the whole tree
+        pass  # start_new_session=True will be used in Popen
+
+    process = subprocess.Popen(
+        list(command),
+        cwd=cwd,
+        stdout=subprocess.PIPE if capture_output else None,
+        stderr=subprocess.PIPE if capture_output else None,
+        text=text,
+        start_new_session=(os.name != "nt"),
+        creationflags=creationflags,
+    )
+
+    try:
+        if timeout is None:
+            stdout, stderr = process.communicate()
+        else:
+            stdout, stderr = process.communicate(timeout=timeout)
+        return subprocess.CompletedProcess(
+            args=list(command),
+            returncode=process.returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+    except subprocess.TimeoutExpired:
+        # Terminate the entire process tree
+        try:
+            if os.name == "nt":
+                # Windows: use taskkill /F /T /PID
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                    capture_output=True,
+                    check=False,
+                )
+            else:
+                # Unix: kill the entire process group
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                # Give it a moment to die gracefully, then SIGKILL if needed
+                try:
+                    process.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+        # Re-raise the timeout exception
+        raise
+    except Exception:
+        # For any other exception, try to clean up the process
+        try:
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                    capture_output=True,
+                    check=False,
+                )
+            else:
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        except (ProcessLookupError, OSError):
+            pass
+        raise
 
 
 class CheckpointError(Exception):
@@ -1274,9 +1379,10 @@ def run_guarded_validation(
     command: Sequence[str],
     repo_root: Path | str | None = None,
     *,
-    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = None,
     allow_repo_mismatch: bool = False,
     allow_root_scope_purge: bool = False,
+    timeout: float | None = None,
 ) -> ValidationOutcome:
     """Run a validation command and roll back when it fails.
 
@@ -1286,25 +1392,114 @@ def run_guarded_validation(
     a rollback is also triggered. A rollback that itself fails raises
     `RollbackError` so the caller cannot mistake a failed validation for a
     clean rollback.
+
+    Args:
+        timeout: Optional timeout in seconds for the validation command.
+                 If the command exceeds the timeout, a rollback is triggered.
+                 Must be positive if specified.
+        runner: Optional custom runner function. Defaults to `_run_with_timeout`
+                which provides cross-platform process tree termination on timeout.
     """
 
     if not command:
         raise CheckpointError("a validation command is required")
 
+    if timeout is not None:
+        if not isinstance(timeout, (int, float)):
+            raise CheckpointError("timeout must be a number")
+        if timeout <= 0:
+            raise CheckpointError("timeout must be positive")
+
+    # Use platform-aware runner by default for proper process tree termination
+    if runner is None:
+        runner = _run_with_timeout
+
     root = resolve_repo_for_checkpoint(checkpoint, repo_root, allow_repo_mismatch=allow_repo_mismatch)
 
     try:
-        completed = runner(list(command), cwd=str(root), check=False, capture_output=True, text=True)
+        completed = runner(
+            list(command),
+            cwd=str(root),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # Validation command exceeded the timeout. Trigger rollback.
+        try:
+            report = restore_checkpoint(
+                checkpoint,
+                root,
+                reason="validation-failure",
+                purge_new=True,
+                allow_root_scope_purge=allow_root_scope_purge,
+            )
+        except RollbackError as rollback_error:
+            # Rollback itself failed - return the failed rollback report
+            return ValidationOutcome(
+                checkpoint_id=checkpoint.checkpoint_id,
+                task_id=checkpoint.task_id,
+                command=tuple(command),
+                exit_code=-1,
+                status="rolled-back",
+                restore=rollback_error.report,
+            )
+        return ValidationOutcome(
+            checkpoint_id=checkpoint.checkpoint_id,
+            task_id=checkpoint.task_id,
+            command=tuple(command),
+            exit_code=-1,
+            status="rolled-back",
+            restore=report,
+        )
+    except KeyboardInterrupt as exc:
+        # Validation command was interrupted (e.g., Ctrl+C). Trigger rollback.
+        try:
+            report = restore_checkpoint(
+                checkpoint,
+                root,
+                reason="validation-failure",
+                purge_new=True,
+                allow_root_scope_purge=allow_root_scope_purge,
+            )
+        except RollbackError as rollback_error:
+            return ValidationOutcome(
+                checkpoint_id=checkpoint.checkpoint_id,
+                task_id=checkpoint.task_id,
+                command=tuple(command),
+                exit_code=-1,
+                status="rolled-back",
+                restore=rollback_error.report,
+            )
+        return ValidationOutcome(
+            checkpoint_id=checkpoint.checkpoint_id,
+            task_id=checkpoint.task_id,
+            command=tuple(command),
+            exit_code=-1,
+            status="rolled-back",
+            restore=report,
+        )
     except Exception as exc:
         # Validation command could not be started (e.g., FileNotFoundError,
         # PermissionError, OSError). Trigger rollback and report the failure.
-        report = restore_checkpoint(
-            checkpoint,
-            root,
-            reason="validation-failure",
-            purge_new=True,
-            allow_root_scope_purge=allow_root_scope_purge,
-        )
+        try:
+            report = restore_checkpoint(
+                checkpoint,
+                root,
+                reason="validation-failure",
+                purge_new=True,
+                allow_root_scope_purge=allow_root_scope_purge,
+            )
+        except RollbackError as rollback_error:
+            return ValidationOutcome(
+                checkpoint_id=checkpoint.checkpoint_id,
+                task_id=checkpoint.task_id,
+                command=tuple(command),
+                exit_code=-1,
+                status="rolled-back",
+                restore=rollback_error.report,
+            )
         return ValidationOutcome(
             checkpoint_id=checkpoint.checkpoint_id,
             task_id=checkpoint.task_id,
@@ -1547,6 +1742,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validation.add_argument("--id", required=True, dest="checkpoint_id")
     validation.add_argument("--allow-root-purge", action="store_true")
+    validation.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="timeout in seconds for the validation command (default: no timeout)",
+    )
     validation.add_argument("validation_command", nargs=argparse.REMAINDER, help="command to run")
 
     blocked = subparsers.add_parser(
@@ -1654,7 +1855,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not command:
                 raise CheckpointError("run-validation requires a command after --")
             outcome = run_guarded_validation(
-                checkpoint, command, allow_root_scope_purge=arguments.allow_root_purge
+                checkpoint, command, allow_root_scope_purge=arguments.allow_root_purge, timeout=arguments.timeout
             )
             sys.stdout.write(outcome.to_json())
             return EXIT_OK if outcome.status == "passed" else 1

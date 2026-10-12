@@ -182,7 +182,7 @@ function createLibraryRow(item) {
   const actions = document.createElement('div');
   actions.className = 'article-row-actions';
   if (item.status === 'development') {
-    actions.append(createLibraryButton('Buka Panel', 'open-panel', item.type, item.id, item.panel));
+    actions.append(createLibraryButton('Belum tersedia', 'placeholder', item.type, item.id, item.panel, '', true));
   } else {
     actions.append(createLibraryButton('Edit', 'edit', item.type, item.id));
     actions.append(createLibraryButton('Hapus', 'delete', item.type, item.id, '', 'danger'));
@@ -229,11 +229,15 @@ function createStatusBadge(status) {
   return badge;
 }
 
-function createLibraryButton(label, action, type, id, panel = '', tone = '') {
+function createLibraryButton(label, action, type, id, panel = '', tone = '', disabled = false) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'admin-button admin-button-light article-action-button';
   if (tone === 'danger') button.classList.add('is-danger');
+  if (disabled) {
+    button.disabled = true;
+    button.title = 'Fitur belum tersedia';
+  }
   button.dataset.contentAction = action;
   button.dataset.contentType = type;
   button.dataset.contentId = id;
@@ -245,6 +249,8 @@ function createLibraryButton(label, action, type, id, panel = '', tone = '') {
 async function handleLibraryAction(event) {
   const button = event.target.closest('[data-content-action]');
   if (!button) return;
+
+  if (button.disabled) return;
 
   const type = button.dataset.contentType;
   const id = button.dataset.contentId;
