@@ -178,59 +178,7 @@ jobs:
         run: python -m unittest discover -s tests/governance -p 'test_task_checkpoint.py' -v
 
       - name: Run focused timeout tests
-        run: python - <<'PY'
-import sys
-import os
-sys.path.insert(0, 'scripts')
-from task_checkpoint import _run_with_timeout
-import subprocess
-import time
-import psutil
-
-tests = [
-    ('Simple timeout', [sys.executable, '-c', 'import time; time.sleep(10)']),
-    ('Child in same PG', [sys.executable, '-c', '''
-import subprocess
-import time
-child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(100)'])
-child.wait()
-''']),
-    ('Nested session (Windows)', [sys.executable, '-c', '''
-import subprocess
-import sys
-child = subprocess.Popen(
-    [sys.executable, '-c', 'import time; time.sleep(100)'],
-    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-)
-child.wait()
-''']),
-]
-print('=== Windows Focused Security Tests ===')
-for name, cmd in tests:
-    pids_before = set(p.pid for p in psutil.process_iter())
-    try:
-        from task_checkpoint import _run_with_timeout
-        _run_with_timeout(cmd, cwd='.', timeout=0.5)
-        print(f'{name}: FAIL - should have timed out')
-    except subprocess.TimeoutExpired:
-        time.sleep(1)
-        pids_after = set(p.pid for p in psutil.process_iter())
-        new_pids = pids_after - pids_before
-        alive = 0
-        for pid in new_pids:
-            try:
-                p = psutil.Process(pid)
-                if p.status() != psutil.STATUS_ZOMBIE:
-                    alive += 1
-            except:
-                pass
-        if alive == 0:
-            print(f'{name}: PASS')
-        else:
-            print(f'{name}: FAIL - {alive} alive')
-    except Exception as e:
-        print(f'{name}: ERROR - {e}')
-PY
+        run: python scripts/windows_timeout_tests.py
 
   codeql:
     name: CodeQL SAST
