@@ -142,11 +142,11 @@ jobs:
           import json, pathlib, sys
           p = pathlib.Path("pip-audit-report.json")
           if not p.exists():
-              print("::error::pip-audit report missing — scan did not run")
+              print("::error::pip-audit report missing -- scan did not run")
               sys.exit(1)
           data = json.loads(p.read_text())
           if "dependencies" not in data:
-              print("::error::pip-audit report malformed — scan did not complete")
+              print("::error::pip-audit report malformed -- scan did not complete")
               sys.exit(1)
           print(f"pip-audit reported {len(data['dependencies'])} dependencies")
           PY
@@ -249,18 +249,18 @@ jobs:
            const path = require('path');
            const reportPath = path.join(__dirname, 'npm-audit-report.json');
            if (!fs.existsSync(reportPath)) {
-               console.error('::error::npm-audit report missing — scan did not run');
+               console.error('::error::npm-audit report missing -- scan did not run');
                process.exit(1);
            }
            let data;
            try {
                data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
            } catch (e) {
-               console.error('::error::npm-audit report malformed — scan did not complete');
+               console.error('::error::npm-audit report malformed -- scan did not complete');
                process.exit(1);
            }
            if (!data || typeof data !== 'object' || !('vulnerabilities' in data)) {
-               console.error('::error::npm-audit report missing vulnerabilities field — scan did not complete');
+               console.error('::error::npm-audit report missing vulnerabilities field -- scan did not complete');
                process.exit(1);
            }
            const vulnCount = Object.keys(data.vulnerabilities || {}).length;
