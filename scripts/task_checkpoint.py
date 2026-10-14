@@ -54,6 +54,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -78,11 +79,55 @@ RESTORE_REASONS = ("manual", "worker-failure", "validation-failure", "blocked")
 ROLLBACK_CAUSES = ("worker-failure", "validation-failure", "blocked")
 
 
+def _get_all_descendant_pids(pid: int) -> set[int]:
+    """Recursively find all descendant PIDs of a process on Linux.
+
+    Uses /proc/<pid>/task/<tid>/children to walk the process tree.
+    Returns a set of PIDs (excluding the root pid itself).
+
+    Race conditions: This function reads /proc at a single point in time.
+    Processes that fork during traversal may be missed. PID reuse is
+    theoretically possible but unlikely within the short traversal window.
+    """
+    descendants: set[int] = set()
+    to_check: list[int] = [pid]
+
+    while to_check:
+        current = to_check.pop()
+        task_dir = f"/proc/{current}/task/"
+        try:
+            for task in os.listdir(task_dir):
+                children_path = f"{task_dir}{task}/children"
+                try:
+                    with open(children_path, "r") as f:
+                        children = f.read().strip().split()
+                        for child in children:
+                            child_pid = int(child)
+                            if child_pid not in descendants:
+                                descendants.add(child_pid)
+                                to_check.append(child_pid)
+                except (OSError, ValueError):
+                    pass
+        except OSError:
+            pass
+
+    return descendants
+
+
 def _terminate_process_tree(pid: int) -> bool:
     """Terminate a process and all its children cross-platform.
 
+    On Linux, recursively finds all descendants via /proc and sends
+    SIGTERM/SIGKILL to each individually.
+
     Returns True if the process was terminated, False if it was already gone.
     """
+    # First check if the process exists
+    try:
+        os.kill(pid, 0)  # Signal 0 just checks existence
+    except (ProcessLookupError, OSError):
+        return False
+
     try:
         if os.name == "nt":
             # Windows: use taskkill /F /T /PID to kill the process tree
@@ -91,12 +136,32 @@ def _terminate_process_tree(pid: int) -> bool:
                 capture_output=True,
                 check=False,
             )
+        elif sys.platform.startswith("linux"):
+            # Linux: recursively find and terminate all descendants
+            descendants = _get_all_descendant_pids(pid)
+            all_pids = {pid} | descendants
+
+            # Send SIGTERM to all processes
+            for target_pid in all_pids:
+                try:
+                    os.kill(target_pid, signal.SIGTERM)
+                except (ProcessLookupError, OSError):
+                    pass
+
+            # Wait briefly for graceful termination
+            time.sleep(0.5)
+
+            # Send SIGKILL to any remaining
+            for target_pid in all_pids:
+                try:
+                    os.kill(target_pid, signal.SIGKILL)
+                except (ProcessLookupError, OSError):
+                    pass
         else:
-            # Unix: send SIGTERM to the process group
+            # Other Unix: fall back to process group kill
             os.killpg(os.getpgid(pid), signal.SIGTERM)
         return True
     except (ProcessLookupError, OSError):
-        # Process already gone
         return False
 
 
@@ -145,40 +210,13 @@ def _run_with_timeout(
             stderr=stderr,
         )
     except subprocess.TimeoutExpired:
-        # Terminate the entire process tree
-        try:
-            if os.name == "nt":
-                # Windows: use taskkill /F /T /PID
-                subprocess.run(
-                    ["taskkill", "/F", "/T", "/PID", str(process.pid)],
-                    capture_output=True,
-                    check=False,
-                )
-            else:
-                # Unix: kill the entire process group
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                # Give it a moment to die gracefully, then SIGKILL if needed
-                try:
-                    process.wait(timeout=1)
-                except subprocess.TimeoutExpired:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-        except (ProcessLookupError, OSError):
-            pass
+        # Terminate the entire process tree using improved cross-platform function
+        _terminate_process_tree(process.pid)
         # Re-raise the timeout exception
         raise
     except Exception:
         # For any other exception, try to clean up the process
-        try:
-            if os.name == "nt":
-                subprocess.run(
-                    ["taskkill", "/F", "/T", "/PID", str(process.pid)],
-                    capture_output=True,
-                    check=False,
-                )
-            else:
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        except (ProcessLookupError, OSError):
-            pass
+        _terminate_process_tree(process.pid)
         raise
 
 
