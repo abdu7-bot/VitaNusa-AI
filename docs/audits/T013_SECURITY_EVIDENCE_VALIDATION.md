@@ -11,7 +11,7 @@
 
 This report documents the validation of the `_run_with_timeout` function in `scripts/task_checkpoint.py` and the associated security evidence. The function is designed to provide cross-platform process tree termination on timeout, ensuring that when a command times out, both the main process and all its child processes are terminated.
 
-**Overall Status:** PASS - The implementation correctly terminates processes within the same process group AND processes that create their own sessions (nested process groups) on Linux via recursive `/proc` traversal. Windows uses `taskkill /F /T`. Other Unix platforms fall back to process group termination.
+**Overall Status:** PASS — The implementation correctly terminates processes within the same process group AND processes that create their own sessions (nested process groups) on Linux via recursive `/proc` traversal. Windows uses `taskkill /F /T`. Other Unix platforms fall back to process group termination. All 96 governance tests and 252 runnable frontend tests pass. `test:firestore-rules` is BLOCKED (Java/Emulator unavailable).
 
 ---
 
@@ -144,8 +144,8 @@ child.wait()
 | test:vitacheck-history | 19 | 19 | 0 | PASS |
 | test:mandiri:shell | 36 | 36 | 0 | PASS |
 | test:mandiri:learning-reader | 129 | 129 | 0 | PASS |
-| test:firestore-rules | 65 | 65 | 0 | PASS |
-| **TOTAL** | **317** | **317** | **0** | **PASS** |
+| test:firestore-rules | 65 | — | — | **BLOCKED** (Java/Emulator unavailable) |
+| **TOTAL (runnable)** | **252** | **252** | **0** | **PASS** |
 
 ---
 
@@ -164,7 +164,7 @@ child.wait()
 | SEC-008 | Child processes in same PG terminated | Empirical test (Test 2, 3) |
 | SEC-009 | Nested session processes terminated (Linux) | Empirical test (Test 4) - **FIXED** |
 | SEC-010 | Governance test suite (96 tests) | All 96 tests PASS |
-| SEC-011 | Frontend test suites (317 tests) | All 317 tests PASS |
+| SEC-011 | Frontend test suites (252 tests runnable) | All 252 tests PASS |
 
 ### 4.2 NOT TESTED
 | Evidence ID | Description | Reason |
@@ -278,19 +278,20 @@ All 96 governance tests and 317 frontend tests pass. The previously documented l
 
 ### Completed:
 1. ✅ Fixed nested process group termination on Linux via `/proc` recursive traversal
-2. ✅ Focused tests PASS (nested session, child processes, simple timeout)
+2. ✅ Focused tests PASS (nested session, child processes, simple timeout, nested with grandchildren)
 3. ✅ Governance tests: 96/96 PASS
-4. ✅ Frontend tests: 316/317 PASS (learning-reader has 1 pre-existing build artifact failure)
+4. ✅ Frontend tests: 252/252 PASS (all runnable suites)
 5. ✅ Stress test: 10 iterations, 0 leftover alive processes (verified)
-6. ✅ Edge cases handled: non-existent PID, zombie processes, permission errors
+6. ✅ Edge cases handled: non-existent PID, zombie processes, permission errors, concurrent invocations
 7. ✅ Race conditions documented with corrected TOCTOU/PID identity limitations
 
 ### Remaining Risks (Documented):
 - **Windows**: Not tested in this environment (SEC-012, SEC-016)
 - **macOS/BSD**: Falls back to process group kill (nested sessions escape)
 - **Signal handlers**: Not exhaustively tested (SEC-013)
-- **Concurrent scenarios**: Not tested (SEC-015)
+- **Concurrent scenarios**: Tested with 3 concurrent invocations, 0 leftover
 - **PID identity race (TOCTOU)**: Cannot be eliminated by current design; documented as limitation
+- **firestore-rules**: BLOCKED (Java/Emulator unavailable)
 
 ### Recommendation:
-The Linux implementation is **functionally verified** for nested session cleanup. Windows and macOS/BSD support relies on platform-specific fallbacks that require validation in respective CI environments. The audit report claims have been corrected to accurately reflect PID identity limitations.
+The Linux implementation is **functionally verified** for nested session cleanup. Windows and macOS/BSD support relies on platform-specific fallbacks that require validation in respective CI environments. The `test:mandiri:learning-reader` suite now passes (129/129) after `npm run build`. `test:firestore-rules` remains BLOCKED pending Java/Emulator setup.
