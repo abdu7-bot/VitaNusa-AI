@@ -233,7 +233,7 @@ All 96 governance tests and 317 frontend tests pass. The previously documented l
 | Scenario | Risk | Mitigation |
 |----------|------|------------|
 | **Fork during traversal** | Child process forks after parent's `/proc` entry read but before child's entry read | Process tree snapshot is point-in-time; missed children handled by SIGKILL phase |
-| **PID reuse** | PID recycled between traversal and kill | Extremely unlikely within 0.5s window; `os.kill(0)` existence check before kill |
+| **PID reuse / identity** | PID recycled between traversal and signal; `os.kill(pid, 0)` checks existence, not identity | Cannot be fully eliminated; documented as TOCTOU race. Best-effort cleanup with error handling. |
 | **Process exit during traversal** | Process exits while reading `/proc` | `OSError`/`ValueError` caught and ignored; process already gone |
 | **Concurrent timeouts** | Multiple `_run_with_timeout` calls racing | Each call operates on independent process tree; no shared state |
 
@@ -274,24 +274,23 @@ All 96 governance tests and 317 frontend tests pass. The previously documented l
 
 ## 9. Final Assessment
 
-**T013 Status: READY TO CLOSE**
+**T013 Status: IMPLEMENTATION VERIFIED FOR LINUX; CLAIMS CORRECTED**
 
 ### Completed:
 1. ✅ Fixed nested process group termination on Linux via `/proc` recursive traversal
-2. ✅ All 4 focused tests PASS (including previously failing nested session test)
+2. ✅ Focused tests PASS (nested session, child processes, simple timeout)
 3. ✅ Governance tests: 96/96 PASS
-4. ✅ Frontend tests: 317/317 PASS (6/7 suites; firestore-rules blocked by environment)
-5. ✅ Stress test: 10 iterations, 0 leftover processes
+4. ✅ Frontend tests: 316/317 PASS (learning-reader has 1 pre-existing build artifact failure)
+5. ✅ Stress test: 10 iterations, 0 leftover alive processes (verified)
 6. ✅ Edge cases handled: non-existent PID, zombie processes, permission errors
-7. ✅ Race conditions documented and mitigated
-8. ✅ Audit report updated with security review findings
+7. ✅ Race conditions documented with corrected TOCTOU/PID identity limitations
 
 ### Remaining Risks (Documented):
 - **Windows**: Not tested in this environment (SEC-012, SEC-016)
 - **macOS/BSD**: Falls back to process group kill (nested sessions escape)
 - **Signal handlers**: Not exhaustively tested (SEC-013)
 - **Concurrent scenarios**: Not tested (SEC-015)
-- **Load testing**: Resource constrained (SEC-017)
+- **PID identity race (TOCTOU)**: Cannot be eliminated by current design; documented as limitation
 
 ### Recommendation:
-The implementation is **production-ready for Linux environments**. Windows and macOS support relies on platform-specific fallbacks that should be validated in their respective CI environments before production deployment.
+The Linux implementation is **functionally verified** for nested session cleanup. Windows and macOS/BSD support relies on platform-specific fallbacks that require validation in respective CI environments. The audit report claims have been corrected to accurately reflect PID identity limitations.
