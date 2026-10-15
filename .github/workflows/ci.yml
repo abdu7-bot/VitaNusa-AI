@@ -240,12 +240,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-       - name: Run npm audit
-         run: |
+      - name: Run npm audit
+        run: |
            npm audit --audit-level=high --json > npm-audit-report.json
 
-       - name: Validate npm audit report
-         run: |
+      - name: Validate npm audit report
+        run: |
            node - <<'JS'
            const fs = require('fs');
            const path = require('path');
@@ -269,11 +269,11 @@ jobs:
            console.log(`npm-audit reported ${vulnCount} vulnerabilities`);
            JS
 
-       - name: Convert npm audit to SARIF
-         run: |
+      - name: Convert npm audit to SARIF
+        run: |
            npx -y @github/sarif-tool npm-audit npm-audit-report.json npm-audit-report.sarif
 
-       - name: Upload npm audit results
+      - name: Upload npm audit results
          if: always()
          uses: github/codeql-action/upload-sarif@v3
          with:
