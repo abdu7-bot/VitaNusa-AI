@@ -274,9 +274,9 @@ jobs:
            npx -y @github/sarif-tool npm-audit npm-audit-report.json npm-audit-report.sarif
 
       - name: Upload npm audit results
-         if: always()
-         uses: github/codeql-action/upload-sarif@v3
-         with:
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
            sarif_file: npm-audit-report.sarif
            category: node-dependencies
 
