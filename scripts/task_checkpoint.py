@@ -131,14 +131,11 @@ def _terminate_process_tree(pid: int) -> bool:
     try:
         if os.name == "nt":
             # Windows: use taskkill /F /T /PID to kill the process tree
-            result = subprocess.run(
+            subprocess.run(
                 ["taskkill", "/F", "/T", "/PID", str(pid)],
                 capture_output=True,
                 check=False,
             )
-            # Debug: log taskkill output for debugging
-            # print(f"taskkill stdout: {result.stdout.decode()}", file=sys.stderr)
-            # print(f"taskkill stderr: {result.stderr.decode()}", file=sys.stderr)
         elif sys.platform.startswith("linux"):
             # Linux: recursively find and terminate all descendants
             descendants = _get_all_descendant_pids(pid)
