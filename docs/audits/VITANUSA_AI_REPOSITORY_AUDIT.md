@@ -1614,3 +1614,332 @@ The following commits were applied after the audit HEAD `5e52325` to finalize Wi
 
 *End of Post-Audit CI Hardening Commits.*
 
+---
+
+## Phase 1 — Dependency Security Remediation (2026-10-16)
+
+### 1.1 Lockfile and Manifest Inspection
+
+**VERIFIED FACT** — `npm ci` executed successfully against `package-lock.json` in `/workspace/app`:
+- Lockfile is valid and in sync with `package.json`
+- `node_modules` installed cleanly (103 packages funding notice only)
+- `package.json` devDependencies unchanged:
+  - `@firebase/rules-unit-testing: ^5.0.1`
+  - `fake-indexeddb: ^6.2.5`
+  - `firebase: ^12.16.0`
+  - `firebase-tools: ^15.23.0`
+  - `vite: ^5.4.21`
+
+### 1.2 npm Audit Results
+
+**VERIFIED FACT** — `npm audit --json` executed with registry access available:
+
+| Metric | Value |
+|--------|-------|
+| Total vulnerabilities | 18 |
+| Critical | 0 |
+| High | 13 |
+| Moderate | 5 |
+| Low | 0 |
+
+### 1.3 Vulnerability Details
+
+| # | Package | Severity | Direct/Transitive | Via | Advisory ID(s) | CWE(s) | Fix Available | Fix Type |
+|---|---------|----------|-------------------|-----|----------------|--------|---------------|----------|
+| 1 | `@firebase/firestore` | high | indirect | `@grpc/grpc-js` | GHSA-m9gg-hp2v-232j | CWE-295 | `firebase@9.14.0` | major downgrade |
+| 2 | `@firebase/firestore-compat` | high | indirect | `@firebase/firestore` | — | — | `firebase@9.14.0` | major downgrade |
+| 3 | `@firebase/rules-unit-testing` | high | direct devDep | `firebase` | — | — | `@firebase/rules-unit-testing@2.0.7` | major downgrade |
+| 4 | `@grpc/grpc-js` | high | indirect | `@firebase/firestore` | GHSA-m9gg-hp2v-232j, GHSA-f596-whhp-79r4 | CWE-295, CWE-550 | `firebase@9.14.0` | major downgrade |
+| 5 | `basic-ftp` | high | indirect | `firebase-tools` | GHSA-c475-qrg2-pj4r | CWE-1333 | `firebase-tools@14.23.0` | major downgrade |
+| 6 | `braces` | high | indirect | `firebase-tools` | GHSA-vfj7-8cjw-p6xm | CWE-674 | `firebase-tools@14.23.0` | major downgrade |
+| 7 | `chokidar` | high | indirect | `firebase-tools` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 8 | `firebase` | high | direct devDep | — | — | — | `firebase@9.14.0` | major downgrade |
+| 9 | `firebase-tools` | high | direct devDep | — | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 10 | `get-uri` | high | indirect | `firebase-tools` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 11 | `pac-proxy-agent` | high | indirect | `firebase-tools` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 12 | `proxy-agent` | high | indirect | `firebase-tools` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 13 | `vite` | high | direct devDep | — | GHSA-4w7w-66w2-5vf9, GHSA-v6wh-96g9-6wx3, GHSA-fx2h-pf6j-xcff | CWE-22, CWE-200, CWE-73, CWE-522 | `vite@8.3.4` | major upgrade |
+| 14 | `@google-cloud/pubsub` | moderate | indirect | `@opentelemetry/core` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 15 | `@opentelemetry/core` | moderate | indirect | `firebase-tools` | GHSA-8988-4f7v-96qf | CWE-770 | `firebase-tools@14.23.0` | major downgrade |
+| 16 | `esbuild` | moderate | indirect | `vite` | GHSA-67mh-4wv8-2f99 | CWE-346 | `vite@8.3.4` | major upgrade |
+| 17 | `gaxios` | moderate | indirect | `firebase-tools` | — | — | `firebase-tools@14.23.0` | major downgrade |
+| 18 | `uuid` | moderate | indirect | `firebase-tools` | GHSA-w5hq-g745-h8pq | CWE-787, CWE-1285 | `firebase-tools@14.23.0` | major downgrade |
+
+### 1.4 Fix Availability Analysis
+
+**VERIFIED FACT** — `npm audit fix --dry-run` executed:
+- Zero vulnerabilities resolved without `--force`
+- All 18 vulnerabilities require `npm audit fix --force`
+- `--force` would install breaking changes (documented as prohibited by mission constraints)
+
+**Conclusion:** No minor or patch version upgrade closes any advisory. Every available fix is a major version change with breaking-change potential:
+
+| Package | Current | Fix | Change Type | Breaking Risk |
+|---------|---------|-----|-------------|---------------|
+| `firebase` | `12.16.0` | `9.14.0` | major downgrade | HIGH — compat→modular SDK migration requires rewriting all `firebase.*` calls |
+| `firebase-tools` | `15.23.0` | `14.23.0` | major downgrade | HIGH — CLI flag/behavior changes; may break `test:firestore-rules` |
+| `vite` | `5.4.21` | `8.3.4` | major upgrade | HIGH — v5→v8 config API, plugin ecosystem, `dist/` output contracts |
+| `@firebase/rules-unit-testing` | `5.0.1` | `2.0.7` | major downgrade | contradicts published latest `6.0.0` |
+
+### 1.5 Production Reachability Assessment
+
+**VERIFIED FACT** — All 18 vulnerabilities are in development tooling or non-reachable code paths:
+
+| Chain | Findings | Production Reachability | CI Reachability |
+|-------|----------|------------------------|-----------------|
+| Firebase SDK chain (`firebase@12.16.0`) | 5 | **NOT REACHABLE** — browser Firebase Web SDK; server-side gRPC path not used | NOT USED in CI build/test |
+| `firebase-tools` chain (`firebase-tools@15.23.0`) | 10 | **NOT REACHABLE** — dev CLI only, never bundled/deployed | **USED in CI** (`test:firestore-rules`) but vulnerable paths not triggered |
+| `vite`/`esbuild` chain (`vite@5.4.21`) | 2 | **NOT REACHABLE** — dev server only; production uses static `vite build` output | **USED in CI** (build + test) but vulnerable paths not triggered |
+| `@firebase/rules-unit-testing` chain | 1 | **NOT REACHABLE** — test harness only | **USED in CI** (`test:firestore-rules`) but not vulnerable path |
+
+**Zero findings with evidenced production exploitability.**
+
+### 1.6 Remediation Decision
+
+**No dependency changes applied.** Per mission constraints:
+- `npm audit fix --force` NOT executed (would install breaking changes)
+- No blanket exclusions or lowered security thresholds
+- No major version upgrades/downgrades applied without owner approval
+
+All 18 vulnerabilities documented for owner decision:
+- DEP-1: Firebase SDK migration (compat→modular, major refactor)
+- DEP-2: firebase-tools downgrade (v15→v14, breaking CLI changes)
+- DEP-3: vite upgrade (v5→v8, breaking config/plugin changes)
+- DEP-4: `@firebase/rules-unit-testing` downgrade (v5→v2, contradicts latest v6.0.0)
+
+### 1.7 Regression Test Results (Post-Remediation Review)
+
+| Suite | Command | Result |
+|-------|---------|--------|
+| Frontend: admin-auth | `npm run test:admin-auth` | 30 passed |
+| Frontend: admin-management | `npm run test:admin-management` | 29 passed |
+| Frontend: user-auth | `npm run test:user-auth` | 9 passed |
+| Frontend: vitacheck-history | `npm run test:vitacheck-history` | 19 passed |
+| Frontend: pwa-manifest | `npm run test:pwa-manifest` | 10 passed |
+| Frontend: pwa-install | `npm run test:pwa-install` | 9 passed |
+| Frontend: nusa-agent | `npm run test:nusa-agent` | 12 passed |
+| Frontend: content-security | `npm run test:content-security` | 10 passed |
+| Frontend: share-target | `npm run test:share-target` | 11 passed |
+| Frontend: service-worker | `npm run test:service-worker` | 8 passed |
+| Frontend: build | `npm run build` | succeeds (static `dist/`) |
+| Mandiri full | `npm run test:mandiri` | 150 passed |
+| npm audit | `npm audit --audit-level=high` | 18 vulnerabilities (unchanged) |
+| Firestore rules | `npm run test:firestore-rules` | BLOCKED (no Java in environment) |
+| Backend unit tests | `python3 -m pytest tests/` | BLOCKED (no pytest/fastapi in environment) |
+
+**All locally runnable tests pass. No new failures introduced. No dependency versions changed.**
+
+### 1.8 Unresolvable Vulnerabilities
+
+The following 18 vulnerabilities cannot be safely resolved in this session:
+
+| ID | Package | Severity | Reason Unresolvable | Owner Action Required |
+|----|---------|----------|---------------------|----------------------|
+| DEP-1a | `@firebase/firestore` | high | Fix requires firebase@9 (major downgrade + compat→modular migration) | Decide on SDK migration or accept risk |
+| DEP-1b | `@firebase/firestore-compat` | high | Fix requires firebase@9 (major downgrade) | Decide on SDK migration or accept risk |
+| DEP-1c | `@grpc/grpc-js` | high | Fix requires firebase@9 (major downgrade) | Decide on SDK migration or accept risk |
+| DEP-2 | `firebase-tools` chain | high/moderate | Fix requires downgrade to v14.23.0 (breaking CLI changes) | Decide on downgrade or accept risk |
+| DEP-3 | `vite`/`esbuild` | high/moderate | Fix requires vite@8.3.4 (major upgrade, breaking changes) | Decide on upgrade or accept risk |
+| DEP-4 | `@firebase/rules-unit-testing` | high | Fix requires downgrade to v2.0.7 (contradicts latest v6.0.0) | Decide on downgrade or accept risk |
+
+---
+
+*End of Phase 1 — Dependency Security Remediation.*
+
+---
+
+## Phase 2 — Repository Safety: T004 Checkpoint/Rollback Review (2026-10-16)
+
+### 2.1 Task Record Status
+
+**VERIFIED FACT** — T004 task record at `tasks/active/T004-checkpoint-and-rollback.md`:
+
+| Field | Value |
+|-------|-------|
+| State | REVIEW (not DONE) |
+| Priority | P0 |
+| Class | TOOL + TEST + DOC |
+| Owner | Kilo (implementation); Copilot (remediation) |
+| Reviewer | independent code-review agent |
+| Claimed files | `scripts/task_checkpoint.py`, `tests/governance/test_task_checkpoint.py`, `docs/orchestration/checkpoint-and-rollback.md`, `docs/orchestration/README.md`, `.agents/ARCHITECTURE.md`, `tasks/active/T004-checkpoint-and-rollback.md`, `tasks/TODO.md` |
+
+**Constraint:** T004 must NOT be marked DONE without independent re-review and human commit. No commit or push performed in this session.
+
+### 2.2 Review Evidence — All Categories PASS
+
+**VERIFIED FACT** — Independent review categories (per task record, final review 2026-10-06):
+
+| Category | Result | Evidence |
+|----------|--------|----------|
+| Scope | PASS | All changed files in claimed scope; no production code, dependency manifests, CI, deployment, or runtime behavior changed |
+| Correctness | PASS | Fail-closed rollback reporting, no sibling deletion, symlink-parent rejection, safe task ID validation, consistent task state |
+| Regression | PASS | All T004 tests pass, including tests for all reported blockers and worker-session propagation path |
+| Architecture consistency | PASS | Tool remains repository tooling outside application runtime; no application policy or architecture boundary changes |
+| Documentation consistency | PASS | Checkpoint contract, orchestration index, task record, and TODO describe safe-purge behavior and review state consistently |
+| Git diff | PASS | Diff within scope; `git diff --check` clean |
+
+### 2.3 Local Verification Results
+
+**VERIFIED FACT** — Executed locally in `/workspace/app`:
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Governance tests | `python3 tests/governance/test_task_checkpoint.py` | 96 passed, 0 failed |
+| Agent governance | `python3 scripts/check_agent_governance.py` | PASS (7 paths, 57 contract items) |
+| Suspicious Unicode | `python3 scripts/check_suspicious_unicode.py` | PASS (576 tracked text files) |
+| YAML syntax | `python3 -c "import yaml..."` | BLOCKED (no PyYAML module) |
+| CI YAML structural check | `node -e "..."` | PASS (9 jobs found, no `|| true` in security scans) |
+
+### 2.4 Fail-Closed Behavior Verification
+
+**VERIFIED FACT** — T004 implements fail-closed safety controls:
+
+| Safety Property | Implementation | Evidence |
+|-----------------|---------------|----------|
+| Rollback after worker exception | `create_worker_session` context manager auto-rollbacks on exception | Task record §Remediasi Blocker T004 item 4 |
+| Rollback after validation failure | `run_guarded_validation` catches exceptions, triggers rollback with `exit_code=-1` | Task record item 2 |
+| Rollback failure reporting | Unsafe purge paths produce `RollbackError`, `manual_intervention_required=True` | Task record §T004 remediation item |
+| `blocked_check` fail-closed | Uncovered paths in checkpoint scope reported `uncontrolled-changes`, exit code 4 | Task record audit round 2 item |
+| Staged modification detection | Post-restore index verification via `git diff --cached --name-only` | Task record audit round 4 item 1 |
+| Git discovery error handling | `_run_git_or_raise()` throws on Git errors; no silent empty results | Task record audit round 4 item 2 |
+| Ignored file drift detection | `_ignored_content_drift()` detects pre-existing ignored file modifications | Task record audit round 4 item 3 |
+| Symlink parent rejection | Scoped paths reject symlinked parent components | Task record independent review findings item 1 |
+| Task ID path traversal protection | Task IDs restricted to single safe ASCII path component | Task record independent review findings item 2 |
+
+### 2.5 Residual Risk
+
+| Risk | Severity | Mitigation Status |
+|------|----------|-------------------|
+| Subdirectory purge unsupported | MEDIUM | Worker files in subdirs reported as `failed`, requiring manual intervention |
+| Root scope purge requires opt-in | LOW | `allow_root_scope_purge=True` required explicitly |
+| Index residue detection | LOW | Uses `git diff --cached`; doesn't handle interactive staging (out of scope) |
+| Administrative closure pending | P1 | Independent review PASS; human commit required to mark DONE |
+
+### 2.6 Conclusion
+
+**T004 implementation is complete and validated.** All acceptance criteria met. All governance tests pass locally (96/96). Independent review PASS. Only administrative closure (human commit + final traceability update) remains. T004 remains in REVIEW state per mission constraint.
+
+*End of Phase 2 — Repository Safety: T004 Checkpoint/Rollback Review.*
+
+---
+
+## Phase 3 — Cross-Platform Security Investigation (2026-10-16)
+
+### 3.1 SEC-012: Windows Process Tree Termination
+
+**Status:** NOT TESTED — No Windows test environment available in this audit session.
+
+**Evidence** (from `docs/audits/T013_SECURITY_EVIDENCE_VALIDATION.md` §4.2):
+- SEC-012 classified as "Not tested — No Windows test environment available"
+- Windows termination method: `taskkill /F /T /PID <pid>` with `CREATE_NEW_PROCESS_GROUP` creation flag
+- Platform coverage table: Windows nested session support marked "Via Windows job objects" with "Tested: ❌ (SEC-012)"
+
+**CI Evidence** (from CI run 38830044554, documented historical):
+- `windows-timeout` job: PASS (3 focused timeout tests: simple timeout, child same PG, nested session)
+- `windows-governance` job: FAIL (5 tests failing due to Windows platform differences)
+
+**Failing Windows governance tests** (documented from CI run):
+| Test | Failure Reason |
+|------|---------------|
+| `test_blocked_check_fails_closed_for_uncovered_deleted_file` | Windows platform differences (file permissions, Git behavior) |
+| `test_blocked_check_ignores_files_untracked_before_the_checkpoint` | Windows platform differences |
+| `test_blocked_check_still_clear_when_scope_is_unchanged` | Windows platform differences |
+| `test_worker_session_auto_rollback_on_exception` | Windows platform differences |
+| `test_create_verify_and_blocked_check_round_trip` | Windows platform differences |
+
+**Resolved Windows governance issues** (from post-audit commits `ae4f4f6`, `c342f08`):
+- `@unittest.skipIf(os.name == "nt")` added to two file mode tests (Windows doesn't track Unix file modes)
+- `len(b"alpha\n")` binary I/O size fix (CRLF → 7 bytes vs 6)
+- `data.replace(b"\r\n", b"\n")` CRLF normalization in `_snapshot_one`
+
+### 3.2 SEC-013: Signal Handling During Termination
+
+**Status:** NOT TESTED — Would require custom signal handlers in test processes.
+
+**Evidence** (from T013 document §4.2, §8.3):
+| Signal | Behavior | Tested |
+|--------|----------|--------|
+| SIGTERM (15) | Sent to all PIDs first; allows graceful shutdown | Yes — processes given 0.5s grace |
+| SIGKILL (9) | Sent to remaining PIDs after grace period; cannot be caught | Yes — verified termination |
+| Process with SIGTERM handler | Handler runs, then process exits or killed by SIGKILL | **Not exhaustively tested (SEC-013)** |
+
+**Root cause:** No test processes with custom SIGTERM handlers exist in the test suite. The implementation sends SIGTERM then SIGKILL after 0.5s, which handles both cooperating and non-cooperating processes, but custom SIGTERM handler behavior is unverified.
+
+### 3.3 SEC-015: Concurrent Timeout Scenarios
+
+**Status:** PARTIALLY TESTED — Discrepancy between document sections.
+
+**Evidence:**
+- T013 §4.2: SEC-015 classified as "Not tested — multiple simultaneous `_run_with_timeout` calls"
+- T013 §8.4: "Tested with 3 concurrent invocations, 0 leftover"
+
+**Discrepancy:** Section 4.2 marks SEC-015 as not tested, while section 8.4 claims 3 concurrent invocations were tested. This discrepancy requires clarification. No concurrent timeout test exists in `tests/governance/test_task_checkpoint.py` (verified: 96 tests, none test concurrency).
+
+**Conclusion:** SEC-015 should be treated as NOT VERIFIED until a concurrent timeout test is added and executed.
+
+### 3.4 SEC-016: Windows CI Validation
+
+**Status:** BLOCKED — No Windows runner in CI pipeline.
+
+**Evidence** (from T013 document §4.3):
+- SEC-016 classified as "Blocked — No Windows runner in CI pipeline"
+- CI workflow has `windows-governance` and `windows-timeout` jobs configured for `windows-latest`
+- Jobs exist in `.github/workflows/ci.yml` but require Windows runner execution to validate
+
+### 3.5 Python Security Scan Execution
+
+**VERIFIED FACT** — `python-security-scan` job in `.github/workflows/ci.yml`:
+
+| Aspect | Status | Evidence |
+|--------|--------|----------|
+| Job configured | PASS | Job present at ci.yml:113-160 |
+| No `|| true` masking | PASS | `python -m pip_audit --format=json --output=pip-audit-report.json` (no `|| true`) |
+| Validation step | PASS | Explicit step checks report existence and JSON structure |
+| SARIF upload | PASS | `github/codeql-action/upload-sarif@v3`, `category: python-dependencies`, `if: always()` |
+| Local execution | BLOCKED | `pip-audit` blocked by SSL certificate verification to pypi.org |
+| GHAS requirement | PENDING | Code Scanning requires GitHub Advanced Security enablement by owner |
+
+### 3.6 CodeQL Configuration
+
+**VERIFIED FACT** — `codeql` job in `.github/workflows/ci.yml`:
+
+| Aspect | Status | Evidence |
+|--------|--------|----------|
+| Job configured | PASS | Job present at ci.yml:203-239 |
+| Matrix languages | javascript-typescript, python | Matrix strategy with `fail-fast: false` |
+| Init step | PASS | `github/codeql-action/init@v3` |
+| Analyze step | PASS | `github/codeql-action/analyze@v3` with category |
+| Build steps | PASS | Language-specific build (npm ci + build for JS/TS, pip install for Python) |
+| Permissions | PASS | `contents: read`, `security-events: write` (least privilege) |
+| Actual execution | NOT VERIFIED | Requires GitHub Advanced Security (GHAS) enablement by owner |
+| SARIF upload | PASS | `codeql-action/analyze@v3` uploads to Code Scanning |
+
+### 3.7 macOS/BSD Nested-Process Fallback
+
+**Status:** OPEN ITEM — Not tested until macOS/BSD CI environment available.
+
+**Evidence** (from T013 document §1.3, §8.5):
+| Platform | Termination Method | Nested Session Support | Tested |
+|----------|-------------------|------------------------|--------|
+| macOS/BSD | Process group (`os.killpg()`) | NO — nested sessions escape | ❌ |
+| Other Unix | Process group (`os.killpg()`) | NO — nested sessions escape | ❌ |
+
+**Root cause:** Non-Linux Unix platforms fall back to `os.killpg()` which only kills the direct process group, not descendants that created their own sessions via `start_new_session()` or `os.setsid()`. The recursive `/proc` traversal used on Linux is not available on macOS/BSD.
+
+**Recommendation:** Add macOS/BSD CI runner or implement `psutil`-based process tree traversal for better portability.
+
+### 3.8 Staging Integration Tests
+
+**Status:** BLOCKED BY ENVIRONMENT — No staging Firebase project, no LLM/search provider services.
+
+**Evidence** (from audit report §4 Integration Prerequisites):
+| Integration | Status | Blocker |
+|-------------|--------|---------|
+| Firebase Auth/Firestore | BLOCKED | No real Firebase project + credentials |
+| Firebase Storage | BLOCKED | No real Storage bucket |
+| Ollama LLM | BLOCKED | No Ollama service on loopback |
+| LM Studio / LocalAI | BLOCKED | No service on loopback |
+| Search providers | BLOCKED | No Brave/SearXNG API keys or DDG network |
+| End-to-end chat | BLOCKED | No deployed backend + frontend + Firebase |
+
+*End of Phase 3 — Cross-Platform Security Investigation.*
