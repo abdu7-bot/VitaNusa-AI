@@ -25,6 +25,7 @@ def run_test(name, cmd, timeout=0.5):
     pids_before = set()
     if psutil:
         pids_before = set(p.pid for p in psutil.process_iter())
+        print(f'  PIDs before: {len(pids_before)}')
     
     try:
         _run_with_timeout(cmd, cwd='.', timeout=timeout)
@@ -37,17 +38,21 @@ def run_test(name, cmd, timeout=0.5):
         return False
     
     # Wait for cleanup
-    time.sleep(1)
+    time.sleep(1.5)
     
     if psutil:
         pids_after = set(p.pid for p in psutil.process_iter())
         new_pids = pids_after - pids_before
+        print(f'  New PIDs: {len(new_pids)}')
         alive = 0
         for pid in new_pids:
             try:
                 p = psutil.Process(pid)
                 if p.status() != psutil.STATUS_ZOMBIE:
                     alive += 1
+                    print(f'  ALIVE: PID {pid}, cmdline={p.cmdline()}, status={p.status()}')
+                else:
+                    print(f'  ZOMBIE: PID {pid}')
             except:
                 pass
         if alive == 0:
