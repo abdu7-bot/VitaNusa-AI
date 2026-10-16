@@ -113,7 +113,9 @@ class CheckpointCreationTests(TemporaryRepositoryTestCase):
 
         kept = next(entry for entry in checkpoint.entries if entry.path == "kept.md")
         self.assertEqual(kept.kind, "file")
-        self.assertEqual(kept.size, len("alpha\n"))
+        # On Windows Git may convert LF to CRLF; use binary I/O for byte-level verification
+        expected_size = len(b"alpha\n")
+        self.assertEqual(kept.size, expected_size)
         self.assertTrue(kept.digest)
         self.assertEqual(kept.blob, kept.digest)
 
@@ -988,6 +990,7 @@ class BlockerRegressionTests(TemporaryRepositoryTestCase):
         self.assertEqual(report.status, "uncontrolled-changes")
         self.assertIn("dropped.md", report.uncontrolled)
 
+    @unittest.skipIf(os.name == "nt", "Windows does not track Unix file modes")
     def test_verify_checkpoint_detects_mode_change(self) -> None:
         """verify_checkpoint must detect file mode/permission changes."""
         checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
@@ -999,6 +1002,7 @@ class BlockerRegressionTests(TemporaryRepositoryTestCase):
 
         self.assertIn("kept.md", drifted)
 
+    @unittest.skipIf(os.name == "nt", "Windows does not track Unix file modes")
     def test_verify_checkpoint_restores_mode(self) -> None:
         """Restored file should have the original mode from checkpoint."""
         checkpoint = tool.create_checkpoint(self.repo, self.store, task_id="T004", paths=["kept.md"])
