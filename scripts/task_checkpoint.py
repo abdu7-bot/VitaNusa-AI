@@ -641,6 +641,8 @@ def _snapshot_one(root: Path, absolute: Path, blob_dir: Path) -> FileSnapshot:
         )
 
     data = absolute.read_bytes()
+    # Normalize line endings to LF for cross-platform consistency
+    data = data.replace(b"\r\n", b"\n")
     digest = _sha256(data)
     blob_dir.mkdir(parents=True, exist_ok=True)
     blob_path = blob_dir / digest
