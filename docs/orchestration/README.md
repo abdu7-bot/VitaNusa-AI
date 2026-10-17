@@ -51,6 +51,7 @@ worker, dan audit log otomatis tetap belum ada.
 | `validation-contract.md` | Kontrak validation dan pemetaannya per kelas task |
 | `audit-trail.md` | Skema audit trail, minimum audit reference manual, dan keputusan storage |
 | `checkpoint-and-rollback.md` | Kontrak checkpoint/rollback (T004) dan perkakas `scripts/task_checkpoint.py` yang menghasilkannya |
+| `audit-trail.md` | Skema audit trail otomatis (T005), schema event, redaction, integritas, idempotensi, CLI |
 
 ## Sumber kebenaran
 

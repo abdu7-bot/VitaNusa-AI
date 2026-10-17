@@ -1,110 +1,283 @@
-# Audit Trail Contract
+# VitaNusa-AI Audit Trail Specification
 
-Audit trail T003 berupa kontrak dan skema, bukan persistence yang sudah berjalan.
-`.agents/RULES.md` melarang membangun mekanisme berlapis sebelum kebutuhan nyata
-terbukti, dan audit log otomatis adalah pekerjaan T005. Yang ditetapkan di sini
-adalah data minimum yang harus dapat ditelusuri untuk setiap tindakan agent.
+**Versi:** 1.0
+**Tanggal:** 2026-10-17
+**Status:** Draft — untuk review
 
-## 1. Mengapa audit trail
+---
 
-Prinsip utama `ROADMAP.md` §0 adalah amanah dan auditability: setiap perubahan
-kode dapat dilacak. Audit trail adalah bentuk teknis dari prinsip itu, dan
-`.agents/AGENTS.md` §8.2 menolak perubahan tanpa jejak task.
+## 1. Tujuan
 
-## 2. Field minimum satu entri
+Menyediakan audit trail append-only untuk setiap autonomous task agar:
+- Setiap transisi state task tercatat dengan bukti
+- Investigasi kegagalan/blocker memiliki jejak lengkap
+- Compliance terhadap governance tanpa menyimpan data sensitif
 
-| Field | Tipe | Isi | Wajib |
-|---|---|---|---|
-| `task_id` | string | ID task format `T<NNN>` | Ya |
-| `actor` | string | Nama agent atau `human` | Ya |
-| `role` | enum | `planner`, `implementer`, `reviewer`, `integrator`, `human` | Ya |
-| `timestamp` | ISO 8601 UTC | Waktu aksi terjadi | Ya |
-| `action` | enum | `claim`, `implement`, `validate`, `review`, `approve`, `integrate`, `merge`, `block`, `release` | Ya |
-| `workspace` | string | Path workspace; `canonical` bila di canonical repository | Ya |
-| `branch` | string | Nama branch; `main` untuk canonical | Ya |
-| `class` | string | Kelas task yang sedang berjalan | Ya |
-| `reviewer` | string atau null | Nama reviewer | Ya untuk action `review` |
-| `validation` | object | Perintah yang dijalankan dan statusnya | Ya untuk action `validate` |
-| `approval` | object atau null | Siapa menyetujui, kapan, untuk file apa | Ya bila task memerlukannya |
-| `commit_sha` | string atau null | SHA commit yang dihasilkan | Ya untuk `implement`, `integrate`, `merge` |
-| `result` | enum | `pass`, `fail`, `blocked` | Ya |
-| `note` | string | Alasan singkat; wajib pada `blocked` dan `fail` | Conditionally |
+---
 
-## 3. Skema contoh
+## 2. Arsitektur
 
-Satu entri audit minimal, dalam bentuk JSON Lines. Ini contoh kontrak, bukan
-data yang sudah terekam:
-
-```json
-{"schema":"vitanusa.audit.v1","task_id":"T011","actor":"kilo-auto","role":"implementer","timestamp":"2026-10-05T02:10:00Z","action":"implement","workspace":"canonical","branch":"task/T011","class":"CODE","reviewer":null,"validation":null,"approval":{"by":"human","at":"2026-10-05T01:00:00Z","scope":["backend/app/x.py"]},"commit_sha":"0000000000000000000000000000000000000000","result":"pass","note":""}
+```
+┌─────────────────────┐
+│  Agent/Task Runner  │
+└──────────┬──────────┘
+           │ append_event()
+           ▼
+┌─────────────────────┐
+│ task_audit_log.py   │  (scripts/tool)
+│  - validasi schema  │
+│  - redaction secret │
+│  - atomic write     │
+│  - checksum + hash  │
+└──────────┬──────────┘
+           │ append to file
+           ▼
+┌─────────────────────┐
+│ ~/.local/state/     │  (default)
+│ vitanusa-agent/     │
+│ audit/audit.log     │
+└─────────────────────┘
 ```
 
-## 4. Minimum audit reference manual
+---
 
-Sebelum persistence ada, setiap task record **wajib** memuat field
-`**Audit reference:**`. Isinya adalah ringkasan manual yang dapat ditelusuri:
+## 3. Schema Event
 
-| Isi | Sumber verifikasi |
-|---|---|
-| Task ID | Task record dan pesan commit |
-| Commit SHA | `git log` dan field `**Commit:**` |
-| Nama reviewer | Bagian Review pada task record |
-| Hasil validation | Ringkasan perintah validasi pada task record |
-| Approval bila diwajibkan | Field `**Approval:**` |
-| Rujukan kontrak | `docs/orchestration/audit-trail.md` |
+### 3.1 Field Wajib
 
-Syarat minimum ini adalah yang berlaku sekarang. Field itu diminta oleh
-`task-registry-and-locking.md` §2 dan harus ada pada task record mana pun,
-termasuk `T003`. Audit reference bukan audit log otomatis: tidak ada entri yang
-dihasilkan program, tidak ada persistence, dan tidak ada integrasi CI. Penulisan
-otomatis adalah T005.
+| Field | Tipe | Deskripsi |
+|-------|------|-----------|
+| `event_type` | string | Enum: `task_claimed`, `task_started`, `validation_result`, `review_result`, `blocked`, `failure`, `commit_ref`, `completion` |
+| `task_id` | string | ID task (contoh: `T005`) |
+| `actor` | string | Identitas agent/user (`kilo`, `copilot`, `human`) |
+| `timestamp` | string | UTC ISO 8601 dengan `Z` suffix (contoh: `2026-10-17T10:00:00Z`) |
+| `state_transition` | string | Transisi state (contoh: `READY -> ACTIVE`) |
+| `result` | string | Hasil (contoh: `success`, `failed`, `blocked`) |
+| `reason` | string | Alasan singkat (max 500 char) |
+| `reference` | string | Referensi unik: commit SHA, PR URL, task ID, dll |
+| `metadata` | object | Opsional, akan diredaksi secret |
 
-Field itu pada task record T003 terisi pada header `**Audit reference:**`.
+### 3.2 Field Internal (dihitung otomatis)
 
-## 5. Keputusan storage
+| Field | Tipe | Deskripsi |
+|-------|------|-----------|
+| `checksum` | string | SHA256 dari event dict (tanpa `checksum` & `cumulative_hash`) |
+| `cumulative_hash` | string | Hash kumulatif: SHA256(prev_hash + checksum) |
 
-| Opsi | Status | Alasan |
-|---|---|---|
-| Berkas JSON Lines append-only per task, contoh `tasks/audit/<TASK-ID>.jsonl` | Kontrak, belum dibuat | Tidak menambah dependency, mudah dibaca dan diaudit, sesuai `.agents/WORKFLOW.md` §4 bahwa claim dicatat pada file task bukan sistem eksternal |
-| Database orchestration | Ditolak | Tidak ada kebutuhan nyata; menambah permukaan risiko tanpa bukti |
-| Branch atau tag Git untuk audit | Ditolak | Audit bukan riwayat kode; histori Git bukan jejak tindakan |
+### 3.3 Contoh Event
 
-Aturan penyimpanan yang berlaku begitu persistence dibuat:
+```json
+{
+  "event_type": "task_claimed",
+  "task_id": "T005",
+  "actor": "kilo",
+  "timestamp": "2026-10-17T10:00:00Z",
+  "state_transition": "READY -> ACTIVE",
+  "result": "success",
+  "reason": "task claimed by implementer",
+  "reference": "T005-claim-001",
+  "metadata": {},
+  "checksum": "a1b2c3d4...",
+  "cumulative_hash": "e5f6g7h8..."
+}
+```
 
-1. Append-only. Entri tidak diedit dan tidak dihapus; koreksi ditulis sebagai
-   entri baru dengan `action` yang sama dan `note` yang menjelaskan koreksi.
-2. Satu file per task, disebut dari file task dengan path eksplisit.
-3. Entri ditulis oleh actor yang melakukan aksi, bukan oleh agent lain.
-4. Setiap entri yang tercatat pada file task dapat diverifikasi ulang terhadap
-   Git: commit SHA harus benar-benar ada dan task ID harus muncul pada pesan
-   commit.
-5. Penyimpanan audit tidak boleh memuat secret. Nilai credential tidak masuk
-   entri audit (`.agents/RULES.md` §Secrets).
-6. Audit log otomatis adalah T005. T003 hanya menetapkan skema.
+---
 
-## 6. Pemisahan terhadap T005
+## 4. Redaksi Secret
 
-| Termasuk T003 | Bukan T003 |
-|---|---|
-| Daftar field minimum dan enum | Penulisan entri otomatis oleh runtime |
-| Skema contoh | Penyimpanan dan rotasi file audit |
-| Keputusan storage dan alasannya | Audit viewer di UI (`tasks/BACKLOG.md` Phase H) |
-| Aturan append-only dan verifikasi terhadap Git | Integrasi audit ke CI |
+### 4.1 Pola yang Diredact
 
-## 7. Verifikasi yang bisa dilakukan sekarang
+Field/key yang mengandung (case-insensitive):
+- `secret`, `token`, `password`, `passwd`
+- `apikey`, `api_key`, `apiKey`
+- `private_key`, `private-key`
+- `access_token`, `refresh_token`, `bearer_token`
+- `auth`, `credential`
+- `health_query`, `health_check`
 
-Tanpa persistence, jejak audit sudah dapat diverifikasi dari Git dan berkas task:
+### 4.2 Perilaku
 
-| Pertanyaan | Sumber verifikasi |
-|---|---|
-| Apakah ada actor yang bekerja? | `**Owner:**` pada file task |
-| Apakah reviewer terpisah? | Bagian Review pada file task |
-| Apakah validasi dijalankan? | Ringkasan hasil validasi pada file task |
-| Apakah approval ada dan mendahului perubahan? | Field `**Approval:**` |
-| Apakah commit dapat ditelusuri? | Pesan commit dan `**Commit:**` |
-| Apakah perubahan sesuai scope? | `git diff --name-only` terhadap `**Claimed files:**` |
+- Cek pada **key** DAN **value** (string)
+- Rekursif ke nested dict/list
+- Ganti dengan `[REDACTED]`
+- Field non-string tidak diredact
 
-Keterbatasan yang harus jujur: verifikasi ini bergantung pada isi berkas task.
-Agent yang berbohong tentang field tersebut tidak dapat dideteksi oleh Git.
-Otomasi yang memeriksa konsistensi tersebut adalah pekerjaan lanjutan dan
-tidak diklaim sebagai kemampuan yang sudah ada.
+### 4.4 Contoh
+
+```json
+// Input metadata
+{
+  "api_key": "sk-12345",
+  "config": {"token": "abc123"},
+  "safe": "value"
+}
+
+// Output metadata (tersimpan di log)
+{
+  "api_key": "[REDACTED]",
+  "config": {"token": "[REDACTED]"},
+  "safe": "value"
+}
+```
+
+> ⚠️ **Batasan:** Redaksi berbasis regex pada key/value string. Bisa miss edge case (contoh: secret di dalam string panjang tanpa pola key). Review manual tetap diperlukan untuk data sensitif kritis.
+
+---
+
+## 5. Integritas & Verifikasi
+
+### 5.1 Checksum Per-Event
+
+`checksum = SHA256(JSON(event tanpa checksum & cumulative_hash))`
+
+### 5.2 Hash Kumulatif
+
+`cumulative_hash[i] = SHA256(cumulative_hash[i-1] + checksum[i])`
+`cumulative_hash[0] = SHA256(checksum[0])`
+
+### 5.3 Verifikasi
+
+`verify_integrity(store)` mengembalikan `(ok, errors[])`:
+- Setiap baris: checksum cocok
+- Setiap baris: cumulative_hash cocok dengan chain sebelumnya
+- JSON valid per baris
+
+---
+
+## 6. Idempotensi
+
+- Event dengan `reference` duplikat **diabaikan** (first write wins)
+- Return existing event saat duplicate
+- Log warning (stderr) saat duplicate detected
+
+---
+
+## 7. Fail-Safe Write
+
+1. Tulis ke temp file (`.audit-XXXXXX.tmp`) di direktori yang sama
+2. `os.replace(tmp, target)` — atomic pada POSIX
+3. Jika gagal di tengah: temp file dihapus, file original tidak tersentuh
+3. `os.replace` atomic pada POSIX, best-effort di Windows
+
+---
+
+## 8. Storage & Retention
+
+### 8.1 Lokasi Default
+
+`~/.local/state/vitanusa-agent/audit/audit.log`
+
+Override via:
+- Argumen `store` pada API
+- Env `VITANUSA_AUDIT_DIR`
+
+### 8.2 Retention
+
+- Default: **90 hari**
+- Rotasi log: **belum diimplementasikan** (follow-up task terpisah)
+- Export manual: copy `audit.log` ke lokasi backup
+
+### 8.3 Permission
+
+Direktori: `0o700` (owner only)
+File log: `0o600` (owner read/write)
+
+---
+
+## 9. API Reference
+
+### `append_event(...) -> AuditEvent`
+Tambah event, return event dengan checksum.
+
+### `read_log(store, limit=None) -> list[AuditEvent]`
+Baca log (terbaru dulu jika `limit` diset). Skip baris corrupt.
+
+### `verify_integrity(store) -> (bool, list[str])`
+Verifikasi checksum & cumulative hash. Return `(ok, errors[])`.
+
+### `find_by_reference(reference, store) -> AuditEvent | None`
+Cari event by reference (untuk idempotency check).
+
+### CLI
+
+```bash
+# Append
+python3 scripts/task_audit_log.py append \
+  --event-type task_claimed \
+  --task-id T005 \
+  --actor kilo \
+  --state-transition "READY -> ACTIVE" \
+  --result success \
+  --reason "claim" \
+  --reference T005-claim-001 \
+  --store ~/.local/state/vitanusa-agent/audit
+
+# Read
+python3 scripts/task_audit_log.py read --store ~/.local/state/vitanusa-agent/audit --limit 10
+
+# Verify
+python3 scripts/task_audit_log.py verify --store ~/.local/state/vitanusa-agent/audit
+
+# Find by reference
+python3 scripts/task_audit_log.py find T005-claim-001
+```
+
+---
+
+## 10. Redaction Boundaries (Batasan)
+
+| Keadaan | Perilaku |
+|---------|----------|
+| Secret di value string tanpa pola key | **Tidak diredact** (hanya key yang dicek) |
+| Secret di dalam string panjang tanpa delimiter | **Tidak diredact** |
+| Secret di binary/bytes | **Tidak diredact** (hanya string) |
+| Key dengan typo (contoh: `apikey` vs `api_key`) | Diredact jika match pola |
+| Nested dict/list | Diredact rekursif |
+
+> **Rekomendasi:** Untuk data sensitif kritis, jangan masukkan ke metadata. Gunakan referensi ke secret manager terpisah.
+
+---
+
+## 11. Integrasi T005 ke T010–T014
+
+| Task | Integrasi |
+|------|-----------|
+| T010 (parser) | `append_event(task_claimed)` saat task di-claim |
+| T011 (dependency) | `append_event(validation_result)` saat dependency check |
+| T012 (test gate) | `append_event(validation_result)` saat test gate |
+| T013 (failure) | `append_event(blocked/failure)` saat blocked/failure |
+| T014 (stop) | `append_event(completion/stop)` saat stop condition |
+
+Reference standar: `task_id` + action + sequence (contoh: `T010-claim-001`)
+
+---
+
+## 12. Testing
+
+### Unit Test Coverage
+
+| Kategori | Test Case |
+|----------|-----------|
+| Basic | append, read, verify clean log |
+| Idempotency | duplicate reference ignored, find_by_reference |
+| Redaction | secret in metadata, nested, various patterns |
+| Fail-safe | read-only file, atomic write, corrupted log |
+| Schema | invalid event_type, empty fields, invalid timestamp |
+| CLI | append, read, verify, find |
+| Filesystem | disk full simulation, corrupted log read, permission error |
+| Custom store | custom path, env var |
+| Export/Retention | file location, manual export |
+
+Jalankan: `python3 tests/governance/test_task_audit_log.py`
+
+---
+
+## 13. Follow-up (Out of Scope)
+
+- [ ] Log rotation & compression (retention policy enforcement)
+- [ ] Centralized audit server / SIEM integration
+- [ ] Structured query / search API
+- [ ] Real-time alerting pada event `blocked`/`failure`
+- [ ] Cryptographic signing (non-repudiation)
+- [ ] GDPR/PDPA compliance automation
