@@ -19,6 +19,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+# File locking support (cross-platform best effort)
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    _HAS_FCNTL = False
+
+try:
+    import msvcrt
+    _HAS_MSVCRT = True
+except ImportError:
+    _HAS_MSVCRT = False
+
 # ─── Konstanta ──────────────────────────────────────────────────────────────
 SCHEMA_VERSION = "vitanusa.audit.v1"
 DEFAULT_STORE = Path.home() / ".local" / "state" / "vitanusa-agent" / "audit"
@@ -119,6 +132,54 @@ def _kumulatif_hash(prev_hash: str, line_hash: str) -> str:
     return _sha256((prev_hash + line_hash).encode())
 
 
+class _FileLock:
+    """Cross-platform file lock (best effort)."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.fd = None
+
+    def acquire(self, blocking: bool = True, timeout: float = 10.0) -> bool:
+        lock_path = self.path.with_suffix(self.path.suffix + ".lock")
+        self.fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        start = time.time()
+        while True:
+            try:
+                if _HAS_FCNTL:
+                    fcntl.flock(self.fd, fcntl.LOCK_EX | (0 if blocking else fcntl.LOCK_NB))
+                    return True
+                elif _HAS_MSVCRT:
+                    msvcrt.locking(self.fd, msvcrt.LK_NBLCK, 1)
+                    return True
+            except (BlockingIOError, OSError):
+                if not blocking or (time.time() - start) >= timeout:
+                    os.close(self.fd)
+                    return False
+                time.sleep(0.01)
+            except Exception:
+                os.close(self.fd)
+                return False
+
+    def release(self) -> None:
+        if self.fd is not None:
+            try:
+                if _HAS_FCNTL:
+                    fcntl.flock(self.fd, fcntl.LOCK_UN)
+                elif _HAS_MSVCRT:
+                    msvcrt.locking(self.fd, msvcrt.LK_UNLCK, 1)
+            except Exception:
+                pass
+            os.close(self.fd)
+            self.fd = None
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, *args):
+        self.release()
+
+
 def _resolve_store(custom: str | None = None) -> Path:
     """Resolve direktori penyimpanan audit log."""
     env = os.environ.get("VITANUSA_AUDIT_DIR")
@@ -132,7 +193,14 @@ def _log_path(store: Path) -> Path:
 
 
 def _read_last_hash(path: Path) -> str:
-    """Baca hash kumulatif terakhir dari file log."""
+    """Baca hash kumulatif terakhir dari file log.
+
+    Returns:
+        Hash kumulatif terakhir, atau string kosong jika file tidak ada/kosong.
+
+    Raises:
+        ValueError: Jika file ada tapi korup (JSON invalid atau missing field).
+    """
     if not path.exists():
         return ""
     try:
@@ -140,10 +208,21 @@ def _read_last_hash(path: Path) -> str:
             lines = f.readlines()
         if not lines:
             return ""
-        last = json.loads(lines[-1])
-        return last.get("cumulative_hash", "")
-    except Exception:
+        # Cari baris valid terakhir (skip baris kosong/korup di akhir)
+        for line in reversed(lines):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                last = json.loads(line)
+                cum_hash = last.get("cumulative_hash", "")
+                if cum_hash:
+                    return cum_hash
+            except json.JSONDecodeError:
+                continue
         return ""
+    except Exception as e:
+        raise ValueError(f"Gagal membaca hash terakhir dari {path}: {e}")
 
 
 # ─── API Publik ──────────────────────────────────────────────────────────────
@@ -185,51 +264,62 @@ def append_event(
     store_path = _resolve_store(str(store) if store else None)
     log_file = _log_path(store_path)
 
-    # Idempotency: cek reference existing
-    if find_by_reference(reference, store_path):
-        # Return existing event (idempotent)
-        return find_by_reference(reference, store_path)  # type: ignore[return-value]
+    # File lock untuk mencegah race condition
+    lock = _FileLock(log_file)
+    if not lock.acquire(blocking=True, timeout=10.0):
+        raise OSError(f"Gagal mendapatkan lock pada {log_file} setelah 10 detik")
 
-    ts = timestamp or _utc_now()
-    meta = _redact_secret(metadata or {})
-
-    event = AuditEvent(
-        event_type=event_type,
-        task_id=task_id,
-        actor=actor,
-        timestamp=ts,
-        state_transition=state_transition,
-        result=result,
-        reason=reason,
-        reference=reference,
-        metadata=meta,
-    )
-
-    # build dict untuk checksum
-    event_dict = asdict(event)
-    event_dict["checksum"] = _compute_checksum(event_dict)
-
-    # hitung cumulative hash
-    prev_hash = _read_last_hash(_log_path(store_path))
-    event_dict["cumulative_hash"] = _kumulatif_hash(prev_hash, event_dict["checksum"])
-
-    # atomic write: temp file -> rename
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(dir=str(log_file.parent), prefix=".audit-", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            # tulis log existing jika ada
-            if _log_path(store_path).exists():
-                with _log_path(store_path).open("r", encoding="utf-8") as src:
-                    f.write(src.read())
-            # tulis event baru
-            f.write(json.dumps(event_dict, sort_keys=True, separators=(",", ":")) + "\n")
-        os.replace(tmp_name, _log_path(store_path))
-    except BaseException:
-        Path(tmp_name).unlink(missing_ok=True)
-        raise
+        # Idempotency: cek reference existing (di dalam lock)
+        if find_by_reference(reference, store_path):
+            # Return existing event (idempotent)
+            return find_by_reference(reference, store_path)  # type: ignore[return-value]
 
-    return AuditEvent(**{k: v for k, v in event_dict.items() if k != "cumulative_hash"})
+        ts = timestamp or _utc_now()
+        meta = _redact_secret(metadata or {})
+
+        event = AuditEvent(
+            event_type=event_type,
+            task_id=task_id,
+            actor=actor,
+            timestamp=ts,
+            state_transition=state_transition,
+            result=result,
+            reason=reason,
+            reference=reference,
+            metadata=meta,
+        )
+
+        # build dict untuk checksum
+        event_dict = asdict(event)
+        event_dict["checksum"] = _compute_checksum(event_dict)
+
+        # hitung cumulative hash
+        prev_hash = _read_last_hash(_log_path(store_path))
+        event_dict["cumulative_hash"] = _kumulatif_hash(prev_hash, event_dict["checksum"])
+
+        # atomic write: temp file -> rename
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(dir=str(log_file.parent), prefix=".audit-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                # tulis log existing jika ada
+                if _log_path(store_path).exists():
+                    with _log_path(store_path).open("r", encoding="utf-8") as src:
+                        f.write(src.read())
+                # tulis event baru
+                f.write(json.dumps(event_dict, sort_keys=True, separators=(",", ":")) + "\n")
+            os.replace(tmp_name, _log_path(store_path))
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
+        finally:
+            lock.release()
+
+        return AuditEvent(**{k: v for k, v in event_dict.items() if k != "cumulative_hash"})
+    except Exception:
+        lock.release()
+        raise
 
 
 def read_log(store: Path | str | None = None, limit: int | None = None) -> list[AuditEvent]:
