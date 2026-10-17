@@ -1063,7 +1063,11 @@ def verify_checkpoint(
             elif entry.kind == "symlink":
                 matches = target.is_symlink() and os.readlink(target) == entry.link_target
             else:
-                content_matches = target.is_file() and _sha256(target.read_bytes()) == entry.digest
+                content_bytes = target.read_bytes()
+                # Normalize CRLF to LF to match snapshot-time normalization
+                # (_snapshot_one line 645), preventing false drift on Windows.
+                content_bytes = content_bytes.replace(b"\r\n", b"\n")
+                content_matches = target.is_file() and _sha256(content_bytes) == entry.digest
                 mode_matches = True
                 if content_matches and entry.mode:
                     try:

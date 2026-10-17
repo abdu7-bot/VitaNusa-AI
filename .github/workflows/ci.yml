@@ -129,11 +129,17 @@ jobs:
       - name: Install pip-audit
         run: python -m pip install --upgrade pip pip-audit
 
+      - name: Install backend dependencies
+        working-directory: backend
+        run: python -m pip install -r requirements.txt
+
       - name: Run pip-audit on backend dependencies
         working-directory: backend
         run: |
-          python -m pip install -r requirements.txt
+          set +e
           python -m pip_audit --format=json --output=pip-audit-report.json
+          echo "PIP_AUDIT_EXIT_CODE=$?" >> $GITHUB_ENV
+          set -e
 
       - name: Validate pip-audit report
         working-directory: backend
@@ -157,6 +163,10 @@ jobs:
         with:
           sarif_file: backend/pip-audit-report.json
           category: python-dependencies
+
+      - name: Fail if pip-audit found vulnerabilities
+        run: |
+          exit ${{ env.PIP_AUDIT_EXIT_CODE }}
 
   windows-governance:
     name: Windows governance tests
@@ -260,32 +270,35 @@ jobs:
 
       - name: Run npm audit
         run: |
-           npm audit --audit-level=high --json > npm-audit-report.json
+          set +e
+          npm audit --audit-level=high --json > npm-audit-report.json
+          echo "NPM_AUDIT_EXIT_CODE=$?" >> $GITHUB_ENV
+          set -e
 
       - name: Validate npm audit report
         run: |
-           node - <<'JS'
-           const fs = require('fs');
-           const path = require('path');
-           const reportPath = path.join(__dirname, 'npm-audit-report.json');
-           if (!fs.existsSync(reportPath)) {
-               console.error('::error::npm-audit report missing -- scan did not run');
-               process.exit(1);
-           }
-           let data;
-           try {
-               data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-           } catch (e) {
-               console.error('::error::npm-audit report malformed -- scan did not complete');
-               process.exit(1);
-           }
-           if (!data || typeof data !== 'object' || !('vulnerabilities' in data)) {
-               console.error('::error::npm-audit report missing vulnerabilities field -- scan did not complete');
-               process.exit(1);
-           }
-           const vulnCount = Object.keys(data.vulnerabilities || {}).length;
-           console.log(`npm-audit reported ${vulnCount} vulnerabilities`);
-           JS
+          node - <<'JS'
+          const fs = require('fs');
+          const path = require('path');
+          const reportPath = path.join(__dirname, 'npm-audit-report.json');
+          if (!fs.existsSync(reportPath)) {
+              console.error('::error::npm-audit report missing -- scan did not run');
+              process.exit(1);
+          }
+          let data;
+          try {
+              data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+          } catch (e) {
+              console.error('::error::npm-audit report malformed -- scan did not complete');
+              process.exit(1);
+          }
+          if (!data || typeof data !== 'object' || !('vulnerabilities' in data)) {
+              console.error('::error::npm-audit report missing vulnerabilities field -- scan did not complete');
+              process.exit(1);
+          }
+          const vulnCount = Object.keys(data.vulnerabilities || {}).length;
+          console.log(`npm-audit reported ${vulnCount} vulnerabilities`);
+          JS
 
       - name: Convert npm audit to SARIF
         run: |
@@ -297,6 +310,10 @@ jobs:
         with:
            sarif_file: npm-audit-report.sarif
            category: node-dependencies
+
+      - name: Fail if npm audit found vulnerabilities
+        run: |
+          exit ${{ env.NPM_AUDIT_EXIT_CODE }}
 
   frontend:
     name: Frontend

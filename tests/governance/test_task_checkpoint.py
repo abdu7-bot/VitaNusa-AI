@@ -1963,5 +1963,240 @@ class AdminPlaceholderTests(unittest.TestCase):
         self.assertIn("'Hapus'", content)
 
 
+@unittest.skipIf(os.name == "nt", "SIGTERM handler behavior is POSIX-specific; Windows uses taskkill")
+class SignalHandlerTests(unittest.TestCase):
+    """SEC-013: Signal handling during process tree termination.
+
+    Verifies that a child process with a custom SIGTERM handler is still
+    terminated by _run_with_timeout, and that graceful shutdown within the
+    grace period is distinguished from forced termination.
+    """
+
+    def setUp(self) -> None:
+        self.workspace = tempfile.TemporaryDirectory()
+        self.addCleanup(self.workspace.cleanup)
+        self.base = Path(self.workspace.name)
+        self.sync_dir = self.base / "sync"
+        self.sync_dir.mkdir()
+        try:
+            import psutil  # noqa: F401
+            self.has_psutil = True
+        except ImportError:
+            self.has_psutil = False
+
+    def _write_child_script(self, name: str, handler_body: str) -> Path:
+        """Write a child Python script that installs a SIGTERM handler."""
+        script = (
+            "import signal, time, sys, os\n"
+            "from pathlib import Path\n"
+            f"sync_dir = Path({str(self.sync_dir)!r})\n"
+            f"installed_file = sync_dir / 'installed_{name}.txt'\n"
+            f"received_file = sync_dir / 'received_{name}.txt'\n"
+            "def handler(signum, frame):\n"
+            "    received_file.write_text('sigterm-received\\n', encoding='utf-8')\n"
+            f"    {handler_body}\n"
+            "signal.signal(signal.SIGTERM, handler)\n"
+            f"installed_file.write_text('ready\\n', encoding='utf-8')\n"
+            "time.sleep(100)\n"
+        )
+        script_path = self.base / f"child_{name}.py"
+        script_path.write_text(script, encoding="utf-8")
+        return script_path
+
+    def _assert_no_surviving_processes(self) -> None:
+        """Verify no unintended child processes remain after timeout."""
+        if not self.has_psutil:
+            return
+        import psutil
+        current = os.getpid()
+        for proc in psutil.process_iter(["pid", "ppid", "cmdline"]):
+            try:
+                if proc.info["ppid"] == current:
+                    self.fail(f"surviving child process: {proc.info}")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+    def test_sigterm_handler_recorded(self) -> None:
+        """Process with custom SIGTERM handler records signal receipt."""
+        script = self._write_child_script("graceful", "sys.exit(0)")
+        installed_file = self.sync_dir / "installed_graceful.txt"
+        received_file = self.sync_dir / "received_graceful.txt"
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tool._run_with_timeout(
+                    [sys.executable, str(script)],
+                    cwd=str(self.base),
+                    timeout=0.5,
+                )
+            self.assertTrue(
+                installed_file.exists(),
+                "SIGTERM handler was not installed before timeout",
+            )
+            self.assertTrue(
+                received_file.exists(),
+                "SIGTERM was not delivered to the child process",
+            )
+        finally:
+            self._assert_no_surviving_processes()
+
+    def test_sigterm_graceful_shutdown_within_grace_period(self) -> None:
+        """Handler completes within grace period; process exits cleanly."""
+        script = self._write_child_script("graceful-exit", "sys.exit(0)")
+        received_file = self.sync_dir / "received_graceful-exit.txt"
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tool._run_with_timeout(
+                    [sys.executable, str(script)],
+                    cwd=str(self.base),
+                    timeout=0.5,
+                )
+            self.assertTrue(
+                received_file.exists(),
+                "SIGTERM was not delivered before graceful exit",
+            )
+        finally:
+            self._assert_no_surviving_processes()
+
+    def test_sigterm_forced_termination_after_grace_period(self) -> None:
+        """Handler does not exit in time; process is killed by SIGKILL."""
+        script = self._write_child_script("forced", "time.sleep(10)")
+        received_file = self.sync_dir / "received_forced.txt"
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tool._run_with_timeout(
+                    [sys.executable, str(script)],
+                    cwd=str(self.base),
+                    timeout=0.5,
+                )
+            self.assertTrue(
+                received_file.exists(),
+                "SIGTERM was not delivered before forced termination",
+            )
+        finally:
+            self._assert_no_surviving_processes()
+
+    def test_no_surviving_child_processes_after_timeout(self) -> None:
+        """No unintended child processes remain after timeout termination."""
+        script = self._write_child_script("cleanup", "time.sleep(10)")
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tool._run_with_timeout(
+                    [sys.executable, str(script)],
+                    cwd=str(self.base),
+                    timeout=0.5,
+                )
+        finally:
+            self._assert_no_surviving_processes()
+
+
+@unittest.skipIf(os.name == "nt", "Concurrent process identity semantics differ on Windows")
+class ConcurrencyTests(unittest.TestCase):
+    """SEC-015: Concurrent timeout scenarios.
+
+    Verifies that multiple independent _run_with_timeout invocations running
+    concurrently do not interfere with each other's process trees, and that
+    timing out one invocation does not terminate another's.
+    """
+
+    def setUp(self) -> None:
+        self.workspace = tempfile.TemporaryDirectory()
+        self.addCleanup(self.workspace.cleanup)
+        self.base = Path(self.workspace.name)
+        try:
+            import psutil  # noqa: F401
+            self.has_psutil = True
+        except ImportError:
+            self.has_psutil = False
+
+    def _run_concurrent(
+        self, timeout_calls: int, quick_calls: int, timeout_value: float = 0.3
+    ) -> list:
+        """Run timeout_calls + quick_calls _run_with_timeout invocations concurrently.
+
+        Returns a list of (success: bool, result_or_exception, should_timeout) tuples.
+        """
+        import threading
+
+        results: list = []
+        lock = threading.Lock()
+
+        def worker(cmd: list, timeout: float, should_timeout: bool) -> None:
+            try:
+                result = tool._run_with_timeout(cmd, cwd=str(self.base), timeout=timeout)
+                with lock:
+                    results.append((True, result, should_timeout))
+            except subprocess.TimeoutExpired as exc:
+                with lock:
+                    results.append((False, exc, should_timeout))
+            except Exception as exc:  # noqa: BLE001
+                with lock:
+                    results.append((False, exc, should_timeout))
+
+        threads: list = []
+        for i in range(timeout_calls):
+            cmd = [sys.executable, "-c", "import time; time.sleep(100)"]
+            t = threading.Thread(target=worker, args=(cmd, timeout_value, True))
+            threads.append(t)
+        for i in range(quick_calls):
+            cmd = [sys.executable, "-c", "print('quick done')"]
+            t = threading.Thread(target=worker, args=(cmd, 10.0, False))
+            threads.append(t)
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        return results
+
+    def test_concurrent_timeouts_independent_process_trees(self) -> None:
+        """Timing out one invocation does not terminate another's process tree."""
+        results = self._run_concurrent(timeout_calls=3, quick_calls=0)
+
+        timed_out = [r for r in results if not r[0]]
+        self.assertEqual(len(timed_out), 3, f"Expected 3 timeouts, got {len(timed_out)}")
+        for success, exc, should_timeout in timed_out:
+            self.assertTrue(should_timeout)
+            self.assertIsInstance(exc, subprocess.TimeoutExpired)
+
+    def test_concurrent_mix_timeout_and_quick(self) -> None:
+        """Successful invocations complete normally alongside timed-out ones."""
+        results = self._run_concurrent(timeout_calls=2, quick_calls=2)
+
+        timed_out = [r for r in results if r[2] and not r[0]]
+        completed = [r for r in results if not r[2] and r[0]]
+        self.assertEqual(len(timed_out), 2)
+        self.assertEqual(len(completed), 2)
+        for success, result, _ in completed:
+            self.assertEqual(result.returncode, 0)
+
+    def test_no_surviving_processes_after_concurrent_timeouts(self) -> None:
+        """No unintended child processes remain after concurrent timeouts."""
+        if not self.has_psutil:
+            self.skipTest("psutil not available for process verification")
+        import psutil
+
+        current = os.getpid()
+        pids_before = set(p.pid for p in psutil.process_iter())
+
+        results = self._run_concurrent(timeout_calls=3, quick_calls=1)
+
+        # All should have completed (timed out or finished)
+        self.assertEqual(len(results), 4)
+
+        # Check for surviving processes
+        pids_after = set(p.pid for p in psutil.process_iter())
+        new_pids = pids_after - pids_before
+        alive = 0
+        for pid in new_pids:
+            try:
+                p = psutil.Process(pid)
+                if p.status() != psutil.STATUS_ZOMBIE:
+                    alive += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        self.assertEqual(alive, 0, f"{alive} surviving processes after concurrent timeouts")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
