@@ -229,6 +229,44 @@ def _read_last_hash(path: Path) -> str:
         raise ValueError(f"Gagal membaca hash terakhir dari {path}: {e}")
 
 
+def _verify_log_integrity_before_append(path: Path) -> None:
+    """Validasi integritas penuh log sebelum append. Raise ValueError jika gagal."""
+    if not path.exists():
+        return
+    with path.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+    if not lines:
+        return
+
+    prev_hash = ""
+    for i, line in enumerate(lines, 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Baris {i}: JSON invalid — {e}")
+
+        # Validasi field wajib
+        for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference"):
+            if field not in data or not data[field]:
+                raise ValueError(f"Baris {i}: field wajib '{field}' hilang atau kosong")
+
+        # Validasi checksum
+        line_hash = data.get("checksum", "")
+        expected = _compute_checksum({k: v for k, v in data.items() if k not in ("checksum", "cumulative_hash")})
+        if line_hash != expected:
+            raise ValueError(f"Baris {i}: checksum mismatch (got {line_hash[:8]}..., expected {expected[:8]}...)")
+
+        # Validasi cumulative hash
+        cum_hash = data.get("cumulative_hash", "")
+        expected_cum = _kumulatif_hash(prev_hash, line_hash)
+        if cum_hash != expected_cum:
+            raise ValueError(f"Baris {i}: cumulative hash mismatch (got {cum_hash[:8]}..., expected {expected_cum[:8]}...)")
+        prev_hash = cum_hash
+
+
 # ─── API Publik ──────────────────────────────────────────────────────────────
 
 def append_event(
@@ -274,6 +312,9 @@ def append_event(
         raise OSError(f"Gagal mendapatkan lock pada {log_file} setelah 10 detik")
 
     try:
+        # Validasi integritas log existing SEBELUM operasi apa pun
+        _verify_log_integrity_before_append(log_file)
+
         # Idempotency: cek reference existing (di dalam lock)
         if find_by_reference(reference, store_path):
             # Return existing event (idempotent)

@@ -511,7 +511,7 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
 
         with self.assertRaises(ValueError) as cm:
             tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
-        self.assertIn("empty", str(cm.exception).lower())
+        self.assertIn("hilang atau kosong", str(cm.exception).lower())
 
     def test_log_unchanged_after_failed_append(self) -> None:
         """Log tidak berubah setelah append gagal."""
@@ -545,7 +545,7 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
         from scripts.task_audit_log import _read_last_hash
         with self.assertRaises(ValueError) as cm:
             _read_last_hash(log_file)
-        self.assertIn("empty", str(cm.exception).lower())
+        self.assertIn("missing or empty", str(cm.exception).lower())
 
 
 class AuditLogSecretRedactionTests(TemporaryAuditTestCase):
