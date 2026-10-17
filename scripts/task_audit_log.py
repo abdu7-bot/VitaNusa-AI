@@ -62,6 +62,7 @@ SENSITIVE_PATTERNS = (
     r"credential",
     r"health[_-]?query",
     r"health[_-]?check",
+    r"\bkey\b",
 )
 
 _SECRET_RE = re.compile("|".join(SENSITIVE_PATTERNS), re.IGNORECASE)
@@ -208,7 +209,7 @@ def _read_last_hash(path: Path) -> str:
             lines = f.readlines()
         if not lines:
             return ""
-        # Cari baris valid terakhir (skip baris kosong/korup di akhir)
+        # Cari baris valid terakhir (skip baris kosong di akhir)
         for line in reversed(lines):
             line = line.strip()
             if not line:
@@ -216,11 +217,14 @@ def _read_last_hash(path: Path) -> str:
             try:
                 last = json.loads(line)
                 cum_hash = last.get("cumulative_hash", "")
-                if cum_hash:
-                    return cum_hash
-            except json.JSONDecodeError:
-                continue
-        return ""
+                if not cum_hash:
+                    raise ValueError("cumulative_hash missing or empty")
+                return cum_hash
+            except json.JSONDecodeError as e:
+                raise ValueError(f"JSON invalid pada baris terakhir: {e}")
+        raise ValueError("Tidak ada baris valid dengan cumulative_hash")
+    except ValueError:
+        raise
     except Exception as e:
         raise ValueError(f"Gagal membaca hash terakhir dari {path}: {e}")
 

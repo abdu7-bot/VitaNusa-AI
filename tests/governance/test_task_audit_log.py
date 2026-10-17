@@ -446,5 +446,166 @@ class AuditLogRetentionExportTests(TemporaryAuditTestCase):
         self.assertEqual(len(lines), 1)
 
 
+class AuditLogFailClosedTests(TemporaryAuditTestCase):
+    """Property: fail-closed behavior pada log korup."""
+
+    def test_append_rejects_when_log_corrupted_at_end(self) -> None:
+        """Append ditolak jika log korup di akhir."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+
+        # Corrupt log: tambah baris JSON invalid di akhir
+        log_file = self.store / "audit.log"
+        log_file.write_text(log_file.read_text() + "invalid json\n", encoding="utf-8")
+
+        # Append harus gagal dengan ValueError
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+        self.assertIn("JSON invalid", str(cm.exception))
+
+        # Log original harus utuh (byte-by-byte identical before/after attempt)
+        content_before = (self.store / "audit.log").read_bytes()
+        # Note: log is unchanged because append failed
+        content_after = (self.store / "audit.log").read_bytes()
+        self.assertEqual(content_before, content_after)
+
+    def test_append_rejects_when_log_corrupted_in_middle(self) -> None:
+        """Append ditolak jika log korup di tengah."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+        tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+
+        # Corrupt log: ubah baris kedua
+        log_file = self.store / "audit.log"
+        lines = log_file.read_text().strip().split("\n")
+        lines[1] = "corrupted line"
+        log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Append harus gagal
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("completion", "T005", "kilo", "ACTIVE -> DONE", "success", "done", "ref-3", store=self.store)
+        self.assertIn("JSON invalid", str(cm.exception))
+
+    def test_append_rejects_when_missing_cumulative_hash(self) -> None:
+        """Append ditolak jika cumulative_hash hilang."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+
+        # Hapus cumulative_hash dari baris terakhir
+        log_file = self.store / "audit.log"
+        line = json.loads(log_file.read_text().strip())
+        del line["cumulative_hash"]
+        log_file.write_text(json.dumps(line, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        # Append harus gagal
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+        self.assertIn("cumulative_hash", str(cm.exception))
+
+    def test_append_rejects_when_cumulative_hash_empty(self) -> None:
+        """Append ditolak jika cumulative_hash kosong."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+
+        # Set cumulative_hash ke empty string
+        log_file = self.store / "audit.log"
+        line = json.loads(log_file.read_text().strip())
+        line["cumulative_hash"] = ""
+        log_file.write_text(json.dumps(line, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+        self.assertIn("empty", str(cm.exception).lower())
+
+    def test_log_unchanged_after_failed_append(self) -> None:
+        """Log tidak berubah setelah append gagal."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+
+        # Corrupt log
+        log_file = self.store / "audit.log"
+        log_file.write_text(log_file.read_text() + "garbage\n", encoding="utf-8")
+
+        # Snapshot byte sebelum percobaan append
+        original_bytes = log_file.read_bytes()
+
+        with self.assertRaises(ValueError):
+            tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+
+        # Log harus identik byte-by-byte
+        self.assertEqual(log_file.read_bytes(), original_bytes)
+
+    def test_empty_cumulative_hash_raises(self) -> None:
+        """_read_last_hash raises on empty cumulative_hash."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+
+        # Set cumulative_hash to empty string
+        log_file = self.store / "audit.log"
+        line = json.loads(log_file.read_text().strip())
+        line["cumulative_hash"] = ""
+        log_file.write_text(json.dumps(line, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        import sys
+        sys.path.insert(0, str(REPO_ROOT))
+        from scripts.task_audit_log import _read_last_hash
+        with self.assertRaises(ValueError) as cm:
+            _read_last_hash(log_file)
+        self.assertIn("empty", str(cm.exception).lower())
+
+
+class AuditLogSecretRedactionTests(TemporaryAuditTestCase):
+    """Property: secret redaction mencakup field 'key'."""
+
+    def test_key_field_redacted_even_with_benign_value(self) -> None:
+        """Field 'key' diredact karena nama field, meski value benign."""
+        tool.append_event(
+            "task_claimed",
+            "T005",
+            "kilo",
+            "READY -> ACTIVE",
+            "success",
+            "claim with key field",
+            "ref-key-1",
+            metadata={"key": "benign-value", "normal": "ok"},
+            store=self.store,
+        )
+        events = tool.read_log(self.store)
+        meta = events[0].metadata
+        self.assertEqual(meta["key"], "[REDACTED]")
+        self.assertEqual(meta["normal"], "ok")
+
+    def test_nested_key_field_redacted(self) -> None:
+        """Field 'key' di nested dict diredact."""
+        tool.append_event(
+            "validation_result",
+            "T005",
+            "kilo",
+            "ACTIVE -> TESTING",
+            "success",
+            "nested key",
+            "ref-key-2",
+            metadata={"config": {"key": "nested-secret"}, "items": [{"key": "item-key"}]},
+            store=self.store,
+        )
+        events = tool.read_log(self.store)
+        meta = events[0].metadata
+        self.assertEqual(meta["config"]["key"], "[REDACTED]")
+        self.assertEqual(meta["items"][0]["key"], "[REDACTED]")
+
+    def test_key_in_list_redacted(self) -> None:
+        """Field 'key' di list of dicts diredact."""
+        tool.append_event(
+            "failure",
+            "T005",
+            "kilo",
+            "TESTING -> BLOCKED",
+            "failed",
+            "list of keys",
+            "ref-key-3",
+            metadata={"keys": [{"key": "a"}, {"key": "b"}, {"other": "c"}]},
+            store=self.store,
+        )
+        events = tool.read_log(self.store)
+        meta = events[0].metadata
+        self.assertEqual(meta["keys"][0]["key"], "[REDACTED]")
+        self.assertEqual(meta["keys"][1]["key"], "[REDACTED]")
+        self.assertEqual(meta["keys"][2]["other"], "c")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
