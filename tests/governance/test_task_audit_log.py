@@ -545,7 +545,218 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
         from scripts.task_audit_log import _read_last_hash
         with self.assertRaises(ValueError) as cm:
             _read_last_hash(log_file)
-        self.assertIn("missing or empty", str(cm.exception).lower())
+        self.assertIn("hilang atau kosong", str(cm.exception).lower())
+
+
+class AuditLogLockLifecycleTests(TemporaryAuditTestCase):
+    """Property: lock release on all paths including idempotent return."""
+
+    def test_lock_released_on_idempotent_duplicate_then_new_event(self) -> None:
+        """Lock dilepas saat duplicate reference, event baru bisa ditambah di proses yang sama."""
+        # Event A
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-A", store=self.store)
+        # Duplicate A (should return early, lock must be released)
+        ev_dup = tool.append_event("task_claimed", "T005", "copilot", "READY -> ACTIVE", "success", "claim dup", "ref-A", store=self.store)
+        self.assertEqual(ev_dup.reference, "ref-A")
+        self.assertEqual(ev_dup.actor, "kilo")  # First wins
+        # Event B (distinct) - should complete without timeout
+        ev_b = tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-B", store=self.store)
+        self.assertEqual(ev_b.reference, "ref-B")
+        # Log should verify
+        ok, errors = tool.verify_integrity(self.store)
+        self.assertTrue(ok, f"Integrity errors after duplicate+new: {errors}")
+        events = tool.read_log(self.store)
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0].reference, "ref-A")
+        self.assertEqual(events[1].reference, "ref-B")
+
+
+class AuditLogFailClosedRegressionTests(TemporaryAuditTestCase):
+    """Property: fail-closed regression tests with three-event middle corruption."""
+
+    def _create_three_event_log(self) -> None:
+        """Helper: create a valid three-event log."""
+        tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-1", store=self.store)
+        tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
+        tool.append_event("validation_result", "T005", "kilo", "ACTIVE -> TESTING", "success", "valid", "ref-3", store=self.store)
+
+    def _get_log_bytes(self) -> bytes:
+        return (self.store / "audit.log").read_bytes()
+
+    def _corrupt_and_test(self, corrupt_fn, expected_error_substring: str) -> None:
+        """Helper: corrupt log, snapshot, attempt append, verify log unchanged."""
+        self._create_three_event_log()
+
+        # Corrupt the log
+        log_file = self.store / "audit.log"
+        corrupt_fn(log_file)
+
+        # Snapshot AFTER corruption, BEFORE append attempt
+        corrupted_bytes = log_file.read_bytes()
+
+        # Attempt append - should fail
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("completion", "T005", "kilo", "TESTING -> DONE", "success", "done", "ref-4", store=self.store)
+        self.assertIn(expected_error_substring, str(cm.exception))
+
+        # Log should be unchanged from corrupted state (no additional modifications)
+        self.assertEqual(log_file.read_bytes(), corrupted_bytes)
+        # Also verify no temp files left
+        temp_files = list(self.store.glob(".audit-*.tmp"))
+        self.assertEqual(len(temp_files), 0, f"Temp files remain: {temp_files}")
+
+    def test_append_rejects_when_checksum_corrupted_in_middle(self) -> None:
+        """Append ditolak jika checksum korup di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            data["checksum"] = "a" * 64
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "checksum mismatch")
+
+    def test_append_rejects_when_cumulative_hash_corrupted_in_middle(self) -> None:
+        """Append ditolak jika cumulative_hash korup di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            data["cumulative_hash"] = "b" * 64
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "cumulative hash mismatch")
+
+    def test_append_rejects_when_missing_cumulative_hash_in_middle(self) -> None:
+        """Append ditolak jika cumulative_hash hilang di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            del data["cumulative_hash"]
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "cumulative_hash")
+
+    def test_append_rejects_when_empty_cumulative_hash_in_middle(self) -> None:
+        """Append ditolak jika cumulative_hash kosong di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            data["cumulative_hash"] = ""
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "hilang atau kosong")
+
+    def test_append_rejects_when_json_corrupted_in_middle(self) -> None:
+        """Append ditolak jika JSON invalid di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            lines[1] = "{ invalid json }"
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "JSON invalid")
+
+    def test_append_rejects_when_state_transition_missing_in_middle(self) -> None:
+        """Append ditolak jika state_transition hilang di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            del data["state_transition"]
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "state_transition")
+
+    def test_append_rejects_when_result_missing_in_middle(self) -> None:
+        """Append ditolak jika result hilang di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            del data["result"]
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "result")
+
+    def test_append_rejects_when_reason_missing_in_middle(self) -> None:
+        """Append ditolak jika reason hilang di tengah log 3 event."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            data = json.loads(lines[1])
+            del data["reason"]
+            lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "reason")
+
+    def test_append_rejects_when_blank_line_in_log(self) -> None:
+        """Append ditolak jika ada blank line di log (JSONL violation)."""
+        def corrupt(log_file):
+            lines = log_file.read_text().strip().split("\n")
+            lines.insert(1, "")
+            log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._corrupt_and_test(corrupt, "blank line")
+
+    def test_append_rejects_when_invalid_field_type(self) -> None:
+        """Append ditolak jika tipe field tidak valid (contoh: timestamp bukan string)."""
+        self._create_three_event_log()
+
+        # Corrupt: change timestamp to integer
+        log_file = self.store / "audit.log"
+        line = json.loads(log_file.read_text().strip().split("\n")[0])
+        line["timestamp"] = 12345
+        lines = log_file.read_text().strip().split("\n")
+        lines[0] = json.dumps(line, sort_keys=True, separators=(",", ":"))
+        log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Snapshot after corruption
+        corrupted_bytes = log_file.read_bytes()
+
+        # Attempt append - should fail (checksum mismatch because timestamp changed)
+        with self.assertRaises(ValueError) as cm:
+            tool.append_event("completion", "T005", "kilo", "TESTING -> DONE", "success", "done", "ref-4", store=self.store)
+        # The error will be checksum mismatch because we modified the event
+        self.assertIn("checksum mismatch", str(cm.exception))
+
+        # Log should be unchanged from corrupted state
+        self.assertEqual(log_file.read_bytes(), corrupted_bytes)
+
+    def test_log_unchanged_after_failed_append_middle_corruption(self) -> None:
+        """Log tidak berubah byte-for-byte setelah append gagal karena korupsi tengah."""
+        self._create_three_event_log()
+
+        # Corrupt middle event
+        log_file = self.store / "audit.log"
+        lines = log_file.read_text().strip().split("\n")
+        data = json.loads(lines[1])
+        data["reason"] = "tampered"
+        lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
+        log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Snapshot after corruption
+        corrupted_bytes = log_file.read_bytes()
+
+        with self.assertRaises(ValueError):
+            tool.append_event("completion", "T005", "kilo", "TESTING -> DONE", "success", "done", "ref-4", store=self.store)
+
+        # Verify byte-for-byte unchanged from corrupted state
+        self.assertEqual(log_file.read_bytes(), corrupted_bytes)
+        # Also verify no temp files left
+        temp_files = list(self.store.glob(".audit-*.tmp"))
+        self.assertEqual(len(temp_files), 0, f"Temp files remain: {temp_files}")
+
+
+class AuditLogSchemaExtendedTests(TemporaryAuditTestCase):
+    """Property: validasi schema diperluas untuk field wajib tambahan."""
+
+    def test_reject_empty_state_transition(self) -> None:
+        """state_transition kosong ditolak."""
+        with self.assertRaises(ValueError):
+            tool.append_event("task_claimed", "T005", "kilo", "", "success", "claim", "ref-1", store=self.store)
+
+    def test_reject_empty_result(self) -> None:
+        """result kosong ditolak."""
+        with self.assertRaises(ValueError):
+            tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "", "claim", "ref-1", store=self.store)
+
+    def test_reject_empty_reason(self) -> None:
+        """reason kosong ditolak."""
+        with self.assertRaises(ValueError):
+            tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "", "ref-1", store=self.store)
 
 
 class AuditLogSecretRedactionTests(TemporaryAuditTestCase):

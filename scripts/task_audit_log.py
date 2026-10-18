@@ -90,6 +90,12 @@ class AuditEvent:
             raise ValueError("task_id tidak boleh kosong")
         if not self.actor or not self.actor.strip():
             raise ValueError("actor tidak boleh kosong")
+        if not self.state_transition or not self.state_transition.strip():
+            raise ValueError("state_transition tidak boleh kosong")
+        if not self.result or not self.result.strip():
+            raise ValueError("result tidak boleh kosong")
+        if not self.reason or not self.reason.strip():
+            raise ValueError("reason tidak boleh kosong")
         # validasi timestamp ISO 8601 UTC
         try:
             dt = datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
@@ -216,12 +222,19 @@ def _read_last_hash(path: Path) -> str:
                 continue
             try:
                 last = json.loads(line)
-                cum_hash = last.get("cumulative_hash", "")
-                if not cum_hash:
-                    raise ValueError("cumulative_hash missing or empty")
-                return cum_hash
             except json.JSONDecodeError as e:
                 raise ValueError(f"JSON invalid pada baris terakhir: {e}")
+
+            # Validasi field wajib di baris terakhir
+            for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
+                          "state_transition", "result", "reason"):
+                if field not in last or not last[field]:
+                    raise ValueError(f"Field wajib '{field}' hilang atau kosong pada baris terakhir")
+
+            cum_hash = last.get("cumulative_hash", "")
+            if not cum_hash:
+                raise ValueError("cumulative_hash missing or empty")
+            return cum_hash
         raise ValueError("Tidak ada baris valid dengan cumulative_hash")
     except ValueError:
         raise
@@ -242,14 +255,15 @@ def _verify_log_integrity_before_append(path: Path) -> None:
     for i, line in enumerate(lines, 1):
         line = line.strip()
         if not line:
-            continue
+            raise ValueError(f"Baris {i}: blank line tidak diperbolehkan (JSONL violation)")
         try:
             data = json.loads(line)
         except json.JSONDecodeError as e:
             raise ValueError(f"Baris {i}: JSON invalid — {e}")
 
-        # Validasi field wajib
-        for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference"):
+        # Validasi SEMUA field wajib (REQUIRED_FIELDS + internal fields)
+        for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
+                      "state_transition", "result", "reason"):
             if field not in data or not data[field]:
                 raise ValueError(f"Baris {i}: field wajib '{field}' hilang atau kosong")
 
@@ -308,62 +322,67 @@ def append_event(
 
     # File lock untuk mencegah race condition
     lock = _FileLock(log_file)
-    if not lock.acquire(blocking=True, timeout=10.0):
-        raise OSError(f"Gagal mendapatkan lock pada {log_file} setelah 10 detik")
-
+    acquired = False
     try:
-        # Validasi integritas log existing SEBELUM operasi apa pun
-        _verify_log_integrity_before_append(log_file)
+        if not lock.acquire(blocking=True, timeout=10.0):
+            raise OSError(f"Gagal mendapatkan lock pada {log_file} setelah 10 detik")
+        acquired = True
 
-        # Idempotency: cek reference existing (di dalam lock)
-        if find_by_reference(reference, store_path):
-            # Return existing event (idempotent)
-            return find_by_reference(reference, store_path)  # type: ignore[return-value]
-
-        ts = timestamp or _utc_now()
-        meta = _redact_secret(metadata or {})
-
-        event = AuditEvent(
-            event_type=event_type,
-            task_id=task_id,
-            actor=actor,
-            timestamp=ts,
-            state_transition=state_transition,
-            result=result,
-            reason=reason,
-            reference=reference,
-            metadata=meta,
-        )
-
-        # build dict untuk checksum
-        event_dict = asdict(event)
-        event_dict["checksum"] = _compute_checksum(event_dict)
-
-        # hitung cumulative hash
-        prev_hash = _read_last_hash(_log_path(store_path))
-        event_dict["cumulative_hash"] = _kumulatif_hash(prev_hash, event_dict["checksum"])
-
-        # atomic write: temp file -> rename
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp_name = tempfile.mkstemp(dir=str(log_file.parent), prefix=".audit-", suffix=".tmp")
         try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                # tulis log existing jika ada
-                if _log_path(store_path).exists():
-                    with _log_path(store_path).open("r", encoding="utf-8") as src:
-                        f.write(src.read())
-                # tulis event baru
-                f.write(json.dumps(event_dict, sort_keys=True, separators=(",", ":")) + "\n")
-            os.replace(tmp_name, _log_path(store_path))
-        except BaseException:
-            Path(tmp_name).unlink(missing_ok=True)
-            raise
-        finally:
-            lock.release()
+            # Validasi integritas log existing SEBELUM operasi apa pun
+            _verify_log_integrity_before_append(log_file)
 
-        return AuditEvent(**{k: v for k, v in event_dict.items() if k != "cumulative_hash"})
+            # Idempotency: cek reference existing (di dalam lock)
+            existing = find_by_reference(reference, store_path)
+            if existing:
+                # Return existing event (idempotent) - lock will be released in outer finally
+                return existing
+
+            ts = timestamp or _utc_now()
+            meta = _redact_secret(metadata or {})
+
+            event = AuditEvent(
+                event_type=event_type,
+                task_id=task_id,
+                actor=actor,
+                timestamp=ts,
+                state_transition=state_transition,
+                result=result,
+                reason=reason,
+                reference=reference,
+                metadata=meta,
+            )
+
+            # build dict untuk checksum
+            event_dict = asdict(event)
+            event_dict["checksum"] = _compute_checksum(event_dict)
+
+            # hitung cumulative hash
+            prev_hash = _read_last_hash(_log_path(store_path))
+            event_dict["cumulative_hash"] = _kumulatif_hash(prev_hash, event_dict["checksum"])
+
+            # atomic write: temp file -> rename
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp_name = tempfile.mkstemp(dir=str(log_file.parent), prefix=".audit-", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    # tulis log existing jika ada
+                    if _log_path(store_path).exists():
+                        with _log_path(store_path).open("r", encoding="utf-8") as src:
+                            f.write(src.read())
+                    # tulis event baru
+                    f.write(json.dumps(event_dict, sort_keys=True, separators=(",", ":")) + "\n")
+                os.replace(tmp_name, _log_path(store_path))
+            except BaseException:
+                Path(tmp_name).unlink(missing_ok=True)
+                raise
+
+            return AuditEvent(**{k: v for k, v in event_dict.items() if k != "cumulative_hash"})
+        finally:
+            if acquired:
+                lock.release()
     except Exception:
-        lock.release()
+        # Lock already released in finally, just re-raise
         raise
 
 
@@ -414,12 +433,19 @@ def verify_integrity(store: Path | str | None = None) -> tuple[bool, list[str]]:
         for i, line in enumerate(f, 1):
             line = line.strip()
             if not line:
+                errors.append(f"Baris {i}: blank line tidak diperbolehkan (JSONL violation)")
                 continue
             try:
                 data = json.loads(line)
             except json.JSONDecodeError as e:
                 errors.append(f"Baris {i}: JSON invalid — {e}")
                 continue
+
+            # Validasi SEMUA field wajib
+            for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
+                          "state_transition", "result", "reason"):
+                if field not in data or not data[field]:
+                    errors.append(f"Baris {i}: field wajib '{field}' hilang atau kosong")
 
             # cek checksum
             line_hash = data.get("checksum", "")

@@ -99,7 +99,6 @@ git diff --check
 
 Jika gagal (sebelum commit):
 - Hapus file baru: `scripts/task_audit_log.py`, `tests/governance/test_task_audit_log.py`, `docs/orchestration/audit-trail.md`
-- Revert perubahan pada file existing: `git checkout -- docs/orchestration/README.md tasks/TODO.md`
 - Hapus file task record: `rm tasks/active/T005-audit-log.md`
 - Tidak ada rollback state aplikasi karena tidak menyentuh production code
 
@@ -131,8 +130,17 @@ Jika sudah di-commit tapi perlu rollback:
   - Fixed rollback plan to use `git revert` instead of destructive commands
   - All 35 tests pass (was 26), governance checks pass, diff check clean
 - 2026-10-17T18:15:00Z: State → REVIEW (remediation verified)
+- 2026-10-18T20:XX:00Z: PR #110 review findings addressed (round 2 remediation):
+  - Fixed lock lifecycle: guaranteed release on all paths including idempotent early return (nested try/finally)
+  - Added strict schema validation for ALL REQUIRED_FIELDS (state_transition, result, reason) in _verify_log_integrity_before_append, _read_last_hash, verify_integrity, and AuditEvent.__post_init__
+  - Added 10 new regression tests for three-event middle corruption (checksum, cumulative_hash, missing fields, blank lines, invalid types) with byte-for-byte preservation verification
+  - Added lock lifecycle regression test: append A → duplicate A → distinct B in same process
+  - Removed prohibited `git checkout --` from rollback plan
+  - Fixed documentation inconsistencies: redaction boundary table (keys AND values), added generic `key` to pattern list, removed duplicate README entry
+  - All 50 tests pass, governance checks pass, diff check clean
+  - State → REVIEW (awaiting independent review)
 
-## Independent Review Findings (2026-10-17)
+## Independent Review Findings (2026-10-17) — HISTORICAL
 
 ### Code Review Results
 
@@ -213,7 +221,7 @@ Jika sudah di-commit tapi perlu rollback:
 - **No cryptographic signing**: Non-repudiation requires separate follow-up task.
 - Documented in `audit-trail.md` §10 "Redaction Boundaries" and §5.
 
-### Test Coverage Verification
+### Test Coverage Verification (Historical — 26 tests)
 
 | Category | Tests | Pass | Notes |
 |----------|-------|------|-------|
@@ -228,7 +236,7 @@ Jika sudah di-commit tapi perlu rollback:
 | Retention/Export | 2 | ✅ | File location, manual export |
 | **Total** | **26** | **26 PASS** | |
 
-### Regression Tests (Full Suite)
+### Regression Tests (Historical Full Suite)
 
 | Suite | Tests | Pass | Fail | Skip |
 |-------|-------|------|------|------|
@@ -238,7 +246,7 @@ Jika sudah di-commit tapi perlu rollback:
 | Suspicious Unicode | — | PASS (579 files) | — | — |
 | `git diff --check` | — | CLEAN | — | — |
 
-### Documentation Accuracy
+### Documentation Accuracy (Historical)
 
 | Document | Status | Notes |
 |----------|--------|-------|
@@ -247,7 +255,7 @@ Jika sudah di-commit tapi perlu rollback:
 | `T005-audit-log.md` | ✅ CURRENT | Task record matches implementation |
 | `TODO.md` | ✅ UPDATED | T005 marked REVIEW |
 
-### Issues Found & Fixed During Review
+### Issues Found & Fixed During Review (Historical)
 
 | Issue | Severity | Fix Applied |
 |-------|----------|-------------|
@@ -266,7 +274,7 @@ Jika sudah di-commit tapi perlu rollback:
 | Log rotation not implemented | LOW | Follow-up task |
 | Windows lock semantics differ | LOW | Documented; skip Windows tests |
 
-### Reviewer Sign-off
+### Reviewer Sign-off (Historical)
 
 **Reviewer:** Independent review (not implementer)
 **Date:** 2026-10-17
@@ -280,7 +288,24 @@ Jika sudah di-commit tapi perlu rollback:
 
 ---
 
+## PR #110 Review Findings (2026-10-18) — ADDRESSED IN ROUND 2
+
+The following blocking findings from PR #110 review have been remediated:
+
+1. **Lock not released on idempotent early return** — FIXED: Nested try/finally structure guarantees lock release on all paths.
+2. **Required event schema not fully validated** — FIXED: All REQUIRED_FIELDS (including state_transition, result, reason) now validated in _verify_log_integrity_before_append, _read_last_hash, verify_integrity, and AuditEvent.__post_init__.
+3. **Test suite mismatch (35 vs 45 claimed)** — FIXED: Test suite now has 50 tests with explicit three-event middle corruption tests. Counts match actual execution.
+4. **Rollback plan contained prohibited `git checkout --`** — FIXED: Removed, using `git revert` only.
+5. **Documentation inconsistencies on redaction** — FIXED: Boundary table updated (keys AND values), generic `key` added to pattern list, duplicate README entry removed.
+
+**Current test count:** 50 tests (all PASS)
+**Governance checks:** PASS
+**Diff check:** CLEAN
+**Scope:** Isolated to 6 T005 files
+
+---
+
 ## State Update
 
-**State:** REVIEW → READY FOR MERGE (pending human approval)
-**Next step:** Human approval → merge → T005 state → DONE
+**State:** REVIEW (awaiting fresh independent review of corrected head)
+**Next step:** Independent review → Human approval → merge → T005 state → DONE

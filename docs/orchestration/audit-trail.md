@@ -95,6 +95,7 @@ Field/key yang mengandung (case-insensitive):
 - `access_token`, `refresh_token`, `bearer_token`
 - `auth`, `credential`
 - `health_query`, `health_check`
+- `key` (generic, word-boundary match)
 
 ### 4.2 Perilaku
 
@@ -103,7 +104,7 @@ Field/key yang mengandung (case-insensitive):
 - Ganti dengan `[REDACTED]`
 - Field non-string tidak diredact
 
-### 4.4 Contoh
+### 4.3 Contoh
 
 ```json
 // Input metadata
@@ -229,7 +230,7 @@ python3 scripts/task_audit_log.py find T005-claim-001
 
 | Keadaan | Perilaku |
 |---------|----------|
-| Secret di value string tanpa pola key | **Tidak diredact** (hanya key yang dicek) |
+| Secret di value string tanpa pola key | **Diredact** (value dicek) |
 | Secret di dalam string panjang tanpa delimiter | **Tidak diredact** |
 | Secret di binary/bytes | **Tidak diredact** (hanya string) |
 | Key dengan typo (contoh: `apikey` vs `api_key`) | Diredact jika match pola |
