@@ -44,17 +44,22 @@ Task ini **tidak**:
 
 ## Dependency Verification (T004)
 
-**T004 Checkpoint/Rollback Status:** REVIEW (verified)
+**T004 Checkpoint/Rollback Status:** REVIEW (verified but NOT approved)
 
 **Verification evidence:**
-- `python3 tests/governance/test_task_checkpoint.py` → 103 pass (skipped=1 Windows)
+- `python3 tests/governance/test_task_checkpoint.py` → 78 pass (skipped=1 Windows) — verified on t005-clean branch
 - `python3 scripts/check_agent_governance.py` → PASS (7 paths, 57 items)
-- `python3 scripts/check_suspicious_unicode.py` → PASS (579 files)
+- `python3 scripts/check_suspicious_unicode.py` → PASS (576 files)
 - Commit history: `33d101e` (feat) → `5e21ae7` (harden) = 7 commits
 - Task record `tasks/active/T004-checkpoint-and-rollback.md` State: REVIEW
 - Remediasi audit round 4 (2026-10-08) divalidasi lokal: post-restore index verification + fail-closed discovery + ignored content drift detection + 3 regression tests (74 total)
 
-**Gate status:** T004 dependency SATISFIED for T010–T014 track. T004 remains REVIEW pending independent re-review + human commit per Issue #109. T004 tidak boleh ditandai DONE tanpa persetujuan yang diwajibkan.
+**Gate status:** T004 dependency is **BLOCKED/UNRESOLVED** for downstream tasks (T010–T014). Per Issue #109, T004 is a hard prerequisite that requires:
+1. Independent review (not implementer) PASS
+2. Human approval recorded
+3. Commit to main branch
+
+Local test passes alone do NOT satisfy the governance gate. T010–T014 remain BLOCKED until T004 achieves all three conditions above. This task record explicitly marks the downstream gate as BLOCKED/UNRESOLVED until those conditions are met.
 
 ---
 
@@ -308,4 +313,6 @@ The following blocking findings from PR #110 review have been remediated:
 ## State Update
 
 **State:** REVIEW (awaiting fresh independent review of corrected head)
-**Next step:** Independent review → Human approval → merge → T005 state → DONE
+**T004 downstream gate:** BLOCKED/UNRESOLVED — T004 requires independent review + human approval + commit before T010–T014 can proceed
+**Next step:** Independent review of T005 → Human approval → merge → T005 state → DONE
+**Parallel:** T004 independent review + human approval + commit (required before T010–T014)

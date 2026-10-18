@@ -139,6 +139,79 @@ def _kumulatif_hash(prev_hash: str, line_hash: str) -> str:
     return _sha256((prev_hash + line_hash).encode())
 
 
+def _validate_event_schema(data: dict, line_num: int | None = None) -> list[str]:
+    """
+    Validasi ketat schema event audit.
+
+    Args:
+        data: Dictionary event yang sudah di-parse dari JSON
+        line_num: Nomor baris untuk error reporting (opsional)
+
+    Returns:
+        List of error strings (empty jika valid)
+    """
+    errors = []
+    prefix = f"Baris {line_num}: " if line_num else ""
+
+    # Validasi tipe data: harus object
+    if not isinstance(data, dict):
+        errors.append(f"{prefix}Event harus berupa object JSON, bukan {type(data).__name__}")
+        return errors
+
+    # Validasi field wajib ada dan tipe benar
+    required_string_fields = {
+        "event_type": str,
+        "task_id": str,
+        "actor": str,
+        "timestamp": str,
+        "state_transition": str,
+        "result": str,
+        "reason": str,
+        "reference": str,
+        "checksum": str,
+        "cumulative_hash": str,
+    }
+
+    for field_name, expected_type in required_string_fields.items():
+        if field_name not in data:
+            errors.append(f"{prefix}field wajib '{field_name}' hilang")
+        elif not isinstance(data[field_name], expected_type):
+            errors.append(f"{prefix}field '{field_name}' harus bertipe {expected_type.__name__}, mendapat {type(data[field_name]).__name__}")
+        elif not data[field_name] or not data[field_name].strip():
+            errors.append(f"{prefix}field wajib '{field_name}' kosong")
+
+    # Validasi event_type enum
+    if "event_type" in data and isinstance(data["event_type"], str):
+        if data["event_type"] not in EVENT_TYPES:
+            errors.append(f"{prefix}event_type tidak valid: {data['event_type']} (harus salah satu dari {EVENT_TYPES})")
+
+    # Validasi timestamp format ISO 8601 UTC
+    if "timestamp" in data and isinstance(data["timestamp"], str):
+        try:
+            dt = datetime.fromisoformat(data["timestamp"].replace("Z", "+00:00"))
+            if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) != timezone.utc.utcoffset(dt):
+                errors.append(f"{prefix}timestamp harus ISO 8601 UTC (contoh: 2026-10-17T10:00:00Z)")
+        except Exception:
+            errors.append(f"{prefix}timestamp format tidak valid (harus ISO 8601 UTC)")
+
+    # Validasi metadata: harus object jika ada
+    if "metadata" in data and data["metadata"] is not None:
+        if not isinstance(data["metadata"], dict):
+            errors.append(f"{prefix}metadata harus berupa object")
+
+    # Validasi checksum: harus string hex 64 chars
+    if "checksum" in data and isinstance(data["checksum"], str):
+        if len(data["checksum"]) != 64:
+            errors.append(f"{prefix}checksum harus 64 karakter hex")
+
+    # Validasi cumulative_hash: harus string hex 64 chars
+    if "cumulative_hash" in data and isinstance(data["cumulative_hash"], str):
+        if len(data["cumulative_hash"]) != 64:
+            errors.append(f"{prefix}cumulative_hash harus 64 karakter hex")
+
+    return errors
+
+
 class _FileLock:
     """Cross-platform file lock (best effort)."""
 
@@ -225,11 +298,10 @@ def _read_last_hash(path: Path) -> str:
             except json.JSONDecodeError as e:
                 raise ValueError(f"JSON invalid pada baris terakhir: {e}")
 
-            # Validasi field wajib di baris terakhir
-            for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
-                          "state_transition", "result", "reason"):
-                if field not in last or not last[field]:
-                    raise ValueError(f"Field wajib '{field}' hilang atau kosong pada baris terakhir")
+            # Validasi schema ketat untuk baris terakhir
+            schema_errors = _validate_event_schema(last)
+            if schema_errors:
+                raise ValueError("; ".join(schema_errors))
 
             cum_hash = last.get("cumulative_hash", "")
             if not cum_hash:
@@ -261,11 +333,10 @@ def _verify_log_integrity_before_append(path: Path) -> None:
         except json.JSONDecodeError as e:
             raise ValueError(f"Baris {i}: JSON invalid — {e}")
 
-        # Validasi SEMUA field wajib (REQUIRED_FIELDS + internal fields)
-        for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
-                      "state_transition", "result", "reason"):
-            if field not in data or not data[field]:
-                raise ValueError(f"Baris {i}: field wajib '{field}' hilang atau kosong")
+        # Validasi schema ketat (field types, enum, format)
+        schema_errors = _validate_event_schema(data, i)
+        if schema_errors:
+            raise ValueError("; ".join(schema_errors))
 
         # Validasi checksum
         line_hash = data.get("checksum", "")
@@ -340,6 +411,11 @@ def append_event(
 
             ts = timestamp or _utc_now()
             meta = _redact_secret(metadata or {})
+            # Redact sensitive data in free-text fields as well
+            reason = _redact_secret(reason)
+            reference = _redact_secret(reference)
+            state_transition = _redact_secret(state_transition)
+            result = _redact_secret(result)
 
             event = AuditEvent(
                 event_type=event_type,
@@ -386,33 +462,43 @@ def append_event(
         raise
 
 
-def read_log(store: Path | str | None = None, limit: int | None = None) -> list[AuditEvent]:
+def read_log(store: Path | str | None = None, limit: int | None = None) -> tuple[list[AuditEvent], list[str]]:
     """
     Baca audit log (terbaru dulu jika limit diset).
+
+    Returns:
+        (events, errors) — events adalah list AuditEvent yang valid,
+        errors berisi pesan kesalahan untuk baris yang korup/blank.
+        Jika errors tidak kosong, log memiliki korupsi dan events mungkin tidak lengkap.
     """
     store_path = _resolve_store(str(store) if store else None)
     log_file = _log_path(store_path)
     if not log_file.exists():
-        return []
+        return [], []
 
     events = []
+    errors = []
     with log_file.open("r", encoding="utf-8") as f:
-        for line in f:
+        for i, line in enumerate(f, 1):
             line = line.strip()
             if not line:
+                errors.append(f"Baris {i}: blank line tidak diperbolehkan (JSONL violation)")
                 continue
             try:
                 data = json.loads(line)
-            except json.JSONDecodeError:
-                # Skip corrupted lines
+            except json.JSONDecodeError as e:
+                errors.append(f"Baris {i}: JSON invalid — {e}")
                 continue
             # skip cumulative_hash saat reconstruct
             data.pop("cumulative_hash", None)
-            events.append(AuditEvent(**data))
+            try:
+                events.append(AuditEvent(**data))
+            except Exception as e:
+                errors.append(f"Baris {i}: gagal reconstruct event — {e}")
 
     if limit is not None and limit > 0:
-        return events[-limit:]
-    return events
+        return events[-limit:], errors
+    return events, errors
 
 
 def verify_integrity(store: Path | str | None = None) -> tuple[bool, list[str]]:
@@ -420,7 +506,7 @@ def verify_integrity(store: Path | str | None = None) -> tuple[bool, list[str]]:
     Verifikasi integritas audit log.
 
     Returns:
-        (ok, errors) — ok=True jika semua checksum dan cumulative hash valid.
+        (ok, errors) — ok=True jika semua checksum, cumulative hash, dan schema valid.
     """
     store_path = _resolve_store(str(store) if store else None)
     log_file = _log_path(store_path)
@@ -441,11 +527,9 @@ def verify_integrity(store: Path | str | None = None) -> tuple[bool, list[str]]:
                 errors.append(f"Baris {i}: JSON invalid — {e}")
                 continue
 
-            # Validasi SEMUA field wajib
-            for field in ("checksum", "cumulative_hash", "event_type", "task_id", "actor", "timestamp", "reference",
-                          "state_transition", "result", "reason"):
-                if field not in data or not data[field]:
-                    errors.append(f"Baris {i}: field wajib '{field}' hilang atau kosong")
+            # Validasi schema ketat (field types, enum, format)
+            schema_errors = _validate_event_schema(data, i)
+            errors.extend(schema_errors)
 
             # cek checksum
             line_hash = data.get("checksum", "")
@@ -465,7 +549,8 @@ def verify_integrity(store: Path | str | None = None) -> tuple[bool, list[str]]:
 
 def find_by_reference(reference: str, store: Path | str | None = None) -> Optional[AuditEvent]:
     """Cari event berdasarkan reference (untuk idempotency check)."""
-    for ev in read_log(store):
+    events, _ = read_log(store)
+    for ev in events:
         if ev.reference == reference:
             return ev
     return None
@@ -523,7 +608,11 @@ def _cli_read(args: Sequence[str]) -> int:
     parser.add_argument("--limit", type=int, default=None)
     ns = parser.parse_args(args)
 
-    events = read_log(ns.store, ns.limit)
+    events, errors = read_log(ns.store, ns.limit)
+    if errors:
+        print("WARNING: Corruption detected during read:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
     print(json.dumps([asdict(e) for e in events], indent=2))
     return 0
 

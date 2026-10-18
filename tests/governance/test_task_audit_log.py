@@ -70,7 +70,7 @@ class AuditLogBasicTests(TemporaryAuditTestCase):
         self.assertEqual(ev.event_type, "task_claimed")
         self.assertTrue(ev.checksum)
 
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].task_id, "T005")
         self.assertEqual(events[0].reference, "T005-claim-001")
@@ -81,7 +81,7 @@ class AuditLogBasicTests(TemporaryAuditTestCase):
         tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
         tool.append_event("validation_result", "T005", "kilo", "ACTIVE -> TESTING", "success", "valid", "ref-3", store=self.store)
 
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 3)
         self.assertEqual(events[0].reference, "ref-1")
         self.assertEqual(events[1].reference, "ref-2")
@@ -124,7 +124,7 @@ class AuditLogIdempotencyTests(TemporaryAuditTestCase):
         tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "same-ref", store=self.store)
         tool.append_event("task_claimed", "T005", "copilot", "READY -> ACTIVE", "success", "claim again", "same-ref", store=self.store)
 
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 1, "Duplicate reference should be ignored")
         self.assertEqual(events[0].actor, "kilo")  # First one wins
 
@@ -155,11 +155,79 @@ class AuditLogRedactionTests(TemporaryAuditTestCase):
             metadata={"api_key": "sk-12345", "normal": "value"},
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 1)
         meta = events[0].metadata
         self.assertEqual(meta["api_key"], "[REDACTED]")
         self.assertEqual(meta["normal"], "value")
+
+    def test_secret_in_reason_redacted(self) -> None:
+        """Secret di reason diredact (seluruh field diredact jika mengandung pola sensitif)."""
+        tool.append_event(
+            "task_claimed",
+            "T005",
+            "kilo",
+            "READY -> ACTIVE",
+            "success",
+            "claim with api_key sk-12345 in reason",
+            "ref-secret-reason",
+            store=self.store,
+        )
+        events, _ = tool.read_log(self.store)
+        self.assertEqual(len(events), 1)
+        # Seluruh field diredact karena mengandung kata "api_key"
+        self.assertEqual(events[0].reason, "[REDACTED]")
+
+    def test_secret_in_reference_redacted(self) -> None:
+        """Secret di reference diredact (seluruh field diredact jika mengandung pola sensitif)."""
+        tool.append_event(
+            "task_claimed",
+            "T005",
+            "kilo",
+            "READY -> ACTIVE",
+            "success",
+            "claim",
+            "ref-with-token-abc123",
+            store=self.store,
+        )
+        events, _ = tool.read_log(self.store)
+        self.assertEqual(len(events), 1)
+        # Seluruh field diredact karena mengandung kata "token"
+        self.assertEqual(events[0].reference, "[REDACTED]")
+
+    def test_secret_in_state_transition_redacted(self) -> None:
+        """Secret di state_transition diredact (seluruh field diredact jika mengandung pola sensitif)."""
+        tool.append_event(
+            "task_claimed",
+            "T005",
+            "kilo",
+            "READY -> ACTIVE with password secret123",
+            "success",
+            "claim",
+            "ref-secret-st",
+            store=self.store,
+        )
+        events, _ = tool.read_log(self.store)
+        self.assertEqual(len(events), 1)
+        # Seluruh field diredact karena mengandung kata "password"
+        self.assertEqual(events[0].state_transition, "[REDACTED]")
+
+    def test_secret_in_result_redacted(self) -> None:
+        """Secret di result diredact (seluruh field diredact jika mengandung pola sensitif)."""
+        tool.append_event(
+            "task_claimed",
+            "T005",
+            "kilo",
+            "READY -> ACTIVE",
+            "failed due to token xyz789",
+            "claim",
+            "ref-secret-result",
+            store=self.store,
+        )
+        events, _ = tool.read_log(self.store)
+        self.assertEqual(len(events), 1)
+        # Seluruh field diredact karena mengandung kata "token"
+        self.assertEqual(events[0].result, "[REDACTED]")
 
     def test_various_secret_patterns_redacted(self) -> None:
         """Berbagai pola secret diredact."""
@@ -181,7 +249,7 @@ class AuditLogRedactionTests(TemporaryAuditTestCase):
             },
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         meta = events[0].metadata
         self.assertEqual(meta["token"], "[REDACTED]")
         self.assertEqual(meta["password"], "[REDACTED]")
@@ -206,7 +274,7 @@ class AuditLogRedactionTests(TemporaryAuditTestCase):
             },
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         meta = events[0].metadata
         self.assertEqual(meta["config"]["api_key"], "[REDACTED]")
         self.assertEqual(meta["tokens"], ["[REDACTED]", "[REDACTED]"])
@@ -227,7 +295,7 @@ class AuditLogFailSafeTests(TemporaryAuditTestCase):
             tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
             # On some systems (e.g., root), read-only may not prevent write
             # If write succeeded, verify integrity is maintained
-            events = tool.read_log(self.store)
+            events, _ = tool.read_log(self.store)
             if len(events) == 2:
                 # Write succeeded despite read-only - verify integrity
                 ok, _ = tool.verify_integrity(self.store)
@@ -239,7 +307,7 @@ class AuditLogFailSafeTests(TemporaryAuditTestCase):
             log_file.chmod(0o644)
 
         # Log existing harus utuh
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         # Should have at least the original event
         self.assertGreaterEqual(len(events), 1)
         self.assertEqual(events[0].reference, "ref-1")
@@ -383,7 +451,7 @@ class AuditLogFilesystemFailureTests(TemporaryAuditTestCase):
             os.replace = original_replace
 
         # Log existing harus utuh
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].reference, "ref-1")
 
@@ -397,7 +465,7 @@ class AuditLogFilesystemFailureTests(TemporaryAuditTestCase):
         log_file.write_text(log_file.read_text() + "invalid json line\n", encoding="utf-8")
 
         # read_log harus skip baris rusak dan return yang valid
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].reference, "ref-1")
 
@@ -409,7 +477,7 @@ class AuditLogCustomStoreTests(TemporaryAuditTestCase):
         """Custom store path via argumen."""
         custom = Path(self.workspace.name) / "custom_audit"
         tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-custom", store=custom)
-        events = tool.read_log(custom)
+        events, _ = tool.read_log(custom)
         self.assertEqual(len(events), 1)
 
     def test_env_var_store(self) -> None:
@@ -418,7 +486,7 @@ class AuditLogCustomStoreTests(TemporaryAuditTestCase):
         os.environ["VITANUSA_AUDIT_DIR"] = str(custom)
         try:
             tool.append_event("task_claimed", "T005", "kilo", "READY -> ACTIVE", "success", "claim", "ref-env", store=None)
-            events = tool.read_log(custom)
+            events, _ = tool.read_log(custom)
             self.assertEqual(len(events), 1)
         finally:
             del os.environ["VITANUSA_AUDIT_DIR"]
@@ -497,7 +565,8 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
         # Append harus gagal
         with self.assertRaises(ValueError) as cm:
             tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
-        self.assertIn("cumulative_hash", str(cm.exception))
+        self.assertIn("cumulative_hash", str(cm.exception).lower())
+        self.assertIn("hilang", str(cm.exception).lower())
 
     def test_append_rejects_when_cumulative_hash_empty(self) -> None:
         """Append ditolak jika cumulative_hash kosong."""
@@ -511,7 +580,8 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
 
         with self.assertRaises(ValueError) as cm:
             tool.append_event("task_started", "T005", "kilo", "ACTIVE -> ACTIVE", "success", "start", "ref-2", store=self.store)
-        self.assertIn("hilang atau kosong", str(cm.exception).lower())
+        self.assertIn("cumulative_hash", str(cm.exception).lower())
+        self.assertIn("kosong", str(cm.exception).lower())
 
     def test_log_unchanged_after_failed_append(self) -> None:
         """Log tidak berubah setelah append gagal."""
@@ -545,7 +615,8 @@ class AuditLogFailClosedTests(TemporaryAuditTestCase):
         from scripts.task_audit_log import _read_last_hash
         with self.assertRaises(ValueError) as cm:
             _read_last_hash(log_file)
-        self.assertIn("hilang atau kosong", str(cm.exception).lower())
+        self.assertIn("cumulative_hash", str(cm.exception).lower())
+        self.assertIn("kosong", str(cm.exception).lower())
 
 
 class AuditLogLockLifecycleTests(TemporaryAuditTestCase):
@@ -565,7 +636,7 @@ class AuditLogLockLifecycleTests(TemporaryAuditTestCase):
         # Log should verify
         ok, errors = tool.verify_integrity(self.store)
         self.assertTrue(ok, f"Integrity errors after duplicate+new: {errors}")
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         self.assertEqual(len(events), 2)
         self.assertEqual(events[0].reference, "ref-A")
         self.assertEqual(events[1].reference, "ref-B")
@@ -643,7 +714,7 @@ class AuditLogFailClosedRegressionTests(TemporaryAuditTestCase):
             data["cumulative_hash"] = ""
             lines[1] = json.dumps(data, sort_keys=True, separators=(",", ":"))
             log_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        self._corrupt_and_test(corrupt, "hilang atau kosong")
+        self._corrupt_and_test(corrupt, "kosong")
 
     def test_append_rejects_when_json_corrupted_in_middle(self) -> None:
         """Append ditolak jika JSON invalid di tengah log 3 event."""
@@ -706,12 +777,12 @@ class AuditLogFailClosedRegressionTests(TemporaryAuditTestCase):
         # Snapshot after corruption
         corrupted_bytes = log_file.read_bytes()
 
-        # Attempt append - should fail (checksum mismatch because timestamp changed)
+        # Attempt append - should fail (schema validation should catch invalid timestamp type)
         with self.assertRaises(ValueError) as cm:
             tool.append_event("completion", "T005", "kilo", "TESTING -> DONE", "success", "done", "ref-4", store=self.store)
-        # The error will be checksum mismatch because we modified the event
-        self.assertIn("checksum mismatch", str(cm.exception))
-
+        # The error should be about timestamp type validation
+        self.assertIn("timestamp", str(cm.exception).lower())
+        self.assertIn("tipe", str(cm.exception).lower())
         # Log should be unchanged from corrupted state
         self.assertEqual(log_file.read_bytes(), corrupted_bytes)
 
@@ -775,7 +846,7 @@ class AuditLogSecretRedactionTests(TemporaryAuditTestCase):
             metadata={"key": "benign-value", "normal": "ok"},
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         meta = events[0].metadata
         self.assertEqual(meta["key"], "[REDACTED]")
         self.assertEqual(meta["normal"], "ok")
@@ -793,7 +864,7 @@ class AuditLogSecretRedactionTests(TemporaryAuditTestCase):
             metadata={"config": {"key": "nested-secret"}, "items": [{"key": "item-key"}]},
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         meta = events[0].metadata
         self.assertEqual(meta["config"]["key"], "[REDACTED]")
         self.assertEqual(meta["items"][0]["key"], "[REDACTED]")
@@ -811,7 +882,7 @@ class AuditLogSecretRedactionTests(TemporaryAuditTestCase):
             metadata={"keys": [{"key": "a"}, {"key": "b"}, {"other": "c"}]},
             store=self.store,
         )
-        events = tool.read_log(self.store)
+        events, _ = tool.read_log(self.store)
         meta = events[0].metadata
         self.assertEqual(meta["keys"][0]["key"], "[REDACTED]")
         self.assertEqual(meta["keys"][1]["key"], "[REDACTED]")

@@ -282,3 +282,65 @@ Jalankan: `python3 tests/governance/test_task_audit_log.py`
 - [ ] Real-time alerting pada event `blocked`/`failure`
 - [ ] Cryptographic signing (non-repudiation)
 - [ ] GDPR/PDPA compliance automation
+
+---
+
+## 14. T003 Manual Audit Reference Contract (Preserved)
+
+The following contract from T003 (Multi-Agent Workspace & Orchestration Foundation) remains in effect and is preserved here for traceability. This manual audit reference requirement predates the automatic audit trail (T005) and continues to apply to all task records.
+
+### 14.1 Minimum Audit Reference Fields
+
+Before persistence automation exists, every task record **must** contain an `**Audit reference:**` field. Its contents are a manually traceable summary:
+
+| Content | Verification Source |
+|---|---|
+| Task ID | Task record and commit message |
+| Commit SHA | `git log` and `**Commit:**` field |
+| Reviewer name | Review section on task record |
+| Validation result | Validation command summary on task record |
+| Approval if required | `**Approval:**` field |
+| Contract reference | `docs/orchestration/audit-trail.md` |
+
+This minimum requirement is currently binding. The field is required by `task-registry-and-locking.md` §2 and must exist on every task record, including T003 itself. The audit reference is not an automatic audit log: no programmatic entries, no persistence, and no CI integration. Automatic persistence is the scope of T005.
+
+### 14.2 Storage Decision (from T003)
+
+| Option | Status | Reason |
+|---|---|---|
+| JSON Lines append-only per task, e.g. `tasks/audit/<TASK-ID>.jsonl` | Contract, not yet created | No added dependency, easy to read/audit, consistent with `.agents/WORKFLOW.md` §4 that claim is recorded on task file not external system |
+| Orchestration database | Rejected | No proven need; adds risk surface without evidence |
+| Git branch or tag for audit | Rejected | Audit is not code history; Git history is not action trail |
+
+Storage rules that apply once persistence is created:
+
+1. Append-only. Entries are not edited or deleted; corrections are written as new entries with same `action` and a `note` explaining the correction.
+2. One file per task, referenced explicitly from task file.
+3. Entries written by the actor performing the action, not by another agent.
+4. Every entry recorded on task file must be re-verifiable against Git: commit SHA must exist and task ID must appear on commit message.
+5. Audit storage must not contain secrets. Credential values must not enter audit entries (`.agents/RULES.md` §Secrets).
+6. Automatic audit log is T005. T003 only specifies the schema.
+
+### 14.3 Current Verification (Without Persistence)
+
+Without persistence, audit trail is already verifiable from Git and task files:
+
+| Question | Verification Source |
+|---|---|
+| Is an actor working? | `**Owner:**` on task file |
+| Is reviewer separate? | Review section on task file |
+| Was validation run? | Validation result summary on task file |
+| Is approval present and before changes? | `**Approval:**` field |
+| Is commit traceable? | Commit message and `**Commit:**` |
+| Do changes match scope? | `git diff --name-only` vs `**Claimed files:**` |
+
+Honest limitation: this verification depends on task file contents. An agent lying about these fields cannot be detected by Git. Automation to check consistency is future work and not claimed as existing capability.
+
+### 14.4 Separation from T005
+
+| Included in T003 | Not in T003 (T005 scope) |
+|---|---|
+| Minimum field list and enums | Automatic entry writing by runtime |
+| Example schema | Audit storage and file rotation |
+| Storage decision and rationale | Audit viewer in UI (`tasks/BACKLOG.md` Phase H) |
+| Append-only rules and Git verification | CI integration of audit |
