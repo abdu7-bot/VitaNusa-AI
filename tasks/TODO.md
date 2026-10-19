@@ -20,7 +20,8 @@ Jika terblokir: `ACTIVE → BLOCKED`.
 
 ## VitaGame quality track
 
-## VitaGame quality track
+- [ ] VG001 Tingkatkan kualitas, keamanan rendering, aksesibilitas, dan evaluasi VitaGame; task READY, implementasi production menunggu approval manusia tertulis (`tasks/active/VG001-vitagame-quality-and-evaluation.md`).
+
 
 - [ ] VG001 Tingkatkan kualitas, keamanan rendering, aksesibilitas, dan evaluasi VitaGame; task READY, implementasi production menunggu approval manusia tertulis (`tasks/active/VG001-vitagame-quality-and-evaluation.md`).
 
