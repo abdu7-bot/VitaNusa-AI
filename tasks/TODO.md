@@ -18,6 +18,10 @@ Jika terblokir: `ACTIVE → BLOCKED`.
 - [ ] T004 Buat checkpoint/rollback workflow yang aman untuk autonomous coding. (REVIEW; audit round 4 2026-10-08 menemukan staged modification lolos rollback, Git discovery error → empty result, dan modified pre-existing ignored file tidak terdeteksi — remediasi post-restore index verification + fail-closed discovery + ignored content drift detection, 3 regression test baru (74 total) divalidasi lokal; detail di `tasks/active/T004-checkpoint-and-rollback.md`)
 - [ ] T005 Tambahkan audit log untuk setiap autonomous task.
 
+## VitaGame quality track
+
+- [ ] VG001 Tingkatkan kualitas, keamanan rendering, aksesibilitas, dan evaluasi VitaGame; task READY, implementasi production menunggu approval manusia tertulis (`tasks/active/VG001-vitagame-quality-and-evaluation.md`).
+
 ## P1 — Task Orchestrator
 
 - [ ] T010 Implementasikan task-state parser untuk `TODO.md`, `active/`, dan `BACKLOG.md`.
