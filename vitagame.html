@@ -141,15 +141,32 @@
       color: #14532d;
     }
 
+    .vitagame-option.is-correct::after {
+      content: ' ✓';
+      font-weight: bold;
+      margin-left: 4px;
+    }
+
     .vitagame-option.is-wrong {
       border-color: #e3aaa0;
       background: #fff0ec;
       color: #9f2f2f;
     }
 
+    .vitagame-option.is-wrong::after {
+      content: ' ✗';
+      font-weight: bold;
+      margin-left: 4px;
+    }
+
     .vitagame-option:disabled {
       cursor: default;
       opacity: .54;
+    }
+
+    .vitagame-option:focus-visible {
+      outline: 3px solid var(--vn-green-700);
+      outline-offset: 2px;
     }
 
     .vitagame-feedback {
@@ -410,11 +427,11 @@
                   <button class="vitagame-button" type="button" data-reset>Ulangi</button>
                 </div>
                 <div class="vitagame-options" role="group" aria-label="Pilihan jawaban">
-                  <button class="vitagame-option" type="button" data-answer="fact">Fakta</button>
-                  <button class="vitagame-option" type="button" data-answer="check">Perlu Dicek</button>
-                  <button class="vitagame-option" type="button" data-answer="claim">Klaim Berlebihan</button>
+                  <button class="vitagame-option" type="button" data-answer="fact" aria-pressed="false">Fakta</button>
+                  <button class="vitagame-option" type="button" data-answer="check" aria-pressed="false">Perlu Dicek</button>
+                  <button class="vitagame-option" type="button" data-answer="claim" aria-pressed="false">Klaim Berlebihan</button>
                 </div>
-                <div class="vitagame-feedback" data-feedback>
+                <div class="vitagame-feedback" data-feedback aria-live="polite" aria-atomic="true">
                   <strong>Siap main?</strong>
                   Tekan Mulai Game dulu. Setelah kartu muncul, baru pilih jawaban yang paling amanah.
                 </div>
@@ -537,7 +554,28 @@
       };
 
       const root = document.querySelector('[data-vitagame-root]');
-      if (!root) return;
+      if (!root) {
+        console.error('[VitaGame] Root element not found');
+        return;
+      }
+
+      function validateCard(card) {
+        return card &&
+          typeof card.category === 'string' &&
+          typeof card.question === 'string' &&
+          typeof card.answer === 'string' &&
+          ['fact', 'check', 'claim'].includes(card.answer) &&
+          typeof card.explain === 'string';
+      }
+
+      const validCards = cards.filter(validateCard);
+      if (validCards.length !== cards.length) {
+        console.warn('[VitaGame] Some cards failed validation and were excluded');
+      }
+      if (validCards.length === 0) {
+        console.error('[VitaGame] No valid cards available');
+        return;
+      }
 
       const state = {
         deck: [],
@@ -546,7 +584,8 @@
         streak: 0,
         correct: 0,
         answered: false,
-        started: false
+        started: false,
+        answeredCount: 0
       };
 
       const nodes = {
@@ -567,18 +606,38 @@
         resultCopy: document.querySelector('[data-result-copy]')
       };
 
-      function shuffle(items) {
-        return [...items].sort(() => Math.random() - 0.5);
+      function shuffle(items, randomFn = Math.random) {
+        const arr = [...items];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(randomFn() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function setFeedback(feedbackEl, title, body) {
+        feedbackEl.textContent = '';
+        const strong = document.createElement('strong');
+        strong.textContent = title;
+        feedbackEl.appendChild(strong);
+        if (body) {
+          feedbackEl.appendChild(document.createTextNode(' ' + body));
+        }
       }
 
       function startGame() {
-        state.deck = shuffle(cards).slice(0, 10);
+        if (nodes.start.disabled) return;
+        state.deck = shuffle(validCards).slice(0, 10);
+        if (state.deck.length < 10) {
+          console.warn('[VitaGame] Deck has fewer than 10 cards:', state.deck.length);
+        }
         state.index = 0;
         state.score = 0;
         state.streak = 0;
         state.correct = 0;
         state.answered = false;
         state.started = true;
+        state.answeredCount = 0;
         nodes.result.classList.remove('is-visible');
         nodes.start.textContent = 'Game Berjalan';
         nodes.start.disabled = true;
@@ -591,11 +650,12 @@
         nodes.category.textContent = card.category;
         nodes.question.textContent = card.question;
         nodes.feedback.className = 'vitagame-feedback';
-        nodes.feedback.innerHTML = '<strong>Pilih jawabanmu.</strong> Baca pernyataannya, lalu tentukan kategorinya.';
+        setFeedback(nodes.feedback, 'Pilih jawabanmu.', 'Baca pernyataannya, lalu tentukan kategorinya.');
         nodes.next.disabled = true;
         nodes.options.forEach((button) => {
           button.disabled = false;
           button.classList.remove('is-correct', 'is-wrong');
+          button.setAttribute('aria-pressed', 'false');
         });
         updateStats();
       }
@@ -606,7 +666,8 @@
         nodes.round.textContent = `${Math.min(state.index + 1, total)}/${total}`;
         nodes.streak.textContent = state.streak;
         nodes.correct.textContent = state.correct;
-        nodes.progress.style.width = `${Math.round((state.index / total) * 100)}%`;
+        const progressPercent = total > 0 ? Math.round((state.answeredCount / total) * 100) : 0;
+        nodes.progress.style.width = `${progressPercent}%`;
       }
 
       function answerQuestion(choice) {
@@ -614,6 +675,7 @@
         const card = state.deck[state.index];
         const isCorrect = choice === card.answer;
         state.answered = true;
+        state.answeredCount += 1;
         if (isCorrect) {
           state.streak += 1;
           state.correct += 1;
@@ -624,17 +686,20 @@
         nodes.options.forEach((button) => {
           const value = button.dataset.answer;
           button.disabled = true;
+          button.setAttribute('aria-pressed', value === choice ? 'true' : 'false');
           if (value === card.answer) button.classList.add('is-correct');
           if (value === choice && !isCorrect) button.classList.add('is-wrong');
         });
         nodes.feedback.className = `vitagame-feedback ${isCorrect ? '' : 'is-warning'}`;
-        nodes.feedback.innerHTML = `<strong>${isCorrect ? 'Tepat.' : 'Belum tepat.'} Jawaban: ${answerLabels[card.answer]}.</strong>${card.explain}`;
+        const title = isCorrect ? 'Tepat.' : 'Belum tepat.';
+        const body = `Jawaban: ${answerLabels[card.answer]}. ${card.explain}`;
+        setFeedback(nodes.feedback, title, body);
         nodes.next.disabled = false;
         updateStats();
       }
 
       function nextCard() {
-        if (!state.started || !state.answered) return;
+        if (!state.started || !state.answered || nodes.next.disabled) return;
         state.index += 1;
         if (state.index >= state.deck.length) {
           finishGame();
@@ -644,6 +709,7 @@
       }
 
       function finishGame() {
+        if (nodes.next.disabled && !nodes.start.disabled) return;
         nodes.progress.style.width = '100%';
         nodes.options.forEach((button) => { button.disabled = true; });
         nodes.next.disabled = true;
@@ -652,7 +718,7 @@
         state.started = false;
         const title = getResultTitle();
         nodes.feedback.className = 'vitagame-feedback';
-        nodes.feedback.innerHTML = `<strong>${title}</strong> Skor akhir kamu ${state.score}. Baca ulang penjelasan dan lanjutkan dengan Prinsip Amanah bila ingin lebih paham.`;
+        setFeedback(nodes.feedback, title, `Skor akhir kamu ${state.score}. Baca ulang penjelasan dan lanjutkan dengan Prinsip Amanah bila ingin lebih paham.`);
         nodes.resultTitle.textContent = title;
         nodes.resultCopy.textContent = `Kamu menjawab ${state.correct} dari ${state.deck.length} kartu dengan benar. Skor: ${state.score}.`;
         nodes.result.classList.add('is-visible');
@@ -665,6 +731,7 @@
       }
 
       function resetGame() {
+        if (nodes.reset.disabled) return;
         state.deck = [];
         state.index = 0;
         state.score = 0;
@@ -672,6 +739,7 @@
         state.correct = 0;
         state.answered = false;
         state.started = false;
+        state.answeredCount = 0;
         nodes.score.textContent = '0';
         nodes.round.textContent = '1/10';
         nodes.streak.textContent = '0';
@@ -680,10 +748,11 @@
         nodes.category.textContent = 'Klaim Produk';
         nodes.question.textContent = 'Tekan Mulai Game untuk bermain.';
         nodes.feedback.className = 'vitagame-feedback';
-        nodes.feedback.innerHTML = '<strong>Siap main?</strong> Tekan Mulai Game dulu. Setelah kartu muncul, baru pilih jawaban yang paling amanah.';
+        setFeedback(nodes.feedback, 'Siap main?', 'Tekan Mulai Game dulu. Setelah kartu muncul, baru pilih jawaban yang paling amanah.');
         nodes.options.forEach((button) => {
           button.disabled = true;
           button.classList.remove('is-correct', 'is-wrong');
+          button.setAttribute('aria-pressed', 'false');
         });
         nodes.next.disabled = true;
         nodes.start.disabled = false;
@@ -698,6 +767,17 @@
       nodes.next.addEventListener('click', nextCard);
       nodes.reset.addEventListener('click', resetGame);
       resetGame();
+
+      // Test exports (expose for testing in JSDOM/Node)
+      window.__VITAGAME_TEST__ = {
+        shuffle,
+        setFeedback,
+        validateCard,
+        validCards,
+        answerLabels,
+        getState: () => ({ ...state }),
+        getNodes: () => ({ ...nodes }),
+      };
     })();
   </script>
   <script type="module">
