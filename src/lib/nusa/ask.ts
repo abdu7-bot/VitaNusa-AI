@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { classify, screenModelText, stricter, type PolicyDecision } from "@/lib/nusa/policy";
 import { takeSlot } from "@/lib/nusa/limit";
-
-type Turn = { role: "user" | "assistant"; content: string };
+import { readUserTurns, toModelMessages } from "@/lib/nusa/conversation";
 
 const SYSTEM = `Kamu adalah Nusa, pendamping edukasi VitaNusa AI. Bahasa Indonesia yang hangat, jelas, dan tidak menggurui.
 
@@ -19,22 +18,6 @@ Aturan:
 - Jawaban ringkas: paling banyak 3 paragraf pendek.
 - Jangan memakai markdown, tanda bintang, pagar, atau heading. Tulis teks biasa.
 - Tutup dengan satu kalimat bahwa ini edukasi umum, bukan pemeriksaan.`;
-
-function asTurns(input: unknown): Turn[] {
-  if (!input || typeof input !== "object" || !Array.isArray((input as { messages?: unknown }).messages)) {
-    throw new Error("Pertanyaan tidak valid.");
-  }
-  const messages = (input as { messages: unknown[] }).messages.slice(-6);
-  if (messages.length === 0) throw new Error("Pertanyaan kosong.");
-  return messages.map((item) => {
-    if (!item || typeof item !== "object") throw new Error("Pesan tidak valid.");
-    const role = (item as { role?: unknown }).role;
-    const content = (item as { content?: unknown }).content;
-    if (role !== "user" && role !== "assistant") throw new Error("Peran pesan tidak valid.");
-    if (typeof content !== "string" || !content.trim()) throw new Error("Isi pesan kosong.");
-    return { role, content: content.trim().slice(0, 700) };
-  });
-}
 
 function toPlain(text: string) {
   return text
@@ -74,7 +57,7 @@ function policyReply(decision: PolicyDecision) {
 }
 
 export const askNusa = createServerFn({ method: "POST" })
-  .validator((input: unknown) => ({ messages: asTurns(input) }))
+  .validator((input: unknown) => ({ messages: readUserTurns(input) }))
   .handler(async ({ data }) => {
     const users = data.messages.filter((message) => message.role === "user");
     if (users.length === 0) {
@@ -110,7 +93,7 @@ export const askNusa = createServerFn({ method: "POST" })
       decision.warnings.length > 0
         ? `\n\nBatas khusus pertanyaan terakhir:\n- ${decision.warnings.join("\n- ")}`
         : "";
-    const messages = [{ role: "system", content: SYSTEM + boundary }, ...users];
+    const messages = toModelMessages(users, SYSTEM + boundary);
 
     let response: Response;
     try {
