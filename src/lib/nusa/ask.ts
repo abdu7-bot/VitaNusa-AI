@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { classify, type PolicyId } from "@/lib/nusa/policy";
+import { classify, screenModelText, stricter, type PolicyDecision } from "@/lib/nusa/policy";
+import { takeSlot } from "@/lib/nusa/limit";
 
 type Turn = { role: "user" | "assistant"; content: string };
 
@@ -47,6 +48,7 @@ function toPlain(text: string) {
 async function complete(apiKey: string, messages: { role: string; content: string }[]) {
   return fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(20_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -60,22 +62,30 @@ async function complete(apiKey: string, messages: { role: string; content: strin
   });
 }
 
+function policyReply(decision: PolicyDecision) {
+  return {
+    ok: true as const,
+    source: "policy" as const,
+    policy: decision.id,
+    title: decision.title,
+    text: decision.text,
+    warnings: decision.warnings,
+  };
+}
+
 export const askNusa = createServerFn({ method: "POST" })
   .validator((input: unknown) => ({ messages: asTurns(input) }))
   .handler(async ({ data }) => {
-    const lastUser = [...data.messages].reverse().find((message) => message.role === "user");
-    const decision = classify(lastUser?.content ?? "");
-
-    if (decision.blockModel) {
-      return {
-        ok: true as const,
-        source: "policy" as const,
-        policy: decision.id,
-        title: decision.title,
-        text: decision.text,
-        warnings: decision.warnings,
-      };
+    const users = data.messages.filter((message) => message.role === "user");
+    if (users.length === 0) {
+      return { ok: false as const, error: "Pertanyaan kosong.", policy: "educate" as const, warnings: [] };
     }
+
+    let decision: PolicyDecision | null = null;
+    for (const message of users) decision = stricter(decision, classify(message.content));
+    decision ??= classify(users[users.length - 1].content);
+
+    if (decision.blockModel) return policyReply(decision);
 
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) {
@@ -87,21 +97,41 @@ export const askNusa = createServerFn({ method: "POST" })
       };
     }
 
+    if (!takeSlot("nusa")) {
+      return {
+        ok: false as const,
+        error: "Nusa sedang banyak diminta. Coba lagi sebentar, atau baca Edukasi.",
+        policy: decision.id,
+        warnings: decision.warnings,
+      };
+    }
+
     const boundary =
       decision.warnings.length > 0
         ? `\n\nBatas khusus pertanyaan terakhir:\n- ${decision.warnings.join("\n- ")}`
         : "";
+    const messages = [{ role: "system", content: SYSTEM + boundary }, ...users];
 
-    let response = await complete(apiKey, [{ role: "system", content: SYSTEM + boundary }, ...data.messages]);
-    if (response.status === 502 || response.status === 503 || response.status === 504) {
-      response = await complete(apiKey, [{ role: "system", content: SYSTEM + boundary }, ...data.messages]);
+    let response: Response;
+    try {
+      response = await complete(apiKey, messages);
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        response = await complete(apiKey, messages);
+      }
+    } catch {
+      return {
+        ok: false as const,
+        error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
+        policy: decision.id,
+        warnings: decision.warnings,
+      };
     }
 
     if (!response.ok) {
       return {
         ok: false as const,
         error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
-        policy: decision.id satisfies PolicyId,
+        policy: decision.id,
         warnings: decision.warnings,
       };
     }
@@ -119,6 +149,9 @@ export const askNusa = createServerFn({ method: "POST" })
         warnings: decision.warnings,
       };
     }
+
+    const screened = screenModelText(text);
+    if (!screened.pass) return policyReply(screened.decision);
 
     return {
       ok: true as const,

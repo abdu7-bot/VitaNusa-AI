@@ -111,11 +111,13 @@ export function VitaCheck() {
       ) : (
         <p className="text-muted">{copy.body}</p>
       )}
-      <p className="font-display text-2xl tabular-nums">
-        {result.score}
-        <span className="text-muted"> / {result.max}</span>
-        <span className="ml-2 font-sans text-base text-muted">kebiasaan yang dilaporkan mendukung</span>
-      </p>
+      {result.urgent ? null : (
+        <p className="font-display text-2xl tabular-nums">
+          {result.score}
+          <span className="text-muted"> / {result.max}</span>
+          <span className="ml-2 font-sans text-base text-muted">kebiasaan yang dilaporkan mendukung</span>
+        </p>
+      )}
       {result.notes.length > 0 && (
         <ul className="flex flex-col gap-3">
           {result.notes.map((note) => (

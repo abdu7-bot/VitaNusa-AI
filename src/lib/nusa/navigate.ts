@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { classify, type PolicyId } from "@/lib/nusa/policy";
+import { classify, screenModelText, type PolicyId } from "@/lib/nusa/policy";
+import { takeSlot } from "@/lib/nusa/limit";
 import { getRoom, isConservative, type AboutId, type Room } from "@/lib/nusa/rooms";
 import { linksForBlock, type SourceLink } from "@/lib/nusa/sources";
 
@@ -105,6 +106,7 @@ function parseModel(text: string) {
 async function complete(apiKey: string, content: string) {
   return fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(20_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -146,7 +148,7 @@ export const askNavigator = createServerFn({ method: "POST" })
     }
 
     const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey) {
+    if (!apiKey || !takeSlot("navigator")) {
       return curated(data.room, {
         policy: decision.id,
         warnings,
@@ -166,9 +168,19 @@ export const askNavigator = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join("\n");
 
-    let response = await complete(apiKey, prompt);
-    if (response.status === 502 || response.status === 503 || response.status === 504) {
+    let response: Response;
+    try {
       response = await complete(apiKey, prompt);
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        response = await complete(apiKey, prompt);
+      }
+    } catch {
+      return curated(data.room, {
+        policy: decision.id,
+        warnings,
+        title: "Catatan tetap ruang ini",
+        known: data.room.fallbackKnown,
+      });
     }
     if (!response.ok) {
       return curated(data.room, {
@@ -183,6 +195,16 @@ export const askNavigator = createServerFn({ method: "POST" })
     const content = body.choices?.[0]?.message?.content;
     const parsed = typeof content === "string" ? parseModel(content) : null;
     if (!parsed) {
+      return curated(data.room, {
+        policy: decision.id,
+        warnings,
+        title: "Catatan tetap ruang ini",
+        known: data.room.fallbackKnown,
+      });
+    }
+
+    const screened = screenModelText([parsed.known, ...parsed.steps, ...parsed.questions, parsed.seek].join("\n"));
+    if (!screened.pass) {
       return curated(data.room, {
         policy: decision.id,
         warnings,

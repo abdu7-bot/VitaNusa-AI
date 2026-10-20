@@ -110,11 +110,26 @@ export type CheckResult = {
   band: "perhatian" | "campuran" | "terjaga";
   notes: string[];
   urgent: boolean;
+  complete: boolean;
 };
 
 const SCORED = questions.filter((q) => q.id !== "flag");
 
 export function summarize(answers: Record<string, string>): CheckResult {
+  const max = SCORED.reduce((sum, question) => sum + Math.max(...question.options.map((option) => option.score)), 0);
+  const answered = questions.filter((question) => question.options.some((option) => option.id === answers[question.id])).length;
+  if (answered < questions.length) {
+    return {
+      at: new Date().toISOString(),
+      score: 0,
+      max,
+      band: "campuran",
+      notes: ["Refleksi belum lengkap, jadi angkanya tidak dipakai."],
+      urgent: false,
+      complete: false,
+    };
+  }
+
   let score = 0;
   const notes: string[] = [];
   let urgent = false;
@@ -127,7 +142,18 @@ export function summarize(answers: Record<string, string>): CheckResult {
     if (picked.note) notes.push(picked.note);
   }
 
-  const max = SCORED.reduce((sum, question) => sum + Math.max(...question.options.map((option) => option.score)), 0);
+  if (urgent) {
+    return {
+      at: new Date().toISOString(),
+      score: 0,
+      max,
+      band: "perhatian",
+      notes,
+      urgent: true,
+      complete: true,
+    };
+  }
+
   const band = score <= 5 ? "perhatian" : score <= 10 ? "campuran" : "terjaga";
 
   return {
@@ -137,6 +163,7 @@ export function summarize(answers: Record<string, string>): CheckResult {
     band,
     notes,
     urgent,
+    complete: true,
   };
 }
 
