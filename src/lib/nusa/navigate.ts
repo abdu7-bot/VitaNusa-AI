@@ -191,7 +191,17 @@ export const askNavigator = createServerFn({ method: "POST" })
       });
     }
 
-    const body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
+    let body: { choices?: { message?: { content?: unknown } }[] };
+    try {
+      body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
+    } catch {
+      return curated(data.room, {
+        policy: decision.id,
+        warnings,
+        title: "Catatan tetap ruang ini",
+        known: data.room.fallbackKnown,
+      });
+    }
     const content = body.choices?.[0]?.message?.content;
     const parsed = typeof content === "string" ? parseModel(content) : null;
     if (!parsed) {
