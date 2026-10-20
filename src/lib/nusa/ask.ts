@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { classify, screenModelText, stricter, type PolicyDecision } from "@/lib/nusa/policy";
 import { takeSlot } from "@/lib/nusa/limit";
-
-type Turn = { role: "user" | "assistant"; content: string };
+import { readUserTurns, toModelMessages } from "@/lib/nusa/conversation";
+import { postChatCompletion } from "@/lib/nusa/upstream";
 
 const SYSTEM = `Kamu adalah Nusa, pendamping edukasi VitaNusa AI. Bahasa Indonesia yang hangat, jelas, dan tidak menggurui.
 
@@ -20,22 +20,6 @@ Aturan:
 - Jangan memakai markdown, tanda bintang, pagar, atau heading. Tulis teks biasa.
 - Tutup dengan satu kalimat bahwa ini edukasi umum, bukan pemeriksaan.`;
 
-function asTurns(input: unknown): Turn[] {
-  if (!input || typeof input !== "object" || !Array.isArray((input as { messages?: unknown }).messages)) {
-    throw new Error("Pertanyaan tidak valid.");
-  }
-  const messages = (input as { messages: unknown[] }).messages.slice(-6);
-  if (messages.length === 0) throw new Error("Pertanyaan kosong.");
-  return messages.map((item) => {
-    if (!item || typeof item !== "object") throw new Error("Pesan tidak valid.");
-    const role = (item as { role?: unknown }).role;
-    const content = (item as { content?: unknown }).content;
-    if (role !== "user" && role !== "assistant") throw new Error("Peran pesan tidak valid.");
-    if (typeof content !== "string" || !content.trim()) throw new Error("Isi pesan kosong.");
-    return { role, content: content.trim().slice(0, 700) };
-  });
-}
-
 function toPlain(text: string) {
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1")
@@ -45,21 +29,13 @@ function toPlain(text: string) {
     .trim();
 }
 
-async function complete(apiKey: string, messages: { role: string; content: string }[]) {
-  return fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "grok-4.5",
-      temperature: 0.3,
-      max_tokens: 420,
-      messages,
-    }),
-  });
+function unavailable(decision: PolicyDecision) {
+  return {
+    ok: false as const,
+    error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
+    policy: decision.id,
+    warnings: decision.warnings,
+  };
 }
 
 function policyReply(decision: PolicyDecision) {
@@ -74,7 +50,7 @@ function policyReply(decision: PolicyDecision) {
 }
 
 export const askNusa = createServerFn({ method: "POST" })
-  .validator((input: unknown) => ({ messages: asTurns(input) }))
+  .validator((input: unknown) => ({ messages: readUserTurns(input) }))
   .handler(async ({ data }) => {
     const users = data.messages.filter((message) => message.role === "user");
     if (users.length === 0) {
@@ -110,35 +86,31 @@ export const askNusa = createServerFn({ method: "POST" })
       decision.warnings.length > 0
         ? `\n\nBatas khusus pertanyaan terakhir:\n- ${decision.warnings.join("\n- ")}`
         : "";
-    const messages = [{ role: "system", content: SYSTEM + boundary }, ...users];
+    const messages = toModelMessages(users, SYSTEM + boundary);
 
-    let response: Response;
+    const upstream = await postChatCompletion({
+      apiKey,
+      body: {
+        model: "grok-4.5",
+        temperature: 0.3,
+        max_tokens: 420,
+        messages,
+      },
+    });
+    if (!upstream.ok) return unavailable(decision);
+    const response = upstream.response;
+
+    let body: { choices?: { message?: { content?: unknown } }[] };
     try {
-      response = await complete(apiKey, messages);
-      if (response.status === 502 || response.status === 503 || response.status === 504) {
-        response = await complete(apiKey, messages);
-      }
+      body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
     } catch {
       return {
         ok: false as const,
-        error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
+        error: "Nusa tidak bisa membaca jawaban saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
         policy: decision.id,
         warnings: decision.warnings,
       };
     }
-
-    if (!response.ok) {
-      return {
-        ok: false as const,
-        error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
-        policy: decision.id,
-        warnings: decision.warnings,
-      };
-    }
-
-    const body = (await response.json()) as {
-      choices?: { message?: { content?: unknown } }[];
-    };
     const content = body.choices?.[0]?.message?.content;
     const text = typeof content === "string" ? toPlain(content) : "";
     if (!text) {

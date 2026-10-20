@@ -34,4 +34,13 @@ test("incomplete answers are not scored as a low habit band", () => {
   assert.equal(result.complete, false);
   assert.equal(result.score, 0);
   assert.equal(result.band, "campuran");
+  assert.equal(result.urgent, false);
+});
+
+test("an urgent flag is not hidden when other answers are still missing", () => {
+  const result = summarize({ sleep: "s2", flag: "f2" });
+  assert.equal(result.complete, false);
+  assert.equal(result.urgent, true);
+  assert.equal(result.score, 0);
+  assert.match(result.notes.join(" "), /119/);
 });
