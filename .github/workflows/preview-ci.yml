@@ -1,0 +1,124 @@
+name: Preview CI
+
+on:
+  push:
+    branches:
+      - preview
+      - codex/verify-grok-ci
+  pull_request:
+    branches:
+      - preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Preview verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        id: install
+        continue-on-error: true
+        run: npm ci
+
+      - name: TypeScript typecheck
+        id: typecheck
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: ESLint
+        id: lint
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Unit and regression tests
+        id: tests
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm test
+
+      - name: Authentication invariant
+        id: auth
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run check:auth
+
+      # Build the production Vite bundle without running db:migrate. The
+      # package's ordinary "build" script intentionally runs migrations after
+      # bundling, so CI invokes the same wrapper/build command directly.
+      - name: Production bundle (no database migration)
+        id: build
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/with-app-env.mjs vite build
+
+      - name: Dependency security audit
+        id: audit
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Summarize check outcomes and enforce gate
+        if: always()
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          AUTH_OUTCOME: ${{ steps.auth.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          {
+            echo "## Preview CI results"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          status_for() {
+            local outcome="$1"
+            if [[ "$INSTALL_OUTCOME" != "success" ]]; then
+              echo "BLOCKED (dependency install did not pass)"
+            elif [[ "$outcome" == "success" ]]; then
+              echo "PASS"
+            elif [[ "$outcome" == "skipped" ]]; then
+              echo "BLOCKED (not run)"
+            else
+              echo "FAIL ($outcome)"
+            fi
+          }
+
+          failed=0
+          for entry in             "Dependency install:$INSTALL_OUTCOME"             "TypeScript:$TYPECHECK_OUTCOME"             "Lint:$LINT_OUTCOME"             "Unit/regression tests:$TESTS_OUTCOME"             "Auth invariant:$AUTH_OUTCOME"             "Production bundle:$BUILD_OUTCOME"             "npm audit:$AUDIT_OUTCOME"
+          do
+            name="${entry%%:*}"
+            outcome="${entry#*:}"
+            result="$(status_for "$outcome")"
+            echo "| $name | $result |" >> "$GITHUB_STEP_SUMMARY"
+            [[ "$outcome" == "success" ]] || failed=1
+          done
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo
+            echo "At least one required check failed or was blocked. This run is not green." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
