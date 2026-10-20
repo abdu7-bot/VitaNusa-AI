@@ -119,9 +119,17 @@ export const askNusa = createServerFn({ method: "POST" })
       };
     }
 
-    const body = (await response.json()) as {
-      choices?: { message?: { content?: unknown } }[];
-    };
+    let body: { choices?: { message?: { content?: unknown } }[] };
+    try {
+      body = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
+    } catch {
+      return {
+        ok: false as const,
+        error: "Nusa tidak bisa membaca jawaban saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
+        policy: decision.id,
+        warnings: decision.warnings,
+      };
+    }
     const content = body.choices?.[0]?.message?.content;
     const text = typeof content === "string" ? toPlain(content) : "";
     if (!text) {
