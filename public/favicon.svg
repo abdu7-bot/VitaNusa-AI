@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="VitaNusa AI">
+  <rect width="32" height="32" rx="8" fill="#1B2420"/>
+  <rect x="2.25" y="2.25" width="27.5" height="27.5" rx="6" fill="#F3EEE4"/>
+  <path fill="#1E6A48" d="M16 5.4c2.35 4.05 5.45 6.6 8.7 8.35-3.25 1.45-5.55 4.05-6.95 9.25h-3.5c-1.4-5.2-3.7-7.8-6.95-9.25 3.25-1.75 6.35-4.3 8.7-8.35z"/>
+</svg>
