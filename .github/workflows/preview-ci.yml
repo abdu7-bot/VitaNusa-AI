@@ -59,7 +59,30 @@ jobs:
         id: auth
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        run: npm run check:auth
+        env:
+          VITE_AUTH_ENABLED: "false"
+        run: |
+          npm run dev > /tmp/vitanusa-dev.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:8080/__app-env >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/vitanusa-dev.log
+              exit 1
+            fi
+            sleep 1
+          done
+          if [[ "$ready" -ne 1 ]]; then
+            cat /tmp/vitanusa-dev.log
+            echo "Dev server did not expose /__app-env within 60 seconds."
+            exit 1
+          fi
+          npm run check:auth -- --dev-url http://127.0.0.1:8080
 
       # Build the production Vite bundle without running db:migrate. The
       # package's ordinary "build" script intentionally runs migrations after
@@ -68,7 +91,7 @@ jobs:
         id: build
         if: steps.install.outcome == 'success'
         continue-on-error: true
-        run: node scripts/with-app-env.mjs vite build
+        run: node scripts/with-app-env.mjs ./node_modules/.bin/vite build
 
       - name: Dependency security audit
         id: audit
