@@ -47,14 +47,14 @@ The failing PWA implementation and test file were unchanged between the Grok pat
 
 ## Latest observed CI baseline
 
-Run: https://github.com/abdu7-bot/VitaNusa-AI/actions/runs/39422830913
+Run: https://github.com/abdu7-bot/VitaNusa-AI/actions/runs/39423117296
 
 | Check | Result | Evidence |
 |---|---|---|
 | `npm ci` | PASS | Locked dependency installation completed. |
 | TypeScript typecheck | PASS | `npm run typecheck` completed. |
 | ESLint | FAIL | Pre-existing `no-empty` error at `src/lib/app-data/client.server.ts:281`; this file was not changed in this task. |
-| Unit/regression tests | FAIL | 197 tests: 189 passed, 8 failed. None of the eight card-title tests failed after isolation. |
+| Unit/regression tests | FAIL (script suite); PASS (TypeScript suite) | Script suite: 197 tests, 189 passed and 8 failed. The separate TypeScript suite ran: 73 passed, 0 failed, including all 7 new conversation regression tests. None of the eight card-title tests failed after isolation. |
 | Authentication invariant | PASS | Dev server was started with `VITE_AUTH_ENABLED=false`; `npm run check:auth -- --dev-url http://127.0.0.1:8080` passed. |
 | Production bundle | PASS | `node scripts/with-app-env.mjs ./node_modules/.bin/vite build` passed without running `db:migrate`. |
 | Dependency audit | PASS | `npm audit --audit-level=high` reported zero vulnerabilities. |
