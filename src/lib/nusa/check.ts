@@ -117,15 +117,25 @@ const SCORED = questions.filter((q) => q.id !== "flag");
 
 export function summarize(answers: Record<string, string>): CheckResult {
   const max = SCORED.reduce((sum, question) => sum + Math.max(...question.options.map((option) => option.score)), 0);
-  const answered = questions.filter((question) => question.options.some((option) => option.id === answers[question.id])).length;
-  if (answered < questions.length) {
+  const chosen = questions.flatMap((question) => {
+    const picked = question.options.find((option) => option.id === answers[question.id]);
+    return picked ? [{ picked }] : [];
+  });
+  const urgentEarly = chosen.some((item) => item.picked.urgent);
+  if (chosen.length < questions.length) {
+    const notes = ["Refleksi belum lengkap, jadi angkanya tidak dipakai."];
+    if (urgentEarly) {
+      for (const item of chosen) {
+        if (item.picked.urgent && item.picked.note) notes.push(item.picked.note);
+      }
+    }
     return {
       at: new Date().toISOString(),
       score: 0,
       max,
-      band: "campuran",
-      notes: ["Refleksi belum lengkap, jadi angkanya tidak dipakai."],
-      urgent: false,
+      band: urgentEarly ? "perhatian" : "campuran",
+      notes,
+      urgent: urgentEarly,
       complete: false,
     };
   }

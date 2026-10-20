@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classify, screenModelText } from "./policy.ts";
+import { linksForBlock } from "./sources.ts";
 
 test("blocks colloquial emergencies and crisis phrases", () => {
   for (const phrase of [
@@ -37,4 +38,24 @@ test("drops model text that states a dose, diagnosis, halal status, or citation"
   assert.equal(screenModelText("Kamu menderita diabetes.").pass, false);
   assert.equal(screenModelText("Madu ini halal.").pass, false);
   assert.equal(screenModelText("Jaga jam tidur yang teratur, lalu bicara dengan tenaga kesehatan.").pass, true);
+  assert.equal(screenModelText("Hubungi 119 jika nyeri dada.").pass, true);
+});
+
+test("blocked questions use the same gate for Nusa and Navigator links", () => {
+  const cases = [
+    ["dada saya sakit", "emergency", "psc.kemkes.go.id"],
+    ["pengen mati", "crisis", "healing119.id"],
+    ["berapa dosis paracetamol", "dose", "psc.kemkes.go.id"],
+    ["madu ini halal nggak", "halal", "bpjph.halal.go.id"],
+  ] as const;
+  for (const [phrase, id, host] of cases) {
+    const decision = classify(phrase);
+    assert.equal(decision.id, id, phrase);
+    assert.equal(decision.blockModel, true, phrase);
+    const links = linksForBlock(decision.id);
+    assert.ok(links.length > 0, phrase);
+    assert.ok(links.some((link) => link.href.includes(host)), phrase);
+    assert.ok(links.every((link) => link.href.startsWith("https://")), phrase);
+  }
+  assert.equal(linksForBlock("educate").length, 0);
 });

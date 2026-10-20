@@ -20,7 +20,7 @@
  * `process.env`, which is why the merge has to happen before Vite starts.
  */
 import { spawn } from "node:child_process";
-import { readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,6 +88,18 @@ export function projectRoot() {
 }
 
 /**
+ * Resolve a bare command to `<root>/node_modules/.bin` when that executable
+ * exists. `spawn` does not use a shell and does not search npm's script PATH,
+ * so `vite` is ENOENT in CI unless the caller already expanded it.
+ * Commands that already contain a path separator are left untouched.
+ */
+export function resolveLocalBin(command, root = projectRoot()) {
+  if (!command || command.includes("/") || command.includes("\\")) return command;
+  const candidate = join(root, "node_modules", ".bin", command);
+  return existsSync(candidate) ? candidate : command;
+}
+
+/**
  * Whether `moduleUrl` is the script node was asked to run.
  *
  * Both sides are resolved through symlinks: node realpaths `import.meta.url`
@@ -111,7 +123,8 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  const executable = resolveLocalBin(command, projectRoot());
+  const child = spawn(executable, args, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));

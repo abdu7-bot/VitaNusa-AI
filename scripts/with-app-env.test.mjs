@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -11,6 +11,7 @@ import {
   parseAppEnv,
   projectRoot,
   readAppEnv,
+  resolveLocalBin,
 } from "./with-app-env.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -125,4 +126,32 @@ test("the CLI still runs when invoked through a symlinked path", async () => {
     PRINT_FLAG,
   ]);
   assert.equal(stdout, "false");
+});
+
+test("a bare vite command resolves to the workspace binary", () => {
+  assert.equal(resolveLocalBin("vite", projectRoot()), join(projectRoot(), "node_modules/.bin/vite"));
+  assert.equal(resolveLocalBin("./node_modules/.bin/vite", projectRoot()), "./node_modules/.bin/vite");
+  assert.equal(resolveLocalBin("/usr/bin/node", projectRoot()), "/usr/bin/node");
+  assert.equal(resolveLocalBin("not-a-workspace-binary", projectRoot()), "not-a-workspace-binary");
+});
+
+test("the wrapper runs vite when node_modules/.bin is absent from PATH", async () => {
+  const path = (process.env.PATH ?? "")
+    .split(":")
+    .filter((entry) => entry && !entry.includes(join("node_modules", ".bin")))
+    .join(":");
+  const { stdout } = await execFileAsync(process.execPath, [WRAPPER, "vite", "--version"], {
+    env: { ...process.env, PATH: path },
+  });
+  assert.match(stdout, /vite\/\d/);
+});
+
+test("preview CI does not spawn a bare vite command", () => {
+  const workflow = readFileSync(join(projectRoot(), ".github/workflows/preview-ci.yml"), "utf8");
+  const scripts = JSON.parse(readFileSync(join(projectRoot(), "package.json"), "utf8")).scripts;
+  assert.match(workflow, /node scripts\/with-app-env\.mjs \.\/node_modules\/\.bin\/vite build/);
+  assert.doesNotMatch(workflow, /with-app-env\.mjs vite( |$)/m);
+  for (const name of ["dev", "build", "build:dev", "preview"]) {
+    assert.match(scripts[name], /\.\/node_modules\/\.bin\/vite/);
+  }
 });

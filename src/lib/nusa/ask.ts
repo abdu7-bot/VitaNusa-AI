@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { classify, screenModelText, stricter, type PolicyDecision } from "@/lib/nusa/policy";
 import { takeSlot } from "@/lib/nusa/limit";
 import { readUserTurns, toModelMessages } from "@/lib/nusa/conversation";
+import { postChatCompletion } from "@/lib/nusa/upstream";
 
 const SYSTEM = `Kamu adalah Nusa, pendamping edukasi VitaNusa AI. Bahasa Indonesia yang hangat, jelas, dan tidak menggurui.
 
@@ -28,21 +29,13 @@ function toPlain(text: string) {
     .trim();
 }
 
-async function complete(apiKey: string, messages: { role: string; content: string }[]) {
-  return fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "grok-4.5",
-      temperature: 0.3,
-      max_tokens: 420,
-      messages,
-    }),
-  });
+function unavailable(decision: PolicyDecision) {
+  return {
+    ok: false as const,
+    error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
+    policy: decision.id,
+    warnings: decision.warnings,
+  };
 }
 
 function policyReply(decision: PolicyDecision) {
@@ -95,29 +88,17 @@ export const askNusa = createServerFn({ method: "POST" })
         : "";
     const messages = toModelMessages(users, SYSTEM + boundary);
 
-    let response: Response;
-    try {
-      response = await complete(apiKey, messages);
-      if (response.status === 502 || response.status === 503 || response.status === 504) {
-        response = await complete(apiKey, messages);
-      }
-    } catch {
-      return {
-        ok: false as const,
-        error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
-        policy: decision.id,
-        warnings: decision.warnings,
-      };
-    }
-
-    if (!response.ok) {
-      return {
-        ok: false as const,
-        error: "Nusa tidak bisa menjawab saat ini. Coba lagi sebentar, atau baca artikel di Edukasi.",
-        policy: decision.id,
-        warnings: decision.warnings,
-      };
-    }
+    const upstream = await postChatCompletion({
+      apiKey,
+      body: {
+        model: "grok-4.5",
+        temperature: 0.3,
+        max_tokens: 420,
+        messages,
+      },
+    });
+    if (!upstream.ok) return unavailable(decision);
+    const response = upstream.response;
 
     let body: { choices?: { message?: { content?: unknown } }[] };
     try {

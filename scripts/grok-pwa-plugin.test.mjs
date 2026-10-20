@@ -452,6 +452,36 @@ test("uses the app name in the injected title tag", () => {
   assert.match(out, /apple-mobile-web-app-title" content="Wild Race"/);
 });
 
+test("share-card identity follows the supplied cwd, not another workspace", () => {
+  // Omitting cwd reads process.cwd(). This checkout's site.json title and
+  // public/og.jpg are the product card, which is why fixture tests that forgot
+  // a cwd inherited "VitaNusa AI" and /og.jpg instead of Hello World / Wild Race.
+  const product = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/lib/og/site.json"), "utf8"),
+  );
+  const inherited = injectGrokPwaHead("<html><head><title>Hello World</title></head></html>", {
+    appName: "Wild Race",
+    host: "wild-race.grok.me",
+  });
+  assert.match(inherited, new RegExp(`property="og:title" content="${product.title}"`));
+  assert.match(inherited, /property="og:image" content="https:\/\/wild-race\.grok\.me\/og\.jpg"/);
+  assert.doesNotMatch(inherited, /og:title" content="Hello World"/);
+  assert.doesNotMatch(inherited, /og\.grok\.me/);
+
+  const cwd = mkdtempSync(join(tmpdir(), "grok-pwa-isolated-"));
+  const isolated = injectGrokPwaHead("<html><head><title>Hello World</title></head></html>", {
+    appName: "Wild Race",
+    host: "wild-race.grok.me",
+    cwd,
+    site: {},
+  });
+  assert.match(isolated, /property="og:title" content="Hello World"/);
+  assert.match(isolated, /property="og:image" content="https:\/\/og\.grok\.me\/v1\/card\.png\?host=wild-race\.grok\.me/);
+  assert.match(isolated, /title=Hello%20World/);
+  assert.equal(isolated.includes(product.title), false);
+  assert.doesNotMatch(isolated, /wild-race\.grok\.me\/og\.jpg/);
+});
+
 test("streaming injector handles </head> split across chunks", () => {
   const injector = createHeadInjector({ appName: "Wild Race" });
   const chunks = [

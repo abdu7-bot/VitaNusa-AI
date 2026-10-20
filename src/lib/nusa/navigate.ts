@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { classify, screenModelText, type PolicyId } from "@/lib/nusa/policy";
-import { takeSlot } from "@/lib/nusa/limit";
+import { reserveModelSlot } from "@/lib/nusa/limit";
 import { getRoom, isConservative, type AboutId, type Room } from "@/lib/nusa/rooms";
 import { linksForBlock, type SourceLink } from "@/lib/nusa/sources";
+import { postChatCompletion } from "@/lib/nusa/upstream";
 
 const ABOUTS = new Set<AboutId>(["diri", "dewasa-lain", "anak", "hamil"]);
 
@@ -103,27 +104,20 @@ function parseModel(text: string) {
   }
 }
 
-async function complete(apiKey: string, content: string) {
-  return fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(20_000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "grok-4.5",
-      temperature: 0.2,
-      max_tokens: 500,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Kamu menyusun catatan Navigator VitaNusa. Kamu bukan dokter. Jangan mendiagnosis, jangan menyebut penyakit yang mungkin diderita, jangan memberi dosis atau nama obat, jangan merekomendasikan produk, suplemen, atau ramuan, jangan mengarang sitasi. Balas hanya JSON dengan kunci known, steps, questions, seek. steps dan questions masing-masing paling banyak 3 kalimat pendek. known paling banyak 3 kalimat. Bahasa Indonesia biasa, tanpa markdown.",
-        },
-        { role: "user", content },
-      ],
-    }),
+const NAVIGATOR_SYSTEM =
+  "Kamu menyusun catatan Navigator VitaNusa. Kamu bukan dokter. Jangan mendiagnosis, jangan menyebut penyakit yang mungkin diderita, jangan memberi dosis atau nama obat, jangan merekomendasikan produk, suplemen, atau ramuan, jangan mengarang sitasi. Balas hanya JSON dengan kunci known, steps, questions, seek. steps dan questions masing-masing paling banyak 3 kalimat pendek. known paling banyak 3 kalimat. Bahasa Indonesia biasa, tanpa markdown.";
+
+function roomFallback(
+  room: Room,
+  decisionId: PolicyId,
+  warnings: string[],
+  known: string,
+): Guide {
+  return curated(room, {
+    policy: decisionId,
+    warnings,
+    title: "Catatan tetap ruang ini",
+    known,
   });
 }
 
@@ -148,7 +142,7 @@ export const askNavigator = createServerFn({ method: "POST" })
     }
 
     const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey || !takeSlot("navigator")) {
+    if (!reserveModelSlot(apiKey, "navigator")) {
       return curated(data.room, {
         policy: decision.id,
         warnings,
@@ -168,28 +162,29 @@ export const askNavigator = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join("\n");
 
-    let response: Response;
-    try {
-      response = await complete(apiKey, prompt);
-      if (response.status === 502 || response.status === 503 || response.status === 504) {
-        response = await complete(apiKey, prompt);
-      }
-    } catch {
-      return curated(data.room, {
-        policy: decision.id,
+    const upstream = await postChatCompletion({
+      apiKey,
+      body: {
+        model: "grok-4.5",
+        temperature: 0.2,
+        max_tokens: 500,
+        messages: [
+          { role: "system", content: NAVIGATOR_SYSTEM },
+          { role: "user", content: prompt },
+        ],
+      },
+    });
+    if (!upstream.ok) {
+      return roomFallback(
+        data.room,
+        decision.id,
         warnings,
-        title: "Catatan tetap ruang ini",
-        known: data.room.fallbackKnown,
-      });
+        upstream.reason === "http"
+          ? `${data.room.fallbackKnown} Model sedang tidak menjawab, jadi catatan tetap yang dipakai.`
+          : data.room.fallbackKnown,
+      );
     }
-    if (!response.ok) {
-      return curated(data.room, {
-        policy: decision.id,
-        warnings,
-        title: "Catatan tetap ruang ini",
-        known: `${data.room.fallbackKnown} Model sedang tidak menjawab, jadi catatan tetap yang dipakai.`,
-      });
-    }
+    const response = upstream.response;
 
     let body: { choices?: { message?: { content?: unknown } }[] };
     try {
