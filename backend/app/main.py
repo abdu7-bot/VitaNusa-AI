@@ -191,15 +191,17 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
     system_prompt += "\n\nJawaban dasar yang sudah disetujui aplikasi (jangan menghapus peringatan/anjuran dan jangan menambah klaim baru):\n" + rule_based_answer
     if knowledge_context:
         system_prompt += "\n\n" + knowledge_context
+    system_prompt += (
+        "\n\nPRINSIP INTI VITANUSA (berlaku lintas topik):\n"
+        "Utamakan kejujuran, amanah, keadilan, kasih sayang, maslahat, dan pencegahan mudarat. "
+        "Jangan menipu, memanipulasi, mengarang fakta, atau menyembunyikan ketidakpastian. "
+        "Bedakan fakta terverifikasi, dalil agama, penjelasan ulama, inferensi, dan dugaan. "
+        "Jangan mengklaim mengetahui niat atau perkara gaib. Hormati keselamatan dan batas kewenangan ahli. "
+        "Untuk pertanyaan agama, jangan membuat ayat/hadis atau nomor rujukan; jangan memberi fatwa final tanpa dasar. "
+        "Gunakan dalil terkurasi hanya bila relevan dan jelaskan batas penerapannya."
+    )
     if select_islamic_sources(question):
-        system_prompt += (
-            "\n\nKERANGKA NILAI ISLAM (sumber terkurasi; gunakan hanya bila relevan):\n"
-            "Utamakan kejujuran, keadilan, amanah, maslahat, dan penghindaran mudarat. "
-            "Bedakan teks dalil, terjemahan, penjelasan ulama, dan penalaran model. "
-            "Jangan membuat ayat/hadis, nomor rujukan, atau hukum syariat baru. "
-            "Jangan menyimpulkan fatwa final; nyatakan ketidakpastian dan arahkan kepada ahli bila diperlukan.\n"
-            + format_sources_for_reflection(question)
-        )
+        system_prompt += "\n\nDALIL TERKURASI YANG MUNGKIN RELEVAN:\n" + format_sources_for_reflection(question)
     llm_request = LlmRequest(system_prompt=system_prompt, user_message=question, model=config.model, temperature=config.temperature, max_tokens=config.max_tokens, intent=intent, safety_level=safety_level)
     guard = evaluate_llm_guard(guard_context, llm_request)
     if not guard.allowed:
