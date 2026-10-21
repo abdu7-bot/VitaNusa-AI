@@ -13,7 +13,7 @@ class IslamicReasoningTests(unittest.TestCase):
         sources = select_islamic_sources("Bagaimana memverifikasi berita dan sumber informasi?")
         self.assertTrue(sources)
         self.assertEqual(sources[0]["reference"], "QS. Al-Hujurat 49:6")
-        self.assertIn("تَفَيَّنُوا", sources[0]["arabic"])
+        self.assertIn("فَتَبَيَّنُوا", sources[0]["arabic"])
 
     def test_truthful_speech_returns_sahih_hadith_reference(self):
         sources = select_islamic_sources("Bagaimana menjaga kejujuran dalam ucapan?")
