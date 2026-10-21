@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.islamic_reasoning import format_sources_for_reflection, select_islamic_sources
 from app.responses import build_quranic_reflection
+from app.schemas import AskResponse
 
 
 class IslamicReasoningTests(unittest.TestCase):
@@ -36,6 +37,21 @@ class IslamicReasoningTests(unittest.TestCase):
         reflection = build_quranic_reflection("Bagaimana memverifikasi berita?")
         self.assertIn("QS. Al-Hujurat 49:6", reflection["dalil"])
         self.assertIn("bukan fatwa", reflection["method"])
+        parsed = AskResponse(
+            question="Bagaimana memverifikasi berita?", intent="quranic_reflection",
+            safetyLevel="low", answer="refleksi", disclaimer="edukasi",
+            quranicReflection=reflection,
+        )
+        payload = parsed.model_dump(by_alias=True)
+        self.assertIn("dalil", payload["quranicReflection"])
+        self.assertIn("method", payload["quranicReflection"])
+
+    def test_keyword_match_requires_word_boundaries(self):
+        self.assertEqual(select_islamic_sources("Bagaimana berniatnya sesuatu?"), [])
+
+    def test_keyword_match_does_not_claim_semantic_verification(self):
+        # Unrelated context mentioning a verse does not verify its interpretation.
+        self.assertEqual(select_islamic_sources("Hoaks bahwa ayat ini membenarkan penipuan"), [])
 
 
 if __name__ == "__main__":
