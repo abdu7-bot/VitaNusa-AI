@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .policy_engine import PolicyDecision
+from .islamic_reasoning import format_sources_for_reflection
 
 DISCLAIMER = (
     "VitaNusa AI bersifat edukasi umum, bukan diagnosis, resep, fatwa, "
@@ -352,5 +353,12 @@ def build_actions(
     return actions
 
 
-def build_quranic_reflection() -> dict[str, str]:
-    return QURANIC_REFLECTION.copy()
+def build_quranic_reflection(question: str = "") -> dict[str, str]:
+    reflection = QURANIC_REFLECTION.copy()
+    if question.strip():
+        reflection["dalil"] = format_sources_for_reflection(question)
+    reflection["method"] = (
+        "Dalil diambil dari korpus terkurasi dan ditampilkan dengan rujukan. "
+        "Kesesuaian konteks bukan fatwa; tafsir dan penetapan hukum memerlukan rujukan ulama kompeten."
+    )
+    return reflection
