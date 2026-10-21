@@ -105,6 +105,9 @@ class QuranicReflection(BaseModel):
     type: str
     text: str
     note: str
+    # Optional additive fields preserve the original response contract for old clients.
+    dalil: str | None = None
+    method: str | None = None
 
 
 class PolicyResultResponse(BaseModel):
