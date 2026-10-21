@@ -56,6 +56,18 @@ app/policies/
 └── content_integrity.py
 ```
 
+## Islamic Reasoning Layer
+
+`app/islamic_reasoning.py` menyediakan korpus awal yang terkurasi untuk prinsip Al-Qur'an dan hadis sahih. Backend memakai pencocokan tema yang dibatasi, bukan generasi teks dalil. Rujukan hanya ditambahkan saat tema pertanyaan cocok; jika tidak cocok, sistem menyatakan bahwa dalil spesifik belum dipilih dan melarang pengarangannya.
+
+- Dalil mencakup teks Arab, terjemahan ringkas, rujukan, dan relevansi umum.
+- Pada jalur LLM yang diaktifkan, dalil terkurasi menjadi konteks tambahan; policy engine dan guard keselamatan tetap menjadi otoritas.
+- Refleksi Qur'ani menyertakan dalil yang cocok dan penegasan bahwa hasilnya bukan fatwa atau pengganti tafsir ulama.
+- Korpus ini masih kecil dan harus ditinjau ahli sebelum dipakai untuk keputusan agama yang berdampak tinggi. Tidak ada klaim bahwa sistem mampu melakukan istinbat hukum atau menggantikan ulama.
+- Perubahan ini tidak menambahkan dependency eksternal atau mengubah konfigurasi deployment.
+
+Test regresi: `python -m unittest discover -s tests -v`.
+
 ## Menjalankan Lokal
 
 ```bash
