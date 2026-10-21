@@ -6,6 +6,7 @@ theme is clearly detected. Never synthesize Arabic text or source metadata.
 """
 from __future__ import annotations
 
+import re
 from typing import TypedDict
 
 
@@ -71,30 +72,43 @@ SOURCES: tuple[IslamicSource, ...] = (
 
 
 THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("verify_information", ("berita", "informasi", "informasi palsu", "hoaks", "bukti", "sumber", "verifikasi", "cek fakta")),
-    ("speak_truthfully", ("berbohong", "bohong", "jujur", "fitnah", "ucapan", "berkata", "komunikasi")),
-    ("justice", ("adil", "keadilan", "zalim", "kezaliman", "hak orang", "diskriminasi")),
-    ("avoid_unsupported_claims", ("tidak tahu", "kepastian", "mengarang", "klaim", "fakta", "ilmu", "yakin")),
-    ("cooperation", ("kerja sama", "tolong", "membantu", "kolaborasi", "persaingan")),
-    ("intentions", ("niat", "tujuan", "ikhlas", "motivasi")),
+    ("verify_information", ("berita", "memberitahu", "informasi", "informasi palsu", "hoaks", "bukti", "sumber berita", "sumber informasi", "verifikasi", "memverifikasi", "cek fakta")),
+    ("speak_truthfully", ("berbohong", "bohong", "membohongi", "kebohongan", "jujur", "berjujur", "kejujuran", "fitnah", "ucapan", "berkata", "mengucapkan", "komunikasi", "berkomunikasi")),
+    ("justice", ("adil", "keadilan", "zalim", "menzalimi", "kezaliman", "hak orang", "diskriminasi", "mendiskriminasi", "mengadili", "pengadilan")),
+    ("avoid_unsupported_claims", ("tidak tahu", "kepastian", "mengarang", "klaim", "mengklaim", "fakta", "ilmu", "yakin", "meyakini")),
+    ("cooperation", ("kerja sama", "bekerja sama", "tolong", "menolong", "membantu", "kolaborasi", "bekerja sama", "persaingan", "bersaing")),
+    ("intentions", ("niat", "berniat", "tujuan", "bertujuan", "ikhlas", "motivasi", "termotivasi")),
 )
 
 
 def select_islamic_sources(question: str, *, limit: int = 2) -> list[IslamicSource]:
-    """Return only curated sources whose themes match the supplied question."""
+    """Return only curated sources whose themes match the supplied question.
+
+    Uses whole-word/phrase matching to avoid false positives from substrings.
+    """
     normalized = " ".join(question.casefold().split())
     if not normalized or limit < 1:
         return []
 
     matched_keys: list[str] = []
     for key, terms in THEMES:
-        if any(term in normalized for term in terms):
+        if any(_term_matches(normalized, term) for term in terms):
             matched_keys.append(key)
             if len(matched_keys) >= limit:
                 break
 
     by_key = {source["key"]: source for source in SOURCES}
     return [by_key[key] for key in matched_keys if key in by_key]
+
+
+def _term_matches(text: str, term: str) -> bool:
+    """Check if term appears as a whole word/phrase in text."""
+    # Escape special regex characters in the term
+    escaped = re.escape(term)
+    # Use word boundaries for whole-word matching
+    # For multi-word terms, this ensures each word is bounded
+    pattern = r"(?<!\w)" + escaped + r"(?!\w)"
+    return re.search(pattern, text) is not None
 
 
 def format_sources_for_reflection(question: str) -> str:

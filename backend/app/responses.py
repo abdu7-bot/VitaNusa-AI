@@ -356,7 +356,13 @@ def build_actions(
 def build_quranic_reflection(question: str = "") -> dict[str, str]:
     reflection = QURANIC_REFLECTION.copy()
     if question.strip():
-        reflection["dalil"] = format_sources_for_reflection(question)
+        from app.islamic_reasoning import select_islamic_sources
+
+        sources = select_islamic_sources(question)
+        if sources:
+            reflection["dalil"] = format_sources_for_reflection(question)
+        else:
+            reflection["dalil"] = "Tidak ada dalil terkurasi yang relevan untuk pertanyaan ini."
     reflection["method"] = (
         "Dalil diambil dari korpus terkurasi dan ditampilkan dengan rujukan. "
         "Kesesuaian konteks bukan fatwa; tafsir dan penetapan hukum memerlukan rujukan ulama kompeten."
