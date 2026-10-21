@@ -6,6 +6,7 @@ theme is clearly detected. Never synthesize Arabic text or source metadata.
 """
 from __future__ import annotations
 
+import re
 from typing import TypedDict
 
 
@@ -86,9 +87,13 @@ def select_islamic_sources(question: str, *, limit: int = 2) -> list[IslamicSour
     if not normalized or limit < 1:
         return []
 
+    # Word-boundary matching reduces accidental substring hits. This is still
+    # lexical routing, not semantic validation of religious claims.
+    normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
+    normalized = " ".join(normalized.split())
     matched_keys: list[str] = []
     for key, terms in THEMES:
-        if any(term in normalized for term in terms):
+        if any(re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", normalized) for term in terms):
             matched_keys.append(key)
             if len(matched_keys) >= limit:
                 break
