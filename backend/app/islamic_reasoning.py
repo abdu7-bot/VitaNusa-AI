@@ -231,7 +231,7 @@ def select_islamic_sources(question: str, *, limit: int = 2) -> list[IslamicSour
 
 def _term_matches(text: str, term: str) -> bool:
     """Word-boundary substring matching; not semantic, negation-aware NLP."""
-    pattern = r"(?<!\\w)" + re.escape(term) + r"(?!\\w)"
+    pattern = r"(?<!\w)" + re.escape(term) + r"(?!\w)"
     return re.search(pattern, text) is not None
 
 
