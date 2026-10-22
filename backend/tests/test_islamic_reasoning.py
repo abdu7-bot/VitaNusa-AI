@@ -14,6 +14,7 @@ from app.islamic_reasoning import (
     select_islamic_sources,
     validate_citation,
     validate_source_registry,
+    _term_matches,
 )
 from app.main import ASK_RATE_LIMITER, app
 from app.responses import build_quranic_reflection
@@ -89,6 +90,10 @@ class IslamicReasoningTests(unittest.TestCase):
             select_islamic_sources("Tidak perlu bahas keadilan; how do I cook rice?")[0]["key"],
             "justice",
         )
+
+    def test_word_boundary_matching_rejects_substrings(self):
+        self.assertFalse(_term_matches("keadilan", "adil"))
+        self.assertTrue(_term_matches("berlaku adil", "adil"))
 
     def test_free_form_fabricated_citation_is_rejected(self):
         from app.islamic_reasoning import validate_llm_religious_claims
