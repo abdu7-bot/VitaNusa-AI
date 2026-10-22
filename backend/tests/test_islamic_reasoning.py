@@ -90,6 +90,17 @@ class IslamicReasoningTests(unittest.TestCase):
             "justice",
         )
 
+    def test_free_form_fabricated_citation_is_rejected(self):
+        from app.islamic_reasoning import validate_llm_religious_claims
+        self.assertFalse(validate_llm_religious_claims("Dalilnya QS 999:999 menyatakan demikian."))
+        self.assertFalse(validate_llm_religious_claims("Menurut Sahih al-Bukhari 999999, ini wajib."))
+        self.assertTrue(validate_llm_religious_claims("Kita perlu berhati-hati dan bertanya kepada ulama."))
+
+    def test_llm_citation_guard_is_not_semantic_validation(self):
+        from app.islamic_reasoning import validate_llm_religious_claims
+        # This paraphrase-like response passes pattern detection but remains unverified.
+        self.assertTrue(validate_llm_religious_claims("Islam menekankan keadilan dalam kehidupan."))
+
     def test_unmatched_question_has_no_citations(self):
         self.assertEqual(select_islamic_sources("What is the weather today?"), [])
 
