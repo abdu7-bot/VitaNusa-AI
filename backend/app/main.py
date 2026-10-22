@@ -12,7 +12,7 @@ from .conversation_memory import CONVERSATION_MEMORY, build_history_context
 from .feedback import FEEDBACK_RATE_LIMITER, FeedbackReceipt, FeedbackRequest, feedback_rate_limit_window_seconds, list_pending_feedback, record_feedback
 from .health_navigator import check_navigator, list_topics
 from .intent_router import detect_intent, normalize_text
-from .islamic_reasoning import format_sources_for_reflection, select_islamic_sources
+from .islamic_reasoning import format_sources_for_reflection, select_islamic_sources, validate_llm_religious_claims
 from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
 from .llm.guard import build_blocked_router_response, build_guard_context, evaluate_llm_guard
@@ -212,6 +212,10 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
         return rule_based_answer, None
     response = router_response.response
     if response is not None and response.provider == "ollama" and router_response.selected_provider == "ollama" and response.status == "success" and response.content.strip():
+        # Reject unsupported citation-shaped religious claims; this cannot validate semantics.
+        if intent == "quranic_reflection" or select_islamic_sources(question):
+            if not validate_llm_religious_claims(response.content):
+                return rule_based_answer, None
         return response.content.strip(), router_response.selected_provider
     return rule_based_answer, None
 
