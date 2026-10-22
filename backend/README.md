@@ -58,15 +58,22 @@ app/policies/
 
 ## Islamic Reasoning Layer
 
-`app/islamic_reasoning.py` menyediakan korpus awal yang terkurasi untuk prinsip Al-Qur'an dan hadis sahih. Backend memakai pencocokan tema yang dibatasi, bukan generasi teks dalil. Rujukan hanya ditambahkan saat tema pertanyaan cocok; jika tidak cocok, sistem menyatakan bahwa dalil spesifik belum dipilih dan melarang pengarangannya.
+`app/islamic_reasoning.py` menyediakan registry sumber terbatas untuk refleksi. Pemilihan sumber memakai **pencocokan kata/frasal (lexical candidate retrieval)**; ini bukan pemahaman semantik, bukan penentuan niat, dan tidak boleh menentukan fatwa.
 
-- Dalil mencakup teks Arab, terjemahan ringkas, rujukan, dan relevansi umum.
-- Pada jalur LLM yang diaktifkan, dalil terkurasi menjadi konteks tambahan; policy engine dan guard keselamatan tetap menjadi otoritas.
-- Refleksi Qur'ani menyertakan dalil yang cocok dan penegasan bahwa hasilnya bukan fatwa atau pengganti tafsir ulama.
-- Korpus ini masih kecil dan harus ditinjau ahli sebelum dipakai untuk keputusan agama yang berdampak tinggi. Tidak ada klaim bahwa sistem mampu melakukan istinbat hukum atau menggantikan ulama.
-- Perubahan ini tidak menambahkan dependency eksternal atau mengubah konfigurasi deployment.
+- ID internal adalah kunci stabil untuk merujuk entri di registry. Validasi ID dan kecocokan string persis hanya mengesahkan keberadaan/kecocokan teks lokal, bukan autentisitas, kesetaraan terjemahan, tafsir, atau penerapan hukum.
+- Metadata provenance yang belum dicatat ditampilkan sebagai tidak diketahui; status semua entri tetap `registry_only` dan tinjauan ulama `pending`. Tidak ada klaim persetujuan ulama.
+- Kutipan kanonik harus dirender dari registry server. Klaim bebas dari LLM tidak dianggap terverifikasi dan tidak boleh menjadi citation kanonik tanpa validasi ID serta teks. Penjelasan, parafrasa, dan keputusan hukum memerlukan penilaian terpisah.
+- Registry metadata dapat diperiksa dengan `citation_audit_report()`. Korpus ini belum menjadi tafsir atau mesin fatwa dan belum lolos gerbang rilis agama.
 
-Test regresi: `python -m unittest discover -s tests -v`.
+Tes lokal dari direktori `backend/`:
+
+```bash
+python -m unittest discover -s tests -p 'test_islamic_reasoning.py' -v
+python -m compileall -q app tests
+python tests/ci_smoke_test.py
+```
+
+Perintah tes Islamic Reasoning yang sama wajib dijalankan sebagai langkah blocking CI.
 
 ## Menjalankan Lokal
 
