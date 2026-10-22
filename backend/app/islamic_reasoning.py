@@ -235,6 +235,29 @@ def _term_matches(text: str, term: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+
+_UNVERIFIED_QURAN_REFERENCE = re.compile(
+    r"(?i)\b(?:qs\.?\s*)?(?:al[- ]?[a-z'’]+\s*)?\d{1,3}\s*[:.]\s*\d{1,3}\b"
+)
+_UNVERIFIED_HADITH_REFERENCE = re.compile(
+    r"(?i)\b(?:sahih\s+)?(?:al[- ]?)?(?:bukhari|bukha?ri|muslim|tirmidhi|abu\s+dawud|nasai|nasa'i|ibn\s+majah)\s*(?:no\.?\s*)?\d{1,7}\b"
+)
+
+
+def validate_llm_religious_claims(text: str) -> bool:
+    """Reject citation-like tokens in free-form generated text.
+
+    Canonical citations must be rendered from source IDs in the server registry.
+    This guard only detects common reference-shaped strings; it cannot verify
+    paraphrase meaning, translation, attribution, authenticity, or applicability.
+    """
+    if not isinstance(text, str):
+        return False
+    return not (
+        _UNVERIFIED_QURAN_REFERENCE.search(text)
+        or _UNVERIFIED_HADITH_REFERENCE.search(text)
+    )
+
 def format_sources_for_reflection(question: str) -> str:
     """Render server-owned source text and status, never model-supplied citations."""
     sources = select_islamic_sources(question)
