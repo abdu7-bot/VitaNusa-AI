@@ -56,6 +56,25 @@ app/policies/
 └── content_integrity.py
 ```
 
+## Islamic Reasoning Layer
+
+`app/islamic_reasoning.py` menyediakan registry sumber terbatas untuk refleksi. Pemilihan sumber memakai **pencocokan kata/frasal (lexical candidate retrieval)**; ini bukan pemahaman semantik, bukan penentuan niat, dan tidak boleh menentukan fatwa.
+
+- ID internal adalah kunci stabil untuk merujuk entri di registry. Validasi ID dan kecocokan string persis hanya mengesahkan keberadaan/kecocokan teks lokal, bukan autentisitas, kesetaraan terjemahan, tafsir, atau penerapan hukum.
+- Metadata provenance yang belum dicatat ditampilkan sebagai tidak diketahui; status semua entri tetap `registry_only` dan tinjauan ulama `pending`. Tidak ada klaim persetujuan ulama.
+- Kutipan kanonik harus dirender dari registry server. Klaim bebas dari LLM tidak dianggap terverifikasi dan tidak boleh menjadi citation kanonik tanpa validasi ID serta teks. Penjelasan, parafrasa, dan keputusan hukum memerlukan penilaian terpisah.
+- Registry metadata dapat diperiksa dengan `citation_audit_report()`. Korpus ini belum menjadi tafsir atau mesin fatwa dan belum lolos gerbang rilis agama.
+
+Tes lokal dari direktori `backend/`:
+
+```bash
+python -m unittest discover -s tests -p 'test_islamic_reasoning.py' -v
+python -m compileall -q app tests
+python tests/ci_smoke_test.py
+```
+
+Perintah tes Islamic Reasoning yang sama wajib dijalankan sebagai langkah blocking CI.
+
 ## Menjalankan Lokal
 
 ```bash

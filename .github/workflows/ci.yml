@@ -327,6 +327,9 @@ jobs:
       - name: Run hierarchy policy unit tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
+      - name: Run Islamic reasoning registry and API regression tests
+        run: python -m unittest discover -s tests -p 'test_islamic_reasoning.py' -v
+
       - name: Run backend smoke tests
         shell: bash
         run: |

@@ -1,0 +1,233 @@
+{
+  "schema_version": "1.0",
+  "audit_date": "2026-10-22",
+  "repository": "abdu7-bot/VitaNusa-AI",
+  "audited_branch": "codex/islamic-reasoning-backend",
+  "audited_head_before_this_report": "c0a28e7bec6b52b12a5b17edceea6af5351cfad6",
+  "purpose": "Evidence log for current six-entry registry; not a scholarly authentication or approval record.",
+  "overall_status": "PARTIAL_REFERENCE_CHECK; SCHOLARLY_REVIEW_PENDING",
+  "method": "Compared registry references and excerpts with the linked public Quran.com and Sunnah.com pages. This is a limited web-source comparison, not review of printed critical editions, chains, full context, translation licensing, or scholarly interpretation.",
+  "status_definitions": {
+    "registry_entry_exists": "Checked against the repository registry.",
+    "reference_checked": "Reference locator was found on a cited page; does not establish all scholarly questions.",
+    "original_text_checked": "Only the displayed excerpt was compared. Orthographic, edition, and contextual checks remain separate.",
+    "translation_checked": "Whether the current Indonesian string is an exact published translation or only a summary.",
+    "authenticity_reviewed": "For hadith, whether an independent qualified authenticity review is documented.",
+    "scholarly_interpretation_reviewed": "Whether qualified human review of interpretation/context is documented.",
+    "qualified_human_approval_documented": "Whether a named, qualified human approval record exists in repository evidence."
+  },
+  "sources": [
+    {
+      "source_id": "verify_information",
+      "source_type": "quran",
+      "claimed_reference": "QS. Al-Hujurat 49:6",
+      "registry_arabic": "يَا أَيُّهَا الَّذِينَ آمَنُوا إِنْ جَاءَكُمْ فَاسِقٌ بِنَبَإٍ فَتَبَيَّنُوا",
+      "text_form": "partial Arabic excerpt, not complete ayah",
+      "registry_indonesian_text": "Wahai orang-orang yang beriman, jika seseorang yang fasik datang kepadamu membawa suatu berita, maka telitilah kebenarannya.",
+      "primary_source_checked": "Quran.com verse page showing Arabic and Indonesian translation labelled Indonesian Islamic Affairs Ministry",
+      "primary_source_url": "https://quran.com/id/kamar-kamar/6/translations/quran.id",
+      "locator_and_numbering": "Qur'an surah 49, ayah 6",
+      "edition_translator_publisher": "Quran.com page identifies Indonesian Islamic Affairs Ministry translation; publication year/printed edition not established in this audit.",
+      "verification_date": "2026-10-22",
+      "evidence": "The page displays the same opening Arabic words through فَتَبَيَّنُوا and the corresponding Indonesian instruction to verify the news. The ayah continues beyond the registry excerpt.",
+      "discrepancies": [],
+      "missing_metadata": [
+        "Printed mushaf edition",
+        "Arabic orthographic edition metadata",
+        "Translation version/publication details beyond page label",
+        "Qualified scholar review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "checked_on_public_page",
+        "original_text_checked": "excerpt_wording_observed; full-ayah/context_not_checked",
+        "translation_checked": "summary_or_partial_translation; not approved as exact quotation",
+        "attribution_reviewed": "not_applicable_to_quran_text; human review pending for use/context",
+        "authenticity_reviewed": "not_applicable",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    },
+    {
+      "source_id": "speak_truthfully",
+      "source_type": "hadith",
+      "claimed_reference": "Sahih al-Bukhari 6018; Sahih Muslim 47",
+      "registry_arabic": "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
+      "text_form": "partial Arabic excerpt from a longer hadith",
+      "registry_indonesian_text": "Barang siapa beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.",
+      "primary_sources_checked": [
+        {
+          "publication": "Sunnah.com, Sahih al-Bukhari 6018",
+          "url": "https://sunnah.com/bukhari:6018"
+        },
+        {
+          "publication": "Sunnah.com, Sahih Muslim 47b as displayed on the page",
+          "url": "https://sunnah.com/muslim/1/81"
+        }
+      ],
+      "locator_and_numbering": "Bukhari 6018 (Book 78, Hadith 49 on page); Muslim page identifies 47b and also shows in-book Book 1, Hadith 81. Numbering schemes differ.",
+      "edition_translator_publisher": "Online Arabic/English display checked; no printed edition or Indonesian hadith translator established.",
+      "verification_date": "2026-10-22",
+      "evidence": "Both pages display the phrase about speaking good or remaining silent as part of a longer narration; Bukhari page explicitly shows modern reference 6018 and an older deprecated numbering scheme.",
+      "discrepancies": [
+        "Registry locator 'Muslim 47' is underspecified compared with page's 'Sahih Muslim 47b'; preserve until numbering convention is documented."
+      ],
+      "missing_metadata": [
+        "Chosen numbering convention",
+        "Printed edition details",
+        "Indonesian hadith translation source",
+        "Qualified human review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "partially_checked_on_public_pages",
+        "original_text_checked": "excerpt observed within longer narrations; full critical-edition comparison not done",
+        "translation_checked": "not checked against a named Indonesian hadith translation",
+        "attribution_reviewed": "collection pages located; independent attribution review not documented",
+        "authenticity_reviewed": "not independently reviewed in this audit",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    },
+    {
+      "source_id": "justice",
+      "source_type": "quran",
+      "claimed_reference": "QS. An-Nahl 16:90",
+      "registry_arabic": "إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ",
+      "text_form": "partial Arabic excerpt, not complete ayah",
+      "registry_indonesian_text": "Sesungguhnya Allah menyuruh berlaku adil dan berbuat kebajikan.",
+      "primary_source_checked": "Quran.com verse page showing Arabic and Indonesian translation labelled Indonesian Islamic Affairs Ministry",
+      "primary_source_url": "https://quran.com/id/lebah-madu/90",
+      "locator_and_numbering": "Qur'an surah 16, ayah 90",
+      "edition_translator_publisher": "Quran.com page identifies Indonesian Islamic Affairs Ministry translation; printed edition metadata not established.",
+      "verification_date": "2026-10-22",
+      "evidence": "The displayed Arabic starts with the registry excerpt; the complete ayah also mentions giving to relatives and prohibitions, omitted from the excerpt.",
+      "discrepancies": [],
+      "missing_metadata": [
+        "Printed mushaf edition",
+        "Full context handling",
+        "Translation version details",
+        "Qualified scholar review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "checked_on_public_page",
+        "original_text_checked": "opening_excerpt_observed; full-ayah/context_not_checked",
+        "translation_checked": "partial summary; not an exact complete-ayah translation",
+        "attribution_reviewed": "not_applicable_to_quran_text; human review pending for use/context",
+        "authenticity_reviewed": "not_applicable",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    },
+    {
+      "source_id": "avoid_unsupported_claims",
+      "source_type": "quran",
+      "claimed_reference": "QS. Al-Isra' 17:36",
+      "registry_arabic": "وَلَا تَقْفُ مَا لَيْسَ لَكَ بِهِ عِلْمٌ",
+      "text_form": "partial Arabic excerpt, not complete ayah",
+      "registry_indonesian_text": "Janganlah engkau mengikuti sesuatu yang tidak engkau ketahui.",
+      "primary_source_checked": "Quran.com verse page showing Arabic and Indonesian translation labelled Indonesian Islamic Affairs Ministry",
+      "primary_source_url": "https://quran.com/id/perjalanan-malam/36",
+      "locator_and_numbering": "Qur'an surah 17, ayah 36",
+      "edition_translator_publisher": "Quran.com page identifies Indonesian Islamic Affairs Ministry translation; printed edition metadata not established.",
+      "verification_date": "2026-10-22",
+      "evidence": "The Arabic excerpt is the opening clause displayed on the page; the full ayah continues by referring to hearing, sight, and the heart.",
+      "discrepancies": [],
+      "missing_metadata": [
+        "Printed mushaf edition",
+        "Full context handling",
+        "Translation version details",
+        "Qualified scholar review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "checked_on_public_page",
+        "original_text_checked": "opening_excerpt_observed; full-ayah/context_not_checked",
+        "translation_checked": "partial translation; exact wording/version not established",
+        "attribution_reviewed": "not_applicable_to_quran_text; human review pending for use/context",
+        "authenticity_reviewed": "not_applicable",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    },
+    {
+      "source_id": "cooperation",
+      "source_type": "quran",
+      "claimed_reference": "QS. Al-Ma'idah 5:2",
+      "registry_arabic": "وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَى",
+      "text_form": "partial Arabic excerpt, not complete ayah",
+      "registry_indonesian_text": "Tolong-menolonglah kamu dalam (mengerjakan) kebajikan dan takwa.",
+      "primary_source_checked": "Quran.com verse page showing the full Arabic ayah",
+      "primary_source_url": "https://quran.com/5%3A2",
+      "locator_and_numbering": "Qur'an surah 5, ayah 2",
+      "edition_translator_publisher": "Page checked for Arabic; the Indonesian wording in the registry was not independently tied to a named translation edition in this audit.",
+      "verification_date": "2026-10-22",
+      "evidence": "The phrase appears in the ayah, which continues with an explicit prohibition on cooperation in sin and aggression; that context should accompany relevant use.",
+      "discrepancies": [],
+      "missing_metadata": [
+        "Named Indonesian translation edition",
+        "Printed mushaf edition",
+        "Full context handling",
+        "Qualified scholar review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "checked_on_public_page",
+        "original_text_checked": "excerpt_observed; full-ayah/context_not_checked",
+        "translation_checked": "not checked against a named translation edition",
+        "attribution_reviewed": "not_applicable_to_quran_text; human review pending for use/context",
+        "authenticity_reviewed": "not_applicable",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    },
+    {
+      "source_id": "intentions",
+      "source_type": "hadith",
+      "claimed_reference": "Sahih al-Bukhari 1; Sahih Muslim 1907",
+      "registry_arabic": "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
+      "text_form": "short Arabic excerpt from a longer hadith",
+      "registry_indonesian_text": "Sesungguhnya amal-amal itu bergantung pada niatnya.",
+      "primary_sources_checked": [
+        {
+          "publication": "Sunnah.com, Sahih al-Bukhari 1",
+          "url": "https://sunnah.com/bukhari:1"
+        },
+        {
+          "publication": "Sunnah.com, Sahih Muslim 1907a",
+          "url": "https://sunnah.com/muslim/33"
+        }
+      ],
+      "locator_and_numbering": "Bukhari 1 (Book 1, Hadith 1 on page); Muslim 1907a / Book 33, Hadith 222 on page. The Muslim page also shows 1907b as a separate transmission.",
+      "edition_translator_publisher": "Online Arabic/English display checked; no printed edition or Indonesian hadith translator established.",
+      "verification_date": "2026-10-22",
+      "evidence": "Bukhari 1 displays إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ. The Sunnah.com Muslim 1907a display uses إِنَّمَا الأَعْمَالُ بِالنِّيَّةِ (singular) in the visible text.",
+      "discrepancies": [
+        "Arabic wording differs between the registry's plural 'بالنيات' and the Muslim 1907a page's singular 'بالنية'. The registry wording matches the displayed Bukhari excerpt; do not imply that the exact same Arabic string was verified for both collections."
+      ],
+      "missing_metadata": [
+        "Numbering convention for Muslim",
+        "Printed edition details",
+        "Translation source",
+        "Qualified hadith specialist review"
+      ],
+      "statuses": {
+        "registry_entry_exists": "checked",
+        "reference_checked": "partially_checked_on_public_pages",
+        "original_text_checked": "Bukhari excerpt observed; Muslim wording discrepancy recorded",
+        "translation_checked": "not checked against a named Indonesian hadith translation",
+        "attribution_reviewed": "collection pages located; independent attribution review not documented",
+        "authenticity_reviewed": "not independently reviewed in this audit",
+        "scholarly_interpretation_reviewed": "pending",
+        "qualified_human_approval_documented": false
+      }
+    }
+  ],
+  "release_gate": {
+    "engineering_source_registry": "not sufficient by itself to authorize religious claims",
+    "qualified_islamic_scholarly_review": "PENDING",
+    "human_approval": "NOT DOCUMENTED",
+    "note": "This report records observed public-page evidence and discrepancies only. It does not certify hadith authenticity, translation equivalence, interpretation, or applicability."
+  }
+}
