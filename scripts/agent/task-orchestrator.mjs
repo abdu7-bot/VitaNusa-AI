@@ -268,6 +268,30 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
     };
   }
   
+  // Pre-check: search for existing PR with same head/base (crash recovery)
+  try {
+    const existingPr = execFileSync('gh', ['pr', 'list', '--head', branch, '--base', 'main', '--json', 'number,url,isDraft,headRefName,baseRefName'], 
+      { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const prs = JSON.parse(existingPr);
+    if (prs && prs.length > 0) {
+      const pr = prs[0];
+      return {
+        success: true,
+        url: pr.url,
+        number: pr.number,
+        recovered: true,
+        verified: {
+          isDraft: pr.isDraft,
+          head: pr.headRefName,
+          base: pr.baseRefName,
+          matchesExpected: pr.headRefName === branch && pr.baseRefName === 'main',
+        }
+      };
+    }
+  } catch (e) {
+    // gh CLI search failed, proceed with creation attempt
+  }
+
   // Method 1: Try gh CLI (preferred, handles auth automatically)
   try {
     const result = execFileSync('gh', ['pr', 'create', '--draft', '--base', 'main', '--head', branch, 
