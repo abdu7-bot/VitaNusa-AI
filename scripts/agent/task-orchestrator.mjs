@@ -13,6 +13,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { createCheckpoint, saveCheckpoint, isRecoverable } from './checkpoint.mjs';
 import { transition as smTransition, TASK_STATES } from './state-machine.mjs';
 import { loadPolicy, isPolicyEnabled, isMode, getMaxRepairAttempts, getTaskTimeout, getMaxChangedFiles, getMaxDiffLines, canWriteMain, canAutoMerge, canDeploy, stopOnViolation, requiresTests, requiresSecurityChecks, requiresDraftPR } from './policy-engine.mjs';
 
@@ -55,6 +56,7 @@ function getRepoPaths(cwd) {
     RUNTIME_DIR: join(root, '.git', 'vitanusa-agent'),
     STATE_FILE: join(root, '.git', 'vitanusa-agent', 'state.json'),
     EVIDENCE_DIR: join(root, '.git', 'vitanusa-agent', 'evidence'),
+    CHECKPOINT_DIR: join(root, '.git', 'vitanusa-agent', 'checkpoints'),
   };
 }
 
@@ -569,6 +571,20 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   saveState(paths, { ...runningState, status: 'PR_CREATED', evidence, completedAt: new Date().toISOString() });
   saveEvidence(paths, task.id, evidence);
+
+  // Save checkpoint for recovery
+  try {
+    const cp = createCheckpoint(task.id, 'PR_CREATED', {
+      attempt: 1,
+      lastStep: 'completed',
+      retryCount: repairCount,
+      repairCount,
+      evidenceRefs: [task.id],
+    });
+    saveCheckpoint(paths.CHECKPOINT_DIR, cp);
+  } catch (e) {
+    console.warn(`[${task.id}] Checkpoint save failed: ${e.message}`);
+  }
 
   return { ...evidence, state: 'PR_CREATED' };
 }
