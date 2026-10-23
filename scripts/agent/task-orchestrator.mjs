@@ -13,6 +13,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { loadPolicy, isPolicyEnabled, isMode, getMaxRepairAttempts, getTaskTimeout, getMaxChangedFiles, getMaxDiffLines, canWriteMain, canAutoMerge, canDeploy, stopOnViolation, requiresTests, requiresSecurityChecks, requiresDraftPR } from './policy-engine.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -332,7 +333,13 @@ See \`evidence/\` directory for full details.
 export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const execute = argv.includes('--execute');
   const taskIdArg = argv.find((x) => x.startsWith('--task='))?.slice(7) ?? null;
-  const repairLimit = Number(argv.find((x) => x.startsWith('--repair-limit='))?.slice(15)) ?? DEFAULT_REPAIR_LIMIT;
+  
+  const policy = loadPolicy();
+  if (!isPolicyEnabled(policy)) {
+    console.warn('[POLICY] Autonomous execution is disabled. Running in AUDIT mode.');
+  }
+  const policyRepairLimit = getMaxRepairAttempts(policy);
+  const repairLimit = Number(argv.find((x) => x.startsWith('--repair-limit='))?.slice(15)) ?? policyRepairLimit;
   
   const paths = getRepoPaths(cwd);
   const repo = assertRepositoryReady(paths);
