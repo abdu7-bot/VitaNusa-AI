@@ -163,3 +163,24 @@ test('policy: null max_cost_per_task accepted', () => {
   assert.equal(p.engine.max_cost_per_task, null);
   cleanup(dir);
 });
+
+test('policy: array items must be strings', () => {
+  const { dir, file } = tmpPolicy({ engine: { enabled: false, mode: 'AUDIT', allowed_repositories: [123], allowed_base_branches: [], allowed_worker_commands: [], max_concurrent_tasks: 1, max_repair_attempts: 2, task_timeout_seconds: 600, max_changed_files: 50, max_diff_lines: 5000, require_tests: true, require_security_checks: true, require_draft_pr: true, allow_dependency_changes: false, allow_lockfile_changes: false, allow_network_access: false, allow_destructive_commands: false, allow_main_writes: false, allow_auto_merge: false, allow_deployment: false, require_human_approval_for: [], max_cost_per_task: null, max_daily_cost: null, stop_on_policy_violation: true } });
+  assert.throws(() => loadPolicy(file), /must be string/i);
+  cleanup(dir);
+});
+
+test('policy: non-finite number rejected', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pol-'));
+  const file = join(dir, 'p.json');
+  writeFileSync(file, '{"engine":{"enabled":false,"mode":"AUDIT","allowed_repositories":[],"allowed_base_branches":[],"allowed_worker_commands":[],"max_concurrent_tasks":1e999,"max_repair_attempts":2,"task_timeout_seconds":600,"max_changed_files":50,"max_diff_lines":5000,"require_tests":true,"require_security_checks":true,"require_draft_pr":true,"allow_dependency_changes":false,"allow_lockfile_changes":false,"allow_network_access":false,"allow_destructive_commands":false,"allow_main_writes":false,"allow_auto_merge":false,"allow_deployment":false,"require_human_approval_for":[],"max_cost_per_task":null,"max_daily_cost":null,"stop_on_policy_violation":true}}');
+  assert.throws(() => loadPolicy(file), /finite number/i);
+  rmSync(dir, { recursive: true, force: true });
+  cleanup(dir);
+});
+
+test('policy: negative budget rejected', () => {
+  const { dir, file } = tmpPolicy({ engine: { enabled: false, mode: 'AUDIT', allowed_repositories: [], allowed_base_branches: [], allowed_worker_commands: [], max_concurrent_tasks: 1, max_repair_attempts: 2, task_timeout_seconds: 600, max_changed_files: 50, max_diff_lines: 5000, require_tests: true, require_security_checks: true, require_draft_pr: true, allow_dependency_changes: false, allow_lockfile_changes: false, allow_network_access: false, allow_destructive_commands: false, allow_main_writes: false, allow_auto_merge: false, allow_deployment: false, require_human_approval_for: [], max_cost_per_task: -1, max_daily_cost: null, stop_on_policy_violation: true } });
+  assert.throws(() => loadPolicy(file), /non-negative or null/i);
+  cleanup(dir);
+});

@@ -99,6 +99,27 @@ export function loadPolicy(policyPath = POLICY_PATH) {
       continue;
     }
 
+    if (value !== null && schema.type === 'array' && Array.isArray(value) && schema.items) {
+      for (let i = 0; i < value.length; i++) {
+        if (typeof value[i] !== schema.items) {
+          errors.push(`Field ${key}[${i}] must be ${schema.items}, got ${typeof value[i]}`);
+        }
+      }
+    }
+
+    if (value !== null && schema.type === 'number' && !Number.isFinite(value)) {
+      errors.push(`Field ${key} must be a finite number, got ${value}`);
+      continue;
+    }
+
+    if (value !== null && schema.type === 'number' && schema.min !== undefined && value < schema.min) {
+      errors.push(`Field ${key} must be >= ${schema.min}, got ${value}`);
+    }
+
+    if (schema.nullable && value !== null && schema.type === 'number' && value < 0) {
+      errors.push(`Field ${key} must be non-negative or null, got ${value}`);
+    }
+
     if (schema.mustBeFalse && value !== false) {
       errors.push(`Field ${key} must be false (safety default)`);
     }

@@ -339,7 +339,20 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     console.warn('[POLICY] Autonomous execution is disabled. Running in AUDIT mode.');
   }
   const policyRepairLimit = getMaxRepairAttempts(policy);
-  const repairLimit = Number(argv.find((x) => x.startsWith('--repair-limit='))?.slice(15)) ?? policyRepairLimit;
+  const rawRepairLimit = argv.find((x) => x.startsWith('--repair-limit='))?.slice(15);
+  let repairLimit;
+  if (rawRepairLimit === undefined) {
+    repairLimit = policyRepairLimit;
+  } else {
+    const parsed = Number(rawRepairLimit);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      throw new Error(`Invalid --repair-limit value: ${rawRepairLimit}. Must be a non-negative integer.`);
+    }
+    if (parsed > policyRepairLimit) {
+      throw new Error(`--repair-limit ${parsed} exceeds policy maximum of ${policyRepairLimit}.`);
+    }
+    repairLimit = parsed;
+  }
   
   const paths = getRepoPaths(cwd);
   const repo = assertRepositoryReady(paths);
