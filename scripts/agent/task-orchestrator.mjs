@@ -342,6 +342,7 @@ See \`evidence/\` directory for full details.
 
 export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const execute = argv.includes('--execute');
+  const recover = argv.includes('--recover');
   const taskIdArg = argv.find((x) => x.startsWith('--task='))?.slice(7) ?? null;
   
   const policy = loadPolicy();
@@ -366,6 +367,31 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   
   const paths = getRepoPaths(cwd);
   const repo = assertRepositoryReady(paths);
+
+  // Recovery mode: find and evaluate incomplete tasks
+  if (recover) {
+    const { findLatestCheckpoint, isRecoverable, isTerminal } = await import('./checkpoint.mjs');
+    const cp = await findLatestCheckpoint(paths.CHECKPOINT_DIR, taskIdArg || 'T001');
+    if (!cp) {
+      return { state: 'BLOCKED', stopReason: 'No checkpoint found for recovery', taskId: taskIdArg };
+    }
+    if (isTerminal(cp.state)) {
+      return { state: cp.state, stopReason: 'Task already terminal, no recovery needed', taskId: cp.taskId, checkpoint: cp };
+    }
+    if (!isRecoverable(cp.state)) {
+      return { state: 'BLOCKED', stopReason: 'State ' + cp.state + ' is not recoverable', taskId: cp.taskId, checkpoint: cp };
+    }
+    const prev = readState(paths);
+    if (prev && prev.status === 'RUNNING' && !isStaleLock(prev)) {
+      return { state: 'BLOCKED', stopReason: 'Worker may still be active, cannot recover safely', taskId: cp.taskId, checkpoint: cp };
+    }
+    if (prev && prev.status === 'RUNNING' && isStaleLock(prev)) {
+      const { rmSync } = await import('node:fs');
+      rmSync(paths.STATE_FILE, { force: true });
+    }
+    return { state: 'RECOVERY_READY', taskId: cp.taskId, checkpoint: cp, recoverable: true, message: 'Checkpoint found and validated. Use --execute to resume.' };
+  }
+
   const tasks = loadTasks(paths);
   let task = taskIdArg ? tasks.find((t) => t.id === taskIdArg) : selectTask(tasks);
   
