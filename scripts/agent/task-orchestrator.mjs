@@ -178,10 +178,17 @@ function runWithTimeout(command, args, options = {}) {
     maxBuffer: maxOutput,
   });
   
-  if (result.stdout && result.stdout.length > maxOutput) {
+  // Normalize Buffer output to strings for safe JSON serialization
+  if (result.stdout instanceof Buffer) {
+    result.stdout = result.stdout.toString('utf8');
+  }
+  if (result.stderr instanceof Buffer) {
+    result.stderr = result.stderr.toString('utf8');
+  }
+  if (typeof result.stdout === 'string' && result.stdout.length > maxOutput) {
     result.stdout = result.stdout.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
   }
-  if (result.stderr && result.stderr.length > maxOutput) {
+  if (typeof result.stderr === 'string' && result.stderr.length > maxOutput) {
     result.stderr = result.stderr.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
   }
   
