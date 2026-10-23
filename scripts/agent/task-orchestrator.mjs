@@ -99,14 +99,16 @@ export function main(argv = process.argv.slice(2)) {
 
   if (!execute) return report;
 
+  // Validate the worker before any repository mutation. A bad or unauthorized
+  // command must not leave the checkout on a new branch or persist a RUNNING lock.
+  const workerCommand = process.env.VITANUSA_WORKER_CMD || 'kilo --auto';
+  const worker = validateWorker(workerCommand);
+
   if (runGit(['branch', '--list', branch])) {
     throw new Error(`Branch ${branch} sudah ada. Jangan membuat branch duplikat.`);
   }
   runGit(['switch', '-c', branch]);
   saveState({ taskId: task.id, branch, status: 'RUNNING', baseCommit: repo.head, startedAt: new Date().toISOString() });
-
-  const workerCommand = process.env.VITANUSA_WORKER_CMD || 'kilo --auto';
-  const worker = validateWorker(workerCommand);
   const workerResult = spawnSync(worker[0], worker.slice(1), { cwd: ROOT, stdio: 'inherit', env: process.env });
   if (workerResult.status !== 0) {
     report.state = 'BLOCKED'; report.stopReason = `worker exit ${workerResult.status}`;
