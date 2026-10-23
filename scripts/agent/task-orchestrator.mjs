@@ -9,6 +9,7 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync, statSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
+// Using built-in fetch (Node.js 18+)
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -202,28 +203,106 @@ function runWorker(paths, worker, task, baseCommit, env = {}) {
   });
 }
 
-function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
-  const ghToken = process.env.GITHUB_TOKEN;
+async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
+  const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const repoSlug = process.env.GITHUB_REPOSITORY; // e.g. "abdu7-bot/VitaNusa-AI"
+  
   if (!ghToken) {
     return { 
       success: false, 
-      reason: 'GITHUB_TOKEN not set. Cannot create Draft PR automatically.',
+      reason: 'GITHUB_TOKEN/GH_TOKEN not set. Cannot create Draft PR automatically.',
       manualInfo: {
         branch,
         base: 'main',
         title: `[Draft] ${taskId}: ${evidence.taskTitle || ''}`,
         body: generatePRBody(taskId, evidence),
+        commands: [
+          `git push origin ${branch}`,
+          `gh pr create --draft --base main --head ${branch} --title "[Draft] ${taskId}: ${evidence.taskTitle || ''}" --body "..."`,
+        ],
       }
     };
   }
   
+  // Method 1: Try gh CLI (preferred, handles auth automatically)
   try {
-    const result = runGit(['gh', 'pr', 'create', '--draft', '--base', 'main', '--head', branch, 
+    const result = execFileSync('gh', ['pr', 'create', '--draft', '--base', 'main', '--head', branch, 
       '--title', `[Draft] ${taskId}: ${evidence.taskTitle || ''}`,
       '--body', generatePRBody(taskId, evidence)
-    ], process.cwd());
-    return { success: true, url: result.trim() };
+    ], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    
+    // Verify the PR was created and is draft
+    const prUrl = result.trim();
+    const prNumberMatch = prUrl.match(/\/pull\/(\d+)/);
+    const prNumber = prNumberMatch ? prNumberMatch[1] : null;
+    
+    // Verify draft status
+    let isDraft = false;
+    let verifiedHead = null;
+    let verifiedBase = null;
+    try {
+      const prInfo = execFileSync('gh', ['pr', 'view', prNumber || prUrl, '--json', 'isDraft,headRefName,baseRefName,number,url'], 
+        { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      const info = JSON.parse(prInfo);
+      isDraft = info.isDraft;
+      verifiedHead = info.headRefName;
+      verifiedBase = info.baseRefName;
+    } catch (e) {
+      // gh CLI verification failed, but PR was created
+      console.warn(`[${taskId}] PR created but verification failed: ${e.message}`);
+    }
+    
+    return { 
+      success: true, 
+      url: prUrl,
+      number: prNumber,
+      verified: {
+        isDraft,
+        head: verifiedHead,
+        base: verifiedBase,
+        matchesExpected: verifiedHead === branch && verifiedBase === 'main',
+      }
+    };
   } catch (e) {
+    // Method 2: Fallback to GitHub REST API (via curl)
+    if (repoSlug) {
+      try {
+        const [owner, repo] = repoSlug.split('/');
+        const curlResult = execFileSync('curl', [
+          '-s', '-X', 'POST',
+          `https://api.github.com/repos/${owner}/${repo}/pulls`,
+          '-H', `Authorization: token ${ghToken}`,
+          '-H', 'Accept: application/vnd.github.v3+json',
+          '-H', 'Content-Type: application/json',
+          '-d', JSON.stringify({
+            title: `[Draft] ${taskId}: ${evidence.taskTitle || ''}`,
+            body: generatePRBody(taskId, evidence),
+            head: branch,
+            base: 'main',
+            draft: true,
+          }),
+        ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+        
+        const pr = JSON.parse(curlResult);
+        if (pr.html_url) {
+          return { 
+            success: true, 
+            url: pr.html_url,
+            number: pr.number,
+            verified: {
+              isDraft: pr.draft,
+              head: pr.head.ref,
+              base: pr.base.ref,
+              matchesExpected: pr.head.ref === branch && pr.base.ref === 'main' && pr.draft === true,
+            }
+          };
+        }
+        throw new Error(pr.message || 'Unknown API error');
+      } catch (apiErr) {
+        return { success: false, reason: `GitHub API failed: ${apiErr.message}`, manualInfo: { branch, base: 'main' } };
+      }
+    }
+    
     return { success: false, reason: `gh CLI failed: ${e.message}`, manualInfo: { branch, base: 'main' } };
   }
 }
@@ -250,7 +329,7 @@ See \`evidence/\` directory for full details.
 `;
 }
 
-export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
+export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const execute = argv.includes('--execute');
   const taskIdArg = argv.find((x) => x.startsWith('--task='))?.slice(7) ?? null;
   const repairLimit = Number(argv.find((x) => x.startsWith('--repair-limit='))?.slice(15)) ?? DEFAULT_REPAIR_LIMIT;
@@ -451,7 +530,7 @@ export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
   evidence.stateTransitions.push({ state: 'PR_CREATED', timestamp: new Date().toISOString() });
 
-  const prResult = createDraftPR(task.id, branch, repo.head, evidence.headCommit, evidence);
+  const prResult = await createDraftPR(task.id, branch, repo.head, evidence.headCommit, evidence);
   evidence.draftPR = prResult;
 
   if (prResult.success) {
@@ -467,10 +546,10 @@ export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  try {
-    console.log(JSON.stringify(main(), null, 2));
-  } catch (error) {
+  main().then(result => {
+    console.log(JSON.stringify(result, null, 2));
+  }).catch(error => {
     console.error(`STOP: ${error.message}`);
     process.exitCode = 2;
-  }
+  });
 }
