@@ -99,6 +99,37 @@ export function assertRepositoryReady(paths) {
   return { branch, head: runGit(['rev-parse', 'HEAD'], paths.ROOT) };
 }
 
+
+export function atomicClaim(paths, taskId, workerId) {
+  const lockFile = join(paths.RUNTIME_DIR, 'claim-' + taskId + '.lock');
+  mkdirSync(paths.RUNTIME_DIR, { recursive: true });
+  try {
+    writeFileSync(lockFile, JSON.stringify({ taskId, workerId, claimedAt: new Date().toISOString(), fencingToken: Date.now() }), { flag: 'wx', mode: 0o600 });
+    return { success: true, lockFile };
+  } catch (e) {
+    if (e.code === 'EEXIST') {
+      // Check if stale
+      try {
+        const existing = JSON.parse(readFileSync(lockFile, 'utf8'));
+        const claimedAt = new Date(existing.claimedAt).getTime();
+        if (Date.now() - claimedAt > 30 * 60 * 1000) {
+          // Stale claim - remove and retry
+          rmSync(lockFile, { force: true });
+          writeFileSync(lockFile, JSON.stringify({ taskId, workerId, claimedAt: new Date().toISOString(), fencingToken: Date.now() }), { flag: 'wx', mode: 0o600 });
+          return { success: true, lockFile, stale: true };
+        }
+      } catch {}
+      return { success: false, reason: 'Task already claimed by another worker' };
+    }
+    return { success: false, reason: e.message };
+  }
+}
+
+export function releaseClaim(paths, taskId) {
+  const lockFile = join(paths.RUNTIME_DIR, 'claim-' + taskId + '.lock');
+  try { rmSync(lockFile, { force: true }); return true; } catch { return false; }
+}
+
 export function validateWorker(command) {
   const parts = command.trim().split(/\s+/).filter(Boolean);
   if (!parts.length || !ALLOWED_WORKERS.has(parts[0])) throw new Error('Worker tidak diizinkan. Gunakan kilo/opencode/aider/codex.');
