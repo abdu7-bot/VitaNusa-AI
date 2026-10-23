@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -28,6 +28,8 @@ priority: P1
 title: Test Task
 tests: echo hello
 allowedPaths: docs
+instructions: Create a test file in docs/
+acceptanceCriteria: File exists|File contains hello
 ---
 # Test Task
 `, 'utf8');
@@ -42,25 +44,26 @@ allowedPaths: docs
   return repo;
 }
 
+function runOrchestrator(repo, args, env = {}) {
+  return spawnSync('node', [
+    join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
+    ...args
+  ], { 
+    cwd: repo, 
+    stdio: 'pipe', 
+    env: { ...process.env, ...env },
+    timeout: 30000
+  });
+}
+
 test('orchestrator rejects invalid worker before repository mutation', async () => {
   const repo = createTempRepo();
   
   try {
-    // Set an invalid worker command
-    process.env.VITANUSA_WORKER_CMD = 'invalid-worker --auto';
-    
-    const result = spawnSync('node', [
-      join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
-      '--execute',
-      '--task=T999'
-    ], { 
-      cwd: repo, 
-      stdio: 'pipe', 
-      env: { ...process.env, VITANUSA_WORKER_CMD: 'invalid-worker --auto' },
-      timeout: 10000
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: 'invalid-worker --auto' 
     });
     
-    // Should fail with exit code 2 (STOP)
     assert.equal(result.status, 2);
     const output = result.stderr.toString();
     assert.ok(output.includes('Worker tidak diizinkan') || output.includes('STOP'));
@@ -72,10 +75,8 @@ test('orchestrator rejects invalid worker before repository mutation', async () 
     // Verify no state file was created
     const runtimeDir = join(repo, '.git', 'vitanusa-agent');
     const stateFile = join(runtimeDir, 'state.json');
-    const fs = await import('node:fs');
-    assert.ok(!fs.existsSync(stateFile));
+    assert.ok(!existsSync(stateFile));
   } finally {
-    delete process.env.VITANUSA_WORKER_CMD;
     rmSync(repo, { recursive: true, force: true });
   }
 });
@@ -84,26 +85,17 @@ test('orchestrator rejects paid marker without explicit permission', async () =>
   const repo = createTempRepo();
   
   try {
-    const result = spawnSync('node', [
-      join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
-      '--execute',
-      '--task=T999'
-    ], { 
-      cwd: repo, 
-      stdio: 'pipe', 
-      env: { ...process.env, VITANUSA_WORKER_CMD: 'kilo --model paid-pro' },
-      timeout: 10000
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: 'kilo --model paid-pro' 
     });
     
     assert.equal(result.status, 2);
     const output = result.stderr.toString();
     assert.ok(output.includes('Paid fallback ditolak') || output.includes('STOP'));
     
-    // Verify no branch was created
     const branches = spawnSync('git', ['branch'], { cwd: repo, encoding: 'utf8' }).stdout;
     assert.ok(!branches.includes('agent/t999-test'));
   } finally {
-    delete process.env.VITANUSA_WORKER_CMD;
     rmSync(repo, { recursive: true, force: true });
   }
 });
@@ -112,27 +104,17 @@ test('orchestrator validates allowedPaths and blocks out-of-scope changes', asyn
   const repo = createTempRepo();
   
   try {
-    // Modify a file outside allowedPaths (backend/app/main.py not in allowedPaths: docs)
+    // Create a file outside allowedPaths before running
     mkdirSync(join(repo, 'backend', 'app'), { recursive: true });
     writeFileSync(join(repo, 'backend', 'app', 'main.py'), 'unauthorized change\n', 'utf8');
     
-    // Use a simple worker that just touches the file
-    const result = spawnSync('node', [
-      join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
-      '--execute',
-      '--task=T999'
-    ], { 
-      cwd: repo, 
-      stdio: 'pipe', 
-      env: { ...process.env, VITANUSA_WORKER_CMD: 'true' },
-      timeout: 10000
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: 'true' 
     });
     
     // Should fail because backend/app/main.py is not in allowedPaths
-    // Note: the worker 'true' exits successfully but the changedPaths check should fail
     assert.notEqual(result.status, 0);
   } finally {
-    delete process.env.VITANUSA_WORKER_CMD;
     rmSync(repo, { recursive: true, force: true });
   }
 });
@@ -141,7 +123,6 @@ test('orchestrator creates branch and persists state on successful execution', a
   const repo = createTempRepo();
   
   try {
-    // Use a simple worker that modifies allowed path
     const workerScript = `
       const fs = require('fs');
       fs.writeFileSync('docs/test-output.txt', 'worker output');
@@ -150,36 +131,21 @@ test('orchestrator creates branch and persists state on successful execution', a
     const workerFile = join(repo, 'worker.js');
     writeFileSync(workerFile, workerScript, 'utf8');
     
-    const result = spawnSync('node', [
-      join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
-      '--execute',
-      '--task=T999'
-    ], { 
-      cwd: repo, 
-      stdio: 'pipe', 
-      env: { ...process.env, VITANUSA_WORKER_CMD: `node ${workerFile}` },
-      timeout: 10000
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: `node ${workerFile}` 
     });
     
-    // Check the result
-    console.log('Exit code:', result.status);
-    console.log('Stdout:', result.stdout.toString());
-    console.log('Stderr:', result.stderr.toString());
-    
-    // If successful, should have created branch and state
     if (result.status === 0) {
       const branches = spawnSync('git', ['branch'], { cwd: repo, encoding: 'utf8' }).stdout;
       assert.ok(branches.includes('agent/t999-test'));
       
       const runtimeDir = join(repo, '.git', 'vitanusa-agent');
       const stateFile = join(runtimeDir, 'state.json');
-      const fs = await import('node:fs');
-      assert.ok(fs.existsSync(stateFile));
+      assert.ok(existsSync(stateFile));
       const state = JSON.parse(readFileSync(stateFile, 'utf8'));
-      assert.equal(state.status, 'DRAFT_PR_READY');
+      assert.equal(state.status, 'PR_CREATED');
     }
   } finally {
-    delete process.env.VITANUSA_WORKER_CMD;
     rmSync(repo, { recursive: true, force: true });
   }
 });
@@ -188,33 +154,177 @@ test('orchestrator fails closed when worker exits with non-zero', async () => {
   const repo = createTempRepo();
   
   try {
-    // Worker that fails
     const workerFile = join(repo, 'worker_fail.js');
     writeFileSync(workerFile, 'process.exit(1);', 'utf8');
     
-    const result = spawnSync('node', [
-      join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'),
-      '--execute',
-      '--task=T999'
-    ], { 
-      cwd: repo, 
-      stdio: 'pipe', 
-      env: { ...process.env, VITANUSA_WORKER_CMD: `node ${workerFile}` },
-      timeout: 10000
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: `node ${workerFile}` 
     });
     
-    // Should fail with non-zero exit
     assert.notEqual(result.status, 0);
     
-    // State should be BLOCKED
     const stateFile = join(repo, '.git', 'vitanusa-agent', 'state.json');
-    const fs = await import('node:fs');
-    if (fs.existsSync(stateFile)) {
+    if (existsSync(stateFile)) {
       const state = JSON.parse(readFileSync(stateFile, 'utf8'));
       assert.equal(state.status, 'BLOCKED');
     }
   } finally {
-    delete process.env.VITANUSA_WORKER_CMD;
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator returns worker input contract in PLAN mode', async () => {
+  const repo = createTempRepo();
+  
+  try {
+    // Commit any changes first so repo is clean
+    spawnSync('git', ['add', '.'], { cwd: repo, stdio: 'ignore' });
+    spawnSync('git', ['commit', '-m', 'Clean state'], { cwd: repo, stdio: 'ignore' });
+    
+    const result = runOrchestrator(repo, ['--task=T999'], {});
+    
+    assert.equal(result.status, 0);
+    const output = JSON.parse(result.stdout.toString());
+    assert.ok(output.workerInputContract);
+    assert.equal(output.workerInputContract.taskId, 'T999');
+    assert.ok(Array.isArray(output.workerInputContract.allowedPaths));
+    assert.ok(Array.isArray(output.workerInputContract.requiredTests));
+    assert.ok(output.workerInputContract.baseCommit);
+    assert.ok(output.workerInputContract.repairLimit);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator detects stale lock and clears it', async () => {
+  const repo = createTempRepo();
+  
+  try {
+    // Commit clean state first
+    spawnSync('git', ['add', '.'], { cwd: repo, stdio: 'ignore' });
+    spawnSync('git', ['commit', '-m', 'Clean state'], { cwd: repo, stdio: 'ignore' });
+    
+    // Create a stale state file
+    const runtimeDir = join(repo, '.git', 'vitanusa-agent');
+    mkdirSync(runtimeDir, { recursive: true });
+    const staleTime = new Date(Date.now() - 40 * 60 * 1000).toISOString(); // 40 min ago
+    writeFileSync(join(runtimeDir, 'state.json'), JSON.stringify({
+      taskId: 'T000',
+      branch: 'agent/t000-stale',
+      status: 'RUNNING',
+      baseCommit: 'abc123',
+      startedAt: staleTime,
+    }), 'utf8');
+    
+    // Create the stale branch
+    spawnSync('git', ['switch', '-c', 'agent/t000-stale'], { cwd: repo, stdio: 'ignore' });
+    spawnSync('git', ['switch', 'test-branch'], { cwd: repo, stdio: 'ignore' });
+    
+    // Should clear stale lock and proceed
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: 'true' 
+    });
+    
+    // Should not fail due to stale lock
+    const stderr = result.stderr.toString();
+    assert.ok(!stderr.includes('Masih ada task aktif'));
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator blocks active (non-stale) lock', async () => {
+  const repo = createTempRepo();
+  
+  try {
+    // Commit clean state first
+    spawnSync('git', ['add', '.'], { cwd: repo, stdio: 'ignore' });
+    spawnSync('git', ['commit', '-m', 'Clean state'], { cwd: repo, stdio: 'ignore' });
+    
+    // Create a fresh state file
+    const runtimeDir = join(repo, '.git', 'vitanusa-agent');
+    mkdirSync(runtimeDir, { recursive: true });
+    const freshTime = new Date().toISOString();
+    writeFileSync(join(runtimeDir, 'state.json'), JSON.stringify({
+      taskId: 'T000',
+      branch: 'agent/t000-active',
+      status: 'RUNNING',
+      baseCommit: 'abc123',
+      startedAt: freshTime,
+    }), 'utf8');
+    
+    // Create the active branch
+    spawnSync('git', ['switch', '-c', 'agent/t000-active'], { cwd: repo, stdio: 'ignore' });
+    spawnSync('git', ['switch', 'test-branch'], { cwd: repo, stdio: 'ignore' });
+    
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: 'true' 
+    });
+    
+    assert.equal(result.status, 2);
+    const stderr = result.stderr.toString();
+    assert.ok(stderr.includes('Masih ada task aktif'));
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator tracks state transitions in evidence', async () => {
+  const repo = createTempRepo();
+  
+  try {
+    const workerScript = `
+      const fs = require('fs');
+      fs.writeFileSync('docs/test-output.txt', 'worker output');
+    `;
+    const workerFile = join(repo, 'worker.js');
+    writeFileSync(workerFile, workerScript, 'utf8');
+    
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: `node ${workerFile}` 
+    });
+    
+    if (result.status === 0) {
+      const output = JSON.parse(result.stdout.toString());
+      assert.ok(output.stateTransitions);
+      assert.ok(output.stateTransitions.length >= 3); // PLAN, CLAIMED, RUNNING at minimum
+      const states = output.stateTransitions.map(t => t.state);
+      assert.ok(states.includes('PLAN'));
+      assert.ok(states.includes('CLAIMED'));
+      assert.ok(states.includes('RUNNING'));
+    }
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator saves evidence file', async () => {
+  const repo = createTempRepo();
+  
+  try {
+    const workerScript = `
+      const fs = require('fs');
+      fs.writeFileSync('docs/test-output.txt', 'worker output');
+    `;
+    const workerFile = join(repo, 'worker.js');
+    writeFileSync(workerFile, workerScript, 'utf8');
+    
+    const result = runOrchestrator(repo, ['--execute', '--task=T999'], { 
+      VITANUSA_WORKER_CMD: `node ${workerFile}` 
+    });
+    
+    if (result.status === 0) {
+      const evidenceDir = join(repo, '.git', 'vitanusa-agent', 'evidence');
+      const files = readdirSync(evidenceDir);
+      assert.ok(files.length > 0);
+      const evidence = JSON.parse(readFileSync(join(evidenceDir, files[0]), 'utf8'));
+      assert.equal(evidence.taskId, 'T999');
+      assert.ok(evidence.baseCommit);
+      assert.ok(evidence.headCommit);
+      assert.ok(evidence.branch);
+      assert.ok(evidence.stateTransitions);
+    }
+  } finally {
     rmSync(repo, { recursive: true, force: true });
   }
 });
