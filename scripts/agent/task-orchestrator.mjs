@@ -13,6 +13,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { createJournal, OPERATION_STATES } from './operation-journal.mjs';
 import { createCheckpoint, saveCheckpoint, isRecoverable } from './checkpoint.mjs';
 import { transition as smTransition, TASK_STATES } from './state-machine.mjs';
 import { loadPolicy, isPolicyEnabled, isMode, getMaxRepairAttempts, getTaskTimeout, getMaxChangedFiles, getMaxDiffLines, canWriteMain, canAutoMerge, canDeploy, stopOnViolation, requiresTests, requiresSecurityChecks, requiresDraftPR } from './policy-engine.mjs';
@@ -56,6 +57,7 @@ function getRepoPaths(cwd) {
     RUNTIME_DIR: join(root, '.git', 'vitanusa-agent'),
     STATE_FILE: join(root, '.git', 'vitanusa-agent', 'state.json'),
     EVIDENCE_DIR: join(root, '.git', 'vitanusa-agent', 'evidence'),
+    JOURNAL_DIR: join(root, '.git', 'vitanusa-agent', 'operations'),
     CHECKPOINT_DIR: join(root, '.git', 'vitanusa-agent', 'checkpoints'),
   };
 }
@@ -626,8 +628,25 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
   evidence.stateTransitions.push({ state: 'PR_CREATED', timestamp: new Date().toISOString() });
 
-  const prResult = await createDraftPR(task.id, branch, repo.head, evidence.headCommit, evidence);
-  evidence.draftPR = prResult;
+  // Operation journal: track Draft PR creation
+  const journal = createJournal(paths.JOURNAL_DIR);
+  const existingOps = journal.listByTask ? await journal.listByTask(task.id) : [];
+  const prOp = existingOps.find(o => o.type === 'draft_pr' && o.status === OPERATION_STATES.CONFIRMED);
+  let prResult;
+  if (prOp) {
+    // Already confirmed - don't repeat
+    prResult = { success: true, url: 'already-created', number: null, verified: { isDraft: true } };
+    console.log('[' + task.id + '] Draft PR already created (journal confirmed). Skipping.');
+  } else {
+    const opEntry = journal.record({ taskId: task.id, type: 'draft_pr', target: branch, status: OPERATION_STATES.STARTED });
+    prResult = await createDraftPR(task.id, branch, repo.head, evidence.headCommit, evidence);
+    if (prResult.success) {
+      journal.update(opEntry.id, { status: OPERATION_STATES.CONFIRMED, confirmedAt: new Date().toISOString() });
+    } else {
+      journal.update(opEntry.id, { status: OPERATION_STATES.FAILED, failedAt: new Date().toISOString(), error: prResult.reason });
+    }
+    evidence.draftPR = prResult;
+  }
 
   if (prResult.success) {
     console.log(`[${task.id}] Draft PR created: ${prResult.url}`);
