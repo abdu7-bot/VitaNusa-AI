@@ -389,14 +389,21 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       const { rmSync } = await import('node:fs');
       rmSync(paths.STATE_FILE, { force: true });
     }
-    return { state: 'RECOVERY_READY', taskId: cp.taskId, checkpoint: cp, recoverable: true, message: 'Checkpoint found and validated. Use --execute to resume.' };
+    // Recovery validated - fall through to execution with the recovered task ID
+    if (!taskIdArg) {
+      // Set taskIdArg so the task lookup below uses the checkpoint's task
+      process.env._RECOVERED_TASK_ID = cp.taskId;
+    }
+    // Mark that we're in recovery mode (for evidence tracking)
+    console.log('[RECOVERY] Resuming task ' + cp.taskId + ' from checkpoint state ' + cp.state);
   }
 
+  const recoveredTaskId = process.env._RECOVERED_TASK_ID || taskIdArg;
   const tasks = loadTasks(paths);
-  let task = taskIdArg ? tasks.find((t) => t.id === taskIdArg) : selectTask(tasks);
+  let task = recoveredTaskId ? tasks.find((t) => t.id === recoveredTaskId) : (taskIdArg ? tasks.find((t) => t.id === taskIdArg) : selectTask(tasks));
   
   if (!task) throw new Error('Tidak ada task READY yang eligible.');
-  if (task.status !== 'READY') throw new Error(`${task.id} tidak READY.`);
+  if (task.status !== 'READY' && !recover) throw new Error(`${task.id} tidak READY.`);
 
   const previous = readState(paths);
   if (previous?.status === 'RUNNING') {
@@ -427,7 +434,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     workerInputContract: null,
   };
 
-  if (!execute) {
+  if (!execute && !recover) {
     evidence.workerInputContract = createWorkerInputContract(task, repo.head, paths);
     return { ...evidence, state: 'PLAN' };
   }
