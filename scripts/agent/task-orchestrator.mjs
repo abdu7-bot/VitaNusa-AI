@@ -457,6 +457,8 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     baseCommit: repo.head, 
     startedAt: new Date().toISOString(),
     repairCount: 0,
+    leaseToken: crypto.randomUUID(),
+    fencingToken: Date.now(),
   };
   saveState(paths, runningState);
   evidence.stateTransitions.push({ state: 'RUNNING', timestamp: new Date().toISOString() });
