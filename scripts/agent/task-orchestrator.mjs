@@ -186,6 +186,22 @@ function runWithTimeout(command, args, options = {}) {
   return result;
 }
 
+function runWorker(paths, worker, task, baseCommit, env = {}) {
+  const workerEnv = { 
+    ...process.env, 
+    ...env, 
+    VITANUSA_TASK_ID: task.id, 
+    VITANUSA_BASE_COMMIT: baseCommit,
+    VITANUSA_ALLOWED_PATHS: task.allowedPaths.join('|'),
+    VITANUSA_INSTRUCTIONS: task.instructions,
+  };
+  
+  return runWithTimeout(worker[0], worker.slice(1), { 
+    paths,
+    env: workerEnv 
+  });
+}
+
 function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
   const ghToken = process.env.GITHUB_TOKEN;
   if (!ghToken) {
@@ -304,10 +320,7 @@ export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   evidence.stateTransitions.push({ state: 'RUNNING', timestamp: new Date().toISOString() });
 
   console.log(`[${task.id}] Starting worker: ${worker.join(' ')}`);
-  const workerResult = runWithTimeout(worker[0], worker.slice(1), { 
-    paths,
-    env: { ...process.env, VITANUSA_TASK_ID: task.id, VITANUSA_BASE_COMMIT: repo.head } 
-  });
+  const workerResult = runWorker(paths, worker, task, repo.head, { VITANUSA_TASK_ID: task.id, VITANUSA_BASE_COMMIT: repo.head });
   
   evidence.commands.push({ 
     command: worker.join(' '), 
@@ -336,6 +349,32 @@ export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       runningState.repairCount = repairCount;
       saveState(paths, runningState);
       console.log(`[${task.id}] Repair attempt ${repairCount}/${repairLimit}`);
+      
+      // Re-invoke worker for repair
+      console.log(`[${task.id}] Re-invoking worker for repair...`);
+      const repairResult = runWorker(paths, worker, task, repo.head, { 
+        VITANUSA_TASK_ID: task.id, 
+        VITANUSA_BASE_COMMIT: repo.head,
+        VITANUSA_REPAIR_ATTEMPT: repairCount.toString(),
+      });
+      
+      evidence.commands.push({ 
+        command: worker.join(' '), 
+        exitCode: repairResult.status, 
+        stdout: repairResult.stdout, 
+        stderr: repairResult.stderr,
+        phase: `repair-${repairCount}`,
+      });
+      
+      if (repairResult.status !== 0) {
+        evidence.stopReason = `worker exit ${repairResult.status} during repair`;
+        evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
+        evidence.changedPaths = getChangedPaths(paths, repo.head).map(c => c.path);
+        evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
+        saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
+        saveEvidence(paths, task.id, evidence);
+        return { ...evidence, state: 'BLOCKED' };
+      }
     } else {
       evidence.stateTransitions.push({ state: 'VERIFYING', timestamp: new Date().toISOString() });
       runningState.status = 'VERIFYING';
@@ -395,7 +434,7 @@ export function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       repairCount++;
       if (repairCount <= repairLimit) {
         evidence.repairs.push({ attempt: repairCount, timestamp: new Date().toISOString() });
-        console.log(`[${task.id}] Repair needed. In real implementation, worker would be invoked again.`);
+        console.log(`[${task.id}] Verification failed. Repair attempt ${repairCount}/${repairLimit} will re-invoke worker.`);
       }
     }
   }
