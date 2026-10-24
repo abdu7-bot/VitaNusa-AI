@@ -222,11 +222,17 @@ function runWithTimeout(command, args, options = {}) {
   if (result.stderr instanceof Buffer) {
     result.stderr = result.stderr.toString('utf8');
   }
-  if (typeof result.stdout === 'string' && result.stdout.length > maxOutput) {
-    result.stdout = result.stdout.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
+  if (typeof result.stdout === 'string') {
+    result.stdout = redactSensitive(result.stdout);
+    if (result.stdout.length > maxOutput) {
+      result.stdout = result.stdout.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
+    }
   }
-  if (typeof result.stderr === 'string' && result.stderr.length > maxOutput) {
-    result.stderr = result.stderr.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
+  if (typeof result.stderr === 'string') {
+    result.stderr = redactSensitive(result.stderr);
+    if (result.stderr.length > maxOutput) {
+      result.stderr = result.stderr.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
+    }
   }
   
   return result;
