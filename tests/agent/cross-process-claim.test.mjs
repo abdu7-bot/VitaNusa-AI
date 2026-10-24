@@ -138,3 +138,56 @@ test('cross-process: active claim is not stolen', async () => {
 
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('cross-process: old worker cannot release replacement worker lock', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'ownership-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create a lock owned by worker-A
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'worker-A',
+    claimedAt: new Date().toISOString(),
+    fencingToken: Date.now(),
+  }));
+
+  // Import releaseClaim directly and test with wrong workerId
+  const { releaseClaim } = await import(new URL('../../scripts/agent/task-orchestrator.mjs', import.meta.url));
+  const result = releaseClaim({ RUNTIME_DIR: runtimeDir }, taskId, 'worker-B');
+  assert.ok(result.success === false, 'Old worker should not release replacement lock');
+  assert.equal(result.reason, 'Claim ownership mismatch, cannot release');
+
+  // Verify lock still exists
+  const { existsSync } = await import('node:fs');
+  assert.ok(existsSync(lockFile), 'Lock file should still exist after failed release');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('cross-process: correct worker can release own lock', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'own-release-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create a lock owned by worker-A
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'worker-A',
+    claimedAt: new Date().toISOString(),
+    fencingToken: Date.now(),
+  }));
+
+  // Import releaseClaim directly and test with correct workerId
+  const { releaseClaim } = await import(new URL('../../scripts/agent/task-orchestrator.mjs', import.meta.url));
+  const result = releaseClaim({ RUNTIME_DIR: runtimeDir }, taskId, 'worker-A');
+  assert.ok(result.success === true, 'Correct worker should release own lock');
+
+  // Verify lock is removed
+  const { existsSync } = await import('node:fs');
+  assert.ok(!existsSync(lockFile), 'Lock file should be removed after successful release');
+
+  rmSync(dir, { recursive: true, force: true });
+});

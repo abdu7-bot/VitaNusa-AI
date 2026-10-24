@@ -42,7 +42,7 @@ test('claim: release allows re-claim', () => {
   const dir = setupRepo();
   const paths = { RUNTIME_DIR: join(dir, '.git', 'vitanusa-agent') };
   atomicClaim(paths, 'T001', 'worker-1');
-  releaseClaim(paths, 'T001');
+  releaseClaim(paths, 'T001', 'worker-1');
   const result2 = atomicClaim(paths, 'T001', 'worker-2');
   assert.equal(result2.success, true);
   rmSync(dir, { recursive: true, force: true });

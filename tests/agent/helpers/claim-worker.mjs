@@ -18,7 +18,7 @@ process.send({ workerId, claimed: result });
 
 if (result && result.success) {
   setTimeout(() => {
-    releaseClaim(paths, taskId);
+    releaseClaim(paths, taskId, workerId);
     process.exit(0);
   }, 500);
 } else {
