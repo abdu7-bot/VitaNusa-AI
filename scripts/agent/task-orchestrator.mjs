@@ -434,7 +434,7 @@ function applyWorkspaceChanges(workspace, originalRoot) {
   }
 }
 
-function redactSensitive(text) {
+export function redactSensitive(text) {
   if (typeof text !== 'string') return text;
   return text
     .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)s*[:=]s*['"]?[^'"s]+['"]?/gi, '[REDACTED]')
