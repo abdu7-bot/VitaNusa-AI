@@ -165,7 +165,7 @@ export function checkAllowedPaths(changes, allowed) {
 
 function saveState(paths, state) {
   mkdirSync(paths.RUNTIME_DIR, { recursive: true });
-  writeFileSync(paths.STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
+  writeFileSync(paths.STATE_FILE, `${JSON.stringify(state, (key, value) => typeof value === 'string' ? redactSensitive(value) : value, 2)}\n`, { mode: 0o600 });
 }
 
 function readState(paths) {
@@ -176,7 +176,7 @@ function readState(paths) {
 function saveEvidence(paths, taskId, evidence) {
   mkdirSync(paths.EVIDENCE_DIR, { recursive: true });
   const file = join(paths.EVIDENCE_DIR, `${taskId}-${Date.now()}.json`);
-  writeFileSync(file, `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 });
+  writeFileSync(file, `${JSON.stringify(evidence, (key, value) => typeof value === 'string' ? redactSensitive(value) : value, 2)}\n`, { mode: 0o600 });
   return file;
 }
 
