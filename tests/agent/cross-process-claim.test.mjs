@@ -80,3 +80,61 @@ test('cross-process: independent tasks can be claimed concurrently', async () =>
 
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('cross-process: stale claim is recovered by new process', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'stale-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create a stale lock (claimed 31 minutes ago)
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'old-worker',
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    fencingToken: Date.now() - 31 * 60 * 1000,
+  }));
+
+  // New process should recover the stale claim
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'new-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  assert.ok(result.claimed && result.claimed.success, 'Stale claim should be recovered');
+  assert.equal(result.claimed.stale, true, 'Should be marked as stale recovery');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('cross-process: active claim is not stolen', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'active-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create a fresh (non-stale) lock
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'active-worker',
+    claimedAt: new Date().toISOString(),
+    fencingToken: Date.now(),
+  }));
+
+  // New process should NOT claim (active lock)
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'thief-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  assert.ok(result.claimed && result.claimed.success === false, 'Active claim should not be stolen');
+  assert.equal(result.claimed.reason, 'Task already claimed by another worker');
+
+  rmSync(dir, { recursive: true, force: true });
+});
