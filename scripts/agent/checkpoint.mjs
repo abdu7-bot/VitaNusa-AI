@@ -75,7 +75,7 @@ export function loadCheckpoint(checkpointDir, taskId, attempt) {
     if (errors.length > 0) throw new Error(`Corrupted checkpoint: ${errors.join(', ')}`);
     return cp;
   } catch (e) {
-    throw new Error(`Failed to load checkpoint: ${e.message}`);
+    throw new Error(redactSensitive(`Failed to load checkpoint: ${e.message}`));
   }
 }
 

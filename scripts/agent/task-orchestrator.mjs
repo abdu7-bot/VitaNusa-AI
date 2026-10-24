@@ -124,7 +124,7 @@ export function atomicClaim(paths, taskId, workerId) {
       } catch {}
       return { success: false, reason: 'Task already claimed by another worker' };
     }
-    return { success: false, reason: e.message };
+    return { success: false, reason: redactSensitive(e.message) };
   }
 }
 
@@ -325,7 +325,7 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
       verifiedBase = info.baseRefName;
     } catch (e) {
       // gh CLI verification failed, but PR was created
-      console.warn(`[${taskId}] PR created but verification failed: ${e.message}`);
+      console.warn(`[${taskId}] PR created but verification failed: ${redactSensitive(e.message)}`);
     }
     
     return { 
@@ -373,13 +373,13 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
             }
           };
         }
-        throw new Error(pr.message || 'Unknown API error');
+        throw new Error(redactSensitive(pr.message || 'Unknown API error'));
       } catch (apiErr) {
-        return { success: false, reason: `GitHub API failed: ${apiErr.message}`, manualInfo: { branch, base: 'main' } };
+        return { success: false, reason: `GitHub API failed: ${redactSensitive(apiErr.message)}`, manualInfo: { branch, base: 'main' } };
       }
     }
     
-    return { success: false, reason: `gh CLI failed: ${e.message}`, manualInfo: { branch, base: 'main' } };
+    return { success: false, reason: `gh CLI failed: ${redactSensitive(e.message)}`, manualInfo: { branch, base: 'main' } };
   }
 }
 
@@ -757,7 +757,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     });
     saveCheckpoint(paths.CHECKPOINT_DIR, cp);
   } catch (e) {
-    console.warn(`[${task.id}] Checkpoint save failed: ${e.message}`);
+    console.warn(`[${task.id}] Checkpoint save failed: ${redactSensitive(e.message)}`);
   }
 
   cleanupWorkspace(workspace);
