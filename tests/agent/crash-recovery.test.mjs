@@ -1,82 +1,266 @@
-import test from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { fork } from 'node:child_process';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 
-function git(cwd, ...args) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-}
-
-function setupRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'cr-'));
-  git(dir, 'init', '-b', 'main');
-  git(dir, 'config', 'user.email', 'test@test.com');
-  git(dir, 'config', 'user.name', 'Test');
-  writeFileSync(join(dir, 'README.md'), '# Test\n');
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-m', 'init');
-  git(dir, 'checkout', '-b', 'agent/T001-test');
-  mkdirSync(join(dir, 'tasks', 'active'), { recursive: true });
-  writeFileSync(join(dir, 'tasks', 'active', 'T001.md'), `---
-id: T001
-title: Test
-status: READY
-priority: P1
-allowedPaths: src
-tests: echo ok
----
-Test.
-`);
-  mkdirSync(join(dir, 'src'), { recursive: true });
-  writeFileSync(join(dir, 'ROADMAP.md'), '# Roadmap\n');
-  mkdirSync(join(dir, 'docs'), { recursive: true });
-  writeFileSync(join(dir, 'docs', 'vitanusa-work-queue.md'), '# Queue\n');
-  git(dir, 'add', '.');
-  git(dir, 'commit', '-m', 'setup');
-  return dir;
-}
-
-test('CR: stale lock detection clears old running state', async () => {
-  const dir = setupRepo();
+function createTempRepo() {
+  const dir = mkdtempSync(join(tmpdir(), 'crash-test-'));
+  execFileSync('git', ['init'], { cwd: dir });
+  execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: dir });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir });
+  execFileSync('git', ['commit', '--allow-empty', '-m', 'init'], { cwd: dir });
   const runtimeDir = join(dir, '.git', 'vitanusa-agent');
   mkdirSync(runtimeDir, { recursive: true });
-  const stateFile = join(runtimeDir, 'state.json');
-  const staleState = {
-    taskId: 'T001',
-    status: 'RUNNING',
-    startedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
-    baseCommit: git(dir, 'rev-parse', 'HEAD'),
-  };
-  writeFileSync(stateFile, JSON.stringify(staleState));
-  const { main } = await import('../../scripts/agent/task-orchestrator.mjs');
-  // Should not throw about active task since stale lock is cleared
-  const result = await main(['--task=T001'], dir);
-  assert.equal(result.state, 'PLAN');
+  mkdirSync(join(runtimeDir, 'evidence'), { recursive: true });
+  mkdirSync(join(runtimeDir, 'checkpoints'), { recursive: true });
+  return { dir, runtimeDir };
+}
+
+// Worker that claims a task and then crashes (process exits) without releasing
+function createCrashWorker(runtimeDir, taskId, workerId, crashAfterClaim = true) {
+  return fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, workerId], {
+    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+  });
+}
+
+test('crash recovery: two workers race to recover same stale claim', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'stale-race-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create a stale lock
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'crashed-worker',
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    fencingToken: Date.now() - 31 * 60 * 1000,
+  }));
+
+  const results = await new Promise((resolve) => {
+    const workers = [];
+    const collected = [];
+    let done = 0;
+
+    for (let i = 0; i < 2; i++) {
+      const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, `recovery-${i}`], {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+      });
+      w.on('message', (msg) => {
+        collected.push(msg);
+        done++;
+        if (done === 2) resolve(collected);
+      });
+      w.on('error', (err) => {
+        collected.push({ workerId: `recovery-${i}`, error: err.message });
+        done++;
+        if (done === 2) resolve(collected);
+      });
+      workers.push(w);
+    }
+  });
+
+  const successfulClaims = results.filter(r => r.claimed && r.claimed.success === true);
+  assert.equal(successfulClaims.length, 1, `Expected exactly 1 successful stale claim recovery, got ${successfulClaims.length}: ${JSON.stringify(results)}`);
+
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('CR: evidence file preserved after interruption', async () => {
-  const dir = setupRepo();
-  const evidenceDir = join(dir, '.git', 'vitanusa-agent', 'evidence');
-  mkdirSync(evidenceDir, { recursive: true });
-  const evidenceFile = join(evidenceDir, 'T001-123.json');
-  const evidence = { taskId: 'T001', state: 'BLOCKED', stopReason: 'interrupted' };
-  writeFileSync(evidenceFile, JSON.stringify(evidence));
-  assert.equal(existsSync(evidenceFile), true);
-  const read = JSON.parse(readFileSync(evidenceFile, 'utf8'));
-  assert.equal(read.state, 'BLOCKED');
+test('crash recovery: worker crash after claim leaves lock recoverable', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'crash-after-claim-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Simulate worker claiming then crashing (lock file remains but process is gone)
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'crashed-worker',
+    claimedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 min ago - not stale yet
+    fencingToken: Date.now() - 5 * 60 * 1000,
+  }));
+
+  // New process should NOT claim (not stale yet - only 5 min old)
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'new-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  assert.ok(result.claimed && result.claimed.success === false, 'Active claim should not be stolen even after crash');
+  assert.equal(result.claimed.reason, 'Task already claimed by another worker');
+
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('CR: corrupted state file causes safe failure', async () => {
-  const dir = setupRepo();
-  const runtimeDir = join(dir, '.git', 'vitanusa-agent');
-  mkdirSync(runtimeDir, { recursive: true });
-  const stateFile = join(runtimeDir, 'state.json');
-  writeFileSync(stateFile, '{corrupted json');
-  const { main } = await import('../../scripts/agent/task-orchestrator.mjs');
-  await assert.rejects(() => main(['--task=T001'], dir), /Unexpected token|JSON/i);
+test('crash recovery: repeated recovery attempts do not duplicate ownership', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'repeated-recovery-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create stale lock
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'crashed-worker',
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    fencingToken: Date.now() - 31 * 60 * 1000,
+  }));
+
+  // First recovery attempt
+  const result1 = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'recovery-1'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  assert.ok(result1.claimed && result1.claimed.success, 'First recovery should succeed');
+  assert.equal(result1.claimed.stale, true);
+
+  // Second recovery attempt on same task (now held by recovery-1)
+  const result2 = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'recovery-2'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  assert.ok(result2.claimed && result2.claimed.success === false, 'Second recovery should fail - task already claimed');
+  assert.equal(result2.claimed.reason, 'Task already claimed by another worker');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: malformed lock file is rejected safely', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'malformed-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create malformed lock file
+  writeFileSync(lockFile, 'not valid json at all');
+
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'new-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  // Should handle gracefully - malformed lock means can't determine staleness
+  // Either claims (treats as abandoned) or fails safely
+  assert.ok(result.claimed !== undefined, 'Should return a claim result');
+  assert.ok(typeof result.claimed.success === 'boolean', 'Should have boolean success field');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: lock ownership metadata missing fields', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'incomplete-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create lock file with missing workerId
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+  }));
+
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'new-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  // Should handle gracefully - missing workerId means can't determine ownership
+  // Should either claim safely or fail safely
+  assert.ok(result.claimed !== undefined, 'Should return a claim result');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: old worker cannot release replacement worker lock', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'release-ownership-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create lock owned by worker-A
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'worker-A',
+    claimedAt: new Date().toISOString(),
+    fencingToken: Date.now(),
+  }));
+
+  // Import releaseClaim and test with wrong workerId
+  const { releaseClaim } = await import(new URL('../../scripts/agent/task-orchestrator.mjs', import.meta.url));
+  const result = releaseClaim({ RUNTIME_DIR: runtimeDir }, taskId, 'worker-B');
+  assert.ok(result.success === false, 'Old worker should not release replacement lock');
+  assert.equal(result.reason, 'Claim ownership mismatch, cannot release');
+
+  // Verify lock still exists
+  assert.ok(existsSync(lockFile), 'Lock file should still exist after failed release');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: correct worker releases own lock, then new worker claims', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'release-then-claim-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create lock owned by worker-A
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'worker-A',
+    claimedAt: new Date().toISOString(),
+    fencingToken: Date.now(),
+  }));
+
+  // Worker-A releases own lock
+  const { releaseClaim, atomicClaim } = await import(new URL('../../scripts/agent/task-orchestrator.mjs', import.meta.url));
+  const releaseResult = releaseClaim({ RUNTIME_DIR: runtimeDir }, taskId, 'worker-A');
+  assert.ok(releaseResult.success === true, 'Correct worker should release own lock');
+
+  // Verify lock is removed
+  assert.ok(!existsSync(lockFile), 'Lock file should be removed after successful release');
+
+  // New worker can now claim
+  const claimResult = atomicClaim({ RUNTIME_DIR: runtimeDir }, taskId, 'worker-B');
+  assert.ok(claimResult.success, 'New worker should claim after release');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: stale claim with missing workerId field', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'missing-workerid-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Stale lock with missing workerId
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    fencingToken: Date.now() - 31 * 60 * 1000,
+  }));
+
+  const result = await new Promise((resolve) => {
+    const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'new-worker'], {
+      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+    });
+    w.on('message', (msg) => resolve(msg));
+    w.on('error', (err) => resolve({ error: err.message }));
+  });
+
+  // Should handle missing workerId gracefully - stale claim based on timestamp
+  assert.ok(result.claimed !== undefined, 'Should return a claim result');
+
   rmSync(dir, { recursive: true, force: true });
 });

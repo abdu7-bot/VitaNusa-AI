@@ -108,6 +108,12 @@ export function atomicClaim(paths, taskId, workerId) {
   mkdirSync(paths.RUNTIME_DIR, { recursive: true });
   try {
     writeFileSync(lockFile, JSON.stringify({ taskId, workerId, claimedAt: new Date().toISOString(), fencingToken: Date.now() }), { flag: 'wx', mode: 0o600 });
+    // Post-write verification: confirm we still own the lock
+    const verify = JSON.parse(readFileSync(lockFile, 'utf8'));
+    if (verify.workerId !== workerId) {
+      rmSync(lockFile, { force: true });
+      return { success: false, reason: 'Task already claimed by another worker' };
+    }
     return { success: true, lockFile };
   } catch (e) {
     if (e.code === 'EEXIST') {
@@ -116,14 +122,19 @@ export function atomicClaim(paths, taskId, workerId) {
         const existing = JSON.parse(readFileSync(lockFile, 'utf8'));
         const claimedAt = new Date(existing.claimedAt).getTime();
         if (Date.now() - claimedAt > 30 * 60 * 1000) {
-          // Stale claim - atomically replace with wx flag
+          // Stale claim - remove and retry with wx flag
           rmSync(lockFile, { force: true });
           try {
             writeFileSync(lockFile, JSON.stringify({ taskId, workerId, claimedAt: new Date().toISOString(), fencingToken: Date.now() }), { flag: 'wx', mode: 0o600 });
+            // Post-write verification for stale recovery
+            const verify2 = JSON.parse(readFileSync(lockFile, 'utf8'));
+            if (verify2.workerId !== workerId) {
+              rmSync(lockFile, { force: true });
+              return { success: false, reason: 'Task already claimed by another worker' };
+            }
             return { success: true, lockFile, stale: true };
           } catch (retryErr) {
             if (retryErr.code === 'EEXIST') {
-              // Another worker beat us to the stale claim
               return { success: false, reason: 'Task already claimed by another worker' };
             }
             throw retryErr;
