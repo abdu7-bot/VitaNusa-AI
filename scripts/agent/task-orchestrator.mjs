@@ -511,7 +511,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const tasks = loadTasks(paths);
   let task = recoveredTaskId ? tasks.find((t) => t.id === recoveredTaskId) : (taskIdArg ? tasks.find((t) => t.id === taskIdArg) : selectTask(tasks));
   
-  if (!task) throw new Error('Tidak ada task READY yang eligible.');
+  if (!task) throw new Error(redactSensitive('Tidak ada task READY yang eligible.'));
   if (task.status !== 'READY' && !recover) throw new Error(`${task.id} tidak READY.`);
 
   const previous = readState(paths);
@@ -589,7 +589,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   if (workerResult.status !== 0) {
     evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
-    evidence.stopReason = `worker exit ${workerResult.status}`;
+    evidence.stopReason = redactSensitive(`worker exit ${workerResult.status}`);
     evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
     evidence.changedPaths = getChangedPaths(paths, repo.head).map(c => c.path);
     saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
@@ -625,7 +625,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       });
       
       if (repairResult.status !== 0) {
-        evidence.stopReason = `worker exit ${repairResult.status} during repair`;
+        evidence.stopReason = redactSensitive(`worker exit ${repairResult.status} during repair`);
         evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
         evidence.changedPaths = getChangedPaths(paths, repo.head).map(c => c.path);
         evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
@@ -649,7 +649,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     evidence.changedPaths = changes.map(c => c.path);
     
     if (!checkAllowedPaths(changes, task.allowedPaths)) {
-      evidence.stopReason = 'changed-file scope melewati allowedPaths';
+      evidence.stopReason = redactSensitive('changed-file scope melewati allowedPaths');
       evidence.changedPaths = changes.map(c => c.path);
       evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
       evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
@@ -705,7 +705,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   }
 
   if (!verificationPassed) {
-    evidence.stopReason = `verification failed after ${repairLimit} repair attempts`;
+    evidence.stopReason = redactSensitive(`verification failed after ${repairLimit} repair attempts`);
     evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
     evidence.stateTransitions.push({ state: 'FAILED', timestamp: new Date().toISOString() });
     saveState(paths, { ...runningState, status: 'FAILED', evidence });
@@ -768,7 +768,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main().then(result => {
     console.log(JSON.stringify(result, null, 2));
   }).catch(error => {
-    console.error(`STOP: ${error.message}`);
+    console.error(`STOP: ${redactSensitive(error.message)}`);
     process.exitCode = 2;
   });
 }
