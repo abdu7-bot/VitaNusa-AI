@@ -28,7 +28,7 @@ test('cross-process: only one process claims same task', async () => {
     let done = 0;
 
     for (let i = 0; i < 2; i++) {
-      const w = fork('/tmp/kilo/claim-worker.mjs', [runtimeDir, taskId, `worker-${i}`], {
+      const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, `worker-${i}`], {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       });
       w.on('message', (msg) => {
@@ -59,7 +59,7 @@ test('cross-process: independent tasks can be claimed concurrently', async () =>
     let done = 0;
 
     for (let i = 0; i < 2; i++) {
-      const w = fork('/tmp/kilo/claim-worker.mjs', [runtimeDir, `task-${i}`, `worker-${i}`], {
+      const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, `task-${i}`, `worker-${i}`], {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       });
       w.on('message', (msg) => {
