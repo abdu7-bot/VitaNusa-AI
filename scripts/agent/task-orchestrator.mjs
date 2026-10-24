@@ -434,6 +434,15 @@ function applyWorkspaceChanges(workspace, originalRoot) {
   }
 }
 
+function redactSensitive(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)s*[:=]s*['"]?[^'"s]+['"]?/gi, '[REDACTED]')
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
+    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
+}
+
 export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const execute = argv.includes('--execute');
   const recover = argv.includes('--recover');

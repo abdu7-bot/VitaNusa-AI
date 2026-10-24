@@ -237,7 +237,7 @@ def _term_matches(text: str, term: str) -> bool:
 
 
 _UNVERIFIED_QURAN_REFERENCE = re.compile(
-    r"(?i)\b(?:qs\.?\s*)?(?:al[- ]?[a-z'’]+\s*)?\d{1,3}\s*[:.]\s*\d{1,3}\b"
+    r"(?i)\b(?:qs\.?\s*)?(?:al[- ]?[a-z'’]+\s*)?(?:\d{1,3}\s*[:.]\s*\d{1,3}|ayat\s*\d{1,3})\b"
 )
 _UNVERIFIED_HADITH_REFERENCE = re.compile(
     r"(?i)\b(?:sahih\s+)?(?:al[- ]?)?(?:bukhari|bukha?ri|muslim|tirmidhi|abu\s+dawud|nasai|nasa'i|ibn\s+majah)\s*(?:no\.?\s*)?\d{1,7}\b"
