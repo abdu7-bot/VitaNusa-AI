@@ -8,6 +8,15 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
+function redactSensitive(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
+    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
+}
+
 export const OPERATION_STATES = {
   PLANNED: 'PLANNED',
   STARTED: 'STARTED',
@@ -35,7 +44,7 @@ export function createJournal(journalDir) {
         evidenceRef: op.evidenceRef || null,
       };
       const file = join(journalDir, `${entry.id}.json`);
-      writeFileSync(file, JSON.stringify(entry, null, 2), { mode: 0o600 });
+      writeFileSync(file, JSON.stringify(entry, (key, value) => typeof value === 'string' ? redactSensitive(value) : value, 2), { mode: 0o600 });
       return entry;
     },
     get(id) {
@@ -52,7 +61,7 @@ export function createJournal(journalDir) {
       if (!existing) return null;
       const updated = { ...existing, ...updates };
       const file = join(journalDir, `${id}.json`);
-      writeFileSync(file, JSON.stringify(updated, null, 2), { mode: 0o600 });
+      writeFileSync(file, JSON.stringify(updated, (key, value) => typeof value === 'string' ? redactSensitive(value) : value, 2), { mode: 0o600 });
       return updated;
     },
     async listByTask(taskId) {

@@ -5,6 +5,15 @@
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+
+function redactSensitive(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
+    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
+}
 import { join, dirname } from 'node:path';
 
 export const CHECKPOINT_VERSION = 1;
@@ -52,7 +61,7 @@ export function saveCheckpoint(checkpointDir, checkpoint) {
   if (errors.length > 0) throw new Error(`Invalid checkpoint: ${errors.join(', ')}`);
   mkdirSync(checkpointDir, { recursive: true });
   const file = join(checkpointDir, `${checkpoint.taskId}-${checkpoint.executionAttempt}.json`);
-  writeFileSync(file, JSON.stringify(checkpoint, null, 2), { mode: 0o600 });
+  writeFileSync(file, JSON.stringify(checkpoint, (key, value) => typeof value === 'string' ? redactSensitive(value) : value, 2), { mode: 0o600 });
   return file;
 }
 
