@@ -188,7 +188,25 @@ export function checkAllowedPaths(changes, allowed) {
   if (!allowed.length) return true;
   // Support both formats: array of strings or array of objects with path property
   const paths = changes.map(c => typeof c === "string" ? c : (c.path || ""));
-  return paths.every(path => allowed.some((rule) => path === rule || path.startsWith(`${rule}/`)));
+  return paths.every(path => {
+    // Normalize path to prevent traversal (e.g., src/../../secret.key → secret.key)
+    const normalized = normalizePath(path);
+    return allowed.some((rule) => normalized === rule || normalized.startsWith(`${rule}/`));
+  });
+}
+
+function normalizePath(filePath) {
+  const parts = filePath.split('/');
+  const result = [];
+  for (const part of parts) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') {
+      if (result.length > 0) result.pop();
+    } else {
+      result.push(part);
+    }
+  }
+  return result.join('/');
 }
 
 function saveState(paths, state) {
