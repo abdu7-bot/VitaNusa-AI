@@ -274,4 +274,3 @@ export function createContextSelector(options = {}) {
   };
 }
 
-export { createContextSelector };

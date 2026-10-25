@@ -60,6 +60,8 @@ export function createMemoryRecord(params) {
     limitations = [],
     supersedes,
     tags = [],
+    lastValidatedAt,
+    createdAt,
   } = params;
 
   const recordId = createHash('sha256')
@@ -357,4 +359,3 @@ export function createMemoryStore(storeDir) {
   };
 }
 
-export { createMemoryStore, MEMORY_TYPES, VERIFICATION_STATUS, createMemoryRecord, validateMemoryRecord };
