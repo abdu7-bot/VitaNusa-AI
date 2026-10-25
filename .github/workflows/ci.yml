@@ -110,6 +110,23 @@ jobs:
 
           echo "No commonly sensitive filenames are tracked."
 
+  agent-tests:
+    name: Agent tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Run agent tests
+        run: node --test tests/agent/*.test.mjs
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
