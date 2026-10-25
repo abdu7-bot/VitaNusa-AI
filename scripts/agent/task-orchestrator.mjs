@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { createIsolatedWorkspace, getWorkspaceDiff, cleanupWorkspace, validatePath } from './isolated-workspace.mjs';
 import { createJournal, OPERATION_STATES } from './operation-journal.mjs';
 import { createCheckpoint, saveCheckpoint, isRecoverable } from './checkpoint.mjs';
-import { transition as smTransition, TASK_STATES } from './state-machine.mjs';
+import { transition as smTransition, TASK_STATES, isValidTransition, isTerminal, canRetry, classifyFailure } from './state-machine.mjs';
 import { loadPolicy, isPolicyEnabled, isMode, getMaxRepairAttempts, getTaskTimeout, getMaxChangedFiles, getMaxDiffLines, canWriteMain, canAutoMerge, canDeploy, stopOnViolation, requiresTests, requiresSecurityChecks, requiresDraftPR } from './policy-engine.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +33,51 @@ const VALID_STATES = new Set([
 const DEFAULT_REPAIR_LIMIT = 2;
 const WORKER_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_OUTPUT_CHARS = 50000;
+
+// State machine mapping: orchestrator state -> state machine state
+const ORCH_TO_SM_STATE = {
+  PLAN: 'PLANNING',
+  CLAIMED: 'CLAIMED',
+  RUNNING: 'RUNNING',
+  VERIFYING: 'VERIFYING',
+  REPAIRING: 'REPAIRING',
+  PR_CREATED: 'SUCCEEDED',
+  BLOCKED: 'BLOCKED',
+  FAILED: 'FAILED',
+};
+
+const SM_TO_ORCH_STATE = {
+  PLANNING: 'PLAN',
+  CLAIMED: 'CLAIMED',
+  RUNNING: 'RUNNING',
+  VERIFYING: 'VERIFYING',
+  REPAIRING: 'REPAIRING',
+  SUCCEEDED: 'PR_CREATED',
+  FAILED: 'FAILED',
+  BLOCKED: 'BLOCKED',
+  CANCELLED: 'CANCELLED',
+};
+
+// Failure classification for worker exit codes
+function classifyWorkerFailure(exitCode, errorMessage) {
+  if (exitCode === 124 || exitCode === 137) return 'TIMEOUT';
+  if (exitCode === null || exitCode === undefined) return 'INFRASTRUCTURE';
+  const msg = String(errorMessage || '');
+  if (/policy/i.test(msg)) return 'POLICY_DENIAL';
+  if (exitCode !== 0) return 'TRANSIENT';
+  return 'PERMANENT';
+}
+
+// Exponential backoff with jitter
+function backoffMs(attempt, baseMs = 1000, maxMs = 30000) {
+  const jitter = Math.random() * baseMs;
+  return Math.min(baseMs * Math.pow(2, attempt) + jitter, maxMs);
+}
+
+// Check deadline against start time
+function isDeadlineExceeded(startTimeMs, deadlineMs) {
+  return Date.now() - startTimeMs > deadlineMs;
+}
 
 function getGitRoot(cwd) {
   try {
@@ -572,6 +617,37 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     }
   }
 
+  // Cancellation and deadline infrastructure
+  const abortController = new AbortController();
+  const taskStartTime = Date.now();
+  const taskTimeoutMs = getTaskTimeout(policy);
+  const taskDeadline = taskStartTime + taskTimeoutMs;
+  
+  function checkDeadline() {
+    if (isDeadlineExceeded(taskStartTime, taskDeadline)) {
+      throw new Error(redactSensitive('Task deadline exceeded (' + taskTimeoutMs + 'ms)'));
+    }
+  }
+  
+  function checkCancelled() {
+    if (abortController.signal.aborted) {
+      throw new Error(redactSensitive('Task cancelled'));
+    }
+  }
+  
+  let currentSmState = 'PLANNING';
+  
+  function transitionEvidence(state, extra = {}) {
+    const smState = ORCH_TO_SM_STATE[state];
+    if (smState && !isValidTransition(currentSmState, smState)) {
+      console.warn('[' + task.id + '] Non-standard transition: ' + currentSmState + ' -> ' + smState);
+    }
+    evidence.stateTransitions.push({ state, timestamp: new Date().toISOString(), ...extra });
+    currentSmState = smState;
+    runningState.status = state;
+    saveState(paths, runningState);
+  }
+
   const branch = `agent/${task.id.toLowerCase()}-${task.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'work'}`;
   
   const evidence = {
@@ -596,6 +672,9 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   const workerCommand = process.env.VITANUSA_WORKER_CMD || 'kilo --auto';
   const worker = validateWorker(workerCommand);
+  
+  checkCancelled();
+  checkDeadline();
   
   evidence.workerInputContract = createWorkerInputContract(task, repo.head, paths);
   evidence.stateTransitions.push({ state: 'CLAIMED', timestamp: new Date().toISOString() });
@@ -623,6 +702,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   evidence.stateTransitions.push({ state: 'RUNNING', timestamp: new Date().toISOString() });
 
   console.log(`[${task.id}] Starting worker: ${worker.join(' ')}`);
+  checkDeadline();
   const workerResult = runWorker(paths, worker, task, repo.head, { VITANUSA_TASK_ID: task.id, VITANUSA_BASE_COMMIT: repo.head }, workspace);
   
   evidence.commands.push({ 
@@ -634,8 +714,9 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   });
 
   if (workerResult.status !== 0) {
-    evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
-    evidence.stopReason = redactSensitive(`worker exit ${workerResult.status}`);
+    const failureClass = classifyWorkerFailure(workerResult.status, workerResult.stderr);
+    evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString(), failureClass });
+    evidence.stopReason = redactSensitive('worker exit ' + workerResult.status + ' (' + failureClass + ')');
     evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
     evidence.changedPaths = getChangedPaths(paths, repo.head).map(c => c.path);
     saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
@@ -648,6 +729,8 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   let verificationPassed = false;
   
   while (repairCount <= repairLimit && !verificationPassed) {
+    checkCancelled();
+    checkDeadline();
     if (repairCount > 0) {
       evidence.stateTransitions.push({ state: 'REPAIRING', timestamp: new Date().toISOString(), repairAttempt: repairCount });
       runningState.repairCount = repairCount;
@@ -656,6 +739,9 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       
       // Re-invoke worker for repair
       console.log(`[${task.id}] Re-invoking worker for repair...`);
+      const backoffDelay = backoffMs(repairCount - 1);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      checkDeadline();
       const repairResult = runWorker(paths, worker, task, repo.head, { 
         VITANUSA_TASK_ID: task.id, 
         VITANUSA_BASE_COMMIT: repo.head,
@@ -671,10 +757,11 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       });
       
       if (repairResult.status !== 0) {
-        evidence.stopReason = redactSensitive(`worker exit ${repairResult.status} during repair`);
+        const failureClass = classifyWorkerFailure(repairResult.status, repairResult.stderr);
+        evidence.stopReason = redactSensitive('worker exit ' + repairResult.status + ' during repair (' + failureClass + ')');
         evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
         evidence.changedPaths = getChangedPaths(paths, repo.head).map(c => c.path);
-        evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString() });
+        evidence.stateTransitions.push({ state: 'BLOCKED', timestamp: new Date().toISOString(), failureClass });
         saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
         saveEvidence(paths, task.id, evidence);
         cleanupWorkspace(workspace);
@@ -687,6 +774,8 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     }
 
     // Get changes from isolated workspace
+    checkCancelled();
+    checkDeadline();
     const workspaceChanges = getWorkspaceDiff(workspace, repo.head);
     const changes = workspaceChanges.map(c => ({ path: c.path, status: c.status }));
     
