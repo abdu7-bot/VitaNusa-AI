@@ -11,6 +11,14 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync, existsSync
 import { join, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 
+function redactSensitive(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
+    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
+}
 const MEMORY_VERSION = '1.0';
 
 /**
@@ -88,8 +96,8 @@ export function createMemoryRecord(params) {
     limitations: limitations || [],
     supersedes: supersedes || null,
     tags: tags || [],
-    createdAt: new Date().toISOString(),
-    lastValidatedAt: new Date().toISOString(),
+    createdAt: params.createdAt || new Date().toISOString(),
+    lastValidatedAt: params.lastValidatedAt || new Date().toISOString(),
     supersededBy: null,
     isValid: true,
   };
@@ -120,9 +128,24 @@ export function validateMemoryRecord(record) {
   }
   if (!Array.isArray(record.evidence)) {
     errors.push('evidence must be an array');
+  } else {
+    for (let i = 0; i < record.evidence.length; i++) {
+      const evidenceItem = record.evidence[i];
+      if (typeof evidenceItem !== 'object' || evidenceItem === null) {
+        errors.push('Evidence item ' + i + ' must be an object');
+      } else if (!evidenceItem.content || typeof evidenceItem.content !== 'string') {
+        errors.push('Evidence item ' + i + ' must have a non-empty content string');
+      }
+    }
   }
   if (record.supersededBy && typeof record.supersededBy !== 'string') {
     errors.push('Invalid supersededBy field');
+  }
+  if (record.supersedes && typeof record.supersedes !== 'string') {
+    errors.push('Invalid supersedes field');
+  }
+  if (record.supersedes && typeof record.supersedes !== 'string') {
+    errors.push('Invalid supersedes field');
   }
   if (!Array.isArray(record.limitations)) {
     errors.push('limitations must be an array');
@@ -166,16 +189,7 @@ export function createMemoryStore(storeDir) {
    */
   function persistRecord(record) {
     const file = join(storeDir, `${record.recordId}.json`);
-    writeFileSync(file, JSON.stringify(record, (key, value) => {
-      // Redact any sensitive values
-      if (typeof value === 'string') {
-        return value.replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
-          .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
-          .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
-          .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
-      }
-      return value;
-    }, 2), { mode: 0o600 });
+    undefined
   }
 
   loadAll();
@@ -196,13 +210,43 @@ export function createMemoryStore(storeDir) {
       // Check for superseded records
       if (record.supersedes) {
         const existing = records.get(record.supersedes);
-        if (existing) {
-          existing.supersededBy = record.recordId;
-          existing.verificationStatus = VERIFICATION_STATUS.SUPERSEDED;
-          persistRecord(existing);
+        if (!existing) {
+          return { success: false, errors: ['Referenced record does not exist: ' + record.supersedes] };
         }
+        existing.supersededBy = record.recordId;
+        existing.verificationStatus = VERIFICATION_STATUS.SUPERSEDED;
+        existing.isValid = false;
+        persistRecord(existing);
       }
 
+      // Redact secrets in evidence items AND reject records with secrets
+      if (record.evidence && Array.isArray(record.evidence)) {
+        for (const ev of record.evidence) {
+          if (typeof ev.content === 'string' && redactSensitive(ev.content) !== ev.content) {
+            return { success: false, errors: ['Evidence contains sensitive information'] };
+          }
+        }
+        record.evidence = record.evidence.map(ev => {
+          if (typeof ev.content === 'string') {
+            return { ...ev, content: redactSensitive(ev.content) };
+          }
+          return ev;
+        });
+      }
+      // Redact secrets in record text fields
+      if (typeof record.description === 'string') {
+        record.description = redactSensitive(record.description);
+      }
+      if (record.title && typeof record.title === 'string') {
+        record.title = redactSensitive(record.title);
+      }
+      // Redact secrets in record text fields before storing in memory
+      if (typeof record.title === 'string') {
+        record.title = redactSensitive(record.title);
+      }
+      if (typeof record.description === 'string') {
+        record.description = redactSensitive(record.description);
+      }
       records.set(record.recordId, record);
       persistRecord(record);
 
