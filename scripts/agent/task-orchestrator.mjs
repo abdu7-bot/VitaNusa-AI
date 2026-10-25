@@ -60,7 +60,7 @@ const SM_TO_ORCH_STATE = {
 };
 
 // Failure classification for worker exit codes
-function classifyWorkerFailure(exitCode, errorMessage) {
+export function classifyWorkerFailure(exitCode, errorMessage) {
   if (exitCode === 124 || exitCode === 137) return 'TIMEOUT';
   if (exitCode === null || exitCode === undefined) return 'INFRASTRUCTURE';
   const msg = String(errorMessage || '');
@@ -70,13 +70,13 @@ function classifyWorkerFailure(exitCode, errorMessage) {
 }
 
 // Exponential backoff with jitter
-function backoffMs(attempt, baseMs = 1000, maxMs = 30000) {
+export function backoffMs(attempt, baseMs = 1000, maxMs = 30000) {
   const jitter = Math.random() * baseMs;
   return Math.min(baseMs * Math.pow(2, attempt) + jitter, maxMs);
 }
 
 // Check deadline against start time
-function isDeadlineExceeded(startTimeMs, deadlineMs) {
+export function isDeadlineExceeded(startTimeMs, deadlineMs) {
   return Date.now() - startTimeMs > deadlineMs;
 }
 
