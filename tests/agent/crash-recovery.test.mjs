@@ -264,3 +264,86 @@ test('crash recovery: stale claim with missing workerId field', async () => {
 
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('crash recovery: corrupted checkpoint is rejected safely', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'corrupted-checkpoint-task';
+  const checkpointDir = join(runtimeDir, 'checkpoints');
+  mkdirSync(checkpointDir, { recursive: true });
+
+  // Write corrupted checkpoint
+  writeFileSync(join(checkpointDir, taskId + '-1.json'), 'not valid json at all');
+
+  const { loadCheckpoint } = await import(new URL('../../scripts/agent/checkpoint.mjs', import.meta.url));
+  let threw = false;
+  try {
+    await loadCheckpoint(checkpointDir, taskId, 1);
+  } catch (e) {
+    threw = true;
+    assert.ok(e.message.includes('Corrupted checkpoint') || e.message.includes('Failed to load checkpoint'),
+      'Should report corrupted checkpoint safely: ' + e.message);
+  }
+  assert.ok(threw, 'Should throw on corrupted checkpoint');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: checkpoint with invalid schema is rejected', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'invalid-checkpoint-task';
+  const checkpointDir = join(runtimeDir, 'checkpoints');
+  mkdirSync(checkpointDir, { recursive: true });
+
+  // Write checkpoint with missing required fields
+  writeFileSync(join(checkpointDir, taskId + '-1.json'), JSON.stringify({
+    taskId: taskId,
+    // missing state, executionAttempt, etc.
+  }));
+
+  const { loadCheckpoint, validateCheckpoint } = await import(new URL('../../scripts/agent/checkpoint.mjs', import.meta.url));
+  let threw = false;
+  try {
+    loadCheckpoint(checkpointDir, taskId, 1);
+  } catch (e) {
+    threw = true;
+    assert.ok(e.message.includes('Corrupted checkpoint') || e.message.includes('Failed to load checkpoint'),
+      'Should report corrupted checkpoint safely: ' + e.message);
+  }
+  assert.ok(threw, 'Should throw on corrupted checkpoint');
+
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('crash recovery: stale lock recovery preserves lock integrity under concurrent access', async () => {
+  const { dir, runtimeDir } = createTempRepo();
+  const taskId = 'concurrent-stale-task';
+  const lockFile = join(runtimeDir, 'claim-' + taskId + '.lock');
+
+  // Create stale lock
+  writeFileSync(lockFile, JSON.stringify({
+    taskId,
+    workerId: 'dead-worker',
+    claimedAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    fencingToken: Date.now() - 31 * 60 * 1000,
+  }));
+
+  // Two workers try to recover simultaneously
+  const results = await new Promise((resolve) => {
+    const collected = [];
+    let done = 0;
+    const workers = [];
+    for (let i = 0; i < 2; i++) {
+      const w = fork(new URL('./helpers/claim-worker.mjs', import.meta.url), [runtimeDir, taskId, 'recovery-' + i], {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+      });
+      w.on('message', (msg) => { collected.push(msg); done++; if (done === 2) resolve(collected); });
+      w.on('error', (err) => { collected.push({ workerId: 'recovery-' + i, error: err.message }); done++; if (done === 2) resolve(collected); });
+      workers.push(w);
+    }
+  });
+
+  const successfulClaims = results.filter(r => r.claimed && r.claimed.success === true);
+  assert.equal(successfulClaims.length, 1, `Exactly one worker should recover stale claim, got ${successfulClaims.length}: ${JSON.stringify(results)}`);
+
+  rmSync(dir, { recursive: true, force: true });
+});
