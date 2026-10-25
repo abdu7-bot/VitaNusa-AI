@@ -49,7 +49,7 @@ export function transition(task, to, reason = '') {
 }
 
 export function isTerminal(state) {
-  return state === 'SUCCEEDED' || state === 'CANCELLED' || state === 'FAILED';
+  return state === 'SUCCEEDED' || state === 'CANCELLED' || state === 'FAILED' || state === 'BLOCKED';
 }
 
 export function canRetry(state) {
