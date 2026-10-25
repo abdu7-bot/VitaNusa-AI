@@ -125,7 +125,7 @@ jobs:
           node-version: "20"
 
       - name: Run agent tests
-        run: node --test tests/agent/*.test.mjs
+        run: node --test tests/agent/*.test.mjs tests/agent/benchmark/*.test.mjs
 
   frontend:
     name: Frontend
