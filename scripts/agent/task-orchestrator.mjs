@@ -16,6 +16,7 @@ import { createHash } from 'node:crypto';
 import { createIsolatedWorkspace, getWorkspaceDiff, cleanupWorkspace, validatePath } from './isolated-workspace.mjs';
 import { createJournal, OPERATION_STATES } from './operation-journal.mjs';
 import { createCheckpoint, saveCheckpoint, isRecoverable } from './checkpoint.mjs';
+import { createMetrics, recordTask } from './metrics.mjs';
 import { transition as smTransition, TASK_STATES, isValidTransition, isTerminal, canRetry, classifyFailure } from './state-machine.mjs';
 import { loadPolicy, isPolicyEnabled, isMode, getMaxRepairAttempts, getTaskTimeout, getMaxChangedFiles, getMaxDiffLines, canWriteMain, canAutoMerge, canDeploy, stopOnViolation, requiresTests, requiresSecurityChecks, requiresDraftPR } from './policy-engine.mjs';
 
@@ -567,6 +568,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   
   const paths = getRepoPaths(cwd);
   const repo = assertRepositoryReady(paths);
+  const metrics = createMetrics();
 
   // Recovery mode: find and evaluate incomplete tasks
   if (recover) {
@@ -722,7 +724,19 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
     saveEvidence(paths, task.id, evidence);
     cleanupWorkspace(workspace);
-    return { ...evidence, state: 'BLOCKED' };
+    recordTask(metrics, {
+    taskId: task.id,
+    state: 'BLOCKED',
+    baseCommit: repo.head,
+    headCommit: evidence.headCommit,
+    duration: Date.now() - taskStartTime,
+    exitCode: evidence.stopReason ? 1 : 0,
+    repairAttempts: repairCount,
+    testsPassed: verificationPassed,
+    changedFiles: evidence.changedPaths.length,
+  });
+  console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
+  return { ...evidence, state: 'BLOCKED' };
   }
 
   let repairCount = 0;
@@ -846,7 +860,19 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     saveState(paths, { ...runningState, status: 'FAILED', evidence });
     saveEvidence(paths, task.id, evidence);
     cleanupWorkspace(workspace);
-    return { ...evidence, state: 'FAILED' };
+    recordTask(metrics, {
+    taskId: task.id,
+    state: 'FAILED',
+    baseCommit: repo.head,
+    headCommit: evidence.headCommit,
+    duration: Date.now() - taskStartTime,
+    exitCode: 1,
+    repairAttempts: repairCount,
+    testsPassed: verificationPassed,
+    changedFiles: evidence.changedPaths.length,
+  });
+  console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
+  return { ...evidence, state: 'FAILED' };
   }
 
   evidence.headCommit = runGit(['rev-parse', 'HEAD'], paths.ROOT);
@@ -896,6 +922,19 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   }
 
   cleanupWorkspace(workspace);
+  // Record metrics
+  recordTask(metrics, {
+    taskId: task.id,
+    state: 'PR_CREATED',
+    baseCommit: repo.head,
+    headCommit: evidence.headCommit,
+    duration: Date.now() - taskStartTime,
+    exitCode: 0,
+    repairAttempts: repairCount,
+    testsPassed: verificationPassed,
+    changedFiles: evidence.changedPaths.length,
+  });
+  console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
   return { ...evidence, state: 'PR_CREATED' };
 }
 
