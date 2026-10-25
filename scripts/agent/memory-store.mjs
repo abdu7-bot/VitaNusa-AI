@@ -17,7 +17,10 @@ function redactSensitive(text) {
     .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
     .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
     .replace(/ghp_[a-zA-Z0-9]{36,}/g, '[REDACTED]')
-    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
+    .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@')
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s+is\s+['"]?[^'"\s]+['"]?/gi, '[REDACTED]')
+    .replace(/(?:api[_-]?key|token|secret|password|authorization|bearer)\s+is\s+[^'"\s]+/gi, '[REDACTED]')
+    .replace(/\bsk-[a-zA-Z0-9]{20,}/g, '[REDACTED]');
 }
 const MEMORY_VERSION = '1.0';
 
@@ -189,7 +192,12 @@ export function createMemoryStore(storeDir) {
    */
   function persistRecord(record) {
     const file = join(storeDir, `${record.recordId}.json`);
-    undefined
+    writeFileSync(file, JSON.stringify(record, (key, value) => {
+      if (typeof value === 'string') {
+        return redactSensitive(value);
+      }
+      return value;
+    }, 2), { mode: 0o600 });
   }
 
   loadAll();
@@ -223,7 +231,7 @@ export function createMemoryStore(storeDir) {
       if (record.evidence && Array.isArray(record.evidence)) {
         for (const ev of record.evidence) {
           if (typeof ev.content === 'string' && redactSensitive(ev.content) !== ev.content) {
-            return { success: false, errors: ['Evidence contains sensitive information'] };
+            return { success: false, errors: ['Evidence contains secret information'] };
           }
         }
         record.evidence = record.evidence.map(ev => {
