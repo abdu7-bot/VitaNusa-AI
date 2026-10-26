@@ -12,6 +12,7 @@ from .conversation_memory import CONVERSATION_MEMORY, build_history_context
 from .feedback import FEEDBACK_RATE_LIMITER, FeedbackReceipt, FeedbackRequest, feedback_rate_limit_window_seconds, list_pending_feedback, record_feedback
 from .health_navigator import check_navigator, list_topics
 from .intent_router import detect_intent, normalize_text
+from .islamic_reasoning import format_sources_for_reflection, select_islamic_sources, validate_llm_religious_claims
 from .knowledge_base import build_knowledge_context
 from .llm.config import LocalLlmConfig
 from .llm.guard import build_blocked_router_response, build_guard_context, evaluate_llm_guard
@@ -190,6 +191,17 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
     system_prompt += "\n\nJawaban dasar yang sudah disetujui aplikasi (jangan menghapus peringatan/anjuran dan jangan menambah klaim baru):\n" + rule_based_answer
     if knowledge_context:
         system_prompt += "\n\n" + knowledge_context
+    system_prompt += (
+        "\n\nPRINSIP INTI VITANUSA (berlaku lintas topik):\n"
+        "Utamakan kejujuran, amanah, keadilan, kasih sayang, maslahat, dan pencegahan mudarat. "
+        "Jangan menipu, memanipulasi, mengarang fakta, atau menyembunyikan ketidakpastian. "
+        "Bedakan fakta terverifikasi, dalil agama, penjelasan ulama, inferensi, dan dugaan. "
+        "Jangan mengklaim mengetahui niat atau perkara gaib. Hormati keselamatan dan batas kewenangan ahli. "
+        "Untuk pertanyaan agama, jangan membuat ayat/hadis atau nomor rujukan; jangan memberi fatwa final tanpa dasar. "
+        "Gunakan dalil terkurasi hanya bila relevan dan jelaskan batas penerapannya."
+    )
+    if select_islamic_sources(question):
+        system_prompt += "\n\nDALIL TERKURASI YANG MUNGKIN RELEVAN:\n" + format_sources_for_reflection(question)
     llm_request = LlmRequest(system_prompt=system_prompt, user_message=question, model=config.model, temperature=config.temperature, max_tokens=config.max_tokens, intent=intent, safety_level=safety_level)
     guard = evaluate_llm_guard(guard_context, llm_request)
     if not guard.allowed:
@@ -200,6 +212,10 @@ async def _generate_llm_answer(*, question: str, intent: str, safety_level: str,
         return rule_based_answer, None
     response = router_response.response
     if response is not None and response.provider == "ollama" and router_response.selected_provider == "ollama" and response.status == "success" and response.content.strip():
+        # Reject unsupported citation-shaped religious claims; this cannot validate semantics.
+        if intent == "quranic_reflection" or select_islamic_sources(question):
+            if not validate_llm_religious_claims(response.content):
+                return rule_based_answer, None
         return response.content.strip(), router_response.selected_provider
     return rule_based_answer, None
 
@@ -239,7 +255,7 @@ async def ask_ai(request: AskRequest, http_request: Request = None) -> AskRespon
     CONVERSATION_MEMORY.record_turn(session_id, question=question, intent=intent, safety_level=safety_level, answer=answer)
     log_ask_event(intent=intent, safety_level=safety_level, response_blocked=decision.response_blocked, dominant_policy=decision.dominant_policy.policy_id if decision.dominant_policy else None, llm_used=llm_provider is not None, llm_provider=llm_provider, llm_mode=LocalLlmConfig.from_env().mode)
     sources = sources_for_navigator(navigator_topic) if intent == "health_navigator" else []
-    return AskResponse(question=question, intent=intent, safetyLevel=safety_level, answer=answer, disclaimer=DISCLAIMER, recommendedAction=decision.recommended_action or intent_result["recommendedAction"], actions=build_actions(intent, decision), sources=sources, quranicReflection=build_quranic_reflection() if include_reflection else None, policyDecision=serialize_policy_decision(decision), sessionId=session_id)
+    return AskResponse(question=question, intent=intent, safetyLevel=safety_level, answer=answer, disclaimer=DISCLAIMER, recommendedAction=decision.recommended_action or intent_result["recommendedAction"], actions=build_actions(intent, decision), sources=sources, quranicReflection=build_quranic_reflection(question) if include_reflection else None, policyDecision=serialize_policy_decision(decision), sessionId=session_id)
 
 
 @app.post("/feedback", response_model=FeedbackReceipt)

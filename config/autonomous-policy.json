@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "engine": {
+    "enabled": false,
+    "mode": "AUDIT",
+    "allowed_repositories": ["abdu7-bot/VitaNusa-AI"],
+    "allowed_base_branches": ["main"],
+    "allowed_worker_commands": ["kilo", "opencode", "aider", "codex"],
+    "max_concurrent_tasks": 1,
+    "max_repair_attempts": 2,
+    "task_timeout_seconds": 600,
+    "max_changed_files": 50,
+    "max_diff_lines": 5000,
+    "require_tests": true,
+    "require_security_checks": true,
+    "require_draft_pr": true,
+    "allow_dependency_changes": false,
+    "allow_lockfile_changes": false,
+    "allow_network_access": false,
+    "allow_destructive_commands": false,
+    "allow_main_writes": false,
+    "allow_auto_merge": false,
+    "allow_deployment": false,
+    "require_human_approval_for": [
+      "major_dependency_upgrade",
+      "main_merge",
+      "production_deployment",
+      "database_migration",
+      "credential_change",
+      "policy_engine_change",
+      "auth_change",
+      "payment_change",
+      "cost_exceeds_limit"
+    ],
+    "max_cost_per_task": null,
+    "max_daily_cost": null,
+    "stop_on_policy_violation": true
+  },
+  "validation": {
+    "required_checks": [
+      "unit_tests",
+      "integration_tests",
+      "governance_tests",
+      "build",
+      "security_audit",
+      "git_diff_check"
+    ],
+    "blocked_test_is_not_pass": true,
+    "unexecuted_test_is_not_pass": true
+  },
+  "github": {
+    "create_draft_pr": true,
+    "verify_pr_after_creation": true,
+    "check_duplicate_prs": true,
+    "minimum_permissions": ["repo", "pull_requests:write"]
+  },
+  "recovery": {
+    "stale_lock_timeout_minutes": 30,
+    "max_retries": 3,
+    "retry_backoff_seconds": 60,
+    "preserve_evidence_on_failure": true
+  },
+  "logging": {
+    "redact_secrets": true,
+    "audit_log_enabled": true,
+    "max_log_size_chars": 50000
+  }
+}
