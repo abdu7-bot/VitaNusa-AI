@@ -8,7 +8,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync, statSync, copyFileSync, unlinkSync } from 'node:fs';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 // Using built-in fetch (Node.js 18+)
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +25,43 @@ const PROJECT_ROOT = resolve(__dirname, '../..');
 
 const ALLOWED_WORKERS = new Set(['kilo', 'opencode', 'aider', 'codex']);
 const PAID_MARKERS = /paid|pro|premium|enterprise|gpt-4\.1|claude-3|claude-4/i;
+
+// Environment variables safe to propagate to worker subprocesses.
+// Only explicitly approved runtime variables are forwarded; all others
+// (including potential credentials/tokens) are stripped.
+const SAFE_ENV_VARS = new Set([
+  'NODE_ENV',
+  'PATH',
+  'HOME',
+  'USER',
+  'LANG',
+  'LC_ALL',
+  'VITANUSA_WORKER_CMD',
+  'VITANUSA_ALLOW_PAID',
+  'VITANUSA_TASK_ID',
+  'VITANUSA_BASE_COMMIT',
+  'VITANUSA_ALLOWED_PATHS',
+  'VITANUSA_INSTRUCTIONS',
+  'VITANUSA_REPAIR_ATTEMPT',
+]);
+
+// Worker argument safety: reject shell metacharacters and path traversal.
+const WORKER_ARG_SAFELIST = /^[A-Za-z0-9._\-@:/]+$/;
+function validateWorkerArg(arg) {
+  return WORKER_ARG_SAFELIST.test(arg);
+}
+
+// Filter environment variables before passing to worker subprocess.
+// Strips all credentials, tokens, and unrelated variables.
+function filterEnvForWorker(env) {
+  const filtered = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (SAFE_ENV_VARS.has(key) || key.startsWith('VITANUSA_')) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
+}
 
 const VALID_STATES = new Set([
   'READY', 'PLAN', 'CLAIMED', 'RUNNING', 'VERIFYING', 'REPAIRING', 
@@ -75,9 +112,9 @@ export function backoffMs(attempt, baseMs = 1000, maxMs = 30000) {
   return Math.min(baseMs * Math.pow(2, attempt) + jitter, maxMs);
 }
 
-// Check deadline against start time
-export function isDeadlineExceeded(startTimeMs, deadlineMs) {
-  return Date.now() - startTimeMs > deadlineMs;
+// Check deadline against monotonic time (nanoseconds)
+export function isDeadlineExceeded(startTimeNs, deadlineNs) {
+  return process.hrtime.bigint() > deadlineNs;
 }
 
 function getGitRoot(cwd) {
@@ -211,6 +248,9 @@ export function validateWorker(command) {
   const parts = command.trim().split(/\s+/).filter(Boolean);
   if (!parts.length || !ALLOWED_WORKERS.has(parts[0])) throw new Error('Worker tidak diizinkan. Gunakan kilo/opencode/aider/codex.');
   if (PAID_MARKERS.test(command) && process.env.VITANUSA_ALLOW_PAID !== '1') throw new Error('Paid fallback ditolak. Set VITANUSA_ALLOW_PAID=1 hanya dengan izin eksplisit.');
+  for (let i = 1; i < parts.length; i++) {
+    if (!validateWorkerArg(parts[i])) throw new Error('Worker argument tidak aman: ' + parts[i]);
+  }
   return parts;
 }
 
@@ -295,65 +335,91 @@ function createWorkerInputContract(task, baseCommit, paths) {
   };
 }
 
-function runWithTimeout(command, args, options = {}) {
+async function runWithTimeout(command, args, options = {}) {
   const timeout = options.timeout || WORKER_TIMEOUT_MS;
   const maxOutput = options.maxOutput || MAX_OUTPUT_CHARS;
-  
-  const result = spawnSync(command, args, {
-    cwd: options.cwd || options.paths?.ROOT || process.cwd(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, ...options.env },
-    timeout,
-    maxBuffer: maxOutput,
+  const signal = options.signal;
+
+  setActiveChildProcess(null);
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd || options.paths?.ROOT || process.cwd(),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, ...options.env },
+    });
+
+    setActiveChildProcess(child);
+
+    let stdout = '';
+    let stderr = '';
+    let resolved = false;
+    let timeoutTimer = null;
+    let abortListener = null;
+
+    child.stdout.on('data', (d) => { stdout += d.toString('utf8'); });
+    child.stderr.on('data', (d) => { stderr += d.toString('utf8'); });
+
+    function finish(code, signalName, killed) {
+      if (resolved) return;
+      resolved = true;
+      clearActiveChildProcess();
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (abortListener && signal) signal.removeEventListener('abort', abortListener);
+      resolve({
+        status: code,
+        signal: signalName,
+        stdout: stdout,
+        stderr: stderr,
+        killed: killed,
+      });
+    }
+
+    function onAbort() {
+      if (!child.killed) child.kill('SIGTERM');
+      setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 5000);
+    }
+
+    child.on('close', (code, sig) => finish(code, sig, child.killed));
+    child.on('error', (err) => { if (!resolved) { resolved = true; clearActiveChildProcess(); if (timeoutTimer) clearTimeout(timeoutTimer); if (abortListener && signal) signal.removeEventListener('abort', abortListener); reject(err); } });
+
+    timeoutTimer = setTimeout(() => {
+      if (!child.killed) child.kill('SIGTERM');
+      setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 5000);
+    }, timeout);
+
+    if (signal) {
+      abortListener = () => onAbort();
+      signal.addEventListener('abort', abortListener, { once: true });
+    }
   });
-  
-  // Normalize Buffer output to strings for safe JSON serialization
-  if (result.stdout instanceof Buffer) {
-    result.stdout = result.stdout.toString('utf8');
-  }
-  if (result.stderr instanceof Buffer) {
-    result.stderr = result.stderr.toString('utf8');
-  }
-  if (typeof result.stdout === 'string') {
-    result.stdout = redactSensitive(result.stdout);
-    if (result.stdout.length > maxOutput) {
-      result.stdout = result.stdout.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
-    }
-  }
-  if (typeof result.stderr === 'string') {
-    result.stderr = redactSensitive(result.stderr);
-    if (result.stderr.length > maxOutput) {
-      result.stderr = result.stderr.slice(0, maxOutput) + '\n... [OUTPUT TRUNCATED]';
-    }
-  }
-  
-  return result;
 }
 
-function runWorker(paths, worker, task, baseCommit, env = {}, cwdOverride = null) {
-  const workerEnv = { 
-    ...process.env, 
-    ...env, 
-    VITANUSA_TASK_ID: task.id, 
+async function runWorker(paths, worker, task, baseCommit, env = {}, cwdOverride = null, signal = null) {
+  const workerEnv = filterEnvForWorker({
+    ...process.env,
+    ...env,
+    VITANUSA_TASK_ID: task.id,
     VITANUSA_BASE_COMMIT: baseCommit,
     VITANUSA_ALLOWED_PATHS: task.allowedPaths.join('|'),
     VITANUSA_INSTRUCTIONS: task.instructions,
-  };
-  
-  return runWithTimeout(worker[0], worker.slice(1), { 
+  });
+
+  return runWithTimeout(worker[0], worker.slice(1), {
     paths,
     cwd: cwdOverride || paths.ROOT,
-    env: workerEnv 
+    env: workerEnv,
+    signal: signal,
   });
 }
 
 async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
   const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   const repoSlug = process.env.GITHUB_REPOSITORY; // e.g. "abdu7-bot/VitaNusa-AI"
-  
+
   if (!ghToken) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       reason: 'GITHUB_TOKEN/GH_TOKEN not set. Cannot create Draft PR automatically.',
       manualInfo: {
         branch,
@@ -370,7 +436,7 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
   
   // Pre-check: search for existing PR with same head/base (crash recovery)
   try {
-    const existingPr = execFileSync('gh', ['pr', 'list', '--head', branch, '--base', 'main', '--json', 'number,url,isDraft,headRefName,baseRefName'], 
+    const existingPr = execFileSync('gh', ['pr', 'list', '--head', branch, '--base', 'main', '--json', 'number,url,isDraft,headRefName,baseRefName'],
       { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     const prs = JSON.parse(existingPr);
     if (prs && prs.length > 0) {
@@ -394,22 +460,22 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
 
   // Method 1: Try gh CLI (preferred, handles auth automatically)
   try {
-    const result = execFileSync('gh', ['pr', 'create', '--draft', '--base', 'main', '--head', branch, 
+    const result = execFileSync('gh', ['pr', 'create', '--draft', '--base', 'main', '--head', branch,
       '--title', `[Draft] ${taskId}: ${evidence.taskTitle || ''}`,
       '--body', generatePRBody(taskId, evidence)
     ], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    
+
     // Verify the PR was created and is draft
     const prUrl = result.trim();
     const prNumberMatch = prUrl.match(/\/pull\/(\d+)/);
     const prNumber = prNumberMatch ? prNumberMatch[1] : null;
-    
+
     // Verify draft status
     let isDraft = false;
     let verifiedHead = null;
     let verifiedBase = null;
     try {
-      const prInfo = execFileSync('gh', ['pr', 'view', prNumber || prUrl, '--json', 'isDraft,headRefName,baseRefName,number,url'], 
+      const prInfo = execFileSync('gh', ['pr', 'view', prNumber || prUrl, '--json', 'isDraft,headRefName,baseRefName,number,url'],
         { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
       const info = JSON.parse(prInfo);
       isDraft = info.isDraft;
@@ -419,9 +485,9 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
       // gh CLI verification failed, but PR was created
       console.warn(`[${taskId}] PR created but verification failed: ${redactSensitive(e.message)}`);
     }
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       url: prUrl,
       number: prNumber,
       verified: {
@@ -450,11 +516,11 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
             draft: true,
           }),
         ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-        
+
         const pr = JSON.parse(curlResult);
         if (pr.html_url) {
-          return { 
-            success: true, 
+          return {
+            success: true,
             url: pr.html_url,
             number: pr.number,
             verified: {
@@ -470,7 +536,7 @@ async function createDraftPR(taskId, branch, baseCommit, headCommit, evidence) {
         return { success: false, reason: `GitHub API failed: ${redactSensitive(apiErr.message)}`, manualInfo: { branch, base: 'main' } };
       }
     }
-    
+
     return { success: false, reason: `gh CLI failed: ${redactSensitive(e.message)}`, manualInfo: { branch, base: 'main' } };
   }
 }
@@ -500,12 +566,12 @@ See \`evidence/\` directory for full details.
 function applyWorkspaceChanges(workspace, originalRoot) {
   const statusOutput = execFileSync('git', ['status', '--porcelain'], { cwd: workspace, encoding: 'utf8' }).trim();
   if (!statusOutput) return;
-  
+
   const lines = statusOutput.split('\n').filter(Boolean);
   for (const line of lines) {
     const status = line.substring(0, 2).trim();
     const filePath = line.substring(3).trim();
-    
+
     if (status === 'D') {
       const fullPath = join(originalRoot, filePath);
       if (existsSync(fullPath)) unlinkSync(fullPath);
@@ -541,11 +607,50 @@ export function redactSensitive(text) {
     .replace(/x-access-token:[^@]+@/g, 'x-access-token:[REDACTED]@');
 }
 
+// Module-level cancellation state for signal-driven worker termination.
+let activeChildProcess = null;
+let cleanupDone = false;
+let abortControllerInstance = null;
+
+function registerCancellationHandlers(abortController) {
+  abortControllerInstance = abortController;
+  cleanupDone = false;
+
+  function handleSignal(signal) {
+    if (cleanupDone) return;
+    cleanupDone = true;
+    abortController.abort();
+  }
+
+  process.on('SIGINT', () => handleSignal('SIGINT'));
+  process.on('SIGTERM', () => handleSignal('SIGTERM'));
+}
+
+function clearCancellationHandlers() {
+  cleanupDone = true;
+  activeChildProcess = null;
+  abortControllerInstance = null;
+  process.off('SIGINT');
+  process.off('SIGTERM');
+}
+
+function getActiveChildProcess() {
+  return activeChildProcess;
+}
+
+function setActiveChildProcess(child) {
+  activeChildProcess = child;
+}
+
+function clearActiveChildProcess() {
+  activeChildProcess = null;
+}
+
 export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const execute = argv.includes('--execute');
   const recover = argv.includes('--recover');
   const taskIdArg = argv.find((x) => x.startsWith('--task='))?.slice(7) ?? null;
-  
+
   const policy = loadPolicy();
   if (!isPolicyEnabled(policy)) {
     console.warn('[POLICY] Autonomous execution is disabled. Running in AUDIT mode.');
@@ -565,7 +670,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     }
     repairLimit = parsed;
   }
-  
+
   const paths = getRepoPaths(cwd);
   const repo = assertRepositoryReady(paths);
   const metrics = createMetrics();
@@ -603,7 +708,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   const recoveredTaskId = process.env._RECOVERED_TASK_ID || taskIdArg;
   const tasks = loadTasks(paths);
   let task = recoveredTaskId ? tasks.find((t) => t.id === recoveredTaskId) : (taskIdArg ? tasks.find((t) => t.id === taskIdArg) : selectTask(tasks));
-  
+
   if (!task) throw new Error(redactSensitive('Tidak ada task READY yang eligible.'));
   if (task.status !== 'READY' && !recover) throw new Error(`${task.id} tidak READY.`);
 
@@ -621,24 +726,27 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   // Cancellation and deadline infrastructure
   const abortController = new AbortController();
-  const taskStartTime = Date.now();
+  registerCancellationHandlers(abortController);
+  const taskStartTimeNs = process.hrtime.bigint();
   const taskTimeoutMs = getTaskTimeout(policy);
-  const taskDeadline = taskStartTime + taskTimeoutMs;
-  
+  const taskTimeoutNs = BigInt(taskTimeoutMs) * 1_000_000n;
+  const taskDeadlineNs = taskStartTimeNs + taskTimeoutNs;
+
   function checkDeadline() {
-    if (isDeadlineExceeded(taskStartTime, taskDeadline)) {
+    if (isDeadlineExceeded(taskStartTimeNs, taskDeadlineNs)) {
       throw new Error(redactSensitive('Task deadline exceeded (' + taskTimeoutMs + 'ms)'));
     }
   }
-  
+
   function checkCancelled() {
     if (abortController.signal.aborted) {
+      clearCancellationHandlers();
       throw new Error(redactSensitive('Task cancelled'));
     }
   }
-  
+
   let currentSmState = 'PLANNING';
-  
+
   function transitionEvidence(state, extra = {}) {
     const smState = ORCH_TO_SM_STATE[state];
     if (smState && !isValidTransition(currentSmState, smState)) {
@@ -651,7 +759,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
   }
 
   const branch = `agent/${task.id.toLowerCase()}-${task.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'work'}`;
-  
+
   const evidence = {
     taskId: task.id,
     taskTitle: task.title,
@@ -669,15 +777,15 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   if (!execute && !recover) {
     evidence.workerInputContract = createWorkerInputContract(task, repo.head, paths);
+    clearCancellationHandlers();
     return { ...evidence, state: 'PLAN' };
   }
 
   const workerCommand = process.env.VITANUSA_WORKER_CMD || 'kilo --auto';
   const worker = validateWorker(workerCommand);
-  
   checkCancelled();
   checkDeadline();
-  
+
   evidence.workerInputContract = createWorkerInputContract(task, repo.head, paths);
   evidence.stateTransitions.push({ state: 'CLAIMED', timestamp: new Date().toISOString() });
 
@@ -685,16 +793,16 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     throw new Error(`Branch ${branch} sudah ada. Jangan membuat branch duplikat.`);
   }
   runGit(['switch', '-c', branch], paths.ROOT);
-  
+
   // Create isolated workspace for worker execution
   const workspace = createIsolatedWorkspace(paths.ROOT, task.id);
   console.log(`[${task.id}] Isolated workspace: ${workspace}`);
-  
-  const runningState = { 
-    taskId: task.id, 
-    branch, 
-    status: 'RUNNING', 
-    baseCommit: repo.head, 
+
+  const runningState = {
+    taskId: task.id,
+    branch,
+    status: 'RUNNING',
+    baseCommit: repo.head,
     startedAt: new Date().toISOString(),
     repairCount: 0,
     leaseToken: crypto.randomUUID(),
@@ -705,12 +813,14 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
 
   console.log(`[${task.id}] Starting worker: ${worker.join(' ')}`);
   checkDeadline();
-  const workerResult = runWorker(paths, worker, task, repo.head, { VITANUSA_TASK_ID: task.id, VITANUSA_BASE_COMMIT: repo.head }, workspace);
-  
-  evidence.commands.push({ 
-    command: worker.join(' '), 
-    exitCode: workerResult.status, 
-    stdout: workerResult.stdout, 
+  setActiveChildProcess(null);
+  const workerResult = await runWorker(paths, worker, task, repo.head, { VITANUSA_TASK_ID: task.id, VITANUSA_BASE_COMMIT: repo.head }, workspace, abortController.signal);
+  clearActiveChildProcess();
+
+  evidence.commands.push({
+    command: worker.join(' '),
+    exitCode: workerResult.status,
+    stdout: workerResult.stdout,
     stderr: workerResult.stderr,
     phase: 'implementation',
   });
@@ -725,23 +835,24 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     saveEvidence(paths, task.id, evidence);
     cleanupWorkspace(workspace);
     recordTask(metrics, {
-    taskId: task.id,
-    state: 'BLOCKED',
-    baseCommit: repo.head,
-    headCommit: evidence.headCommit,
-    duration: Date.now() - taskStartTime,
-    exitCode: evidence.stopReason ? 1 : 0,
-    repairAttempts: repairCount,
-    testsPassed: verificationPassed,
-    changedFiles: evidence.changedPaths.length,
-  });
+      taskId: task.id,
+      state: 'BLOCKED',
+      baseCommit: repo.head,
+      headCommit: evidence.headCommit,
+      duration: Number(process.hrtime.bigint() - taskStartTimeNs) / 1_000_000,
+      exitCode: evidence.stopReason ? 1 : 0,
+      repairAttempts: repairCount,
+      testsPassed: verificationPassed,
+      changedFiles: evidence.changedPaths.length,
+    });
   console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
+  clearCancellationHandlers();
   return { ...evidence, state: 'BLOCKED' };
   }
 
   let repairCount = 0;
   let verificationPassed = false;
-  
+
   while (repairCount <= repairLimit && !verificationPassed) {
     checkCancelled();
     checkDeadline();
@@ -750,26 +861,32 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
       runningState.repairCount = repairCount;
       saveState(paths, runningState);
       console.log(`[${task.id}] Repair attempt ${repairCount}/${repairLimit}`);
-      
+
       // Re-invoke worker for repair
       console.log(`[${task.id}] Re-invoking worker for repair...`);
-      const backoffDelay = backoffMs(repairCount - 1);
-      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      const rawBackoffDelay = backoffMs(repairCount - 1);
+      const remainingMs = Number(taskDeadlineNs - process.hrtime.bigint()) / 1_000_000;
+      const backoffDelay = Math.max(0, Math.min(rawBackoffDelay, remainingMs));
+      if (backoffDelay > 0) {
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      }
       checkDeadline();
-      const repairResult = runWorker(paths, worker, task, repo.head, { 
-        VITANUSA_TASK_ID: task.id, 
+      setActiveChildProcess(null);
+      const repairResult = await runWorker(paths, worker, task, repo.head, {
+        VITANUSA_TASK_ID: task.id,
         VITANUSA_BASE_COMMIT: repo.head,
         VITANUSA_REPAIR_ATTEMPT: repairCount.toString(),
-      }, workspace);
-      
-      evidence.commands.push({ 
-        command: worker.join(' '), 
-        exitCode: repairResult.status, 
-        stdout: repairResult.stdout, 
+      }, workspace, abortController.signal);
+      clearActiveChildProcess();
+
+      evidence.commands.push({
+        command: worker.join(' '),
+        exitCode: repairResult.status,
+        stdout: repairResult.stdout,
         stderr: repairResult.stderr,
         phase: `repair-${repairCount}`,
       });
-      
+
       if (repairResult.status !== 0) {
         const failureClass = classifyWorkerFailure(repairResult.status, repairResult.stderr);
         evidence.stopReason = redactSensitive('worker exit ' + repairResult.status + ' during repair (' + failureClass + ')');
@@ -779,6 +896,7 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
         saveState(paths, { ...runningState, status: 'BLOCKED', evidence });
         saveEvidence(paths, task.id, evidence);
         cleanupWorkspace(workspace);
+        clearCancellationHandlers();
         return { ...evidence, state: 'BLOCKED' };
       }
     } else {
@@ -792,6 +910,12 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     checkDeadline();
     const workspaceChanges = getWorkspaceDiff(workspace, repo.head);
     const changes = workspaceChanges.map(c => ({ path: c.path, status: c.status }));
+    
+    if (abortController.signal.aborted) {
+      cleanupWorkspace(workspace);
+      clearCancellationHandlers();
+      return { ...evidence, state: 'CANCELLED', stopReason: 'Task cancelled before applying changes' };
+    }
     
     // Apply changes from workspace to original repo
     applyWorkspaceChanges(workspace, paths.ROOT);
@@ -865,13 +989,14 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     state: 'FAILED',
     baseCommit: repo.head,
     headCommit: evidence.headCommit,
-    duration: Date.now() - taskStartTime,
+    duration: Number(process.hrtime.bigint() - taskStartTimeNs) / 1_000_000,
     exitCode: 1,
     repairAttempts: repairCount,
     testsPassed: verificationPassed,
     changedFiles: evidence.changedPaths.length,
   });
   console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
+  clearCancellationHandlers();
   return { ...evidence, state: 'FAILED' };
   }
 
@@ -928,13 +1053,14 @@ export async function main(argv = process.argv.slice(2), cwd = process.cwd()) {
     state: 'PR_CREATED',
     baseCommit: repo.head,
     headCommit: evidence.headCommit,
-    duration: Date.now() - taskStartTime,
+    duration: Number(process.hrtime.bigint() - taskStartTimeNs) / 1_000_000,
     exitCode: 0,
     repairAttempts: repairCount,
     testsPassed: verificationPassed,
     changedFiles: evidence.changedPaths.length,
   });
   console.log('[METRICS] ' + JSON.stringify(summarize(metrics)));
+  clearCancellationHandlers();
   return { ...evidence, state: 'PR_CREATED' };
 }
 

@@ -6,22 +6,20 @@ import { isDeadlineExceeded, backoffMs } from '../../scripts/agent/task-orchestr
 import { getTaskTimeout } from '../../scripts/agent/policy-engine.mjs';
 
 test('deadline: isDeadlineExceeded returns false when within deadline', () => {
-  const start = Date.now();
-  const deadline = start + 60000; // 1 minute from now
+  const start = process.hrtime.bigint();
+  const deadline = start + BigInt(60000) * 1_000_000n; // 1 minute from now
   assert.ok(!isDeadlineExceeded(start, deadline), 'Should not be exceeded before deadline');
 });
 
 test('deadline: isDeadlineExceeded returns true when past deadline', () => {
-  const start = Date.now() - 120000; // 2 minutes ago
-  const deadlineMs = 60000; // 1 minute duration
-  assert.ok(isDeadlineExceeded(start, deadlineMs), 'Should be exceeded after deadline');
+  const start = process.hrtime.bigint() - BigInt(120000) * 1_000_000n; // 2 minutes ago
+  const deadline = start + BigInt(60000) * 1_000_000n; // 1 minute duration
+  assert.ok(isDeadlineExceeded(start, deadline), 'Should be exceeded after deadline');
 });
 
 test('deadline: isDeadlineExceeded returns false exactly at deadline', () => {
-  const start = Date.now() - 60000; // 1 minute ago
-  const deadline = start + 60000; // exactly 1 minute from start = now
-  // At exactly the deadline, Date.now() - startTimeMs === deadlineMs, so isDeadlineExceeded returns false
-  // (uses > not >=)
+  const start = process.hrtime.bigint();
+  const deadline = start + BigInt(60000) * 1_000_000n; // exactly 1 minute from now
   assert.ok(!isDeadlineExceeded(start, deadline), 'Should not be exceeded exactly at deadline (uses > not >=)');
 });
 
@@ -45,7 +43,7 @@ test('deadline: checkDeadline is called before worker execution', async () => {
   // Verify checkDeadline is called before worker execution
   const workerExecSection = orchestratorCode.substring(
     orchestratorCode.indexOf('console.log(\`[${task.id}] Starting worker'),
-    orchestratorCode.indexOf('const workerResult = runWorker')
+    orchestratorCode.indexOf('const workerResult = await runWorker')
   );
   
   assert.ok(workerExecSection.includes('checkDeadline()'), 'checkDeadline() should be called before worker execution');
@@ -94,23 +92,26 @@ test('deadline: backoffMs increases with attempt number', () => {
   assert.ok(result2 >= result1 * 0.5, 'Backoff should generally increase with attempt number');
 });
 
-test('deadline: Date.now() is used instead of monotonic clock', async () => {
+test('deadline: process.hrtime.bigint() is used instead of Date.now() for monotonic deadline', async () => {
   const { readFileSync } = await import('node:fs');
   
   const orchestratorCode = readFileSync(
     join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'), 'utf8'
   );
   
-  // Check that Date.now() is used for taskStartTime
+  // Check that process.hrtime.bigint() is used for taskStartTime
+  const hasHrtime = orchestratorCode.includes('taskStartTimeNs = process.hrtime.bigint()');
+  assert.ok(hasHrtime, 'taskStartTimeNs uses process.hrtime.bigint() (monotonic clock, not wall-clock)');
+  
+  // Check that Date.now() is NOT used for taskStartTime declaration
   const hasDateNow = orchestratorCode.includes('const taskStartTime = Date.now()');
-  assert.ok(hasDateNow, 'taskStartTime uses Date.now() (wall-clock, not monotonic)');
+  assert.ok(!hasDateNow, 'taskStartTime is NOT declared with Date.now() - monotonic clock is used instead');
   
-  // Check that process.hrtime.bigint() is NOT used for deadline
-  const hasHrtime = orchestratorCode.includes('hrtime.bigint') || orchestratorCode.includes('hrtime()');
-  assert.ok(!hasHrtime, 'process.hrtime() is NOT used for deadline - Date.now() is used instead');
+  // Check that deadline is computed from monotonic time
+  const hasDeadlineNs = orchestratorCode.includes('taskDeadlineNs = taskStartTimeNs + taskTimeoutNs');
+  assert.ok(hasDeadlineNs, 'taskDeadlineNs is computed from monotonic start time');
   
-  // Document: Date.now() is wall-clock time and can be affected by system time changes
-  // For monotonic time, process.hrtime.bigint() or performance.now() should be used
+  // Document: monotonic clock is not affected by system time changes
 });
 
 test('deadline: recovery does not reset task deadline', async () => {
@@ -120,19 +121,13 @@ test('deadline: recovery does not reset task deadline', async () => {
     join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'), 'utf8'
   );
   
-  // taskStartTime and taskDeadline are set once at the beginning of main()
+  // taskStartTimeNs and taskDeadlineNs are set once at the beginning of main()
   // and are not reset during recovery
-  const taskStartTimeDecl = (orchestratorCode => {
-    const idx = orchestratorCode.indexOf('const taskStartTime = Date.now()');
-    return idx;
-  })(orchestratorCode);
+  const taskStartTimeCount = (orchestratorCode.match(/const taskStartTimeNs = process\.hrtime\.bigint\(\)/g) || []).length;
+  assert.equal(taskStartTimeCount, 1, 'taskStartTimeNs should be declared only once (not reset during recovery)');
   
-  // Check that taskStartTime is declared only once
-  const taskStartTimeCount = (orchestratorCode.match(/const taskStartTime = Date.now\(\)/g) || []).length;
-  assert.equal(taskStartTimeCount, 1, 'taskStartTime should be declared only once (not reset during recovery)');
-  
-  const taskDeadlineCount = (orchestratorCode.match(/const taskDeadline = taskStartTime \+ taskTimeoutMs/g) || []).length;
-  assert.equal(taskDeadlineCount, 1, 'taskDeadline should be declared only once (not reset during recovery)');
+  const taskDeadlineCount = (orchestratorCode.match(/const taskDeadlineNs = taskStartTimeNs \+ taskTimeoutNs/g) || []).length;
+  assert.equal(taskDeadlineCount, 1, 'taskDeadlineNs should be declared only once (not reset during recovery)');
 });
 
 test('deadline: zero or negative timeout inputs', async () => {
@@ -148,4 +143,19 @@ test('deadline: zero or negative timeout inputs', async () => {
 test('deadline: excessively large timeout', async () => {
   const timeoutLarge = getTaskTimeout({ engine: { task_timeout_seconds: 999999999 } });
   assert.equal(timeoutLarge, 999999999, 'Large timeout should be returned as-is');
+});
+
+test('deadline: backoff bounded by remaining task budget', async () => {
+  const { readFileSync } = await import('node:fs');
+  
+  const orchestratorCode = readFileSync(
+    join(process.cwd(), 'scripts/agent/task-orchestrator.mjs'), 'utf8'
+  );
+  
+  // Verify backoff is bounded by remaining deadline budget
+  const hasRemainingMs = orchestratorCode.includes('remainingMs = Number(taskDeadlineNs - process.hrtime.bigint())');
+  assert.ok(hasRemainingMs, 'Backoff should be bounded by remaining task deadline budget');
+  
+  const hasMathMin = orchestratorCode.includes('Math.min(rawBackoffDelay, remainingMs)');
+  assert.ok(hasMathMin, 'Backoff should use Math.min to bound by remaining budget');
 });

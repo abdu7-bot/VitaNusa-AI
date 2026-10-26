@@ -91,20 +91,55 @@ export function aggregateResults(results) {
   };
 }
 
-export function compareVersions(baseline, candidate) {
+export function compareVersions(baseline, candidate, options = {}) {
+  const {
+    improvementThreshold = null,
+    requireSignificance = false,
+    mockWorker = false,
+  } = options;
+
   const bAgg = aggregateResults(baseline);
   const cAgg = aggregateResults(candidate);
   const bRate = parseFloat(bAgg.successRate) || 0;
   const cRate = parseFloat(cAgg.successRate) || 0;
-  const improvement = bRate > 0 ? (cRate / bRate).toFixed(2) + 'x' : 'N/A';
+
+  let improvementRatio = 'N/A';
+  if (bRate > 0) {
+    improvementRatio = (cRate / bRate).toFixed(2) + 'x';
+  } else if (cRate > 0) {
+    improvementRatio = 'infinite (baseline had zero successes)';
+  }
+
+  const improvementDetected = cRate > bRate;
+  let thresholdMet = true;
+  let thresholdMessage = null;
+
+  if (improvementThreshold !== null) {
+    thresholdMet = cRate >= bRate * improvementThreshold;
+    thresholdMessage = `Threshold ${improvementThreshold}x ${thresholdMet ? 'met' : 'not met'}`;
+  }
+
+  let verdict;
+  if (!improvementDetected) {
+    verdict = cRate < bRate ? 'REGRESSION' : 'NO_CHANGE';
+  } else if (!thresholdMet) {
+    verdict = 'IMPROVEMENT_BELOW_THRESHOLD';
+  } else if (requireSignificance && baseline.length < 30) {
+    verdict = 'IMPROVEMENT_BUT_INSUFFICIENT_SAMPLE';
+  } else {
+    verdict = 'IMPROVEMENT';
+  }
+
   return {
-    baseline: bAgg,
-    candidate: cAgg,
-    improvementRatio: improvement,
-    verdict: cRate >= bRate * 7 ? 'PASS — 7X IMPROVEMENT DEMONSTRATED' :
-             cRate > bRate ? 'PASS — IMPROVEMENT MEASURED, BELOW 7X' :
-             cRate === bRate ? 'INCONCLUSIVE — INSUFFICIENT BENCHMARK EVIDENCE' :
-             'FAIL — REGRESSION OR SAFETY VIOLATION',
+    baseline: { ...bAgg, sampleSize: baseline.length },
+    candidate: { ...cAgg, sampleSize: candidate.length },
+    improvementRatio,
+    improvementDetected,
+    threshold: improvementThreshold,
+    thresholdMet,
+    thresholdMessage,
+    mockWorker,
+    verdict,
   };
 }
 
@@ -119,6 +154,7 @@ export function generateReport(comparison, config) {
       'Sample size may be insufficient for statistical significance',
       'Real worker depends on LLM provider availability',
       'Cost data not available from provider',
-    ],
+      comparison.mockWorker ? 'Results are from mock worker, not real worker execution' : null,
+    ].filter(Boolean),
   };
 }

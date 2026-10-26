@@ -105,6 +105,8 @@ class QuranicReflection(BaseModel):
     type: str
     text: str
     note: str
+    dalil: str | None = None
+    method: str | None = None
 
 
 class PolicyResultResponse(BaseModel):
